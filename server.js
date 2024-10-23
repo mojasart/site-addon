@@ -444,13 +444,15 @@ app.get('/', (req, res) => {
 });
 
 // Servir arquivos estáticos
-app.use(express.static('login'));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use('/login', express.static(path.join(__dirname, 'login')));
+app.use('/public', express.static(path.join(__dirname, 'public')));
 app.use('/create-an-addon', express.static(path.join(__dirname, 'create-an-addon')));
-app.use(express.static('pagina do addon'));
+app.use('/pagina-do-addon', express.static(path.join(__dirname, 'pagina-do-addon')));
 app.use('/account', express.static(path.join(__dirname, 'account')));
 app.use('/edit', express.static(path.join(__dirname, 'edit')));
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Servir páginas e scripts específicos
 app.get('/create.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'create-an-addon', 'create.html'));
 });
@@ -462,7 +464,6 @@ app.get('/script-create.js', (req, res) => {
 app.get('/style-create.css', (req, res) => {
   res.sendFile(path.join(__dirname, 'create-an-addon', 'style-create.css'));
 });
-
 // Iniciar o servidor
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
