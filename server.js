@@ -19,7 +19,7 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 // Conectar ao MongoDB
-mongoose.connect('mongodb://localhost:27017/seu_banco_de_dados', {
+mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 }).then(() => {
