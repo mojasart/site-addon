@@ -453,13 +453,16 @@ app.use('/edit', express.static(path.join(__dirname, 'edit')));
 app.use('/uploads', express.static('uploads'));
 app.get('/create.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'create-an-addon', 'create.html'));
-})
-app.get('/script-create.js', (req, res) => {
-    res.sendFile(path.join(__dirname, 'create-an-addon', 'script-create.js'));
-app.get('/style-create.css', (req, res) => {
-    res.sendFile(path.join(__dirname, 'create-an-addon', 'style-create.css'));
-  });
 });
+
+app.get('/script-create.js', (req, res) => {
+  res.sendFile(path.join(__dirname, 'create-an-addon', 'script-create.js'));
+});
+
+app.get('/style-create.css', (req, res) => {
+  res.sendFile(path.join(__dirname, 'create-an-addon', 'style-create.css'));
+});
+
 // Iniciar o servidor
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
