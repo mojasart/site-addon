@@ -1,0 +1,193 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body, html {
+    height: 100%;
+    font-family: 'Fredoka', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: url('minecraft-bg.png') no-repeat center center fixed;
+    background-size: cover;
+    color: white;
+  }
+  
+  .background-blur {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    backdrop-filter: blur(8px);
+    z-index: -1;
+  }
+  
+  .main-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    width: 80%;
+    max-width: 1200px;
+  }
+  .create-container {
+    max-width: 400px;
+    width: 90%;
+    background-color: #00000083; 
+    padding: 40px;
+    border-radius: 12px; 
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); /* Sombra mais suave e profunda */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .divider2{
+    width: 1px;
+    height: 10px;
+    background-color: #33333300;
+  }
+  a {
+    text-decoration: none;
+    color:white
+  }
+  .divider{
+  width: 60px;
+  height: 20px;
+  background-color: #44444400;
+  margin-right: 20px; /* Espaçamento entre a linha e a barra de pesquisa */
+  margin-left: 10px;
+}
+  .logo {
+    position: absolute;
+    top: 200px; /* Ajusta a imagem acima do texto "Sign Up" */
+    margin-bottom: 50px; /* Remove o espaço abaixo da imagem */
+    width: 100px;
+    height: 100px;
+  }
+  .logo-title-container {
+    display:flex;
+    align-items: center; /* Alinhar logo e texto verticalmente no centro */
+    gap: 15px; /* Aumentar o espaço entre o logo e o texto */
+    margin-bottom: 30px; /* Espaçamento abaixo da logo e título */
+  }
+  
+  .logo-title-container img {
+    width: 100px; /* Ajuste o tamanho da logo */
+    height: auto;
+    border-radius: 8px;
+  }
+  .logo-title-container h1 {
+    font-size: 2.5rem; /* Ajuste o tamanho do texto conforme necessário */
+    margin-bottom: 0;
+  }
+  
+  .logo-title-container p {
+    margin-top: 5px; /* Mantém o texto um pouco abaixo do título */
+    font-size: 1rem;
+  }
+  
+  .video-image {
+    width: 80px;
+    height: auto;
+    border-radius: 8px;
+  }
+  .p {
+    font-size: 15px;
+  }
+  .videos-links {
+    display: flex;
+    justify-content: center;
+    gap: 40px; /* Aumentar o espaçamento entre as miniaturas */
+    margin-top: 20px;
+  }
+  .video-thumbnail {
+    width: 250px; /* Aumentar o tamanho das miniaturas */
+    height: auto;
+    cursor: pointer;
+    transition: transform 0.3s;
+  }
+  .video-thumbnail:hover {
+    transform: scale(1.05); /* Efeito ao passar o mouse */
+  }
+  
+  .login-container {
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.5);
+    width: 700px;
+    text-align: center;
+  }
+  
+  .login-container h2 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+  }
+  
+  .input-container {
+    position: relative;
+    margin-bottom: 20px;
+  }
+  
+  .input-container input {
+    width: 100%;
+    padding: 15px;
+    background-color: #333;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 1rem;
+  }
+  
+  .input-container label {
+    position: absolute;
+    top: 50%;
+    left: 15px;
+    transform: translateY(-50%);
+    color: #999;
+    pointer-events: none;
+    transition: 0.3s;
+  }
+  
+  .input-container input:focus + label,
+  .input-container input:not(:placeholder-shown) + label {
+    top: -10px;
+    left: 10px;
+    font-size: 0.8rem;
+    color: #ff7f00;
+  }
+  
+  button {
+    width: 100%;
+    padding: 15px;
+    background-color: #ff5c00;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  button:hover {
+    background-color: #ff7f00;
+  }
+  
+  .have-account {
+    margin-top: 20px;
+    font-size: 0.9rem;
+  }
+  
+  .have-account a {
+    color: #ff5c00;
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+  
+  .have-account a:hover {
+    color: #ff7f00;
+  }
+  
