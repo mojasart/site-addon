@@ -1,0 +1,153 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Raleway', sans-serif;
+}
+
+body {
+    background-color: #1b1b1b;
+    color: #1b1b1b;
+}
+
+.container {
+    width: 90%;
+    margin: 0 auto;
+}
+
+header {
+    background-color: #1b1b1b;
+    padding: 20px 0;
+}
+
+header h1 {
+    color: white;
+    display: inline-block;
+}
+
+nav ul {
+    list-style: none;
+    float: right;
+}
+
+nav ul li {
+    display: inline-block;
+    margin-left: 20px;
+}
+
+nav ul li a {
+    color: white;
+    text-decoration: none;
+}
+
+#dark-mode-toggle {
+    float: right;
+    margin-left: 20px;
+    padding: 10px;
+    background-color: #555;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.carousel {
+    position: relative;
+    height: 400px;
+    background-color: #1b1b1b;
+}
+
+.carousel-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.carousel-item {
+    display: none;
+    height: 100%;
+    background-position: center;
+    background-size: cover;
+}
+
+.carousel-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.carousel-item.active {
+    display: block;
+}
+
+.carousel-caption {
+    position: absolute;
+    bottom: 50px;
+    left: 20px;
+    color: white;
+}
+
+.filters {
+    margin: 40px 0;
+}
+
+.filters input,
+.filters select {
+    padding: 10px;
+    margin-right: 20px;
+}
+
+.addons-grid-section {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+.addon-card {
+    width: 48%;
+    margin-bottom: 20px;
+    background-color: #1b1b1b;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.addon-bg {
+    width: 100%;
+    height: 200px;
+    background-position: center;
+    background-size: cover;
+}
+
+.addon-card-content {
+    padding: 20px;
+}
+
+.addon-card h3 {
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.addon-card p {
+    margin-bottom: 10px;
+    color: #777;
+}
+
+.downloads, .rating {
+    display: inline-block;
+    margin-right: 10px;
+}
+
+footer {
+    background-color: #333;
+    padding: 20px;
+    color: white;
+    text-align: center;
+}
+
+footer .social-links a {
+    color: white;
+    margin: 0 10px;
+    text-decoration: none;
+}

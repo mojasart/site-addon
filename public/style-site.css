@@ -1,0 +1,605 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  font-family: 'Fredoka', sans-serif;
+  background-color: #181818; /* Fundo escuro */
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: #1a1a1a; /* Fundo do header */
+  color: white;
+  height: 70px; /* Altura do header */
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+}
+
+.logo img {
+  height: 30px;
+  margin-right: 10px;
+}
+
+.logo span {
+  font-weight: bold;
+  font-size: 20px;
+}
+
+nav ul {
+  display: flex;
+  list-style-type: none;
+}
+
+nav ul li {
+  margin-left: 50px;
+}
+
+nav ul li a.home {
+  color: white;
+  text-decoration: none;
+  font-size: 20px;
+  margin-right: 20px; /* Margem padrão entre todos os links */
+  margin-left: 150px;
+  position: relative;
+  font-family: 'Fredoka', sans-serif;
+}
+
+nav ul li a.create {
+  color: white;
+  text-decoration: none;
+  font-size: 20px;
+  margin-right: 20px; /* Margem padrão entre todos os links */
+  margin-left: 120px;
+  position: relative;
+  font-family: 'Fredoka', sans-serif;
+}
+
+
+nav ul li a:hover {
+    color: #e55d00; /* Efeito de hover laranja */
+}
+.cta .btn-curseforge {
+  background-color: #03ddfa;
+  color: white;
+  padding: 10px 20px;
+  text-decoration: none;
+
+  font-weight: bold;
+}
+
+.carousel {
+  position: relative;
+  height: 800px;
+  background-color: #222;
+width: 1300px;
+margin-left: 425px;
+}
+
+.carousel-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Defina a transição para o efeito de fade */
+.carousel-item {
+    opacity: 0;
+    transition: opacity 1s ease-in-out; /* Duração de 1 segundo, mas você pode ajustar */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* Define a imagem ativa para ser visível */
+.carousel-item.active {
+    opacity: 1;
+    position: relative;
+}
+
+.carousel-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.carousel-caption {
+  position: absolute;
+  bottom: 10px;
+  left: 100px;
+  color: white;
+}
+
+/* Container da barra de pesquisa */
+.search-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #181818;
+  padding: 10px;
+  margin-top: 20px; /* Adicionar espaçamento superior */
+  border-radius: 5px;
+  max-width: 1500px; /* Limitar largura */
+  margin-left: 100px;
+  margin-bottom: 10px; /* Mantém espaço entre a barra de pesquisa e o dropdown */
+}
+/* Botão de Categorias */
+.categories-btn {
+  background-color: #181818;
+  color: white;
+  border: 1px solid #ffffff;
+  padding: 10px 15px;
+  margin-right: 10px; /* Espaço entre o botão e o campo de pesquisa */
+  cursor: pointer;
+  font-size: 14px;
+  height: 60px;
+}
+/* Linha divisória */
+.divider {
+  width: 1px;
+  height: 30px;
+  background-color: #444;
+  margin-right: 20px; /* Espaçamento entre a linha e a barra de pesquisa */
+  margin-left: 10px;
+}
+/* Estilo do campo de pesquisa */
+.search-input {
+  padding: 10px;
+  width: 150%;
+  max-width: 890px; /* Limitar a largura do campo de pesquisa */
+  border: 1px solid #444;
+  background-color: #333;
+  color: #fff;
+  outline: none;
+  height: 60px;
+}
+
+/* Estilo do botão de pesquisa */
+.search-btn {
+  background-color: #03ddfa;
+  color: white;
+  border: none;
+  padding: 10px;
+  margin-left: 5px;
+  cursor: pointer;
+  width: 60px;
+  height: 59px;
+}
+
+.search-btn i {
+  font-size: 20px;
+}
+
+/* Estilo da seção dos addons */
+.addons-grid-section-container {
+  display: grid;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px; /* Espaço entre os addons */
+  margin-left: 80px;
+}
+
+.addon-card {
+  width: 500px; /* Cada addon ocupa 50% da largura, menos a margem */
+  margin: 20px; /* Espaço ao redor dos addons */
+  height: 400px; /* Altura padrão para o addon */
+  border-radius: 10px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+@media (max-width: 768px) {
+  .addon-card {
+    width: 100%; /* Em telas menores, os addons ocupam 100% da largura */
+  }
+}
+
+.addon-summary {
+  color: #ffffff; /* Cor do texto */
+  font-size: 12px; /* Tamanho do texto */
+  margin-top: 5px; /* Espaço acima do resumo */
+}
+
+/* Efeito de hover */
+.addon-card:hover {
+  transform: translateY(-5px); /* Move o cartão um pouco para cima */
+  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2); /* Aumenta a sombra */
+}
+/* Imagem de fundo do addon */
+.addon-bg {
+  width: 100%; /* Ocupe toda a largura do container */
+  height: 250px; /* Defina a altura do container */
+  background-position: center; /* Centralize a imagem */
+  background-size: cover; /* A imagem cobrirá todo o espaço, sem distorcer */
+  background-repeat: no-repeat; /* Evite a repetição da imagem */
+}
+
+
+
+/* Conteúdo dentro do cartão */
+.addon-card-content {
+  padding: 15px;
+  position: relative; /* Para posicionar o texto em cima da imagem */
+}
+
+/* Header do addon, com nome e downloads */
+.addon-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+/* Nome do addon */
+.addon-header h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* Downloads alinhados à direita no header */
+.downloads {
+  color: #ff8c00;
+  font-size: 12px;
+}
+
+/* Autor do addon */
+.addon-card p {
+  margin: 0;
+  color: #ffffff; /* Cor do texto do autor */
+  font-size: 14px;
+}
+
+/* Para telas menores, ajustamos para que os cartões ocupem a tela inteira */
+@media (max-width: 768px) {
+  .addon-card {
+    width: 100%; /* Ocupa 100% da largura em telas menores */
+  }
+}
+
+
+footer {
+  background-color: #1b1b1b;
+  padding: 20px;
+  color: white;
+  text-align: center;
+}
+
+footer .social-links a {
+  color: white;
+  margin: 0 10px;
+  text-decoration: none;
+}
+
+/*# sourceMappingURL=style.css.map */
+.container1 {
+  display: flex; /* Coloca a barra de pesquisa e os filtros na mesma linha */
+  justify-content: space-between; /* Coloca a barra de pesquisa à esquerda e os filtros à direita */
+  align-items: center; /* Centraliza os itens horizontalmente */
+  padding: 10px 20px;
+  background-color: #1b1b1b; /* Define uma cor de fundo escura para combinar com o tema do site */
+  border-radius: 5px; /* Deixa as bordas arredondadas */
+  margin-bottom: 20px; /* Dá um espaço abaixo da área de pesquisa e filtros */
+}
+
+.search-bar {
+  width: 800px ;/* Ajusta o tamanho da barra de pesquisa */
+  padding: 10px;
+  border: none;
+  justify-content: center; /* Centraliza horizontalmente */
+  align-items: center; /* Centraliza verticalmente */
+  border-radius: 5px;
+  background-color: #353535;
+  color: #616161f8;
+}
+
+.filters {
+  display: flex; /* Coloca os botões de filtro em linha */
+  gap: 10px; /* Espaçamento entre os botões */
+  justify-content: center;
+}
+
+.filters button {
+  padding: 10px 15px;
+  border: none;
+  background-color: #eb3c25; /* Cor dos botões de filtro */
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.filters button:hover {
+  background-color: #eb3c25; /* Cor do botão ao passar o mouse */
+}
+
+.categories-widget {
+  border: 1px solid #ccc;
+  padding: 10px;
+  width: 200px;
+  transition: max-height 0.3s ease-in-out;
+  max-height: 40px; /* Quando está colapsada */
+  overflow: hidden;
+}
+
+.categories-widget.expanded.is-open {
+  max-height: 300px; /* Altura quando expandida */
+}
+
+button.opener {
+  background-color: #333;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.categories-content {
+  margin-top: 10px;
+}
+
+.categories-content ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.categories-container {
+  position: relative; /* Para o dropdown aparecer abaixo do botão */
+}
+
+.categories-dropdown {
+  display: none; /* Escondido por padrão */
+  position: absolute; /* Para sobreposição */
+  background-color: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 5px;
+  margin-top: 5px; /* Espaçamento em relação ao botão */
+  z-index: 1000; /* Certifique-se de que está acima de outros elementos */
+  padding: 10px;
+}
+
+.categories-dropdown ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.categories-dropdown li {
+  color: white; /* Cor do texto */
+  padding: 5px 10px; /* Espaçamento interno */
+  cursor: pointer; /* Mão ao passar o mouse */
+}
+
+.categories-dropdown li:hover {
+  background-color: #333; /* Efeito de hover */
+}
+.carousel {
+  position: relative;
+}
+
+.carousel-dots {
+  position: absolute;
+  bottom: 15px; /* Ajuste a distância da parte inferior do carrossel */
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.dot {
+  height: 15px;
+  width: 15px;
+  margin: 0 5px;
+  background-color: #ccc;
+  border-radius: 50%;
+  display: inline-block;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.dot.active {
+  background-color: #e55d00;
+}
+.no-style-link {
+  text-decoration: none;  /* Remove o sublinhado */
+  color: inherit;  /* Mantém a cor do texto inalterada */
+}
+
+.no-style-link:hover {
+  color: inherit;  /* Não altera a cor ao passar o mouse */
+}
+
+#username-display {
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  background-color: #1a1a1a;
+}
+
+#logout-btn{
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  
+}
+
+.addons-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: first baseline;
+}
+
+.addon-item {
+  border: 1px solid #ccc;
+  padding: 10px;
+  width: 250px;
+  text-align: center;
+}
+.addon-image {
+  width: 100%; /* A imagem ocupará 100% da largura disponível */
+  height: auto; /* A altura será ajustada proporcionalmente à largura */
+  object-fit: cover; /* A imagem será ajustada sem distorção */
+}
+
+
+
+.addon h3 {
+  font-size: 1.5em;
+  margin: 10px 0;
+}
+
+.addon p {
+  font-size: 1em;
+  color: #666;
+}
+.pagination {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  margin-left: 80px;
+}
+
+.pagination a {
+  color: #fff;
+  background-color: #ff6600;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin: 0 5px;
+  text-decoration: none;
+  transition: background-color 0.3s;
+}
+
+.pagination a.active,
+.pagination a:hover {
+  background-color: #e55d00;
+}
+
+.page-button {
+  background-color: #333;
+  color: white;
+  border: none;
+  margin: 0 5px; /* Adiciona espaçamento entre os botões */
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.page-button:hover {
+  background-color: #ff7f00;
+}
+
+.page-button.active {
+  background-color: #ff5c00;
+}
+.sort-buttons {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.sort-buttons button {
+  background-color: #ff5c00;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  margin: 0 10px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.sort-buttons button:hover {
+  background-color: #ff7f00;
+}
+.sort-container {
+  display: flex;
+  align-items: center;
+  margin-left: 470px; /* Espaço entre a barra de pesquisa e o dropdown */
+}
+
+.sort-container label {
+  font-size: 0.9rem;
+  margin-right: 5px;
+  color: white;
+}
+
+.sort-dropdown {
+  padding: 5px;
+  font-size: 0.9rem;
+  background-color: #333;
+  color: white;
+  border: none;
+  border-radius: 5px;
+}
+#sort-dropdown {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background-color: #333;
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+}
+/* Botão de like */
+.like-btn {
+  background-color: #333;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: background-color 0.3s;
+}
+
+.like-btn i {
+  margin-right: 5px;
+}
+
+.like-btn:hover {
+  background-color: #ff0000;
+}
+
+.like-count {
+  margin-left: 5px;
+  font-weight: bold;
+  color: #fff;
+}
+
+@media (min-width: 1024px) {
+  .carousel {
+    height: 500px;
+  }
+
+  .addon-card {
+    width: 30%;
+    width: 600px;
+  }
+
+  .search-container {
+    flex-direction: row;
+  }
+}
