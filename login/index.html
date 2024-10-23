@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="background-blur"></div>
+  
+  <!-- Container principal -->
+  <div class="main-container">
+    <!-- Seção de vídeos e textos -->
+    <div class="videos-section">
+      <div class="logo-title-container">
+        <img src="logo.png" alt="Vatonage" class="video-image"> <!-- Imagem do logo menor -->
+        <div>
+          <h1>vatonage.com</h1>
+          <p>Unlock endless creativity with Vatonage's epic addons! From advanced machinery to magical systems, our high quality addons take your Minecraft experience to the next level. Push the limits of gameplay with content that’s not just fun-it’s game-changing!</p>
+        </div>
+      </div>
+      <div class="videos-links">
+        <!-- Miniatura do vídeo 1 -->
+        <a href="https://www.youtube.com/watch?v=_Lyw2fF5mQM" target="_blank">
+          <img src="basic.jpg" alt="Vídeo 1" class="video-thumbnail">
+        </a>
+        <!-- Miniatura do vídeo 2 -->
+        <a href="https://www.youtube.com/watch?v=4qqYqwXG5JU&t=6s" target="_blank">
+          <img src="boss.jpg" alt="Vídeo 2" class="video-thumbnail">
+        </a>
+      </div>
+    </div>
+
+    <!-- Seção de login -->
+    <div class="login-container">
+      <h2>Login</h2>
+      <form id="login-form" action="/api/auth/login" method="POST">
+        <div class="input-container">
+          <input type="email" id="login-email" name="email" placeholder=" " required>
+          <label for="login-email">E-mail</label>
+        </div>
+        <div class="input-container">
+          <input type="password" id="login-password" name="password" placeholder=" " required>
+          <label for="login-password">Password</label>
+        </div>
+        <button type="submit">Acessar</button>
+      </form>
+      <p class="have-account">Don't have an account? <a href="register.html">Register Now!</a></p>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
