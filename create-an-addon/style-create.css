@@ -1,0 +1,271 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400&display=swap"');
+body {
+    background-color: #181818;
+    color: #e0e0e0;
+    font-family: 'Fredoka', sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+  }
+  
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: #1a1a1a; /* Fundo do header */
+  color: white;
+  height: 50px; /* Altura do header */
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+}
+
+.logo img {
+  height: 30px;
+  margin-right: 10px;
+}
+
+.logo span {
+  font-weight: bold;
+  font-size: 20px;
+}
+
+
+nav  {
+  margin-left: 50px;
+}
+
+nav a.home {
+  color: white;
+  text-decoration: none;
+  font-size: 20px;
+  margin-right: 55px; /* Margem padrão entre todos os links */
+  margin-left: 150px;
+  position: relative;
+  font-family: 'Fredoka', sans-serif;
+}
+
+nav a.create {
+  color: white;
+  text-decoration: none;
+  font-size: 20px;
+  margin-right: 20px; /* Margem padrão entre todos os links */
+  margin-left: 150px;
+  position: relative;
+  font-family: 'Fredoka', sans-serif;
+}
+
+
+nav a:hover {
+    color: #e55d00; /* Efeito de hover laranja */
+}
+  
+.create-container {
+    max-width: 1200px; /* Aumentar a largura máxima */
+    margin: 50px auto;
+    padding: 40px;
+    background-color: #242424;
+    border-radius: 8px;
+}
+
+.create-container h1 {
+    color: #ffffff;
+    font-size: 36px;
+    margin-bottom: 20px;
+}
+#editor-container {
+  background-color: #242424;
+  max-width: 100%; /* Faz o editor ocupar toda a largura do container */
+  overflow-wrap: break-word; /* Força a quebra de palavras longas */
+  word-wrap: break-word; /* Para navegadores mais antigos */
+  white-space: pre-wrap; /* Mantém espaços em branco e quebras de linha */
+  border: 1px solid #ccc; /* Adiciona uma borda ao editor */
+  min-height: 200px; /* Altura mínima para o editor */
+  padding: 10px;
+  border-radius: 5px;
+}
+.form-group {
+    margin-bottom: 20px;
+    width: 1200px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 18px;
+}
+.main-category {
+    width: 1220px;
+}
+.form-group input, .form-group textarea, .form-group select {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border: none;
+    background-color: #333;
+    color: #e0e0e0;
+}
+
+button {
+    background-color: #ff9800;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+
+/* Dropdown personalizado */
+/* Dropdown personalizado (estilo aprimorado) */
+.custom-dropdown {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+    font-family: 'Fredoka', sans-serif;
+}
+
+.dropdown-button {
+    background-color: #333;
+    color: #e0e0e0;
+    padding: 12px 20px;
+    font-size: 18px;
+    border: none;
+    width: 1220px;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.dropdown-content label {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    font-size: 18px; /* Aumentar o tamanho da fonte */
+    color: #e0e0e0;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+.dropdown-content label input {
+    margin-right: 10px; /* Espaçamento entre a caixa de seleção e o texto */
+    transform: scale(1.2); /* Aumentar o tamanho da caixa de seleção */
+}
+.dropdown-content label:hover {
+    background-color: #444;
+}
+.dropdown-button:hover {
+    background-color: #444;
+}
+
+.dropdown-button::after {
+    content: '▼';
+    font-size: 14px;
+    color: #e0e0e0;
+    margin-left: 10px;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #2a2a2a;
+    width: 100%;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    z-index: 1;
+    margin-top: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+.no-style-link {
+  text-decoration: none;  /* Remove o sublinhado */
+  color: inherit;  /* Mantém a cor do texto inalterada */
+}
+nav {
+  display: flex;
+  justify-content: center;
+  flex-grow: 1; /* Permite que o 'nav' ocupe o espaço disponível */
+}
+.no-style-link:hover {
+  color: inherit;  /* Não altera a cor ao passar o mouse */
+}
+.dropdown-content label {
+    display: block;
+    padding: 10px;
+    font-size: 16px;
+    color: #e0e0e0;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.dropdown-content label:hover {
+    background-color: #444;
+}
+
+.custom-dropdown.active .dropdown-content {
+    display: block;
+}
+
+
+footer {
+    background-color: #1e1e1e;
+    color: #ffffff;
+    text-align: center;
+    padding: 10px;
+    position: relative;
+    bottom: 0;
+    width: 100%;
+}
+
+.form-group textarea {
+    resize: vertical; /* Permite redimensionar verticalmente */
+}
+#username-display {
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+}
+
+#logout-btn{
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  
+}
+.popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.popup-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  width: 300px;
+  text-align: center;
+}
+
+#close-popup-btn {
+  margin-top: 15px;
+  padding: 10px 20px;
+  border: none;
+  background-color: #333;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+}
