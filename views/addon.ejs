@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= addon.name %></title>
+  <link rel="stylesheet" href="/style-doaddon.css">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <img src="/logo.png" alt="Logo Addon" />
+      <a href="https://www.youtube.com/@VatonageYT" target="_blank" class="no-style-link">
+        <span>vatonage</span>
+      </a>
+    </div>
+    <nav>
+      <a href="/site.html" class="home">Home</a>
+      <a href="/create.html" class="create">Create</a>
+    </nav>
+    <div class="cta">
+      <span id="username-display" class="username-display">Login</span>
+      <button id="logout-btn" style="display:none;">Logout</button>
+    </div>
+  </header>
+
+  <!-- Container principal do Addon -->
+  <div class="addon-container">
+    <!-- Imagem do Addon -->
+    <div class="addon-image">
+      <img src="/<%= addon.image %>" alt="<%= addon.name %>" />
+    </div>
+
+    <!-- Detalhes do Addon -->
+    <div class="addon-details">
+      <h1><%= addon.name %></h1>
+      <p>By <%= addon.author %></p>
+      <p>Category: <%= addon.category || 'N/A' %></p>
+      <p><span><%= addon.downloads %> Downloads</span></p>
+      <p class="views"><%= addon.views %> Views</p> <!-- Exibindo as visualizações -->
+      <button class="like-btn" data-id="<%= addon._id %>">
+        <i class="fas fa-thumbs-up"></i> Like
+      </button>
+      <span class="like-count"><%= addon.likes %></span> <!-- Exibindo os likes -->
+      <div class="social-icons">
+        <a href="#"><i class="fab fa-youtube"></i></a>
+        <a href="#"><i class="fab fa-tiktok"></i></a>
+        <a href="#"><i class="fab fa-instagram"></i></a>
+        <a href="#"><i class="fab fa-twitch"></i></a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conteúdo das abas e descrição -->
+  <div class="content-wrapper">
+    <div class="main-container">
+      <div class="tab-and-content">
+        <div class="tabs">
+          <button class="active" onclick="showTab('description')">Description</button>
+          <button onclick="showTab('comments')">Comments</button>
+          <button onclick="showTab('download')">Download</button>
+        </div>
+
+        <div id="description" class="tab-content">
+          <p><%- addon.description %></p>
+        </div>
+
+        <div id="comments" class="tab-content" style="display:none;">
+          <h2>Comments</h2>
+          <p>Aqui serão exibidos os comentários dos usuários.</p>
+        </div>
+
+        <div id="download" class="tab-content" style="display:none;">
+          <h2>Download Addon</h2>
+          <!-- Botão de Download que incrementa o contador -->
+          <a href="/download/<%= addon._id %>">
+            <button>Download Addon</button>
+          </a>
+        </div>
+      </div>
+
+      <div class="additional-info">
+        <h3>About Project</h3>
+        <p><strong>Release:</strong> <%= new Date(addon.releaseDate).toLocaleDateString() %></p>
+        <p><strong>Last Update:</strong> <%= new Date(addon.lastUpdate).toLocaleDateString() %></p>        
+        <p><strong>Version:</strong> <%= addon.version || '1.0' %></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <p>© 2024 Addon Showcase. All rights reserved.</p>
+    <a href="https://x.com/vatonage1">Twitter</a>
+    <a href="#">Discord</a>
+  </footer>
+
+  <script>
+    // Função para alternar entre as abas
+    function showTab(tabName) {
+      var i, tabcontent, tablinks;
+      tabcontent = document.getElementsByClassName("tab-content");
+      for (i = 0; i < tabcontent.length; i++) {
+          tabcontent[i].style.display = "none";
+      }
+      tablinks = document.getElementsByTagName("button");
+      for (i = 0; i < tablinks.length; i++) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+      }
+      document.getElementById(tabName).style.display = "block";
+      event.currentTarget.className += " active";
+    }
+
+    // Mostrar aba de descrição por padrão
+    document.addEventListener("DOMContentLoaded", function() {
+      showTab('description');
+    });
+
+    // Exibir nome do usuário e gerenciar logout
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+
+    const username = getCookie('username');
+    const usernameDisplay = document.getElementById('username-display');
+    const logoutBtn = document.getElementById('logout-btn');
+
+    if (username) {
+      usernameDisplay.innerHTML = `Hello, ${username}!`;
+      logoutBtn.style.display = 'inline';
+      usernameDisplay.disabled = true;
+    } else {
+      usernameDisplay.innerHTML = 'Login';
+      logoutBtn.style.display = 'none';
+      usernameDisplay.addEventListener('click', () => {
+        window.location.href = '/index.html';  // Redireciona para a página de login
+      });
+    }
+
+    logoutBtn.addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        document.cookie = 'username=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+        if (response.redirected) {
+          window.location.href = response.url;
+        }
+      } catch (error) {
+        console.error('Erro ao fazer logout:', error);
+      }
+    });
+
+    // Função para configurar o botão de like
+    document.querySelector('.like-btn').addEventListener('click', async (event) => {
+      const addonId = event.currentTarget.getAttribute('data-id');
+
+      try {
+        const response = await fetch(`/addon/${addonId}/like`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        const data = await response.json();
+
+        if (data.message) {
+          alert(data.message);
+
+          // Atualiza a contagem de likes na página
+          const likeCount = document.querySelector('.like-count');
+          likeCount.textContent = data.likes;
+        }
+      } catch (error) {
+        console.error('Erro ao gerenciar likes:', error);
+      }
+    });
+  </script>
+</body>
+</html>
