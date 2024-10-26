@@ -50,7 +50,7 @@ nav ul li a.home {
   text-decoration: none;
   font-size: 20px;
   margin-right: 20px; /* Margem padrão entre todos os links */
-  margin-left: 150px;
+  margin-left: 10px;
   position: relative;
   font-family: 'Fredoka', sans-serif;
 }
@@ -82,8 +82,8 @@ nav ul li a:hover {
   position: relative;
   height: 800px;
   background-color: #222;
-width: 1300px;
-margin-left: 425px;
+width: 1600px;
+margin-left: 130px;
 }
 
 .carousel-container {
@@ -132,8 +132,7 @@ margin-left: 425px;
   padding: 10px;
   margin-top: 20px; /* Adicionar espaçamento superior */
   border-radius: 5px;
-  max-width: 1500px; /* Limitar largura */
-  margin-left: 100px;
+  max-width: 1300px; /* Limitar largura */
   margin-bottom: 10px; /* Mantém espaço entre a barra de pesquisa e o dropdown */
 }
 /* Botão de Categorias */
@@ -175,7 +174,7 @@ margin-left: 425px;
   padding: 10px;
   margin-left: 5px;
   cursor: pointer;
-  width: 60px;
+  width: 150px;
   height: 59px;
 }
 
@@ -188,8 +187,8 @@ margin-left: 425px;
   display: grid;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 20px; /* Espaço entre os addons */
-  margin-left: 80px;
+  gap: 10px; /* Espaço entre os addons */
+  margin-left: 110px;
 }
 
 .addon-card {
@@ -596,7 +595,7 @@ button.opener {
 
   .addon-card {
     width: 30%;
-    width: 600px;
+    width: 500px;
   }
 
   .search-container {
