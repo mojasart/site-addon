@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Addon Showcase</title>
+        <link rel="stylesheet" href="style-doaddon.css">
+        <!-- Link da fonte Fredoka do Google Fonts -->
+        <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400&display=swap" rel="stylesheet">
+      </head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <img src="logo.png" alt="Logo Addon" />
+      <a href="https://www.youtube.com/@VatonageYT" target="_blank" class="no-style-link">
+        <span>vatonage</span>
+    </div>
+    <nav>
+      <a href="/site.html" class="home">Home</a>
+      <a href="/create.html" class="create">Create</a>
+    </nav>
+    <div class="cta">
+      <span id="username-display" class="username-display">Login</span>
+      <button id="logout-btn" style="display:none;">Logout</button>
+  </div>
+  </header>
+
+  <!-- Container principal do Addon -->
+  <div class="addon-container">
+    <!-- Imagem do Addon -->
+    <div class="addon-image">
+      <img src="addon1.jpg" alt="Imagem do Addon" />
+    </div>
+
+    <!-- Detalhes do Addon -->
+    <div class="addon-details">
+      <h1>Lethal Craft</h1>
+      <p>By JuliusScizzor</p>
+      <p>Category: Horror</p>
+      <p><span>23K Downloads</span></p>
+      <div class="social-icons">
+        <a href="#"><i class="fab fa-youtube"></i></a>
+        <a href="#"><i class="fab fa-tiktok"></i></a>
+        <a href="#"><i class="fab fa-instagram"></i></a>
+        <a href="#"><i class="fab fa-twitch"></i></a>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-wrapper">
+    <!-- Container principal que irá conter as abas e as informações adicionais -->
+    <div class="main-container">
+      <!-- Conteúdo principal: tabs e descrição -->
+      <div class="tab-and-content">
+        <div class="tabs">
+          <button class="active" onclick="showTab('description')">Description</button>
+          <button onclick="showTab('comments')">Comments</button>
+          <button onclick="showTab('download')">Download</button>
+        </div>
+  
+        <!-- Conteúdo das Tabs -->
+        <div id="description" class="tab-content">
+          <h2>An interesting horror map for you...</h2>
+          <p>This is a Minecraft Bedrock map for v1.21.30+
+            LethalCraft brings the terrifyingly funny experience of the hit co-op survival horror game Lethal Company by Zeekerss into Minecraft. The goal was to try to re-create the actual game as close as we could in the bounds of Minecraft Bedrock addons. This map features Proximity Chat on Minecraft Bedrock Edition, using SineVector’s VoiceCraft.</p>
+        </div>
+  
+        <div id="comments" class="tab-content" style="display:none;">
+          <h2>Comentários</h2>
+          <p>Aqui serão exibidos os comentários dos usuários.</p>
+        </div>
+  
+        <div id="download" class="tab-content" style="display:none;">
+          <h2>Baixar Addon</h2>
+          <button>Download</button>
+        </div>
+      </div>
+  
+      <!-- Container de informações adicionais -->
+      <div class="additional-info">
+        <h3>About Project</h3>
+        <p><strong>Release:</strong> 12/09/2023</p>
+        <p><strong>Last Update:</strong> 20/09/2023</p>
+        <p><strong>Version:</strong> 1.4.2</p>
+        <p><strong>Author:</strong> ramcor</p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Footer -->
+  <footer>
+    <p>© 2024 Addon Showcase. All rights reserved.</p>
+    <a href="https://x.com/vatonage1">Twitter</a>
+    <a href="#">Discord</a>
+  </footer>
+  <script>
+    // Função para obter o valor de um cookie pelo nome
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+
+    // Recupera o nome do usuário do cookie e exibe na página
+    const username = getCookie('username');
+    const usernameDisplay = document.getElementById('username-display');
+    const logoutBtn = document.getElementById('logout-btn');
+    
+    if (username) {
+        usernameDisplay.innerHTML = `Hello, ${username}!`;
+        logoutBtn.style.display = 'inline';
+    } else {
+        usernameDisplay.innerHTML = 'Login';
+        logoutBtn.style.display = 'none';
+        // Transforme o "Login" em um botão que redireciona para a página de login
+        usernameDisplay.addEventListener('click', () => {
+            window.location.href = '/index.html';
+        });
+    }
+
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+
+                // Remove o cookie de autenticação
+                document.cookie = 'username=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+
+                if (response.redirected) {
+                    window.location.href = response.url;  // Redireciona para a página de login
+                }
+            } catch (error) {
+                console.error('Erro ao fazer logout:', error);
+            }
+        });
+    }
+</script>
+
+  <script src="script-pagina.js"></script>
+</body>
+</html>

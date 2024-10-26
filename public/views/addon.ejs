@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= addon.name %></title>
+  <link rel="stylesheet" href="/style-doaddon.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <img src="/logo.png" alt="Logo Addon" />
+      <a href="https://www.youtube.com/@VatonageYT" target="_blank" class="no-style-link">
+        <span>vatonage</span>
+      </a>
+    </div>
+    <nav>
+      <a href="/site.html" class="home">Home</a>
+      <a href="/create.html" class="create">Create</a>
+    </nav>
+    <div class="cta">
+      <span id="username-display" class="username-display">Login</span>
+      <button id="logout-btn" style="display:none;">Logout</button>
+    </div>
+  </header>
+
+  <!-- Container principal do Addon -->
+  <div class="addon-container">
+    <!-- Imagem do Addon -->
+    <div class="addon-image">
+      <img src="/<%= addon.image %>" alt="<%= addon.name %>" />
+    </div>
+
+    <!-- Detalhes do Addon -->
+    <div class="addon-details">
+      <h1><%= addon.name %></h1>
+      <p>By <%= addon.author %></p>
+      <p>Category: <%= addon.category || 'N/A' %></p>
+      <p><span>  <i class="fas fa-download"></i> <%= addon.downloads %></span></p>
+      <p class="views"><i class="fas fa-eye"></i>  <%= addon.views %></p> <!-- Exibindo as visualizações -->
+      <button class="like-btn" data-id="<%= addon._id %>">
+        <i class="fas fa-heart"></i>
+        <span class="like-count"><%= addon.likes %></span>
+      </button>
+      <!-- Exibindo os likes -->
+    </div>
+  </div>
+
+  <!-- Conteúdo das abas e descrição -->
+  <div class="content-wrapper">
+    <div class="main-container">
+      <div class="tab-and-content">
+        <div class="tabs">
+          <button class="active" onclick="showTab('description', event)">Description</button>
+          <button onclick="showTab('comments', event)">Comments</button>
+          <button onclick="showTab('download', event)">Download</button>
+        </div>
+
+        <div id="description" class="tab-content">
+          <p><%- addon.description %></p>
+        </div>
+
+        <div id="comments" class="tab-content" style="display:none;">
+          <h2>Comments</h2>
+
+          <!-- Formulário de Comentário -->
+          <form id="commentForm">
+            <textarea id="commentText" placeholder="Write your comment here..." required></textarea>
+            <button type="submit">Post Comment</button>
+          </form>
+
+          <!-- Exibição de Comentários -->
+          <div id="comment-section">
+            <!-- Aqui os comentários serão inseridos dinamicamente via JavaScript -->
+          </div>
+        </div>
+
+        <div id="download" class="tab-content" style="display:none;">
+          <h2>Download Addon</h2>
+          <!-- Botão de Download que incrementa o contador -->
+          <a href="/download/<%= addon._id %>">
+            <button>Download Addon</button>
+          </a>
+        </div>
+      </div>
+
+      <div class="additional-info">
+        <h3>About Project</h3>
+        <p><strong>Release:</strong> <%= new Date(addon.releaseDate).toLocaleDateString() %></p>
+        <p><strong>Last Update:</strong> <%= new Date(addon.lastUpdate).toLocaleDateString() %></p>        
+        <p><strong>Version:</strong> <%= addon.version || '1.0' %></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+
+
+  <script>
+    // Função para alternar entre as abas
+// Função para alternar entre as abas
+function showTab(tabName, event) {
+  var i, tabcontent, tablinks;
+  tabcontent = document.getElementsByClassName("tab-content");
+
+  // Esconde todas as abas
+  for (i = 0; i < tabcontent.length; i++) {
+    tabcontent[i].style.display = "none";
+  }
+
+  tablinks = document.getElementsByTagName("button");
+
+  // Remove a classe 'active' de todos os botões
+  for (i = 0; i < tablinks.length; i++) {
+    tablinks[i].className = tablinks[i].className.replace(" active", "");
+  }
+
+  // Exibe a aba correspondente
+  document.getElementById(tabName).style.display = "block";
+
+  // Se o evento estiver disponível, adicione a classe 'active'
+  if (event && event.currentTarget) {
+    event.currentTarget.className += " active";
+  }
+
+  // Carregar os comentários quando a aba "comments" for clicada
+  if (tabName === 'comments') {
+    const addonId = '<%= addon._id %>';  // ID do Addon
+    fetchComments(addonId);  // Chama a função para buscar os comentários
+  }
+}
+
+    // Mostrar aba de descrição por padrão
+    document.addEventListener("DOMContentLoaded", function() {
+      showTab('description');
+    });
+
+    // Exibir nome do usuário e gerenciar logout
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+
+    const username = getCookie('username');
+    const usernameDisplay = document.getElementById('username-display');
+    const logoutBtn = document.getElementById('logout-btn');
+
+    if (username) {
+      usernameDisplay.innerHTML = `Hello, ${username}!`;
+      logoutBtn.style.display = 'inline';
+      usernameDisplay.disabled = true;
+      usernameDisplay.addEventListener('click', () => {
+        window.location.href = '/account/account.html';  // Redireciona para a página da conta do usuário
+      });
+    } else {
+      usernameDisplay.innerHTML = 'Login';
+      logoutBtn.style.display = 'none';
+      usernameDisplay.addEventListener('click', () => {
+        window.location.href = '/index.html';  // Redireciona para a página de login
+      });
+    }
+
+    logoutBtn.addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        document.cookie = 'username=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+        if (response.redirected) {
+          window.location.href = response.url;
+        }
+      } catch (error) {
+        console.error('Erro ao fazer logout:', error);
+      }
+    });
+
+    // Função para configurar o botão de like
+    document.querySelector('.like-btn').addEventListener('click', async (event) => {
+      const addonId = event.currentTarget.getAttribute('data-id');
+
+      try {
+        const response = await fetch(`/addon/${addonId}/like`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        const data = await response.json();
+
+        if (data.message) {
+          alert(data.message);
+
+          // Atualiza a contagem de likes na página
+          const likeCount = document.querySelector('.like-count');
+          likeCount.textContent = data.likes;
+
+          // Animação de 'like' (pulsar)
+          const heartIcon = event.currentTarget.querySelector('i');
+          heartIcon.classList.add('pulse');
+          setTimeout(() => heartIcon.classList.remove('pulse'), 300);
+        }
+      } catch (error) {
+        console.error('Erro ao gerenciar likes:', error);
+      }
+    });
+
+    // Função para buscar e exibir comentários
+    async function fetchComments(addonId) {
+  try {
+    const response = await fetch(`/comments/${addonId}`);
+    const comments = await response.json();
+
+    const commentSection = document.getElementById('comment-section');
+    commentSection.innerHTML = ''; // Limpar os comentários antes de carregar novos
+
+    if (comments.length === 0) {
+      commentSection.innerHTML = '<p>No comments yet. Be the first to comment!</p>';
+    } else {
+      comments.forEach(comment => {
+        const commentDiv = document.createElement('div');
+        commentDiv.classList.add('comment');
+        commentDiv.innerHTML = `
+          <p><strong>${comment.username}</strong> said:</p>
+          <p>${comment.comment}</p>
+          <small>${new Date(comment.date).toLocaleString()}</small>
+        `;
+        commentSection.appendChild(commentDiv);
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching comments:', error);
+  }
+}
+
+
+    // Função para enviar o comentário
+    document.getElementById('commentForm').addEventListener('submit', async function (e) {
+  e.preventDefault();  // Prevenir o comportamento padrão de enviar o formulário
+  
+  const commentText = document.getElementById('commentText').value;
+  const addonId = '<%= addon._id %>';  // ID do Addon passado do EJS
+  const username = getCookie('username');  // Nome do usuário logado
+
+  if (!username) {
+    alert('You must be logged in to comment.');
+    return;
+  }
+
+  if (!commentText.trim()) {
+    alert('Please enter a valid comment.');
+    return;
+  }
+
+  try {
+    const response = await fetch('/comment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        addonId,
+        username,
+        comment: commentText
+      })
+    });
+
+    if (response.ok) {
+      document.getElementById('commentText').value = '';  // Limpa o campo de comentário
+      fetchComments(addonId);  // Atualiza os comentários após o envio
+    } else {
+      const errorData = await response.json();
+      alert(`Error: ${errorData.message}`);
+    }
+  } catch (error) {
+    console.error('Error posting comment:', error);
+  }
+});
+
+
+
+    // Carregar os comentários ao carregar a aba de comentários
+    document.addEventListener("DOMContentLoaded", function() {
+      const addonId = '<%= addon._id %>';  // ID do Addon
+      fetchComments(addonId);  // Chama a função para buscar os comentários
+    });
+  </script>
+</body>
+</html>

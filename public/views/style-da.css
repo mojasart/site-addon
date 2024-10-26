@@ -1,0 +1,150 @@
+body {
+    background-color: #181818;
+    color: #e0e0e0;
+    font-family: 'Fredoka', sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+  
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #1a1a1a;
+    color: white;
+  }
+  
+  .logo {
+    display: flex;
+    align-items: center;
+  }
+  
+  .logo img {
+    height: 30px;
+    margin-right: 10px;
+  }
+  
+  nav a {
+    color: white;
+    text-decoration: none;
+    margin-right: 30px;
+  }
+  
+  nav a:hover {
+    color: #03ddfa;
+  }
+  
+  .addon-container {
+    max-width: 1100px;
+    margin: 40px auto;
+    display: flex;
+    background-color: #1a1a1a;
+    padding: 20px;
+    border-radius: 10px;
+  }
+  
+  .addon-image {
+    width: 400px;
+    margin-right: 30px;
+  }
+  
+  .addon-image img {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+  }
+  
+  .addon-details h1 {
+    color: #fff;
+    font-size: 32px;
+    margin-bottom: 10px;
+  }
+  
+  .addon-details p {
+    margin-top: 15px;
+  }
+  
+  .social-icons a {
+    margin-right: 15px;
+    color: #fff;
+    font-size: 24px;
+  }
+  
+  .tabs {
+    margin-top: 30px;
+    display: flex;
+    border-bottom: 2px solid #333;
+  }
+  
+  .tabs button {
+    flex: 1;
+    background-color: transparent;
+    border: none;
+    padding: 15px;
+    font-size: 18px;
+    color: #fff;
+    cursor: pointer;
+  }
+  
+  .tabs button.active {
+    border-bottom: 2px solid #fff;
+  }
+  
+  .tab-content {
+    padding: 25px;
+    background-color: #181818;
+    margin-top: 20px;
+    border-radius: 10px;
+    color: #e0e0e0;
+  }
+  
+  .additional-info {
+    position: absolute; /* ou relative, dependendo da hierarquia */
+    top: 20px; /* ajuste conforme necessário */
+    right: 20px; /* ajuste conforme necessário */
+    width: 250px; /* definir uma largura fixa */
+    padding: 15px;
+    background-color: rgba(0, 0, 0, 0.8); /* fundo transparente com opacidade */
+    border-radius: 8px;
+}
+
+  
+  footer {
+    background-color: #1a1a1a;
+    padding: 20px;
+    text-align: center;
+    color: white;
+  }
+  
+  footer a {
+    color: #03ddfa;
+    text-decoration: none;
+    margin: 0 10px;
+  }
+  .like-btn {
+    background-color: #ff6600;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    transition: background-color 0.3s;
+  }
+  
+  .like-btn i {
+    margin-right: 5px;
+  }
+  
+  .like-btn:hover {
+    background-color: #e55d00;
+  }
+  
+  .like-count {
+    margin-left: 5px;
+    font-weight: bold;
+    color: #fff;
+  }
