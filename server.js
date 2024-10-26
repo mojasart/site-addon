@@ -450,6 +450,7 @@ app.use('/pagina-do-addon', express.static(path.join(__dirname, 'pagina-do-addon
 app.use('/account', express.static(path.join(__dirname, 'account')));
 app.use('/edit', express.static(path.join(__dirname, 'edit')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/public', express.static(path.join(__dirname, 'public')));
 
 // Servir páginas e scripts específicos
 app.get('/create.html', (req, res) => {
