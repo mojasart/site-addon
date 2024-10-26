@@ -19,7 +19,7 @@ if (username) {
 
   // Redireciona para a página de conta ao clicar no nome
   usernameDisplay.addEventListener('click', () => {
-      window.location.href = '/account/account.html';  // Redireciona para a página de conta
+      window.location.href = '/public/account.html';  // Redireciona para a página de conta
   });
 } else {
   // Caso o usuário não esteja logado, exibe "Login"
@@ -28,7 +28,7 @@ if (username) {
 
   // Redireciona para a página de login quando clicar em "Login"
   usernameDisplay.addEventListener('click', () => {
-      window.location.href = '/index.html';  // Redireciona para a página de login
+      window.location.href = '/public/index.html';  // Redireciona para a página de login
   });
 }
 
