@@ -445,7 +445,6 @@ app.get('/', (req, res) => {
 
 // Servir arquivos estáticos
 app.use('/login', express.static(path.join(__dirname, 'login')));
-app.use('/public', express.static(path.join(__dirname, 'public')));
 app.use('/create-an-addon', express.static(path.join(__dirname, 'create-an-addon')));
 app.use('/pagina-do-addon', express.static(path.join(__dirname, 'pagina-do-addon')));
 app.use('/account', express.static(path.join(__dirname, 'account')));
