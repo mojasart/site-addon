@@ -19,7 +19,7 @@ if (username) {
 
   // Redireciona para a página de conta ao clicar no nome
   usernameDisplay.addEventListener('click', () => {
-      window.location.href = '/public/account.html';  // Redireciona para a página de conta
+      window.location.href = '/account/account.html';  // Redireciona para a página de conta
   });
 } else {
   // Caso o usuário não esteja logado, exibe "Login"
@@ -28,7 +28,7 @@ if (username) {
 
   // Redireciona para a página de login quando clicar em "Login"
   usernameDisplay.addEventListener('click', () => {
-      window.location.href = '/public/index.html';  // Redireciona para a página de login
+      window.location.href = '/login/index.html';  // Redireciona para a página de login
   });
 }
 
@@ -181,7 +181,7 @@ function setupLikeButtons() {
       if (!isUserLoggedIn()) {
         // Exibe um alerta e redireciona para a página de login se o usuário não estiver logado
         alert('Você precisa estar logado para dar um like.');
-        window.location.href = '/index.html'; // Redireciona para a página de login
+        window.location.href = '/login/index.html'; // Redireciona para a página de login
         return; // Interrompe a execução caso o usuário não esteja logado
       }
 
@@ -201,7 +201,7 @@ function setupLikeButtons() {
         if (response.status === 401) {
           // Redireciona para login se o usuário não estiver autenticado
           alert('Você precisa estar logado para curtir.');
-          window.location.href = '/index.html';
+          window.location.href = '/login/index.html';
           return;
         }
 
