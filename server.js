@@ -141,7 +141,7 @@ app.post('/api/auth/register', async (req, res) => {
     });
 
     // Enviar o email de verificação via Hotmail
-    const verificationLink = `http://localhost:4000/verify-email?token=${verificationToken}`;
+    const verificationLink = `https://site-addon-jqxs.vercel.app/verify-email?token=${verificationToken}`;
     await transporter.sendMail({
       from: 'vatonagevatonage@gmail.com', // O e-mail Hotmail que você configurou
       to: email,
