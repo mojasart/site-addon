@@ -9,7 +9,7 @@ if (registerForm) {
     const password = document.getElementById('password').value;
 
     try {
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch('https://site-addon-jqxs.vercel.app/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, password }),
@@ -33,7 +33,7 @@ if (loginForm) {
     const password = document.getElementById('login-password').value;
 
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('https://site-addon-jqxs.vercel.app/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
