@@ -253,13 +253,15 @@ footer {
 }
 
 .popup-content {
-  background-color: white;
+  background-color: black;
   padding: 20px;
   border-radius: 10px;
   width: 300px;
   text-align: center;
 }
-
+.popup-message{
+    color: black;
+}
 #close-popup-btn {
   margin-top: 15px;
   padding: 10px 20px;
