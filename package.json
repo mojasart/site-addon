@@ -19,6 +19,7 @@
     "mongoose": "^8.7.1",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.15",
+    "mongodb": "^4.10.0"  // Adicionando o MongoDB aqui
     "quill-image-resize-module": "^3.0.0"
   },
   "description": ""
