@@ -1,227 +1,285 @@
-import {
-  ROWS, COLS, CELL_W, BOARD_X, BOARD_Y, BOARD_RIGHT, BOARD_BOTTOM, MIN_VIEW_W, CORE_X,
-  START_BITS, PACKET_VALUE, SKY_PACKET_INTERVAL, cellAt, colX, rowY,
-} from './config.js';
-import { DEFENDERS } from './data/defenders.js';
-import { LEVELS } from './data/levels.js';
-import { Defender } from './entities/Defender.js';
-import { Enemy } from './entities/Enemy.js';
+import { VIEW_H, MIN_VIEW_W, PANEL_W, START_MONEY, START_LIVES, MAX_SPEED } from './config.js';
+import { MAP } from './data/map.js';
+import { ROUNDS } from './data/rounds.js';
+import { TOWERS, TARGET_MODES } from './data/towers.js';
+import { Path } from './core/Path.js';
+import { Tower } from './entities/Tower.js';
 import { Projectile } from './entities/Projectile.js';
 import { Packet } from './entities/Packet.js';
-import { Backup } from './entities/Backup.js';
-import { WaveDirector } from './systems/WaveDirector.js';
+import { RoundManager } from './systems/RoundManager.js';
 import { Effects } from './systems/Effects.js';
-import { rand } from './util.js';
-import { drawBoard, drawCore, drawPlacementHints } from './render/board.js';
-import { drawHud, hudLayout, inRect } from './render/hud.js';
-import { drawBanner, drawOverlay } from './render/screens.js';
-import { drawDefender, drawEnemy, drawProjectile, drawPacket, drawBackup, drawTrash } from './render/sprites.js';
+import { MapRenderer, serverPos, layoutDecor, blocksTower } from './render/map.js';
+import { layout, inRect, drawHud, drawPanel, drawRange } from './render/ui.js';
+import { drawBanner, drawOverlay, screenButton } from './render/screens.js';
+import { drawTower, drawPips, drawEnemy, drawProjectile, drawCoin, drawServer, setPixelScale } from './render/sprites.js';
+import { rrect, fillOutline } from './render/canvas.js';
+
+const TOUCH_LIFT = 46; // ao arrastar com o dedo, a torre aparece acima dele
 
 export class Game {
   constructor({ debug = false } = {}) {
     this.debug = debug;
-    this.viewW = MIN_VIEW_W; // atualizado pelo main.js conforme a tela
     this.anim = 0; // relógio das animações (roda até no menu)
+    this.pixelScale = 1;
+    this.path = new Path(MAP.points, MAP.pathWidth);
+    this.mapRenderer = new MapRenderer();
     this.pointer = { x: -1, y: -1, down: false, type: 'touch' };
     this.drag = null;
-    this.load(0);
+    this.resize(MIN_VIEW_W, 1);
+    this.reset();
+    this.state = 'menu'; // menu | playing | paused | won | lost
   }
 
-  // ── Ciclo de vida ─────────────────────────────────────────
+  // Chamado pelo main.js quando a tela muda de tamanho
+  resize(viewW, pixelScale) {
+    this.viewW = viewW;
+    this.mapW = viewW - PANEL_W;
+    this.offsetX = Math.max(0, (this.mapW - MAP.width) / 2); // centraliza o mapa
+    this.pixelScale = pixelScale;
+    setPixelScale(pixelScale);
+    // inimigos nascem logo antes da borda esquerda visível
+    this.spawnDist = 0;
+    while (this.spawnDist < this.path.length && this.path.pointAt(this.spawnDist).x < -this.offsetX - 30) this.spawnDist += 2;
+    this.server = serverPos(this.path);
+    this.decor = layoutDecor(this);
+  }
 
-  load(levelIndex) {
-    this.levelIndex = levelIndex;
-    this.level = LEVELS[levelIndex];
-    this.state = 'menu'; // menu | playing | paused | won | lost
-    this.endDelay = 0;
-    this.bits = this.debug ? 5000 : (this.level.startBits ?? START_BITS);
-    this.cooldownMul = this.debug ? 0.1 : 1;
-    this.grid = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
-    this.defenders = [];
+  reset() {
+    this.money = this.debug ? 99999 : START_MONEY;
+    this.lives = START_LIVES;
+    this.towers = [];
     this.enemies = [];
+    this.newEnemies = [];
     this.projectiles = [];
     this.packets = [];
-    this.backups = Array.from({ length: ROWS }, (_, r) => new Backup(r));
-    this.cooldowns = Object.fromEntries(this.level.defenders.map((type) => [type, 0]));
-    this.selected = null; // id do defensor, 'shovel' ou null
-    this.skyTimer = 5;
-    this.director = new WaveDirector(this.level);
+    this.rounds = new RoundManager(ROUNDS);
     this.fx = new Effects();
+    this.speed = 1;
+    this.placing = null; // tipo de torre sendo posicionada
+    this.selectedTower = null;
     this.banner = null;
-    this.stats = { kills: 0 };
+    this.hurt = 0;
+    this.endDelay = 0;
+    this.stats = { pops: 0 };
   }
 
   start() {
+    this.reset();
     this.state = 'playing';
-    this.showBanner(this.level.name, 2.5, '#3dd6ff');
   }
 
   pause() {
-    if (this.state !== 'playing') return;
-    this.state = 'paused';
-    this.drag = null;
+    if (this.state === 'playing') {
+      this.state = 'paused';
+      this.drag = null;
+    }
   }
 
   end(won) {
     this.state = won ? 'won' : 'lost';
-    this.endDelay = 1; // evita reiniciar sem querer com um toque atrasado
-    this.selected = null;
+    this.endDelay = 0.8; // evita reiniciar com um toque atrasado
+    this.placing = null;
+    this.selectedTower = null;
     this.drag = null;
   }
 
-  showBanner(text, duration = 2.5, color = '#ffffff') {
-    this.banner = { text, color, time: duration, total: duration };
+  showBanner(text, duration = 1.2, color = '#ffffff', size = 46) {
+    this.banner = { text, color, size, time: duration, total: duration };
   }
 
   // ── Atualização ───────────────────────────────────────────
 
   update(dt) {
     this.anim += dt;
-    if (this.state !== 'paused') this.fx.update(dt);
+    if (this.state === 'paused') return;
+    this.endDelay = Math.max(0, this.endDelay - dt);
+    this.hurt = Math.max(0, this.hurt - dt);
+    if (this.banner && (this.banner.time -= dt) <= 0) this.banner = null;
     if (this.state !== 'playing') {
-      this.endDelay = Math.max(0, this.endDelay - dt);
+      this.fx.update(dt);
       return;
     }
-
-    for (const type in this.cooldowns) this.cooldowns[type] = Math.max(0, this.cooldowns[type] - dt);
-
-    this.skyTimer -= dt;
-    if (this.skyTimer <= 0) {
-      this.skyTimer = SKY_PACKET_INTERVAL + rand(-2, 2);
-      this.spawnSkyPacket();
+    // acelerado (2x/3x) roda em passos pequenos pra colisão não falhar
+    let remaining = dt * (this.rounds.active ? this.speed : 1);
+    while (remaining > 1e-6 && this.state === 'playing') {
+      const step = Math.min(remaining, 1 / 60);
+      remaining -= step;
+      this.step(step);
     }
+  }
 
-    this.director.update(dt, this);
-    for (const d of this.defenders) d.update(dt, this);
-    for (const e of this.enemies) e.update(dt, this);
+  step(dt) {
+    this.rounds.update(dt, this);
+    this.flushSpawns();
+    for (const t of this.towers) t.update(dt, this);
+    this.flushSpawns();
     for (const p of this.projectiles) p.update(dt, this);
-    for (const b of this.backups) b.update(dt, this);
+    this.flushSpawns();
+    for (const e of this.enemies) if (!e.dead) e.update(dt, this);
     for (const p of this.packets) p.update(dt);
+    this.fx.update(dt);
 
-    // limpeza
-    this.defenders = this.defenders.filter((d) => {
-      if (!d.dead) return true;
-      if (this.grid[d.row][d.col] === d) this.grid[d.row][d.col] = null;
-      return false;
-    });
     this.enemies = this.enemies.filter((e) => !e.dead);
     this.projectiles = this.projectiles.filter((p) => !p.dead);
     this.packets = this.packets.filter((p) => !p.dead);
-
-    if (this.banner) {
-      this.banner.time -= dt;
-      if (this.banner.time <= 0) this.banner = null;
+    if (this.towers.some((t) => t.dead)) {
+      this.towers = this.towers.filter((t) => !t.dead);
+      if (this.selectedTower?.dead) this.selectedTower = null;
     }
 
-    if (this.enemies.some((e) => e.x <= CORE_X)) this.end(false);
-    else if (this.director.finished && this.enemies.length === 0) this.end(true);
+    if (this.lives <= 0) this.end(false);
   }
 
-  // ── Consultas usadas pelas entidades ──────────────────────
-
-  hasEnemyAhead(row, x) {
-    return this.enemies.some((e) => !e.dead && e.row === row && e.x > x - 10 && e.x < BOARD_RIGHT + 25);
+  // Filhos de vírus estourados entram na lista só entre etapas
+  flushSpawns() {
+    if (this.newEnemies.length === 0) return;
+    for (const e of this.newEnemies) if (!e.dead) this.enemies.push(e);
+    this.newEnemies.length = 0;
   }
 
-  enemyNear(row, x, range) {
-    return this.enemies.some((e) => !e.dead && e.row === row && Math.abs(e.x - x) < range);
+  leak(enemy) {
+    this.lives -= enemy.threat;
+    this.hurt = 0.4;
+    buzz(40);
+    this.fx.text(this.server.x, this.server.y - 50, `-${enemy.threat}`, '#ff5a6a', 26);
   }
 
-  // Inimigo mais à esquerda que o projétil está tocando
-  enemyHitBy(p) {
+  onRoundEnd() {
+    const bonus = 100 + this.rounds.index;
+    this.money += bonus;
+    this.fx.text(150 - this.offsetX, 110, `+$${bonus} bônus`, '#ffd23f', 20);
+    if (this.rounds.finished) this.end(true);
+  }
+
+  playPressed() {
+    if (this.rounds.active) {
+      this.speed = (this.speed % MAX_SPEED) + 1;
+      return;
+    }
+    if (this.rounds.start()) {
+      for (const t of this.towers) t.onRoundStart();
+      this.showBanner(`RODADA ${this.rounds.index + 1}`, 1.1);
+    }
+  }
+
+  // ── Consultas usadas pelas torres ─────────────────────────
+
+  isVisible(e) {
+    return e.x > -this.offsetX - 5;
+  }
+
+  findTarget(tower) {
+    const s = tower.stats;
     let best = null;
+    let bestScore = -Infinity;
     for (const e of this.enemies) {
-      if (e.dead || e.row !== p.row || e.x > BOARD_RIGHT + 60) continue;
-      if (Math.abs(e.x - p.x) < e.halfW + p.r && (!best || e.x < best.x)) best = e;
+      if (e.dead || !this.isVisible(e)) continue;
+      if (e.def.armored && !s.canHitArmored) continue;
+      const d = Math.hypot(e.x - tower.x, e.y - tower.y);
+      if (d > s.range + e.r) continue;
+      let score;
+      switch (tower.targetMode) {
+        case 'last': score = -e.dist; break;
+        case 'strong': score = e.threat * 10000 + e.dist; break;
+        case 'close': score = -d; break;
+        default: score = e.dist;
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        best = e;
+      }
     }
     return best;
   }
 
-  // Defensor que está na frente do inimigo (ele para e começa a corromper)
-  defenderBlocking(e) {
-    const front = e.x - e.halfW;
-    let best = null;
-    for (const d of this.defenders) {
-      if (d.dead || d.row !== e.row) continue;
-      if (front <= d.x + CELL_W * 0.3 && e.x >= d.x - CELL_W * 0.3 && (!best || d.x > best.x)) best = d;
-    }
-    return best;
+  enemiesInRange(x, y, range) {
+    return this.enemies
+      .filter((e) => !e.dead && this.isVisible(e) && Math.hypot(e.x - x, e.y - y) <= range + e.r)
+      .sort((a, b) => b.dist - a.dist);
   }
 
-  // ── Criação de entidades ──────────────────────────────────
-
-  spawnEnemy(type, row) {
-    this.enemies.push(new Enemy(type, row));
+  spawnEnemy(enemy) {
+    this.newEnemies.push(enemy);
   }
 
-  spawnProjectile(shooter) {
-    this.projectiles.push(new Projectile(shooter));
+  spawnProjectile(tower, angle) {
+    this.projectiles.push(new Projectile(tower, angle));
   }
 
   spawnPacket(x, y, value) {
-    this.packets.push(Packet.fromProducer(x, y, value));
+    this.packets.push(new Packet(x, y, value));
   }
 
-  spawnSkyPacket() {
-    const x = rand(BOARD_X + 30, BOARD_RIGHT - 30);
-    const targetY = rand(BOARD_Y + 30, BOARD_BOTTOM - 30);
-    this.packets.push(Packet.fromSky(x, targetY, PACKET_VALUE));
+  // ── Torres: colocar, selecionar, upgrade, vender ──────────
+
+  canPlace(type, x, y) {
+    const def = TOWERS[type];
+    const r = def.radius;
+    if (x - r < -this.offsetX || x + r > this.mapW - this.offsetX || y - r < 0 || y + r > VIEW_H) return false;
+    const d = this.path.distanceTo(x, y);
+    if (def.onPath ? d > this.path.width / 2 - 6 : d < this.path.width / 2 + r - 6) return false;
+    if (Math.hypot(x - this.server.x, y - this.server.y) < 44 + r) return false;
+    if (!def.onPath && this.decor.parts.some((p) => blocksTower(p, x, y, r))) return false;
+    return this.towers.every((t) => Math.hypot(t.x - x, t.y - y) >= t.r + r);
   }
 
-  // ── Ações do jogador ──────────────────────────────────────
-
-  canBuy(type) {
-    return this.cooldowns[type] <= 0 && this.bits >= DEFENDERS[type].cost;
-  }
-
-  place(type, row, col) {
-    if (this.grid[row][col] || !this.canBuy(type)) return false;
-    const def = DEFENDERS[type];
-    this.bits -= def.cost;
-    this.cooldowns[type] = def.cooldown * this.cooldownMul;
-    const d = new Defender(type, row, col);
-    this.grid[row][col] = d;
-    this.defenders.push(d);
-    this.fx.burst(d.x, d.y, '#3dd6ff', 12, 120, 0.4);
-    this.selected = null;
+  place(type, x, y) {
+    const def = TOWERS[type];
+    if (this.money < def.cost || !this.canPlace(type, x, y)) return false;
+    this.money -= def.cost;
+    const tower = new Tower(type, x, y);
+    if (this.rounds.active) tower.onRoundStart();
+    this.towers.push(tower);
+    this.fx.burst(x, y, '#ffffff', 14, 160, 0.35, 5);
+    buzz(12);
+    this.placing = null;
     return true;
   }
 
-  remove(row, col) {
-    const d = this.grid[row][col];
-    if (!d) return false;
-    d.dead = true;
-    this.grid[row][col] = null;
-    this.fx.burst(d.x, d.y, '#ff5d73', 14, 140, 0.5);
-    return true;
+  towerAt(x, y) {
+    let best = null;
+    for (const t of this.towers) if (Math.hypot(t.x - x, t.y - y) < t.r + 10) best = t;
+    return best;
   }
 
-  useSelectedOn(cell) {
-    if (this.selected === 'shovel') {
-      this.remove(cell.row, cell.col);
-      this.selected = null;
-    } else if (this.selected) {
-      this.place(this.selected, cell.row, cell.col);
+  buyUpgrade(tower) {
+    const up = tower.nextUpgrade;
+    if (!up) return;
+    if (this.money < up.cost) {
+      this.fx.text(tower.x, tower.y - 40, 'Sem bits!', '#ff7a8a', 18);
+      return;
     }
+    this.money -= up.cost;
+    tower.upgrade();
+    this.fx.burst(tower.x, tower.y, '#ffd23f', 20, 180, 0.5, 5);
+  }
+
+  sell(tower) {
+    this.money += tower.sellValue;
+    tower.dead = true;
+    this.towers = this.towers.filter((t) => t !== tower);
+    this.selectedTower = null;
+    this.fx.burst(tower.x, tower.y, '#ffd23f', 16, 160, 0.4, 5);
+    this.fx.text(tower.x, tower.y - 30, `+$${tower.sellValue}`, '#ffd23f', 20);
   }
 
   collectAt(x, y) {
     for (let i = this.packets.length - 1; i >= 0; i--) {
       const p = this.packets[i];
-      if (p.hit(x, y)) {
-        p.state = 'collected';
-        this.bits += p.value;
-        this.fx.text(p.x, p.y - 26, `+${p.value}`, '#ffd23f');
-        return true;
-      }
+      if (!p.hit(x, y)) continue;
+      p.state = 'collected';
+      p.target = { x: 30 - this.offsetX, y: 72 };
+      this.money += p.value;
+      this.fx.text(p.x, p.y - 24, `+$${p.value}`, '#ffd23f', 20);
+      return true;
     }
     return false;
   }
 
-  // ── Input (coordenadas já convertidas pro mundo do jogo) ──
+  // ── Input (coordenadas de tela já convertidas) ────────────
 
-  pointerDown(x, y, type = 'touch') {
-    Object.assign(this.pointer, { x, y, down: true, type });
+  pointerDown(sx, sy, type = 'touch') {
+    Object.assign(this.pointer, { x: sx, y: sy, down: true, type });
 
     if (this.state === 'menu') return this.start();
     if (this.state === 'paused') {
@@ -229,62 +287,82 @@ export class Game {
       return;
     }
     if (this.state === 'won' || this.state === 'lost') {
-      if (this.endDelay <= 0) {
-        this.load(this.levelIndex);
-        this.start();
+      if (this.endDelay <= 0 && inRect(screenButton(this), sx, sy)) this.start();
+      return;
+    }
+
+    const L = layout(this);
+    if (sx >= L.panel.x) return this.panelTap(sx, sy, L);
+    if (inRect(L.pause, sx, sy)) return this.pause();
+
+    const mx = sx - this.offsetX;
+    if (this.collectAt(mx, sy)) return;
+    if (this.placing) {
+      // decide no pointerUp: toque rápido coloca ali, arrastar ajusta a posição
+      this.drag = { type: this.placing, x: sx, y: sy, moved: false, fromMap: true };
+      return;
+    }
+    this.selectedTower = this.towerAt(mx, sy);
+  }
+
+  panelTap(sx, sy, L) {
+    if (inRect(L.play, sx, sy)) return this.playPressed();
+
+    const tw = this.selectedTower;
+    if (tw) {
+      if (inRect(L.close, sx, sy)) this.selectedTower = null;
+      else if (inRect(L.sell, sx, sy)) this.sell(tw);
+      else if (tw.def.targeting && inRect(L.target, sx, sy)) {
+        const i = TARGET_MODES.findIndex((m) => m.id === tw.targetMode);
+        tw.targetMode = TARGET_MODES[(i + 1) % TARGET_MODES.length].id;
+      } else {
+        tw.def.upgrades.forEach((_, i) => {
+          if (inRect(L.upgrades[i], sx, sy) && tw.level === i) this.buyUpgrade(tw);
+        });
       }
       return;
     }
 
-    // 1) pacotes têm prioridade sobre tudo
-    if (this.collectAt(x, y)) return;
-
-    // 2) HUD
-    const L = hudLayout(this);
-    if (inRect(L.pause, x, y)) return this.pause();
-    if (inRect(L.shovel, x, y)) return this.selectTool('shovel', x, y);
-    for (const c of L.cards) {
-      if (!inRect(c, x, y)) continue;
-      if (this.canBuy(c.type) || this.selected === c.type) this.selectTool(c.type, x, y);
-      else {
-        const why = this.cooldowns[c.type] > 0 ? 'Recarregando...' : 'Bits insuficientes';
-        this.fx.text(c.x + c.w / 2, c.y + c.h + 14, why, '#ff5d73');
+    for (const tile of L.tiles) {
+      if (!inRect(tile, sx, sy)) continue;
+      const def = TOWERS[tile.type];
+      const toggleOff = this.placing === tile.type;
+      if (!toggleOff && this.money < def.cost) {
+        this.fx.text(tile.x + tile.w / 2 - this.offsetX, tile.y + 30, 'Sem bits!', '#ff7a8a', 18);
+        return;
       }
+      this.placing = tile.type;
+      this.drag = { type: tile.type, x: sx, y: sy, moved: false, fromMap: false, toggleOff };
       return;
     }
-
-    // 3) tabuleiro
-    const cell = cellAt(x, y);
-    if (cell && this.selected) this.useSelectedOn(cell);
-    else this.selected = null;
   }
 
-  // Toque numa carta: seleciona e já prepara pra arrastar
-  selectTool(tool, x, y) {
-    const toggleOff = this.selected === tool;
-    this.selected = tool;
-    this.drag = { x, y, moved: false, toggleOff };
+  pointerMove(sx, sy, type = 'touch') {
+    Object.assign(this.pointer, { x: sx, y: sy, type });
+    const d = this.drag;
+    if (d && !d.moved && Math.hypot(sx - d.x, sy - d.y) > 10) d.moved = true;
+    // passar o dedo por cima também coleta os pacotes
+    if (this.pointer.down && !d && this.state === 'playing') this.collectAt(sx - this.offsetX, sy);
   }
 
-  pointerMove(x, y, type = 'touch') {
-    Object.assign(this.pointer, { x, y, type });
-    if (this.drag && !this.drag.moved && Math.hypot(x - this.drag.x, y - this.drag.y) > 12) this.drag.moved = true;
-    // passar o dedo por cima também coleta pacotes
-    if (this.pointer.down && !this.drag && this.state === 'playing') this.collectAt(x, y);
-  }
-
-  pointerUp(x, y) {
+  pointerUp(sx, sy) {
     this.pointer.down = false;
-    const drag = this.drag;
+    const d = this.drag;
     this.drag = null;
-    if (!drag || this.state !== 'playing') return;
-    if (drag.moved) {
-      const cell = cellAt(x, y);
-      if (cell && this.selected) this.useSelectedOn(cell);
-      else this.selected = null; // soltou fora do tabuleiro: cancela
-    } else if (drag.toggleOff) {
-      this.selected = null; // tocou de novo na mesma carta: desmarca
+    if (!d || this.state !== 'playing') return;
+    const overMap = sx < this.mapW;
+    if (d.moved) {
+      if (!overMap) this.placing = null; // soltou de volta no painel: cancela
+      else this.tryPlace(d.type, sx - this.offsetX, sy - (this.pointer.type === 'mouse' ? 0 : TOUCH_LIFT));
+    } else if (d.fromMap) {
+      this.tryPlace(d.type, sx - this.offsetX, sy);
+    } else if (d.toggleOff) {
+      this.placing = null;
     }
+  }
+
+  tryPlace(type, x, y) {
+    if (!this.place(type, x, y)) this.fx.text(x, y - 30, 'Aqui não dá!', '#ff7a8a', 18);
   }
 
   pointerCancel() {
@@ -292,112 +370,126 @@ export class Game {
     this.drag = null;
   }
 
+  // Onde a torre "fantasma" aparece enquanto escolhe o lugar
+  ghost() {
+    if (!this.placing || this.state !== 'playing') return null;
+    const p = this.pointer;
+    const dragging = this.drag?.moved;
+    if (!dragging && p.type !== 'mouse') return null;
+    if (p.x >= this.mapW) return null;
+    const lift = dragging && p.type !== 'mouse' ? TOUCH_LIFT : 0;
+    return { x: p.x - this.offsetX, y: p.y - lift };
+  }
+
   // ── Desenho ───────────────────────────────────────────────
 
   render(ctx) {
     const t = this.anim;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, this.mapW, VIEW_H);
+    ctx.clip();
+    this.mapRenderer.draw(ctx, this);
+    ctx.translate(this.offsetX, 0);
 
-    drawBoard(ctx, this);
-    drawCore(ctx, this);
-    drawPlacementHints(ctx, this);
+    ctx.save();
+    ctx.translate(this.server.x, this.server.y);
+    drawServer(ctx, t, this.hurt);
+    ctx.restore();
 
-    for (const b of this.backups) {
-      if (b.state === 'gone') continue;
-      ctx.save();
-      ctx.translate(b.x, b.y);
-      drawBackup(ctx, b.state === 'active', t);
-      ctx.restore();
-    }
+    const sel = this.selectedTower;
+    if (sel) drawRange(ctx, sel.x, sel.y, sel.stats.range);
 
-    const defenders = [...this.defenders].sort((a, b) => a.row - b.row);
-    for (const d of defenders) {
-      ctx.save();
-      ctx.translate(d.x + (d.hurt > 0 ? Math.sin(t * 70) * 1.5 : 0), d.y);
-      drawDefender(ctx, d.type, d.spriteState(t));
-      ctx.restore();
-      if (d.hp < d.maxHp) drawBar(ctx, d.x, d.y + 38, 50, d.hp / d.maxHp, 0, '#3dff9a');
-    }
+    // armadilhas ficam no chão, embaixo dos vírus
+    for (const tw of this.towers) if (tw.def.onPath) this.drawTowerAt(ctx, tw);
 
-    this.drawGhost(ctx, t);
-
-    // linhas de cima primeiro; na mesma linha, quem está mais à frente fica por cima
-    const enemies = [...this.enemies].sort((a, b) => a.row - b.row || b.x - a.x);
-    for (const e of enemies) {
+    for (const e of this.enemies) {
       ctx.save();
       ctx.translate(e.x, e.y);
-      drawEnemy(ctx, e.type, {
-        phase: e.phase,
-        eating: e.eating,
-        flash: e.flash,
-        slowed: e.slowed,
-        armor: e.armor > 0,
-        color: e.def.color,
-      });
+      drawEnemy(ctx, e);
       ctx.restore();
-      const total = e.maxHp + e.maxArmor;
-      if (e.hp + e.armor < total) drawBar(ctx, e.x, e.y - 46, 38, e.hp / total, e.armor / total, '#ff3b5c');
+      if (e.def.boss) drawBossBar(ctx, e);
+    }
+
+    const towers = this.towers.filter((tw) => !tw.def.onPath).sort((a, b) => a.y - b.y);
+    for (const tw of towers) this.drawTowerAt(ctx, tw);
+    if (sel) {
+      ctx.beginPath();
+      ctx.arc(sel.x, sel.y, sel.r + 8, 0, Math.PI * 2);
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
     }
 
     for (const p of this.projectiles) {
       ctx.save();
       ctx.translate(p.x, p.y);
-      drawProjectile(ctx, p.kind);
+      drawProjectile(ctx, p);
       ctx.restore();
     }
 
-    for (const p of this.packets) if (p.state !== 'collected') this.drawPacketAt(ctx, p, t);
-
     this.fx.draw(ctx);
+
+    const g = this.ghost();
+    if (g) {
+      const def = TOWERS[this.placing];
+      const valid = this.canPlace(this.placing, g.x, g.y) && this.money >= def.cost;
+      drawRange(ctx, g.x, g.y, def.range ?? 0, valid);
+      ctx.save();
+      ctx.globalAlpha = 0.85;
+      ctx.translate(g.x, g.y);
+      drawTower(ctx, this.placing, { t, angle: -Math.PI / 2 });
+      ctx.restore();
+    }
+    ctx.restore();
+
     drawHud(ctx, this);
-    for (const p of this.packets) if (p.state === 'collected') this.drawPacketAt(ctx, p, t);
-    this.drawDragPreview(ctx, t);
+
+    // pacotes por cima do HUD (os coletados voam até o contador)
+    ctx.save();
+    ctx.translate(this.offsetX, 0);
+    for (const p of this.packets) {
+      if (!p.visible) continue;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      drawCoin(ctx, p.state === 'collected' ? 11 : 15, p.spin);
+      ctx.restore();
+    }
+    ctx.restore();
+
+    drawPanel(ctx, this);
     drawBanner(ctx, this);
     drawOverlay(ctx, this);
   }
 
-  drawPacketAt(ctx, p, t) {
-    if (!p.visible) return;
+  drawTowerAt(ctx, tw) {
     ctx.save();
-    ctx.translate(p.x, p.y);
-    drawPacket(ctx, t + p.spin, p.state === 'collected' ? 12 : 16);
-    ctx.restore();
-  }
-
-  // "Fantasma" do defensor na célula sob o dedo/mouse
-  drawGhost(ctx, t) {
-    const sel = this.selected;
-    if (!sel || sel === 'shovel' || this.state !== 'playing') return;
-    if (!(this.drag?.moved || this.pointer.type === 'mouse')) return;
-    const cell = cellAt(this.pointer.x, this.pointer.y);
-    if (!cell || this.grid[cell.row][cell.col]) return;
-    ctx.save();
-    ctx.globalAlpha = 0.4;
-    ctx.translate(colX(cell.col), rowY(cell.row));
-    drawDefender(ctx, sel, { t, hpRatio: 1, armed: true });
-    ctx.restore();
-  }
-
-  // Enquanto arrasta no celular, mostra o item acima do dedo (pro dedo não tapar)
-  drawDragPreview(ctx, t) {
-    if (!this.drag?.moved || !this.selected) return;
-    ctx.save();
-    ctx.globalAlpha = 0.9;
-    ctx.translate(this.pointer.x, this.pointer.y - (this.pointer.type === 'mouse' ? 0 : 40));
-    ctx.scale(0.8, 0.8);
-    if (this.selected === 'shovel') drawTrash(ctx);
-    else drawDefender(ctx, this.selected, { t, hpRatio: 1, armed: true });
+    ctx.translate(tw.x, tw.y);
+    drawTower(ctx, tw.type, { t: tw.anim, angle: tw.angle, recoil: tw.recoil, pulse: tw.pulse });
+    drawPips(ctx, tw.level, tw.r);
     ctx.restore();
   }
 }
 
-function drawBar(ctx, cx, y, w, ratio, extra, color) {
-  const x = cx - w / 2;
-  ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.fillRect(x - 1, y - 1, w + 2, 6);
-  ctx.fillStyle = color;
-  ctx.fillRect(x, y, w * Math.max(0, ratio), 4);
-  if (extra > 0) {
-    ctx.fillStyle = '#cfd6e6';
-    ctx.fillRect(x + w * Math.max(0, ratio), y, w * extra, 4);
+// Vibraçãozinha no celular (Android). Onde não existe, não faz nada.
+function buzz(ms) {
+  try {
+    navigator.vibrate?.(ms);
+  } catch {
+    // sem vibração
+  }
+}
+
+function drawBossBar(ctx, e) {
+  const w = 76;
+  const x = e.x - w / 2;
+  const y = e.y - e.r - 26;
+  rrect(ctx, x, y, w, 12, 6);
+  fillOutline(ctx, '#2a1840', 3);
+  const k = Math.max(0, e.hp / e.def.hp);
+  if (k > 0) {
+    rrect(ctx, x + 2, y + 2, (w - 4) * k, 8, 4);
+    ctx.fillStyle = '#ff4d6d';
+    ctx.fill();
   }
 }
