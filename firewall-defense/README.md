@@ -24,6 +24,9 @@ python3 -m http.server 8080
 - **Arraste** uma defesa do painel até o mapa (ou toque nela e depois no mapa).
 - As defesas não vão no caminho, na água nem em cima dos componentes (chips, racks, coqueiros...).
 - O **Honeypot** só vai **em cima do caminho**.
+- Ao escolher uma defesa na loja ou tocar numa colocada, aparece uma **aba de informações** do lado do
+  mapa: o que ela faz, dano, alcance, recarga, se fura blindagem e o próximo upgrade. A alça do lado
+  recolhe e abre a aba (o jogo lembra a escolha).
 - Toque numa defesa colocada para ver **upgrades**, trocar o **alvo** ou **vender** (devolve 70%).
   O **alvo** (Hacker e Robô NMAP) alterna entre: primeiro, último, mais forte (o que tira mais vidas
   se chegar), mais vida (maior vida máxima), mais rápido e mais perto.

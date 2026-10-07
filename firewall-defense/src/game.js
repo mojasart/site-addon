@@ -15,6 +15,7 @@ import { MapView, blocksTower } from './render/maps/index.js';
 import { layout, drawHud, drawPanel, drawRange } from './render/ui.js';
 import { inRect } from './render/widgets.js';
 import { drawBanner, drawOverlay, overlayLayout } from './render/screens.js';
+import { drawInfoPanel, infoLayout } from './render/infoPanel.js';
 import { drawCharacter, drawPips } from './render/characters.js';
 import { drawEnemy } from './render/viruses.js';
 import { drawProjectile, drawCoin, drawServer } from './render/sprites.js';
@@ -502,6 +503,10 @@ export class Game {
     const L = layout(this);
     if (sx >= L.panel.x) return this.panelTap(sx, sy, L);
     if (inRect(L.pause, sx, sy)) return this.pause();
+    // aba de informações da defesa: a alça abre/recolhe; tocar na aba não mexe no mapa
+    const info = infoLayout(this);
+    if (info && inRect(info.toggle, sx, sy)) return this.app.toggleInfo?.();
+    if (info?.open && inRect(info.card, sx, sy)) return;
 
     const mx = sx - this.offsetX;
     if (this.placing) {
@@ -668,13 +673,6 @@ export class Game {
       if (e.def.boss) drawBossBar(ctx, e);
       if (e.vulnTimer > 0) drawVulnerable(ctx, e, t);
     }
-    if (sel) {
-      ctx.beginPath();
-      ctx.ellipse(sel.x, sel.y + 15, sel.r + 6, (sel.r + 6) * 0.4, 0, 0, Math.PI * 2);
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = '#ffffff';
-      ctx.stroke();
-    }
 
     for (const p of this.projectiles) {
       ctx.save();
@@ -713,6 +711,7 @@ export class Game {
     }
     ctx.restore();
 
+    drawInfoPanel(ctx, this); // antes do painel: a alça recolhida "entra" embaixo dele
     drawPanel(ctx, this);
     if (this.toast) drawToast(ctx, this);
     drawBanner(ctx, this);
