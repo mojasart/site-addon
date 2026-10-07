@@ -28,7 +28,6 @@ export const TOWERS = {
     projectile: 'keyboard',
     fireRate: 0.95,
     damage: 1,
-    pierce: 2,
     projectileSpeed: 650,
     canHitArmored: false,
     targeting: true,
