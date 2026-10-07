@@ -139,7 +139,7 @@ function drawTowerInfo(ctx, game, L) {
   button(ctx, L.sell, '#ff5a5a', { radius: 12, depth: 5 });
   text(ctx, `VENDER $${tw.sellValue}`, L.sell.x + L.sell.w / 2, L.sell.y + 22, { size: 19 });
 
-  const info = towerInfo(tw);
+  const info = towerInfo(tw, game);
   const r = def.upgrades.length ? L.info : { x: L.info.x, y: L.upgrades[0].y, w: L.info.w, h: 180 };
   rrect(ctx, r.x, r.y, r.w, r.h, 12);
   fillOutline(ctx, 'rgba(10,16,40,0.45)', 3);
@@ -152,12 +152,13 @@ function drawTowerInfo(ctx, game, L) {
   }
 }
 
-function towerInfo(tw) {
+function towerInfo(tw, game) {
   const s = tw.stats;
   switch (s.attack) {
     case 'decoy':
       return { title: 'TEMPO DA ISCA', big: `${Math.ceil(tw.timeLeft)}s`, sub: 'Gasta sozinha; vírus mordendo aceleram' };
     case 'farm':
+      if (!game.canMine(tw)) return { sub: 'Fora da pilha de bitcoin: não minera. Coloque em cima de uma pilha!' };
       return { sub: `Minera ${s.packetsPerRound} bitcoins de $${s.packetValue} por rodada${s.roundBonus ? ` e mais $${s.roundBonus} quando ela começa` : ''}` };
     default:
       if (s.slow) return { sub: `Suporte: deixa os vírus lentos${s.vulnerable ? ' e eles levam dano dobrado' : ''}` };

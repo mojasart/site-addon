@@ -59,7 +59,7 @@ export class Tower {
   // moedas que faltaram (ninguém perde bitcoin por rodada curta)
   finishMining(game) {
     const s = this.stats;
-    if (s.attack !== 'farm') return;
+    if (s.attack !== 'farm' || !game.canMine(this)) return;
     for (; this.dropped < s.packetsPerRound; this.dropped++) game.spawnPacket(this.x, this.y - 10, s.packetValue);
     this.attack = 1;
   }
@@ -166,7 +166,7 @@ export class Tower {
         // a isca não ataca: quem faz tudo são os vírus mordendo (bite)
         break;
       case 'farm': {
-        if (!game.rounds.active || this.dropped >= s.packetsPerRound) break;
+        if (!game.rounds.active || this.dropped >= s.packetsPerRound || !game.canMine(this)) break;
         this.dropTimer -= dt;
         if (this.dropTimer <= 0) {
           game.spawnPacket(this.x, this.y - 10, s.packetValue);

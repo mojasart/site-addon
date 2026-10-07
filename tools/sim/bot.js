@@ -65,8 +65,10 @@ export function playMap(mapIndex, profileName, seed, mode = 'normal') {
       // honeypot: em cima do caminho, perto da base
       for (const s of samples) if (s.late && game.canPlace(type, s.x, s.y)) list.push({ x: s.x, y: s.y, v: s.w + rnd() });
     } else if (def.attack === 'farm') {
-      // minerador: onde cobre menos caminho (guarda os lugares bons)
-      for (const p of spots) if (game.canPlace(type, p.x, p.y)) list.push({ x: p.x, y: p.y, v: -coverage(p.x, p.y, 110) + rnd() });
+      // minerador: nas seasons com pilha de bitcoin, só em cima de uma pilha livre;
+      // senão, onde cobre menos caminho (guarda os lugares bons)
+      const pool = game.coinTiles.length ? game.coinTiles : spots;
+      for (const p of pool) if (game.canPlace(type, p.x, p.y)) list.push({ x: p.x, y: p.y, v: -coverage(p.x, p.y, 110) + rnd() });
     } else {
       const range = Number.isFinite(def.range) ? Math.min(def.range, 260) : 260;
       for (const p of spots) {

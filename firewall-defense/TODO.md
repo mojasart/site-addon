@@ -17,6 +17,11 @@ Lista do que falta fazer no jogo. Marque com `[x]` quando terminar.
 
 - [ ] **Upgrade de pierce pro Hacker**: o teclado volta a atravessar vários vírus
   (no `apply` do upgrade: `s.pierce = 2`)
+- [ ] **Minerador no Cabo Submarino (season 3)**: lá não tem pilha de bitcoin, então ele só
+  vai poder minerar com um **upgrade específico** (a definir: nome, custo e em que nível entra)
+  - Hoje ele minera em qualquer lugar na season 3; a regra fica em `Game.canMine` (`src/game.js`):
+    trocar o `return true` da season 3 por algo como `return !!tower.stats.offshore`
+  - Os bots (`tools/sim/bot.js`) vão precisar comprar esse upgrade antes de contar com o Minerador
 
 ## Dark Net
 
