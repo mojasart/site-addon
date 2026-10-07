@@ -55,6 +55,15 @@ export class Tower {
     this.dropTimer = rand(1, 2.5);
   }
 
+  // Minerador: a rodada acabou antes de minerar tudo → solta na hora as
+  // moedas que faltaram (ninguém perde bitcoin por rodada curta)
+  finishMining(game) {
+    const s = this.stats;
+    if (s.attack !== 'farm') return;
+    for (; this.dropped < s.packetsPerRound; this.dropped++) game.spawnPacket(this.x, this.y - 10, s.packetValue);
+    this.attack = 1;
+  }
+
   lookAt(x) {
     if (Math.abs(x - this.x) > 4) this.face = x < this.x ? -1 : 1;
   }
