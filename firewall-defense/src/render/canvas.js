@@ -75,3 +75,51 @@ export function button(ctx, r, face, { pressed = false, radius = 14, depth = 5 }
   ctx.fillRect(r.x, r.y + (depth - d), r.w, (r.h - depth) * 0.42);
   ctx.restore();
 }
+
+export function ellipse(ctx, x, y, rx, ry, rot = 0) {
+  ctx.beginPath();
+  ctx.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2);
+}
+
+// "Membro" arredondado (braço, perna) com contorno
+export function limb(ctx, x1, y1, x2, y2, w, color) {
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.lineWidth = w + 5;
+  ctx.strokeStyle = OUTLINE;
+  ctx.stroke();
+  ctx.lineWidth = w;
+  ctx.strokeStyle = color;
+  ctx.stroke();
+}
+
+// Sprite pré-desenhado num canvas pequeno (cache), pra coisas que aparecem
+// às dezenas na tela (vírus). Refeito quando a escala da tela muda.
+let pixelScale = 1;
+const spriteCache = new Map();
+
+export function setPixelScale(ps) {
+  if (Math.abs(ps - pixelScale) < 0.01) return;
+  pixelScale = ps;
+  spriteCache.clear();
+}
+
+export function cachedSprite(key, size, draw) {
+  let c = spriteCache.get(key);
+  if (!c) {
+    c = document.createElement('canvas');
+    c.width = c.height = Math.ceil(size * pixelScale);
+    const g = c.getContext('2d');
+    g.scale(pixelScale, pixelScale);
+    g.translate(size / 2, size / 2);
+    draw(g);
+    spriteCache.set(key, c);
+  }
+  return c;
+}
+
+export function blit(ctx, c, size) {
+  ctx.drawImage(c, -size / 2, -size / 2, size, size);
+}

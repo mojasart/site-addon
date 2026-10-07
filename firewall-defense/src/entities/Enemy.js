@@ -11,6 +11,7 @@ export class Enemy {
     this.x = -999;
     this.y = -999;
     this.angle = 0;
+    this.face = 1;
     this.slowTimer = 0;
     this.slowMul = 1;
     this.flash = 0;
@@ -32,6 +33,8 @@ export class Enemy {
     this.x = p.x;
     this.y = p.y;
     this.angle = p.angle;
+    const c = Math.cos(p.angle);
+    if (Math.abs(c) > 0.2) this.face = c > 0 ? 1 : -1;
   }
 
   update(dt, game) {
@@ -53,11 +56,19 @@ export class Enemy {
     this.slowTimer = Math.max(this.slowTimer, time);
   }
 
+  // Pescador: puxa o vírus de volta no caminho
+  pullBack(px, game) {
+    if (this.def.boss) return;
+    this.dist = Math.max(game.spawnDist + 20, this.dist - px);
+    this.place(game.path);
+  }
+
   // opts: { armored (fura blindagem?), source (torre que atacou), hitSet }
   takeDamage(amount, game, opts = {}) {
     if (this.dead || amount <= 0) return;
     if (this.def.armored && !opts.armored) {
       game.fx.blocked(this.x, this.y - this.r);
+      game.sound.play('block');
       return;
     }
     this.flash = 0.08;
@@ -70,7 +81,11 @@ export class Enemy {
     game.money += this.def.reward ?? 1;
     game.stats.pops++;
     if (opts.source) opts.source.pops++;
-    game.fx.pop(this.x, this.y, this.def.color, this.r);
+    game.fx.pop(this.x, this.y - this.r * 0.3, this.def.color, this.r);
+    if (this.def.boss) {
+      game.shake(this.r > 30 ? 10 : 6);
+      game.sound.play('bigpop');
+    } else game.sound.play('pop');
 
     // solta os filhos um pouquinho atrás no caminho
     let i = 0;
