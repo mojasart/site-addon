@@ -112,6 +112,8 @@ export class Tower {
         if (this.cooldown > 0) break;
         const targets = game.enemiesInRange(this.x, this.y, s.range);
         if (targets.length === 0) break;
+        // vira o corpo pro inimigo mais adiantado que está acertando
+        this.lookAt(targets.reduce((a, b) => (b.dist > a.dist ? b : a)).x);
         for (const e of targets.slice(0, s.maxTargets)) {
           if (s.slow) e.slow(s.slow, s.slowTime);
           if (s.damage) e.takeDamage(s.damage, game, this.opts());

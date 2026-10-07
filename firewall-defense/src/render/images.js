@@ -1,7 +1,8 @@
 import { cachedSprite } from './canvas.js';
 
 // ─────────────────────────────────────────────────────────────
-//  Sprites em PNG (assets/sprites/). Geradas com tools/sprites/gen.py.
+//  Sprites em PNG (assets/sprites/, geradas com tools/sprites/gen.py) e
+//  ícones em SVG (assets/icons/, carregados como "icon_<nome>").
 //  Enquanto uma imagem não carrega (ou se faltar), quem chama cai no
 //  desenho feito com formas.
 // ─────────────────────────────────────────────────────────────
@@ -26,12 +27,35 @@ const NAMES = [
   'heart',
 ];
 
+// Ícones dos botões e da interface (SVG: ficam nítidos em qualquer tamanho)
+const ICON_NAMES = [
+  'play',
+  'ff',
+  'pause',
+  'close',
+  'back',
+  'restart',
+  'map',
+  'music',
+  'music_off',
+  'sfx',
+  'sfx_off',
+  'lock',
+  'drop',
+  'star',
+  'star_empty',
+];
+
 const images = new Map();
 
 export function loadImages() {
+  const files = [
+    ...NAMES.map((n) => [n, `assets/sprites/${n}.png`]),
+    ...ICON_NAMES.map((n) => [`icon_${n}`, `assets/icons/${n}.svg`]),
+  ];
   return Promise.all(
-    NAMES.map(
-      (name) =>
+    files.map(
+      ([name, src]) =>
         new Promise((resolve) => {
           const img = new Image();
           img.onload = () => {
@@ -39,7 +63,7 @@ export function loadImages() {
             resolve();
           };
           img.onerror = resolve; // sem a imagem o jogo segue com o desenho antigo
-          img.src = `assets/sprites/${name}.png`;
+          img.src = src;
         }),
     ),
   );
