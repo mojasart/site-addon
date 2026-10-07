@@ -1,8 +1,9 @@
 import { VIEW_H, TILE } from '../../config.js';
 
-// Medidas do caminho elevado: a pegada da peça é exatamente a dos quadrados
-// por onde ele passa (TILE de largura, nos dois sentidos). O 3D fica por
-// dentro: o topo sobe PATH_DEPTH e mostra a parede embaixo dele.
+// Medidas do caminho elevado: a pegada da peça (o pé da parede) é
+// exatamente a dos quadrados por onde ele passa (TILE de largura, nos dois
+// sentidos). Em perspectiva, o topo fica PATH_DEPTH acima da pegada, então
+// ele "invade" um pouco o quadrado de cima, e a parede aparece embaixo.
 export const PATH_DEPTH = 8; // altura da parede
 export const PATH_EDGE = 3; // contorno escuro
 export const PATH_TOP = TILE - PATH_EDGE * 2; // largura do topo (48)
@@ -38,52 +39,33 @@ export function drawSparkles(ctx, list, t) {
   ctx.globalAlpha = 1;
 }
 
-// Caminho elevado (3/4) que ocupa exatamente os quadrados por onde passa.
-// Tudo é desenhado numa camada à parte e recortado pela pegada do caminho
-// (traço de TILE de largura): parede embaixo, topo subido PATH_DEPTH por
-// cima, e o contorno por último.
+// Caminho elevado (3/4): a pegada (pé da parede) ocupa exatamente os
+// quadrados por onde passa; o topo fica PATH_DEPTH acima dela (invade um
+// pouco o quadrado de cima) e a parede aparece embaixo do topo.
 //   side          → cor da parede
 //   rim / inner   → borda do topo e o miolo (rimW = largura da borda)
 //   top(g, w)     → detalhes do tema no topo (já subido), w = largura do miolo
 export function drawRaisedPath(g, path, { side, rim, inner, rimW = 5, outline, top }) {
-  const layer = document.createElement('canvas');
-  layer.width = g.canvas.width;
-  layer.height = g.canvas.height;
-  const l = layer.getContext('2d');
-  l.setTransform(g.getTransform());
-  // parede (aparece embaixo do topo subido)
-  strokePath(l, path, TILE, side);
+  // contorno: a silhueta inteira, da pegada até o topo subido
+  for (let k = 0; k >= -PATH_DEPTH; k -= 2) {
+    g.save();
+    g.translate(0, k);
+    strokePath(g, path, TILE, outline);
+    g.restore();
+  }
+  // parede (na pegada; o topo cobre a parte de cima dela)
+  strokePath(g, path, PATH_TOP, side);
   // filete escuro onde o topo encontra a parede
-  l.save();
-  l.translate(0, -PATH_DEPTH + 2);
-  strokePath(l, path, PATH_TOP, outline);
-  l.restore();
-  // topo
-  l.save();
-  l.translate(0, -PATH_DEPTH);
-  strokePath(l, path, PATH_TOP, rim);
-  strokePath(l, path, PATH_TOP - rimW * 2, inner);
-  top?.(l, PATH_TOP - rimW * 2);
-  l.restore();
-  // contorno: o anel entre a pegada e o topo
-  const ring = document.createElement('canvas');
-  ring.width = layer.width;
-  ring.height = layer.height;
-  const r = ring.getContext('2d');
-  r.setTransform(g.getTransform());
-  strokePath(r, path, TILE, outline);
-  r.globalCompositeOperation = 'destination-out';
-  strokePath(r, path, TILE - PATH_EDGE * 2, '#000');
-  l.save();
-  l.setTransform(1, 0, 0, 1, 0, 0);
-  l.drawImage(ring, 0, 0);
-  l.restore();
-  // recorta pela pegada exata (o topo subido não passa da borda de cima)
-  l.globalCompositeOperation = 'destination-in';
-  strokePath(l, path, TILE, '#000');
   g.save();
-  g.setTransform(1, 0, 0, 1, 0, 0);
-  g.drawImage(layer, 0, 0);
+  g.translate(0, -PATH_DEPTH + 2);
+  strokePath(g, path, PATH_TOP, outline);
+  g.restore();
+  // topo
+  g.save();
+  g.translate(0, -PATH_DEPTH);
+  strokePath(g, path, PATH_TOP, rim);
+  strokePath(g, path, PATH_TOP - rimW * 2, inner);
+  top?.(g, PATH_TOP - rimW * 2);
   g.restore();
 }
 

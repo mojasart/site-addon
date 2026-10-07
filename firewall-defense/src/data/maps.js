@@ -111,15 +111,21 @@ function buildMaps() {
         islands: season.theme === 'ocean' ? Math.round(lerp(14, 10, ks)) : 0,
         hazards: season.theme === 'datacenter' ? Math.round(lerp(2, 5, ks)) : 0,
       });
-      // zonas elétricas: quais bordas do "tapete" aparecem (render/hazards.js).
-      // A de cima sempre; as outras só se o vizinho não for o caminho
-      // elevado (que fica por cima do chão e tapa a borda)
+      // zonas elétricas: cada quadrado é um retângulo; os do mesmo grupo
+      // disparam juntos (mesmo offset) e formam um tapete só.
+      // Quais bordas do "tapete" aparecem (render/hazards.js): a de cima
+      // sempre (menos entre dois quadrados do mesmo grupo); as outras só se
+      // o vizinho não for o caminho elevado (que fica por cima do chão e
+      // tapa a borda) nem outro quadrado da mesma zona
       const raised = pathTiles(gen.routes);
-      const hazards = gen.hazards.map((h, i, all) => {
+      const groups = 1 + Math.max(-1, ...gen.hazards.map((h) => h.group));
+      const sameZone = new Map(gen.hazards.map((h) => [tileKey(...tileOf(h.x + 1, h.y + 1)), h.group]));
+      const hazards = gen.hazards.map((h) => {
         const [c, r] = tileOf(h.x + 1, h.y + 1);
-        const floor = (dc, dr) => !raised.has(tileKey(c + dc, r + dr));
-        const edges = { top: true, left: floor(-1, 0), right: floor(1, 0), bottom: floor(0, 1) };
-        return { ...h, period: 8, offset: (i * 8) / all.length, edges };
+        const mine = (dc, dr) => sameZone.get(tileKey(c + dc, r + dr)) === h.group;
+        const floor = (dc, dr) => !raised.has(tileKey(c + dc, r + dr)) && !mine(dc, dr);
+        const edges = { top: !mine(0, -1), left: floor(-1, 0), right: floor(1, 0), bottom: floor(0, 1) };
+        return { ...h, period: 8, offset: (h.group * 8) / groups, edges };
       });
       maps.push({
         id: `${season.id}-${k + 1}`,

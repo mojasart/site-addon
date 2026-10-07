@@ -662,16 +662,16 @@ export class Game {
     this.view.draw(ctx, this.app.pixelScale);
     ctx.translate(this.offsetX, 0);
     this.view.animate(ctx, t);
-    // zonas elétricas são placas no chão: o caminho (elevado) é redesenhado
-    // por cima delas e a parede dele cobre a parte de trás, como no piso
+    // coisas do chão (zonas elétricas e pilhas de bitcoin): a rua elevada é
+    // redesenhada por cima delas, então o topo de uma rua logo abaixo tapa a
+    // parte de baixo (perspectiva)
     drawHazards(ctx, this.hazards, t);
+    drawCoinTiles(ctx, this.coinTiles, t, TOWERS[this.placing]?.attack === 'farm', this.towers);
     ctx.save();
     ctx.translate(-this.offsetX, 0);
     this.view.drawPath(ctx);
     ctx.restore();
     drawSpawns(ctx, this, t);
-    // pilhas de bitcoin ficam em pé: na frente da parede do caminho
-    drawCoinTiles(ctx, this.coinTiles, t, TOWERS[this.placing]?.attack === 'farm');
 
     ctx.save();
     ctx.translate(this.server.x, this.server.y);
