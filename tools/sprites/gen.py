@@ -120,6 +120,17 @@ ASSETS = {
     # ── HUD ──────────────────────────────────────────────
     'coin': ('magenta', 'A shiny orange round Bitcoin coin with a big white tilted bitcoin symbol "₿" in the middle, front view. '),
     'heart': ('magenta', 'A glossy red cartoon heart icon for lives, front view. '),
+    # Minerador: parado e batendo a picareta no chão (editado a partir do parado)
+    'minerador': ('magenta', 'Full body, chibi proportions (big head, small body), three-quarter view facing and looking '
+                  'to the RIGHT, standing on two feet. A jolly cartoon crypto miner with a yellow hard hat with a '
+                  'glowing headlamp, a bushy orange beard, rosy cheeks, a red shirt, blue overalls and brown boots, '
+                  'holding a wooden pickaxe with a grey metal head resting on his shoulder. '),
+    'minerador_attack': ('magenta', 'Edit this image: keep exactly the same miner, face, beard, helmet, clothes, colors, '
+                         'outline, size and style. Change only the pose: he swings the SAME single pickaxe down with both '
+                         'hands, the handle going from his hands diagonally down to the RIGHT, and its ONE metal head '
+                         'striking the ground in front of his feet. The pickaxe has exactly one metal head, at the lower '
+                         'end; nothing is left on his shoulder. Focused effort expression, a few small grey rock chips at '
+                         'the impact point. Do not add anything else. ', 'minerador'),
     # ── Servidor (o que estamos protegendo) ──────────────
     'server': ('magenta', 'Front view. A cute friendly server computer character: a chunky blue rack server box '
                'with a cyan screen showing a happy smiling face, small green status LEDs below. '),
