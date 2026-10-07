@@ -36,7 +36,7 @@ export function formatCoffee(v) {
 export const ROOT_MONEY = 75; // Acesso Root: dinheiro a mais no começo de cada fase
 
 export const TREE = [
-  { id: 'root', name: 'Acesso Root', desc: `Toda fase começa com +$${ROOT_MONEY} e libera os 6 ramos`, cost: 3, parent: null },
+  { id: 'root', name: 'Acesso Root', desc: `Toda fase começa com +$${ROOT_MONEY}`, cost: 3, parent: null },
   { id: 'hacker', tower: 'hacker', name: 'Teclado Mecânico', desc: 'Hacker ataca 10% mais rápido', cost: 5, parent: 'root',
     apply: (s) => { s.fireRate *= 0.9; } },
   { id: 'firewall', tower: 'firewall', name: 'Tijolo Refratário', desc: 'Golem Firewall com +15% de alcance', cost: 5, parent: 'root',
