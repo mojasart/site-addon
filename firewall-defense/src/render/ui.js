@@ -24,7 +24,6 @@ export function layout(game) {
     upgrades: [0, 1].map((i) => ({ x: px + 10, y: 64 + i * 98, w: W - 20, h: 90 })),
     target: { x: px + 10, y: 262, w: W - 20, h: 46 },
     sell: { x: px + 10, y: 314, w: W - 20, h: 50 },
-    info: { x: px + 10, y: 372, w: W - 20, h: 82 },
   };
 }
 
@@ -139,33 +138,6 @@ function drawTowerInfo(ctx, game, L) {
 
   button(ctx, L.sell, '#ff5a5a', { radius: 12, depth: 5 });
   text(ctx, `VENDER $${tw.sellValue}`, L.sell.x + L.sell.w / 2, L.sell.y + 22, { size: 19 });
-
-  const info = towerInfo(tw, game);
-  const r = def.upgrades.length ? L.info : { x: L.info.x, y: L.upgrades[0].y, w: L.info.w, h: 180 };
-  rrect(ctx, r.x, r.y, r.w, r.h, 12);
-  fillOutline(ctx, 'rgba(10,16,40,0.45)', 3);
-  if (info.big) {
-    text(ctx, info.title, r.x + r.w / 2, r.y + 26, { size: 15, color: '#d8e6ff' });
-    text(ctx, info.big, r.x + r.w / 2, r.y + 74, { size: 42, color: GOLD });
-    wrapText(ctx, info.sub, r.x + r.w / 2, r.y + 128, r.w - 20, 13, '#bcd0f5', 2);
-  } else {
-    wrapText(ctx, info.sub, r.x + r.w / 2, r.y + r.h / 2 - 9, r.w - 16, 13, '#d8e6ff', 3);
-  }
-}
-
-function towerInfo(tw, game) {
-  const s = tw.stats;
-  switch (s.attack) {
-    case 'decoy':
-      return { title: 'TEMPO DA ISCA', big: `${Math.ceil(tw.timeLeft)}s`, sub: 'Gasta sozinha; vírus mordendo aceleram' };
-    case 'farm':
-      if (!game.canMine(tw)) return { sub: 'Fora da pilha de bitcoin: não minera. Coloque em cima de uma pilha!' };
-      return { sub: `Minera ${s.packetsPerRound} bitcoins de $${s.packetValue} por rodada${s.roundBonus ? ` e mais $${s.roundBonus} quando ela começa` : ''}` };
-    default:
-      if (s.slow) return { sub: `Suporte: deixa os vírus lentos${s.vulnerable ? ' e eles levam dano dobrado' : ''}` };
-      if (s.burn) return { sub: `Vírus pegam fogo: ${String(s.burn).replace('.', ',')} de dano/s por até ${s.burnTime}s (não acumula)` };
-      return { sub: tw.hitsArmored ? 'Fura blindagem dos Trojans' : 'Não fura blindagem (Trojans)' };
-  }
 }
 
 function drawUpgrade(ctx, game, tw, up, i, r) {

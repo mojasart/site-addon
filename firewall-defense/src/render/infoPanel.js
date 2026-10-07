@@ -1,6 +1,7 @@
 import { OUTLINE, GOLD } from '../config.js';
 import { TOWERS } from '../data/towers.js';
 import { statsAt, statRows } from '../data/towerInfo.js';
+import { applyPerks } from '../data/darknet.js';
 import { rrect, fillOutline, text } from './canvas.js';
 
 /* ════════════════════════════════════════════════════════════
@@ -26,9 +27,9 @@ function subject(game) {
   if (game.state !== 'playing') return null;
   const tw = game.selectedTower;
   if (tw) return { type: tw.type, level: tw.level, stats: tw.stats, placed: true };
-  if (game.placing) return { type: game.placing, level: 0, stats: statsAt(game.placing, 0), placed: false };
+  if (game.placing) return { type: game.placing, level: 0, stats: applyPerks(statsAt(game.placing, 0), game.placing, game.app.perks), placed: false };
   // tocada na loja sem dinheiro pra comprar: só os atributos
-  if (game.inspect) return { type: game.inspect, level: 0, stats: statsAt(game.inspect, 0), placed: false };
+  if (game.inspect) return { type: game.inspect, level: 0, stats: applyPerks(statsAt(game.inspect, 0), game.inspect, game.app.perks), placed: false };
   return null;
 }
 

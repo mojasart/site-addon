@@ -8,7 +8,7 @@ import { LevelSelectScene } from './scenes/LevelSelectScene.js';
 import { Game } from './game.js';
 import { CatalogScene } from './scenes/CatalogScene.js';
 import { DarkNetScene } from './scenes/DarkNetScene.js';
-import { DARKNET_STARS, mapCoffee } from './data/darknet.js';
+import { DARKNET_STARS, mapCoffee, NODE } from './data/darknet.js';
 
 // Controla as telas (título → mapas → jogo), a transição entre elas,
 // o progresso salvo e o som.
@@ -73,6 +73,25 @@ export class App {
   // Saldo de cafés pra gastar na Dark Net
   get coffee() {
     return this.coffeeEarned - (this.save.coffeeSpent ?? 0);
+  }
+
+  // Árvore da Dark Net: upgrades comprados (save.darknet)
+  get perks() {
+    return this.save.darknet ?? {};
+  }
+
+  // Dá pra comprar esse nó? (ainda não tem, já tem o anterior e tem cafés)
+  canBuyPerk(id) {
+    const n = NODE[id];
+    return !!n && !this.perks[id] && (!n.parent || !!this.perks[n.parent]) && this.coffee >= n.cost;
+  }
+
+  buyPerk(id) {
+    if (!this.canBuyPerk(id)) return false;
+    this.save.darknet = { ...this.perks, [id]: true };
+    this.save.coffeeSpent = (this.save.coffeeSpent ?? 0) + NODE[id].cost;
+    writeSave(this.save);
+    return true;
   }
 
   // Ameaça já apareceu numa fase? (no modo debug, todas)
@@ -163,6 +182,8 @@ export class App {
       if (this.fade >= 1) {
         this.scene = this.next();
         this.next = null;
+        // na partida, música de batalha; nos menus, a alegre
+        this.sound.setTheme?.(this.scene instanceof Game ? 'battle' : 'menu');
       }
     } else this.fade = Math.max(0, this.fade - dt * 4);
     this.scene.update(dt);

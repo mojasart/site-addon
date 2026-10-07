@@ -25,8 +25,10 @@ Lista do que falta fazer no jogo. Marque com `[x]` quando terminar.
 
 ## Dark Net
 
-- [ ] **Árvore de upgrades** paga com cafés (`src/scenes/DarkNetScene.js`, hoje só mostra o saldo
-  e "em construção"). Ao comprar, somar o custo em `save.coffeeSpent`
+- [x] **Árvore de upgrades, fase 1**: nó central (Acesso Root) + 1 ramo por defesa
+  (`TREE` em `src/data/darknet.js`, tela em `src/scenes/DarkNetScene.js`)
+- [ ] **Árvore, fase 2**: próximos nós saindo de cada ramo (os "?" na tela). Basta adicionar em
+  `TREE` com `parent: '<id do ramo>'` e posicionar o nó em `DarkNetScene.layout()`
 
 ## Balanceamento
 

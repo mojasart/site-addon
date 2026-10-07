@@ -3,7 +3,7 @@
 // localStorage pode não existir (aba anônima, bloqueado...): aí só não salva.
 const KEY = 'firewall-defense-save-v1';
 
-const DEFAULTS = { stars: {}, platinum: {}, seen: {}, coffeeSpent: 0, music: true, sfx: true, autoRound: true, infoOpen: true };
+const DEFAULTS = { stars: {}, platinum: {}, seen: {}, coffeeSpent: 0, darknet: {}, music: true, sfx: true, autoRound: true, infoOpen: true };
 
 export function loadSave() {
   try {
