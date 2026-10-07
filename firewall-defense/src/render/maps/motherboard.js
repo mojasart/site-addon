@@ -1,6 +1,7 @@
 import { VIEW_H, OUTLINE, GOLD, TILE } from '../../config.js';
 import { rrect, circle, fillOutline } from '../canvas.js';
 import { strokePath, drawRaisedPath, lines, tileSeams, PATH_DEPTH } from './shared.js';
+import { tileOf, tileKey } from '../../core/grid.js';
 
 // Tema PLACA-MÃE: placa verde, trilhas de cobre, resistores e LEDs.
 
@@ -224,10 +225,16 @@ function drawLed(g, { x, y, color }) {
 // das rotas caem no centro dos quadrados, então anda de TILE em TILE a partir
 // do fim de cada trecho (o primeiro trecho vem de fora da tela). O fim da rota
 // (servidor) fica sem seta; a curva no começo de um trecho usa o sentido dele.
+// Uma seta por quadrado: onde a rua passa mais de uma vez (cruzamento do loop,
+// encontro de entradas), vale a da passagem mais perto do fim do caminho,
+// que é a que aponta pro servidor
 function plateCenters(path) {
-  const out = [];
-  for (const line of lines(path)) {
-    const pts = line.points;
+  const best = new Map(); // quadrado → placa que fica
+  for (const route of path.routes ?? lines(path)) {
+    const pts = route.points;
+    // quanto falta até o fim da rota, a partir de cada ponto
+    const rest = new Array(pts.length).fill(0);
+    for (let i = pts.length - 1; i > 0; i--) rest[i - 1] = rest[i] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
     for (let i = 1; i < pts.length; i++) {
       const a = pts[i - 1];
       const b = pts[i];
@@ -238,9 +245,13 @@ function plateCenters(path) {
       const angle = Math.atan2(dy, dx);
       for (let d = TILE; d <= len + 0.5; d += TILE) {
         if (d > len - 0.5 && i === 1) break; // ponto de fora da tela
-        out.push({ x: b.x - dx * d, y: b.y - dy * d, angle });
+        const x = b.x - dx * d;
+        const y = b.y - dy * d;
+        const left = rest[i] + d;
+        const key = tileKey(...tileOf(x, y));
+        if (!best.has(key) || left < best.get(key).left) best.set(key, { x, y, angle, left });
       }
     }
   }
-  return out;
+  return [...best.values()];
 }
