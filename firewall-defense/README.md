@@ -76,6 +76,20 @@ Os vírus funcionam como os balões do Bloons: cada camada estourada revela a de
 
 Na escolha de mapa, o ícone do monitor (canto de cima) abre o `THREAT_DB.EXE`: um computador com terminal verde listando os vírus. Cada ameaça entra no catálogo na primeira vez que aparece numa fase (avisa no topo: *NOVA AMEAÇA NO CATÁLOGO*). As que ainda não apareceram ficam como silhueta com cadeado. A ficha mostra vida, dano (vidas que tira se chegar no servidor), velocidade, faixa de dinheiro (da 1ª camada até destruir tudo o que ele solta), o que ele solta e uma frase (`lore` em `src/data/enemies.js`).
 
+## Dark Net e cafés
+
+Na escolha de mapa, a cebola roxa (ao lado do catálogo) é a **Dark Net**: uma árvore de upgrades paga com **cafés** (a árvore ainda está em construção). Ela libera com **35 estrelas** somadas em todos os mapas; antes disso o botão fica trancado e avisa quantas faltam. O saldo de cafés fica do lado dele.
+
+Os cafés vêm do melhor resultado de cada mapa (`src/data/darknet.js`), então nunca se ganha o mesmo café duas vezes:
+
+| Resultado no mapa | Cafés |
+| --- | --- |
+| Pelo menos 1 estrela | 1 |
+| 3 estrelas | 2 (quem já tinha 1 ganha só mais 1) |
+| Platina | +2 |
+
+A tela de vitória mostra os cafés novos (*+1 CAFÉ*). O save guarda só os cafés gastos (`coffeeSpent`); o saldo é o que ganhou menos o que gastou.
+
 ## Seasons e mapas
 
 São **3 seasons de 15 mapas** (45 fases), numa ordem só de dificuldade. Vencer um mapa libera o próximo, e a season seguinte abre ao vencer o último mapa da anterior.
@@ -128,13 +142,14 @@ firewall-defense/
     ├── main.js              canvas, escala da tela, input touch, loop
     ├── app.js               troca de telas (título → mapas → jogo), save, som
     ├── game.js              a partida: regras, toque, desenho geral
-    ├── save.js              estrelas, platinas e configurações no localStorage
+    ├── save.js              estrelas, platinas, cafés gastos e configurações no localStorage
     ├── config.js            tela, regras globais, fonte, cores base
     ├── data/                ← BALANCEAMENTO E CONTEÚDO FICAM AQUI
     │   ├── towers.js        defesas, custos, upgrades
     │   ├── enemies.js       vírus, camadas, chefões
     │   ├── rounds.js        as 25 rodadas
     │   ├── platinum.js      modo platina (ondas sem parar, chefão, aliado bloqueado)
+    │   ├── darknet.js       Dark Net: estrelas pra liberar e cafés de cada mapa
     │   ├── maps.js          seasons e os 45 mapas (dificuldade de cada um)
     │   ├── mapgen.js        gerador de caminhos (loop, Y, várias entradas)
     │   ├── tuning.js        pressão de cada mapa, calibrada com bots
@@ -144,7 +159,7 @@ firewall-defense/
     ├── core/                caminho e terreno
     ├── entities/            Tower, Enemy, Projectile, Packet
     ├── systems/             RoundManager, Effects (POP, ondas, confete)
-    ├── scenes/              TitleScene, LevelSelectScene
+    ├── scenes/              TitleScene, LevelSelectScene, CatalogScene, DarkNetScene
     └── render/
         ├── characters.js    os personagens (defesas)
         ├── viruses.js       os vírus

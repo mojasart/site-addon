@@ -7,6 +7,8 @@ import { TitleScene } from './scenes/TitleScene.js';
 import { LevelSelectScene } from './scenes/LevelSelectScene.js';
 import { Game } from './game.js';
 import { CatalogScene } from './scenes/CatalogScene.js';
+import { DarkNetScene } from './scenes/DarkNetScene.js';
+import { DARKNET_STARS, mapCoffee } from './data/darknet.js';
 
 // Controla as telas (título → mapas → jogo), a transição entre elas,
 // o progresso salvo e o som.
@@ -47,6 +49,30 @@ export class App {
 
   goCatalog() {
     this.go(() => new CatalogScene(this));
+  }
+
+  goDarkNet() {
+    this.go(() => new DarkNetScene(this));
+  }
+
+  // Estrelas somadas de todos os mapas
+  get totalStars() {
+    return MAPS.reduce((sum, m) => sum + (this.save.stars[m.id] ?? 0), 0);
+  }
+
+  // Dark Net: libera com DARKNET_STARS estrelas (no modo debug, sempre)
+  darkNetOpen() {
+    return this.debug || this.totalStars >= DARKNET_STARS;
+  }
+
+  // Cafés ganhos até agora (pelo recorde de cada mapa: data/darknet.js)
+  get coffeeEarned() {
+    return MAPS.reduce((sum, m) => sum + mapCoffee(this.save.stars[m.id], this.hasPlatinum(m.id)), 0);
+  }
+
+  // Saldo de cafés pra gastar na Dark Net
+  get coffee() {
+    return this.coffeeEarned - (this.save.coffeeSpent ?? 0);
   }
 
   // Ameaça já apareceu numa fase? (no modo debug, todas)

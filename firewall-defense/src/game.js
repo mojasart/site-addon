@@ -126,11 +126,14 @@ export class Game {
     if (won) {
       const L = this.map.lives;
       this.stars = this.lives >= L ? 3 : this.lives >= L * 0.5 ? 2 : 1;
+      const coffeeBefore = this.app.coffeeEarned ?? 0;
       if (this.platinum) {
         this.stars = 3; // vencer a platina já vale as 3 (em platina)
         this.app.recordPlatinum?.(this.map.id);
       }
       this.app.recordStars(this.map.id, this.stars);
+      // cafés novos dessa vitória (só o que passou do recorde do mapa: data/darknet.js)
+      this.coffeeGain = (this.app.coffeeEarned ?? 0) - coffeeBefore;
       this.fx.celebrate(this.viewW, VIEW_H);
       this.sound.play('win');
       for (let i = 0; i < this.stars; i++) setTimeout(() => this.sound.play('star'), 500 + i * 350);
