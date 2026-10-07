@@ -62,8 +62,23 @@ export class Tower {
   // Isca (Honeypot) apanhando de um vírus parado nela
   bite(amount, game) {
     if (this.dead) return;
-    this.hp -= amount;
     this.pulse = Math.max(this.pulse, 0.35);
+    this.wear(amount, game);
+  }
+
+  // Segundos que a isca ainda dura se ninguém morder
+  get timeLeft() {
+    return Math.max(0, this.hp) / this.decay;
+  }
+
+  // Vida que a isca perde sozinha por segundo (dura `duration` s)
+  get decay() {
+    return this.maxHp / this.stats.duration;
+  }
+
+  wear(amount, game) {
+    if (this.dead) return;
+    this.hp -= amount;
     if (this.hp > 0) return;
     this.dead = true;
     game.fx.burst(this.x, this.y, '#f5a524', 20, 170, 0.55, 5, true);
@@ -85,6 +100,8 @@ export class Tower {
     this.attack = Math.max(0, this.attack - dt * 4);
     this.pulse = Math.max(0, this.pulse - dt * 4);
     this.spawnAnim = Math.max(0, this.spawnAnim - dt * 3);
+    // isca: o tempo corre nas rodadas (antes de começar dá pra posicionar com calma)
+    if (s.attack === 'decoy' && game.rounds.active) this.wear(this.decay * dt, game);
     if (this.stunned > 0) {
       this.stunned = Math.max(0, this.stunned - dt);
       return;

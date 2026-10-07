@@ -500,7 +500,7 @@ function towerRows(type, s, level) {
     return rows;
   }
   if (s.attack === 'decoy') {
-    rows.push(['VIDA', `${s.hp}`], ['DANO', '0 (só distrai)']);
+    rows.push(['VIDA', `${s.hp}`], ['DURAÇÃO', `${s.duration}s sozinha`], ['DANO', '0 (só distrai)']);
     return rows;
   }
   if (s.effect === 'frost') {

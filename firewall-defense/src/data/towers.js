@@ -6,7 +6,8 @@
 //    pulse      → onda que atinge todo mundo no alcance (fogo, gelo)
 //    beam       → laser instantâneo de longo alcance
 //    decoy      → isca EM CIMA do caminho (onPath): não dá dano; os vírus
-//                 param pra atacar até a vida (hp) dela acabar
+//                 param pra atacar até a vida (hp) dela acabar. A vida também
+//                 é um tempo: nas rodadas ela gasta sozinha em `duration` s
 //    farm       → minera bitcoins durante as rodadas
 //
 //  upgrades: 2 níveis, cada um com custo e uma função que altera os status
@@ -121,6 +122,7 @@ export const TOWERS = {
     attack: 'decoy',
     onPath: true,
     hp: 40, // cada vírus parado tira ~1 por segundo (chefões bem mais)
+    duration: 15, // segundos que dura sozinha: nas rodadas vai murchando mesmo sem ninguém morder
     upgrades: [],
   },
 };

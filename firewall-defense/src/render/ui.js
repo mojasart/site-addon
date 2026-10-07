@@ -138,7 +138,7 @@ function towerInfo(tw) {
   const s = tw.stats;
   switch (s.attack) {
     case 'decoy':
-      return { title: 'VIDA DA ISCA', big: `${Math.ceil(tw.hp)}/${tw.maxHp}`, sub: 'Não dá dano: os vírus param pra atacar até ela quebrar' };
+      return { title: 'TEMPO DA ISCA', big: `${Math.ceil(tw.timeLeft)}s`, sub: 'Gasta sozinha; vírus mordendo aceleram' };
     case 'farm':
       return { sub: `Minera ${s.packetsPerRound} bitcoins de $${s.packetValue} por rodada${s.roundBonus ? ` e mais $${s.roundBonus} quando ela começa` : ''}` };
     default:
