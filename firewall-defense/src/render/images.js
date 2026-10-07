@@ -22,6 +22,8 @@ const NAMES = [
   'ransomware',
   'server',
   'server_hurt',
+  'coin',
+  'heart',
 ];
 
 const images = new Map();
