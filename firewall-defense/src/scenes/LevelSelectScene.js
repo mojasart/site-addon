@@ -3,15 +3,19 @@ import { MAPS, SEASONS, MAPS_PER_SEASON } from '../data/maps.js';
 import { ENEMIES } from '../data/enemies.js';
 import { renderThumb } from '../render/maps/index.js';
 import { rrect, fillOutline, text, button } from '../render/canvas.js';
-import { iconButton, inRect, stars, ribbon } from '../render/widgets.js';
+import { iconButton, inRect, stars, ribbon, bigButton, starTier } from '../render/widgets.js';
 import { drawVirusIcon } from '../render/viruses.js';
 import { ICONS } from '../render/sprites.js';
+import { drawImage } from '../render/images.js';
 
 const DIFF_COLOR = { 'FÁCIL': '#3fd16b', 'MÉDIO': '#ff9a2e', 'DIFÍCIL': '#ff5a6a', 'EXTREMO': '#b65cff' };
 
 // Seleção de mapas por season: abas no topo (Placa-Mãe, Data Center,
 // Cabo Submarino) e uma grade 5×3 com os 15 mapas da season escolhida.
 // Os mapas abrem em sequência: vencer um libera o próximo.
+// Com 3 estrelas libera o modo platina do mapa: tocar nele abre a escolha
+// NORMAL / PLATINA. Platina vencida: estrelas azul-gelo e a gema do lado.
+// (O aliado bloqueado só aparece dentro da partida.)
 export class LevelSelectScene {
   constructor(app) {
     this.app = app;
@@ -20,6 +24,7 @@ export class LevelSelectScene {
     this.thumbKey = '';
     this.pressed = -1;
     this.wiggle = { i: -1, t: 0 };
+    this.pick = -1; // mapa com a janela de escolha do modo aberta
     // abre na season do mapa mais avançado já liberado
     let last = 0;
     for (let i = 0; i < MAPS.length; i++) if (app.isUnlocked(i)) last = i;
@@ -37,7 +42,14 @@ export class LevelSelectScene {
     const th = 112;
     const gx = (W - gw) / 2;
     const gy = 160;
+    const card = { x: W / 2 - 240, y: 110, w: 480, h: 330 };
     return {
+      modal: {
+        card,
+        close: { x: card.x + card.w - 54, y: card.y + 14, w: 42, h: 42 },
+        normal: { x: card.x + 40, y: card.y + 84, w: card.w - 80, h: 70 },
+        platinum: { x: card.x + 40, y: card.y + 172, w: card.w - 80, h: 70 },
+      },
       back: { x: 18, y: 16, w: 56, h: 56 },
       catalog: { x: W - 74, y: 16, w: 56, h: 56 },
       tabs: SEASONS.map((_, s) => ({ x: tabs0 + s * (tabW + 12), y: 92, w: tabW, h: 52 })),
@@ -109,6 +121,36 @@ export class LevelSelectScene {
 
     SEASONS.forEach((season, s) => this.drawTab(ctx, L.tabs[s], season, s));
     L.tiles.forEach((tile, k) => this.drawTile(ctx, tile, this.season * MAPS_PER_SEASON + k));
+    if (this.pick >= 0) this.drawModePicker(ctx, L.modal, this.pick);
+  }
+
+  // Janela "NORMAL ou PLATINA" (mapa com 3 estrelas)
+  drawModePicker(ctx, M, i) {
+    const W = this.app.viewW;
+    const map = MAPS[i];
+    ctx.fillStyle = 'rgba(10,18,40,0.7)';
+    ctx.fillRect(0, 0, W, VIEW_H);
+    const c = M.card;
+    rrect(ctx, c.x, c.y + 10, c.w, c.h, 28);
+    ctx.fillStyle = 'rgba(10,16,40,0.55)';
+    ctx.fill();
+    rrect(ctx, c.x, c.y, c.w, c.h, 28);
+    fillOutline(ctx, '#34497f', 5);
+    ribbon(ctx, W / 2, c.y + 4, 240, `MAPA ${map.season + 1}-${map.number}`, '#ff9a2e', 24);
+    iconButton(ctx, M.close, '#ff5a5a', 'close');
+
+    bigButton(ctx, M.normal, '#3fd16b', 'NORMAL', { icon: 'play', size: 26 });
+    bigButton(ctx, M.platinum, '#5fb4e8', 'PLATINA', { size: 26 });
+    const p = M.platinum;
+    ctx.save();
+    ctx.translate(p.x + 40, p.y + (p.h - 6) / 2);
+    ctx.scale(1 + Math.sin(this.t * 4) * 0.06, 1 + Math.sin(this.t * 4) * 0.06);
+    drawImage(ctx, 'icon_gem', 38);
+    ctx.restore();
+    if (this.app.hasPlatinum(map.id)) text(ctx, '✔', p.x + p.w - 34, p.y + (p.h - 6) / 2, { size: 26, color: '#bdeeff' });
+
+    text(ctx, 'Ondas sem parar por 3:00, depois vem o chefão', W / 2, c.y + 272, { size: 16, color: '#d8e6ff' });
+    text(ctx, 'Um aliado fica bloqueado', W / 2, c.y + 298, { size: 15, color: '#ff9aa5' });
   }
 
   drawTab(ctx, r, season, s) {
@@ -173,9 +215,17 @@ export class LevelSelectScene {
     ctx.fillStyle = DIFF_COLOR[map.difficulty];
     ctx.fill();
 
-    // estrelas embaixo
-    stars(ctx, cx, c.y + c.h - 18, got, 9, 22);
-
+    // estrelas embaixo (bronze, prata, ouro ou platina)
+    const plat = this.app.hasPlatinum(map.id);
+    const sy = c.y + c.h - 18;
+    stars(ctx, cx, sy, got, 9, 22, null, starTier(got, plat));
+    // gema da platina: só aparece depois de vencer a platina desse mapa
+    if (plat) {
+      ctx.save();
+      ctx.translate(cx - 58, sy - 2);
+      drawImage(ctx, 'icon_gem', 24);
+      ctx.restore();
+    }
     if (!unlocked) {
       rrect(ctx, c.x, c.y, c.w, c.h, 16);
       ctx.fillStyle = 'rgba(15,22,48,0.72)';
@@ -190,6 +240,17 @@ export class LevelSelectScene {
 
   pointerDown(x, y) {
     const L = this.layout();
+    if (this.pick >= 0) {
+      const M = L.modal;
+      const i = this.pick;
+      if (inRect(M.normal, x, y)) this.launch(i, 'normal');
+      else if (inRect(M.platinum, x, y)) this.launch(i, 'platinum');
+      else if (inRect(M.close, x, y) || !inRect(M.card, x, y)) {
+        this.pick = -1;
+        this.app.sound.play('click');
+      }
+      return;
+    }
     if (inRect(L.back, x, y)) {
       this.app.sound.play('click');
       this.app.goTitle();
@@ -223,10 +284,22 @@ export class LevelSelectScene {
     const tile = this.layout().tiles[i - this.season * MAPS_PER_SEASON];
     if (!tile || !inRect(tile, x, y)) return;
     this.app.sound.play('click');
-    this.app.startMap(i);
+    // com 3 estrelas pergunta o modo; senão já entra
+    if (this.app.platinumOpen(i)) this.pick = i;
+    else this.app.startMap(i);
+  }
+
+  launch(i, mode) {
+    this.pick = -1;
+    this.app.sound.play('click');
+    this.app.startMap(i, mode);
   }
 
   key(k) {
+    if (this.pick >= 0) {
+      if (k === 'Escape') this.pick = -1;
+      return;
+    }
     if (k === 'Escape') this.app.goTitle();
     if (k === 'ArrowRight') this.season = Math.min(SEASONS.length - 1, this.season + 1);
     if (k === 'ArrowLeft') this.season = Math.max(0, this.season - 1);
