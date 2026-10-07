@@ -35,7 +35,7 @@ python3 -m http.server 8080
 | --- | --- | --- | --- |
 | **Hacker** | $200 | Arremessa teclados (atravessa 2 vírus) | Dedos Rápidos · Exploit Triplo |
 | **Golem Firewall** | $350 | Onda de fogo em volta, queima blindados | Chamas Intensas · Muralha de Fogo |
-| **Pinguim** | $300 | Congela os vírus em volta (lentidão) | Criptografia AES · Era do Gelo (congelados ficam vulneráveis: +1 de dano em cada acerto) |
+| **Pinguim** | $300 | Congela os vírus em volta (lentidão) | Criptografia AES · Era do Gelo (mais alcance e congelados ficam vulneráveis: +1 de dano em cada acerto) |
 | **Minerador** | $650 | Minera bitcoins que vão direto pro saldo | GPU Extra · Fazenda de Mineração |
 | **Honeypot** | $80 | *Só no caminho.* Estoura 6 vírus e some | — |
 
@@ -115,5 +115,5 @@ firewall-defense/
 - [ ] Caminhos de upgrade em 2 trilhas (como o Bloons 6) e mais níveis
 - [ ] Heróis que sobem de nível durante a partida
 - [ ] Modos de dificuldade por mapa
-- [ ] Sprites pras defesas que ainda usam desenho com formas (Roteador, Engenheiro, Scanner...)
+- [ ] Sprites pras defesas que ainda usam desenho com formas (Minerador e Honeypot)
 - [ ] Empacotar como app Android/iOS com [Capacitor](https://capacitorjs.com/) (`npx cap add android`)

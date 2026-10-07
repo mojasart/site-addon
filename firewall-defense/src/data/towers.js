@@ -69,7 +69,7 @@ export const TOWERS = {
     sound: 'frost',
     upgrades: [
       { name: 'Criptografia AES', desc: 'Lentidão mais forte e mais longa', cost: 220, apply: (s) => { s.slow = 0.3; s.slowTime = 2.5; } },
-      { name: 'Era do Gelo', desc: 'Congelados ficam vulneráveis: +1 de dano', cost: 380, apply: (s) => { s.vulnerable = 1; } },
+      { name: 'Era do Gelo', desc: 'Mais alcance e congelados levam +1 de dano', cost: 380, apply: (s) => { s.vulnerable = 1; s.range += 25; } },
     ],
   },
   minerador: {
