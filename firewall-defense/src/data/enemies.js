@@ -6,8 +6,8 @@
 //  hp       → dano pra estourar ESSA camada
 //  speed    → pixels por segundo
 //  radius   → tamanho (colisão e desenho)
-//  armored  → blindado: teclados e pacotes comuns não furam
-//  boss     → chefão: não fica lento, não é puxado e mostra barra de vida
+//  armored  → blindado: os teclados do Hacker não furam
+//  boss     → chefão: não fica lento e mostra barra de vida
 //  kind     → qual desenho usar em render/viruses.js
 //  sprite   → imagem em assets/sprites (sem ela usa o desenho do kind)
 //  reward   → moedas ao estourar essa camada (padrão 1)
@@ -31,7 +31,7 @@ export const ENEMIES = {
   },
   trojan: {
     name: 'Trojan',
-    desc: 'Blindado: teclados e pacotes comuns não furam',
+    desc: 'Blindado: os teclados do Hacker não furam',
     hp: 1,
     speed: 60,
     radius: 17,
@@ -44,7 +44,7 @@ export const ENEMIES = {
   locker: {
     name: 'Locker',
     desc: 'Mini-chefão acorrentado: solta 2 Trojans',
-    hp: 80,
+    hp: 65,
     speed: 35,
     radius: 26,
     color: '#a35cf0',
@@ -57,7 +57,7 @@ export const ENEMIES = {
   ransomware: {
     name: 'Ransomware',
     desc: 'Chefão: solta 4 Trojans quando destruído',
-    hp: 300,
+    hp: 260,
     speed: 30,
     radius: 38,
     color: '#7a3cc4',

@@ -12,7 +12,6 @@ export class Tower {
     this.level = 0;
     this.spent = this.def.cost;
     this.stats = { ...this.def }; // cópia: upgrades mexem aqui, não no original
-    this.buff = { rate: 1, armored: false }; // vem do Sysadmin (game.recomputeBuffs)
     this.cooldown = 0.2;
     this.face = 1; // 1 = olhando pra direita, -1 = esquerda
     this.attack = 0; // animação de ataque (1 → 0)
@@ -36,12 +35,8 @@ export class Tower {
     return Math.floor(this.spent * SELL_RATE);
   }
 
-  get rate() {
-    return this.stats.fireRate * this.buff.rate;
-  }
-
   get hitsArmored() {
-    return !!(this.stats.canHitArmored || this.buff.armored);
+    return !!this.stats.canHitArmored;
   }
 
   upgrade() {
@@ -90,47 +85,17 @@ export class Tower {
         this.fire();
         break;
       }
-      case 'spray': {
-        if (this.cooldown > 0) break;
-        if (game.enemiesInRange(this.x, this.y, s.range).length === 0) break;
-        const offset = (this.anim * 0.7) % (Math.PI * 2);
-        for (let i = 0; i < s.count; i++) game.spawnProjectile(this, offset + (i / s.count) * Math.PI * 2);
-        this.fire();
-        break;
-      }
-      case 'beam': {
-        if (this.cooldown > 0) break;
-        const target = game.findTarget(this);
-        if (!target) break;
-        this.lookAt(target.x);
-        game.fx.beam(this.x + this.face * 4, this.y - 26, target.x, target.y);
-        target.takeDamage(s.damage, game, this.opts());
-        this.fire();
-        break;
-      }
       case 'pulse': {
         if (this.cooldown > 0) break;
         const targets = game.enemiesInRange(this.x, this.y, s.range);
         if (targets.length === 0) break;
         for (const e of targets.slice(0, s.maxTargets)) {
           if (s.slow) e.slow(s.slow, s.slowTime);
+          if (s.vulnerable) e.weaken(s.vulnerable, s.slowTime);
           if (s.damage) e.takeDamage(s.damage, game, this.opts());
         }
         game.fx.ring(this.x, this.y, s.range, s.effect);
         this.pulse = 1;
-        this.fire();
-        break;
-      }
-      case 'hook': {
-        if (this.cooldown > 0) break;
-        const targets = game.findTargets(this, s.hooks);
-        if (targets.length === 0) break;
-        for (const e of targets) {
-          game.fx.hook(this.x + this.face * 26, this.y - 40, e.x, e.y);
-          e.takeDamage(s.damage, game, this.opts());
-          if (!e.dead) e.pullBack(s.pull, game);
-        }
-        this.lookAt(targets[0].x);
         this.fire();
         break;
       }
@@ -161,12 +126,11 @@ export class Tower {
         }
         break;
       }
-      // 'buff' não faz nada sozinho: o jogo aplica o bônus nas torres vizinhas
     }
   }
 
   fire() {
-    this.cooldown = this.rate;
+    this.cooldown = this.stats.fireRate;
     this.attack = 1;
   }
 }

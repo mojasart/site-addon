@@ -12,7 +12,11 @@ export function layout(game) {
   const W = PANEL_W;
   return {
     panel: { x: px, y: 0, w: W, h: VIEW_H },
-    tiles: TOWER_ORDER.map((type, i) => ({ type, x: px + 10 + (i % 2) * 90, y: 42 + Math.floor(i / 2) * 83, w: 80, h: 77 })),
+    // 2 colunas; se sobrar uma sozinha na última linha, ela fica no meio
+    tiles: TOWER_ORDER.map((type, i) => {
+      const alone = i === TOWER_ORDER.length - 1 && i % 2 === 0;
+      return { type, x: px + 10 + (alone ? 45 : (i % 2) * 90), y: 44 + Math.floor(i / 2) * 116, w: 80, h: 108 };
+    }),
     play: { x: px + 10, y: VIEW_H - 76, w: W - 20, h: 68 },
     pause: { x: game.mapW - 58, y: 10, w: 48, h: 48 },
     close: { x: px + W - 48, y: 6, w: 40, h: 40 },
@@ -77,31 +81,21 @@ function drawShop(ctx, game, L) {
     const def = TOWERS[tile.type];
     const placing = game.placing === tile.type;
     const affordable = game.money >= def.cost;
-    const usable = game.canUseTower(tile.type);
-    button(ctx, tile, placing ? '#ffcf4a' : def.terrain === 'water' ? '#4fc6e8' : '#5fb4ff', { radius: 14, depth: 5 });
+    button(ctx, tile, placing ? '#ffcf4a' : '#5fb4ff', { radius: 14, depth: 5 });
     ctx.save();
     ctx.beginPath();
     rrect(ctx, tile.x + 2, tile.y + 2, tile.w - 4, tile.h - 8, 12);
     ctx.clip();
-    ctx.translate(tile.x + tile.w / 2, tile.y + 46);
-    ctx.scale(0.66, 0.66);
+    ctx.translate(tile.x + tile.w / 2, tile.y + 56);
+    ctx.scale(0.8, 0.8);
     drawCharacter(ctx, tile.type, { t: game.anim + tile.x * 0.01, face: 1 });
     ctx.restore();
-    if (def.terrain === 'water') {
-      ctx.save();
-      ctx.translate(tile.x + tile.w - 13, tile.y + 15);
-      ICONS.drop(ctx, 6);
-      ctx.restore();
-    }
-    if (!affordable || !usable) {
+    if (!affordable) {
       rrect(ctx, tile.x, tile.y, tile.w, tile.h - 5, 14);
       ctx.fillStyle = 'rgba(20,28,60,0.55)';
       ctx.fill();
     }
-    text(ctx, usable ? `$${def.cost}` : 'SEM ÁGUA', tile.x + tile.w / 2, tile.y + tile.h - 16, {
-      size: usable ? 18 : 13,
-      color: !usable ? '#d8e6ff' : affordable ? GOLD : '#ff7a8a',
-    });
+    text(ctx, `$${def.cost}`, tile.x + tile.w / 2, tile.y + tile.h - 16, { size: 18, color: affordable ? GOLD : '#ff7a8a' });
   }
 }
 
@@ -110,7 +104,7 @@ function drawTowerInfo(ctx, game, L) {
   const tw = game.selectedTower;
   const def = tw.def;
   text(ctx, def.name, P.x + 14, 24, { size: def.name.length > 11 ? 17 : 21, align: 'left' });
-  if (def.attack !== 'buff' && def.attack !== 'farm') text(ctx, `Estourou ${tw.pops}`, P.x + 14, 50, { size: 13, align: 'left', color: '#bcd0f5' });
+  if (def.attack !== 'farm') text(ctx, `Estourou ${tw.pops}`, P.x + 14, 50, { size: 13, align: 'left', color: '#bcd0f5' });
   iconButton(ctx, L.close, '#ff5a5a', 'close');
 
   if (def.upgrades.length) def.upgrades.forEach((up, i) => drawUpgrade(ctx, game, tw, up, i, L.upgrades[i]));
@@ -144,14 +138,9 @@ function towerInfo(tw) {
     case 'trap':
       return { title: 'CAPACIDADE', big: `${tw.capacity}/${tw.def.capacity}`, sub: 'Some quando estourar todos' };
     case 'farm':
-      return { sub: `Minera ${s.packetsPerRound} moedas de $${s.packetValue} por rodada` };
-    case 'buff':
-      return { sub: `Defesas no alcance: ${Math.round((1 - s.buffRate) * 100)}% mais rápidas${s.buffArmored ? ' e furam blindagem' : ''}` };
-    case 'hook':
-      return { sub: `Puxa ${s.hooks} vírus ${s.pull}px pra trás (chefões não)` };
-    case 'beam':
-      return { sub: 'Alcance: o mapa inteiro' };
+      return { sub: `Minera ${s.packetsPerRound} bitcoins de $${s.packetValue} por rodada` };
     default:
+      if (s.vulnerable) return { sub: `Congelados levam +${s.vulnerable} de dano em cada acerto` };
       return { sub: tw.hitsArmored ? 'Fura blindagem dos Trojans' : 'Não fura blindagem (Trojans)' };
   }
 }

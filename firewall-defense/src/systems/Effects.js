@@ -16,8 +16,6 @@ export class Effects {
     this.particles = [];
     this.pops = [];
     this.rings = [];
-    this.beams = [];
-    this.hooks = [];
     this.texts = [];
     this.confetti = [];
   }
@@ -39,21 +37,6 @@ export class Effects {
 
   ring(x, y, radius, kind) {
     this.rings.push({ x, y, radius, life: 0.3, max: 0.3, ...RING_COLORS[kind] });
-  }
-
-  explosion(x, y, radius) {
-    this.rings.push({ x, y, radius, life: 0.28, max: 0.28, fill: 'rgba(255,200,80,0.45)', stroke: '#ffef9a' });
-    this.burst(x, y, '#ff8a1f', 16, 200, 0.45, 6, true);
-    this.burst(x, y, '#5a5f70', 10, 120, 0.6, 7, true);
-  }
-
-  beam(x1, y1, x2, y2) {
-    this.beams.push({ x1, y1, x2, y2, life: 0.1, max: 0.1 });
-  }
-
-  hook(x1, y1, x2, y2) {
-    this.hooks.push({ x1, y1, x2, y2, life: 0.3, max: 0.3 });
-    this.burst(x2, y2, '#bfe9ff', 8, 120, 0.35, 4, true);
   }
 
   blocked(x, y) {
@@ -82,7 +65,7 @@ export class Effects {
       p.y += p.vy * dt;
       p.vx *= 0.93;
     }
-    for (const list of [this.pops, this.rings, this.beams, this.hooks]) for (const e of list) e.life -= dt;
+    for (const list of [this.pops, this.rings]) for (const e of list) e.life -= dt;
     for (const t of this.texts) {
       t.life -= dt;
       t.y -= 34 * dt;
@@ -96,8 +79,6 @@ export class Effects {
     this.particles = this.particles.filter((p) => p.life > 0);
     this.pops = this.pops.filter((p) => p.life > 0);
     this.rings = this.rings.filter((r) => r.life > 0);
-    this.beams = this.beams.filter((b) => b.life > 0);
-    this.hooks = this.hooks.filter((h) => h.life > 0);
     this.texts = this.texts.filter((t) => t.life > 0);
     this.confetti = this.confetti.filter((c) => c.life > 0);
   }
@@ -117,36 +98,6 @@ export class Effects {
     ctx.globalAlpha = 1;
 
     ctx.lineCap = 'round';
-    for (const b of this.beams) {
-      ctx.globalAlpha = b.life / b.max;
-      ctx.strokeStyle = '#ff3b5c';
-      ctx.lineWidth = 8;
-      ctx.beginPath();
-      ctx.moveTo(b.x1, b.y1);
-      ctx.lineTo(b.x2, b.y2);
-      ctx.stroke();
-      ctx.strokeStyle = '#ffe1e6';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-    }
-    for (const h of this.hooks) {
-      ctx.globalAlpha = Math.min(1, (h.life / h.max) * 2);
-      const mx = (h.x1 + h.x2) / 2;
-      const my = Math.max(h.y1, h.y2) + 20;
-      ctx.strokeStyle = '#f4f7fb';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(h.x1, h.y1);
-      ctx.quadraticCurveTo(mx, my, h.x2, h.y2);
-      ctx.stroke();
-      ctx.strokeStyle = '#8a96aa';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(h.x2, h.y2 - 4, 5, 0.2, Math.PI);
-      ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
-
     for (const p of this.particles) {
       ctx.globalAlpha = Math.max(0, p.life / p.max);
       ctx.fillStyle = p.color;

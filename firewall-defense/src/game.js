@@ -151,7 +151,6 @@ export class Game {
     if (this.towers.some((t) => t.dead)) {
       this.towers = this.towers.filter((t) => !t.dead);
       if (this.selectedTower?.dead) this.selectedTower = null;
-      this.recomputeBuffs();
     }
     if (this.lives <= 0) this.end(false);
   }
@@ -255,25 +254,7 @@ export class Game {
     this.packets.push(new Packet(x, y, value));
   }
 
-  // Sysadmin acelera (e talvez dá "root") as defesas no alcance dele
-  recomputeBuffs() {
-    for (const t of this.towers) t.buff = { rate: 1, armored: false };
-    for (const s of this.towers) {
-      if (s.stats.attack !== 'buff') continue;
-      for (const t of this.towers) {
-        if (t === s || Math.hypot(t.x - s.x, t.y - s.y) > s.stats.range + t.r) continue;
-        t.buff.rate = Math.min(t.buff.rate, s.stats.buffRate);
-        t.buff.armored ||= s.stats.buffArmored;
-      }
-    }
-  }
-
   // ── Defesas: colocar, selecionar, upgrade, vender ─────────
-
-  canUseTower(type) {
-    if (TOWERS[type].terrain !== 'water') return true;
-    return this.map.terrain === 'water' || this.map.zones.some((z) => z.terrain === 'water');
-  }
 
   canPlace(type, x, y) {
     const def = TOWERS[type];
@@ -283,7 +264,7 @@ export class Game {
     if (def.onPath ? d > this.path.width / 2 - 6 : d < this.path.width / 2 + r - 6) return false;
     if (Math.hypot(x - this.server.x, y - this.server.y) < 44 + r) return false;
     if (!def.onPath) {
-      if (!fitsTerrain(this.map, x, y, r, def.terrain ?? 'land')) return false;
+      if (!fitsTerrain(this.map, x, y, r, 'land')) return false;
       if (this.view.decor.parts.some((p) => blocksTower(p, x, y, r))) return false;
     }
     return this.towers.every((t) => Math.hypot(t.x - x, t.y - y) >= t.r + r);
@@ -296,7 +277,6 @@ export class Game {
     const tower = new Tower(type, x, y);
     if (this.rounds.active) tower.onRoundStart();
     this.towers.push(tower);
-    this.recomputeBuffs();
     this.fx.burst(x, y, '#ffffff', 14, 160, 0.35, 5, true);
     this.sound.play('place');
     this.placing = null;
@@ -320,7 +300,6 @@ export class Game {
     }
     this.money -= up.cost;
     tower.upgrade();
-    this.recomputeBuffs();
     this.fx.burst(tower.x, tower.y - 10, '#ffd23f', 22, 190, 0.55, 5, true);
     this.sound.play('upgrade');
   }
@@ -330,7 +309,6 @@ export class Game {
     tower.dead = true;
     this.towers = this.towers.filter((t) => t !== tower);
     this.selectedTower = null;
-    this.recomputeBuffs();
     this.fx.burst(tower.x, tower.y, '#ffd23f', 16, 160, 0.4, 5, true);
     this.fx.text(tower.x, tower.y - 40, `+$${tower.sellValue}`, '#ffd23f', 20);
     this.sound.play('sell');
@@ -408,9 +386,8 @@ export class Game {
       if (!inRect(tile, sx, sy)) continue;
       const def = TOWERS[tile.type];
       const toggleOff = this.placing === tile.type;
-      if (!toggleOff && (!this.canUseTower(tile.type) || this.money < def.cost)) {
-        const why = this.canUseTower(tile.type) ? 'Sem dinheiro!' : 'Sem água aqui!';
-        this.fx.text(tile.x + tile.w / 2 - this.offsetX, tile.y + 30, why, '#ff7a8a', 16);
+      if (!toggleOff && this.money < def.cost) {
+        this.fx.text(tile.x + tile.w / 2 - this.offsetX, tile.y + 30, 'Sem dinheiro!', '#ff7a8a', 16);
         this.sound.play('error');
         return;
       }
@@ -446,10 +423,7 @@ export class Game {
   tryPlace(type, x, y) {
     if (this.place(type, x, y)) return;
     const def = TOWERS[type];
-    let why = 'Aqui não dá!';
-    if (def.onPath) why = 'Só no caminho!';
-    else if (def.terrain === 'water') why = 'Só na água!';
-    this.fx.text(x, y - 30, why, '#ff7a8a', 18);
+    this.fx.text(x, y - 30, def.onPath ? 'Só no caminho!' : 'Aqui não dá!', '#ff7a8a', 18);
     this.sound.play('error');
   }
 
@@ -490,7 +464,7 @@ export class Game {
     ctx.restore();
 
     const sel = this.selectedTower;
-    if (sel) drawRange(ctx, sel.x, sel.y, sel.stats.range, true, sel.stats.attack === 'buff' ? 'rgba(120,255,170,0.18)' : null);
+    if (sel) drawRange(ctx, sel.x, sel.y, sel.stats.range, true);
 
     // armadilhas ficam no chão, embaixo dos vírus
     for (const tw of this.towers) if (tw.def.onPath) this.drawTowerAt(ctx, tw);
@@ -511,6 +485,7 @@ export class Game {
       drawEnemy(ctx, e);
       ctx.restore();
       if (e.def.boss) drawBossBar(ctx, e);
+      if (e.vulnTimer > 0) drawVulnerable(ctx, e, t);
     }
     if (sel) {
       ctx.beginPath();
@@ -567,11 +542,6 @@ export class Game {
     ctx.translate(tw.x, tw.y);
     drawCharacter(ctx, tw.type, { t: tw.anim, face: tw.face, attack: tw.attack, pulse: tw.pulse, spawn: tw.spawnAnim });
     drawPips(ctx, tw.level, tw.r);
-    if (tw.buff.rate < 1) {
-      // xicrinha de café: está sendo acelerada por um Sysadmin
-      rrect(ctx, tw.r - 4, -tw.r - 22, 9, 9, 2);
-      fillOutline(ctx, '#ff5a5a', 2);
-    }
     ctx.restore();
   }
 }
@@ -597,4 +567,26 @@ function drawBossBar(ctx, e) {
     ctx.fillStyle = '#ff4d6d';
     ctx.fill();
   }
+}
+
+// Escudinho rachado em cima do vírus: está vulnerável (Pinguim com Era do Gelo)
+function drawVulnerable(ctx, e, t) {
+  ctx.save();
+  ctx.translate(e.x - e.r * 0.8, e.y - e.r - (e.def.boss ? 30 : 16) + Math.sin(t * 6) * 1.5);
+  ctx.beginPath();
+  ctx.moveTo(0, -8);
+  ctx.lineTo(7, -5);
+  ctx.quadraticCurveTo(7, 4, 0, 8);
+  ctx.quadraticCurveTo(-7, 4, -7, -5);
+  ctx.closePath();
+  fillOutline(ctx, '#8fe3ff', 2.5);
+  ctx.beginPath();
+  ctx.moveTo(1, -7);
+  ctx.lineTo(-2, -1);
+  ctx.lineTo(2, 1);
+  ctx.lineTo(-1, 7);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#ffffff';
+  ctx.stroke();
+  ctx.restore();
 }
