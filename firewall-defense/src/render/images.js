@@ -12,6 +12,8 @@ const NAMES = [
   'pinguim_open',
   'firewall',
   'firewall_attack',
+  'minerador',
+  'minerador_attack',
   'virus_red',
   'virus_blue',
   'virus_green',
@@ -43,6 +45,7 @@ const ICON_NAMES = [
   'lock',
   'star',
   'star_empty',
+  'coin',
 ];
 
 const images = new Map();
