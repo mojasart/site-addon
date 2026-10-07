@@ -367,10 +367,14 @@ export class Game {
     return e.x > -this.offsetX - 5;
   }
 
+  // Nota de cada vírus pro modo de mira da defesa (maior = alvo).
+  // Nos modos por atributo, o empate vai pro mais perto da base.
   score(tower, e, d) {
     switch (tower.targetMode) {
       case 'last': return e.remaining;
-      case 'strong': return e.threat * 10000 - e.remaining;
+      case 'strong': return e.threat * 1e5 - e.remaining; // dano que dá se chegar
+      case 'hp': return e.maxHp * 1e5 - e.remaining; // vida máxima, não a atual
+      case 'fast': return e.speed * 1e5 - e.remaining;
       case 'close': return -d;
       default: return -e.remaining;
     }
