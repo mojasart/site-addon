@@ -8,7 +8,7 @@ import { LevelSelectScene } from './scenes/LevelSelectScene.js';
 import { Game } from './game.js';
 import { CatalogScene } from './scenes/CatalogScene.js';
 import { DarkNetScene } from './scenes/DarkNetScene.js';
-import { DARKNET_STARS, mapCoffee, NODE } from './data/darknet.js';
+import { DARKNET_STARS, COFFEE, mapCoffee, NODE } from './data/darknet.js';
 
 // Controla as telas (título → mapas → jogo), a transição entre elas,
 // o progresso salvo e o som.
@@ -36,7 +36,9 @@ export class App {
   }
 
   go(makeScene) {
-    if (!this.next) this.next = makeScene;
+    if (this.next) return;
+    this.game?.bankKills(); // saindo de uma partida: os abatidos dela viram cafés
+    this.next = makeScene;
   }
 
   goTitle() {
@@ -66,13 +68,21 @@ export class App {
   }
 
   // Cafés ganhos até agora (pelo recorde de cada mapa: data/darknet.js)
+  // (mais os dos monstros abatidos em todas as partidas)
   get coffeeEarned() {
-    return MAPS.reduce((sum, m) => sum + mapCoffee(this.save.stars[m.id], this.hasPlatinum(m.id)), 0);
+    const maps = MAPS.reduce((sum, m) => sum + mapCoffee(this.save.stars[m.id], this.hasPlatinum(m.id)), 0);
+    return maps + (this.save.kills ?? 0) * COFFEE.perKill;
   }
 
-  // Saldo de cafés pra gastar na Dark Net
+  // Saldo de cafés pra gastar na Dark Net (com 2 casas: os abatidos dão fração)
   get coffee() {
-    return this.coffeeEarned - (this.save.coffeeSpent ?? 0);
+    return Math.round((this.coffeeEarned - (this.save.coffeeSpent ?? 0)) * 100) / 100;
+  }
+
+  // Monstros abatidos numa partida entram no total do save (viram cafés)
+  addKills(n) {
+    this.save.kills = (this.save.kills ?? 0) + n;
+    writeSave(this.save);
   }
 
   // Árvore da Dark Net: upgrades comprados (save.darknet)
@@ -168,6 +178,7 @@ export class App {
 
   // App foi pro fundo (ligação, troca de app...)
   hidden() {
+    this.game?.bankKills();
     this.game?.pause();
     this.sound.suspend();
   }

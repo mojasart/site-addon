@@ -68,6 +68,7 @@ const ICON_NAMES = [
   'gem',
   'gem_empty',
   'coin',
+  'coin_flat',
   'auto',
   'auto_off',
   'catalog',

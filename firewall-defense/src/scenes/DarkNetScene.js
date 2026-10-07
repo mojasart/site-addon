@@ -3,7 +3,7 @@ import { rrect, fillOutline, text, setFont, button } from '../render/canvas.js';
 import { iconButton, inRect } from '../render/widgets.js';
 import { ICONS } from '../render/sprites.js';
 import { drawCharacter } from '../render/characters.js';
-import { TREE, NODE } from '../data/darknet.js';
+import { TREE, NODE, formatCoffee } from '../data/darknet.js';
 
 /* ════════════════════════════════════════════════════════════
  *  DARK NET: a árvore de upgrades paga com cafés
@@ -90,7 +90,7 @@ export class DarkNetScene {
   // saldo de cafés (ícone + número, sem fundo), centralizado em x
   drawCoffee(ctx, x, y) {
     const n = this.app.coffee;
-    const label = `${fmt(n)} ${n === 1 ? 'CAFÉ' : 'CAFÉS'}`;
+    const label = `${formatCoffee(n)} ${n === 1 ? 'CAFÉ' : 'CAFÉS'}`; // com fração: os monstros abatidos dão cafés quebrados
     setFont(ctx, 24);
     const lw = ctx.measureText(label).width;
     const x0 = x - (lw + 32) / 2;
@@ -244,7 +244,7 @@ export class DarkNetScene {
     let status;
     if (st === 'owned') status = ['> instalado. ativo em todas as fases', GREEN];
     else if (st === 'locked') status = [`> requer: ${NODE[n.parent].name}`, '#ff8aa0'];
-    else if (!can) status = [`> faltam ${fmt(n.cost - this.app.coffee)} café(s)`, '#ffc62e'];
+    else if (!can) status = [`> faltam ${formatCoffee(n.cost - this.app.coffee)} café(s)`, '#ffc62e'];
     else status = ['> pronto pra instalar', PURPLE];
     ctx.fillStyle = status[1];
     ctx.fillText(status[0], P.x + 18, P.y + 196);
@@ -316,9 +316,6 @@ export class DarkNetScene {
     if (k === 'Escape') this.app.goMaps();
   }
 }
-
-// Cafés com até 2 casas e vírgula ("12,35"): o saldo pode ser quebrado
-const fmt = (v) => String(Math.round(v * 100) / 100).replace('.', ',');
 
 // Texto quebrado em linhas (fonte do jogo)
 function wrap(ctx, str, x, y, maxW, size, color) {

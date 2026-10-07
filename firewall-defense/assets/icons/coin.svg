@@ -1,16 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <defs>
-    <linearGradient id="disc" gradientUnits="userSpaceOnUse" x1="0" y1="4" x2="0" y2="60"><stop offset="0" stop-color="#ffc35c"/><stop offset="1" stop-color="#ee8510"/></linearGradient>
-    <linearGradient id="mark" gradientUnits="userSpaceOnUse" x1="0" y1="14" x2="0" y2="50"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#fff0d6"/></linearGradient>
+    <radialGradient id="face" cx="0.36" cy="0.3" r="0.8"><stop offset="0" stop-color="#ffe08a"/><stop offset="0.45" stop-color="#ffb43a"/><stop offset="1" stop-color="#e9780c"/></radialGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8f3f04"/><stop offset="0.4" stop-color="#d06a0a"/><stop offset="1" stop-color="#7a3503"/></linearGradient>
+    <linearGradient id="mark" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#ffe2b0"/></linearGradient>
   </defs>
-  <!-- disco com contorno escuro e anel interno -->
-  <circle cx="32" cy="32" r="28" fill="url(#disc)" stroke="#1b2340" stroke-width="5"/>
-  <circle cx="32" cy="32" r="21.5" stroke="#d9740a" stroke-width="2.5"/>
-  <!-- ₿ em pé e centralizado (a letra vai de x=23.5 a x=43.5; o deslocamento centraliza) -->
-  <g transform="translate(-1.5 0)">
-    <path d="M23.5 17 H34.5 A7 7 0 0 1 34.5 31 H23.5 M23.5 31 H35.5 A8 8 0 0 1 35.5 47 H23.5 V17 M27.5 12 V17 M33 12 V17 M27.5 47 V52 M33 47 V52" stroke="#a85200" stroke-width="8.5"/>
-    <path d="M23.5 17 H34.5 A7 7 0 0 1 34.5 31 H23.5 M23.5 31 H35.5 A8 8 0 0 1 35.5 47 H23.5 V17 M27.5 12 V17 M33 12 V17 M27.5 47 V52 M33 47 V52" stroke="url(#mark)" stroke-width="4.2"/>
+  <!-- espessura (a moeda vista um pouco de cima): o contorno pega as duas -->
+  <path d="M6 29 V36 A26 26 0 0 0 58 36 V29" fill="#1b2340" stroke="#1b2340" stroke-width="7"/>
+  <circle cx="32" cy="29" r="26" fill="#1b2340" stroke="#1b2340" stroke-width="7"/>
+  <path d="M6 29 V36 A26 26 0 0 0 58 36 V29 Z" fill="url(#edge)"/>
+  <!-- serrilhado da borda e filete de brilho -->
+  <path d="M12 44 V48 M18 48.5 V52.5 M25 51 V55 M32 52 V56 M39 51 V55 M46 48.5 V52.5 M52 44 V48" stroke="#6b2e02" stroke-width="1.6" stroke-opacity="0.55"/>
+  <path d="M8 38 A25 25 0 0 0 30 58.5" stroke="#ffc46a" stroke-width="1.6" stroke-opacity="0.6"/>
+  <!-- face -->
+  <circle cx="32" cy="29" r="26" fill="url(#face)"/>
+  <circle cx="32" cy="29" r="19.5" stroke="#c9640a" stroke-width="2.6"/>
+  <path d="M15 22.5 A19 19 0 0 1 40 11" stroke="#fff3cf" stroke-width="2" stroke-opacity="0.75"/>
+  <!-- ₿ em relevo: sombra embaixo, letra clara por cima -->
+  <g transform="translate(-1.5 -2)">
+    <path d="M23.5 16 H34.5 A7 7 0 0 1 34.5 30 H23.5 M23.5 30 H35.5 A8 8 0 0 1 35.5 46 H23.5 V16 M27.5 11 V16 M33 11 V16 M27.5 46 V51 M33 46 V51" transform="translate(1 1.8)" stroke="#9c4600" stroke-width="6"/>
+    <path d="M23.5 16 H34.5 A7 7 0 0 1 34.5 30 H23.5 M23.5 30 H35.5 A8 8 0 0 1 35.5 46 H23.5 V16 M27.5 11 V16 M33 11 V16 M27.5 46 V51 M33 46 V51" stroke="#b55505" stroke-width="7.5"/>
+    <path d="M23.5 16 H34.5 A7 7 0 0 1 34.5 30 H23.5 M23.5 30 H35.5 A8 8 0 0 1 35.5 46 H23.5 V16 M27.5 11 V16 M33 11 V16 M27.5 46 V51 M33 46 V51" stroke="url(#mark)" stroke-width="3.8"/>
   </g>
-  <!-- brilho -->
-  <ellipse cx="17" cy="20" rx="6" ry="3" transform="rotate(-50 17 20)" fill="#ffffff" fill-opacity="0.5"/>
+  <!-- reflexos -->
+  <ellipse cx="18" cy="16.5" rx="6.5" ry="3.2" transform="rotate(-45 18 16.5)" fill="#ffffff" fill-opacity="0.6"/>
+  <circle cx="24.5" cy="11" r="1.6" fill="#ffffff" fill-opacity="0.7"/>
 </svg>
