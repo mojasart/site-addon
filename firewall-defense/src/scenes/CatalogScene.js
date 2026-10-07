@@ -500,7 +500,7 @@ function towerRows(type, s, level) {
     return rows;
   }
   if (s.attack === 'decoy') {
-    rows.push(['VIDA', `${s.hp}`], ['DANO', '0 (só distrai)']);
+    rows.push(['VIDA', `${s.hp}`], ['DURAÇÃO', `${s.duration}s sozinha`], ['DANO', '0 (só distrai)']);
     return rows;
   }
   if (s.effect === 'frost') {
@@ -508,6 +508,7 @@ function towerRows(type, s, level) {
     if (s.vulnerable) rows.push(['CONGELADOS', 'levam dano 2×']);
   } else {
     rows.push(['DANO', s.multishot > 1 ? `${s.damage} × ${s.multishot} teclados` : `${s.damage}`]);
+    if (s.burn) rows.push(['QUEIMA', `${num(s.burn)}/s por ${num(s.burnTime)}s`]);
   }
   rows.push(['ALCANCE', `${s.range}`], ['RECARGA', `${num(s.fireRate)}s`]);
   return rows.slice(0, 5);

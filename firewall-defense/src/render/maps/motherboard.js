@@ -151,21 +151,25 @@ export function paint(g, { path, decor, W, ox }) {
   strokePath(g, path, path.width + 8, OUTLINE);
   strokePath(g, path, path.width, '#7f92ad');
   strokePath(g, path, path.width - 8, '#c8d4e4', [30, 4]);
+  // setinhas do sentido dos vírus: escuras, com um brilho claro embaixo
+  // (parecem gravadas no piso) pra destacar no cinza claro
   g.lineCap = 'round';
   g.lineJoin = 'round';
-  g.strokeStyle = '#9db0c9';
-  g.lineWidth = 4;
+  g.lineWidth = 5.5;
   for (const line of lines(path)) for (let d = 30; d < line.length - 40; d += 64) {
     const p = line.pointAt(d);
-    g.save();
-    g.translate(p.x, p.y);
-    g.rotate(p.angle);
-    g.beginPath();
-    g.moveTo(-5, -8);
-    g.lineTo(4, 0);
-    g.lineTo(-5, 8);
-    g.stroke();
-    g.restore();
+    for (const [dy, color] of [[1.5, '#f2f6fb'], [0, '#5f7393']]) {
+      g.save();
+      g.translate(p.x, p.y + dy);
+      g.rotate(p.angle);
+      g.beginPath();
+      g.moveTo(-6, -10);
+      g.lineTo(5, 0);
+      g.lineTo(-6, 10);
+      g.strokeStyle = color;
+      g.stroke();
+      g.restore();
+    }
   }
   g.restore();
 }

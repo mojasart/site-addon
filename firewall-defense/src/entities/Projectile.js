@@ -19,7 +19,7 @@ export class Projectile {
     this.vx = Math.cos(angle) * this.speed;
     this.vy = Math.sin(angle) * this.speed;
     this.damage = s.damage;
-    this.pierce = s.pierce;
+    this.pierce = s.pierce ?? 1; // quantos vírus atravessa (upgrades podem aumentar)
     this.armored = tower.hitsArmored;
     this.source = tower;
     this.target = target;

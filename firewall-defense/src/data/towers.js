@@ -6,7 +6,8 @@
 //    pulse      → onda que atinge todo mundo no alcance (fogo, gelo)
 //    beam       → laser instantâneo de longo alcance
 //    decoy      → isca EM CIMA do caminho (onPath): não dá dano; os vírus
-//                 param pra atacar até a vida (hp) dela acabar
+//                 param pra atacar até a vida (hp) dela acabar. A vida também
+//                 é um tempo: nas rodadas ela gasta sozinha em `duration` s
 //    farm       → minera bitcoins durante as rodadas
 //
 //  upgrades: 2 níveis, cada um com custo e uma função que altera os status
@@ -27,7 +28,6 @@ export const TOWERS = {
     projectile: 'keyboard',
     fireRate: 0.95,
     damage: 1,
-    pierce: 2,
     projectileSpeed: 650,
     canHitArmored: false,
     targeting: true,
@@ -52,12 +52,13 @@ export const TOWERS = {
     canHitArmored: true,
     sound: 'fire',
     upgrades: [
-      { name: 'Chamas Intensas', desc: '+1 de dano por onda', cost: 280, apply: (s) => { s.damage += 1; } },
-      { name: 'Muralha de Fogo', desc: 'Mais alcance e ondas mais rápidas', cost: 500, apply: (s) => { s.range += 25; s.fireRate *= 0.6; } },
+      { name: 'Muralha de Fogo', desc: 'Mais alcance e ondas mais rápidas', cost: 280, apply: (s) => { s.range += 20; s.fireRate *= 0.8; } },
+      // queima: o vírus fica pegando fogo (burn de dano/s por burnTime s), mesmo fora do alcance
+      { name: 'Incêndio', desc: 'Vírus pegam fogo: 1 de dano/s por 3s', cost: 500, apply: (s) => { s.burn = 1; s.burnTime = 3; } },
     ],
   },
   pinguim: {
-    name: 'Pinguim',
+    name: 'Penguin Linux',
     desc: 'Suporte: não dá dano, congela os vírus em volta e deixa lentos',
     lore: 'O mascote do código aberto. Congela as ameaças com um abraço gelado.',
     cost: 300,
@@ -121,6 +122,7 @@ export const TOWERS = {
     attack: 'decoy',
     onPath: true,
     hp: 40, // cada vírus parado tira ~1 por segundo (chefões bem mais)
+    duration: 15, // segundos que dura sozinha: nas rodadas vai murchando mesmo sem ninguém morder
     upgrades: [],
   },
 };

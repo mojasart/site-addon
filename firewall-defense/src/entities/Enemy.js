@@ -15,7 +15,11 @@ export class Enemy {
     this.face = 1;
     this.slowTimer = 0;
     this.slowMul = 1;
-    this.vulnTimer = 0; // vulnerável (Pinguim com Era do Gelo): leva dano dobrado
+    this.vulnTimer = 0; // vulnerável (Penguin Linux com Era do Gelo): leva dano dobrado
+    this.burnTimer = 0; // pegando fogo (Golem com Incêndio): perde burnDps de vida por segundo
+    this.burnDps = 0;
+    this.burnSource = null;
+    this.hpMul = 1; // vida extra de cada camada (modo platina)
     this.flash = 0;
     this.phase = rand(0, 10); // relógio da animação
     this.dead = false;
@@ -33,9 +37,16 @@ export class Enemy {
     return this.def.speed * this.speedMul * (this.slowTimer > 0 ? this.slowMul : 1);
   }
 
-  // vidas que tira se escapar: o que sobrou dessa camada + todos os filhos
+  // Mais vida em cada camada (modo platina: os filhos ganham a mesma ao nascer)
+  toughen(mul) {
+    this.hpMul = mul;
+    this.hp = this.maxHp = this.hp * mul;
+  }
+
+  // vidas que tira se escapar: o que sobrou dessa camada + todos os filhos.
+  // Sempre inteiro (o fogo deixa vida quebrada) e sem contar a vida extra
   get threat() {
-    return this.hp + threat(this.type) - this.def.hp;
+    return Math.ceil(this.hp / this.hpMul - 1e-6) + threat(this.type) - this.def.hp;
   }
 
   // quanto falta pra chegar na base (usado pra mirar no "primeiro")
@@ -60,6 +71,12 @@ export class Enemy {
     this.phase += dt * (this.slowTimer > 0 ? this.slowMul : 1);
     // vira aos poucos pro lado em que anda (o desenho "gira" na curva)
     this.turn = this.turn == null ? this.face : this.turn + (this.face - this.turn) * Math.min(1, dt * 9);
+    // pegando fogo: queima aos poucos (inclusive parado mordendo a isca)
+    if (this.burnTimer > 0) {
+      this.burnTimer = Math.max(0, this.burnTimer - dt);
+      this.takeDamage(this.burnDps * dt, game, { armored: true, source: this.burnSource, dot: true });
+      if (this.dead) return;
+    }
     // Honeypot no caminho: para e fica mordendo a isca até ela quebrar
     const bait = game.baitAt?.(this);
     if (bait) {
@@ -111,8 +128,16 @@ export class Enemy {
     this.vulnTimer = Math.max(this.vulnTimer, time);
   }
 
+  // Incêndio: pega fogo por `time` s (outra onda renova o tempo)
+  ignite(dps, time, source) {
+    this.burnDps = Math.max(this.burnTimer > 0 ? this.burnDps : 0, dps);
+    this.burnTimer = Math.max(this.burnTimer, time);
+    this.burnSource = source;
+  }
+
   // opts: { armored (fura blindagem?), source (torre que atacou), hitSet,
-  //         overflow (dano que sobrou da camada de cima: não dobra de novo) }
+  //         overflow (dano que sobrou da camada de cima: não dobra de novo),
+  //         dot (dano contínuo, do fogo: não pisca) }
   takeDamage(amount, game, opts = {}) {
     if (this.dead || amount <= 0) return;
     if (this.def.armored && !opts.armored) {
@@ -121,7 +146,7 @@ export class Enemy {
       return;
     }
     if (this.vulnTimer > 0 && !opts.overflow) amount *= 2;
-    this.flash = 0.08;
+    if (!opts.dot) this.flash = 0.08;
     this.hp -= amount;
     if (this.hp <= 0) this.pop(game, -this.hp, opts);
   }
@@ -145,6 +170,9 @@ export class Enemy {
         child.slowTimer = this.slowTimer;
         child.slowMul = this.slowMul;
         child.vulnTimer = this.vulnTimer;
+        child.burnTimer = this.burnTimer;
+        child.burnDps = this.burnDps;
+        child.burnSource = this.burnSource;
         child.round = this.round;
         child.speedMul = this.speedMul;
         child.place();
