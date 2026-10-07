@@ -205,16 +205,7 @@ export class DarkNetScene {
 
   // saldo de cafés (ícone + número, sem fundo), centralizado em x
   drawCoffee(ctx, x, y) {
-    const n = this.app.coffee;
-    const label = `${formatCoffee(n)} ${n === 1 ? 'CAFÉ' : 'CAFÉS'}`; // com fração: os monstros abatidos dão cafés quebrados
-    setFont(ctx, 24);
-    const lw = ctx.measureText(label).width;
-    const x0 = x - (lw + 32) / 2;
-    ctx.save();
-    ctx.translate(x0 + 12, y - 2);
-    ICONS.coffee(ctx, 11);
-    ctx.restore();
-    text(ctx, label, x0 + 32, y, { size: 24, color: COFFEE_TXT, align: 'left' });
+    coffeeLabel(ctx, formatCoffee(this.app.coffee), x, y, 24, COFFEE_TXT); // com fração: os monstros abatidos dão cafés quebrados
   }
 
   // Ligações: centro → ramos (verde e com dados correndo quando o ramo é
@@ -358,7 +349,9 @@ export class DarkNetScene {
     ctx.font = `bold 13px ${MONO}`;
     ctx.textAlign = 'left';
     let status = null;
-    if (st === 'owned') status = ['> instalado. ativo em todas as fases', GREEN];
+    const extra = st === 'owned' ? this.app.perkRollbackSet(n.id).length - 1 : 0;
+    if (extra > 0) status = [`> rollback leva junto ${extra} upgrade${extra > 1 ? 's' : ''}`, '#ffc62e'];
+    else if (st === 'owned') status = ['> instalado. ativo em todas as fases', GREEN];
     else if (st === 'open' && !can) status = [`> faltam ${formatCoffee(n.cost - this.app.coffee)} café(s)`, '#ffc62e'];
     else if (st === 'open') status = ['> pronto pra instalar', PURPLE];
     if (status) {
@@ -366,22 +359,13 @@ export class DarkNetScene {
       ctx.fillText(status[0], P.x + 18, P.y + 196);
     }
 
-    // botão: o próprio custo em cafés (verde quando dá pra comprar)
+    // botão: o custo em cafés (verde quando dá pra comprar); comprado vira
+    // rollback, que desfaz e devolve os cafés
     const B = L.buy;
     const cy = B.y + (B.h - 5) / 2 + 1;
-    button(ctx, B, st === 'owned' ? '#2f8f5b' : can ? '#3fd16b' : '#5d5675', { radius: 14, depth: 5 });
-    if (st === 'owned') text(ctx, 'INSTALADO', B.x + B.w / 2, cy, { size: 22 });
-    else {
-      const label = `${n.cost} ${n.cost === 1 ? 'CAFÉ' : 'CAFÉS'}`;
-      setFont(ctx, 22);
-      const lw = ctx.measureText(label).width;
-      const x0 = B.x + (B.w - lw - 34) / 2;
-      ctx.save();
-      ctx.translate(x0 + 12, cy - 2);
-      ICONS.coffee(ctx, 11);
-      ctx.restore();
-      text(ctx, label, x0 + 34, cy, { size: 22, align: 'left' });
-    }
+    button(ctx, B, st === 'owned' ? '#e0703a' : can ? '#3fd16b' : '#5d5675', { radius: 14, depth: 5 });
+    if (st === 'owned') coffeeLabel(ctx, `+${this.app.perkRefund(n.id)}`, B.x + B.w / 2, cy, 22, '#ffffff', 'ROLLBACK');
+    else coffeeLabel(ctx, `${n.cost}`, B.x + B.w / 2, cy, 22, '#ffffff');
     ctx.restore();
   }
 
@@ -412,10 +396,13 @@ export class DarkNetScene {
       return;
     }
     if (inRect(L.buy, x, y)) {
-      if (this.app.buyPerk(this.sel)) {
+      if (this.state(this.sel) === 'owned') {
+        this.app.refundPerk(this.sel);
+        this.app.sound.play('sell');
+      } else if (this.app.buyPerk(this.sel)) {
         this.flash[this.sel] = 1;
         this.app.sound.play('upgrade');
-      } else if (this.state(this.sel) !== 'owned') {
+      } else {
         this.shake = 1;
         this.app.sound.play('error');
       }
@@ -491,6 +478,24 @@ export class DarkNetScene {
     if (k === '-') this.zoomStep(0.8);
     if (k === '0') this.homing = true;
   }
+}
+
+// Ícone do café + valor, centralizados em x (com um texto antes, se tiver)
+function coffeeLabel(ctx, value, x, y, size, color, prefix = '') {
+  setFont(ctx, size);
+  const pw = prefix ? ctx.measureText(prefix).width + size * 0.5 : 0;
+  const icon = size * 1.2;
+  const total = pw + icon + ctx.measureText(value).width;
+  let x0 = x - total / 2;
+  if (prefix) {
+    text(ctx, prefix, x0, y, { size, color, align: 'left' });
+    x0 += pw;
+  }
+  ctx.save();
+  ctx.translate(x0 + size * 0.5, y - 2);
+  ICONS.coffee(ctx, size * 0.48);
+  ctx.restore();
+  text(ctx, value, x0 + icon, y, { size, color, align: 'left' });
 }
 
 // Texto quebrado em linhas (fonte do jogo)

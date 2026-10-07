@@ -8,7 +8,7 @@ import { LevelSelectScene } from './scenes/LevelSelectScene.js';
 import { Game } from './game.js';
 import { CatalogScene } from './scenes/CatalogScene.js';
 import { DarkNetScene } from './scenes/DarkNetScene.js';
-import { DARKNET_STARS, COFFEE, mapCoffee, NODE } from './data/darknet.js';
+import { DARKNET_STARS, COFFEE, mapCoffee, NODE, TREE } from './data/darknet.js';
 
 // Controla as telas (título → mapas → jogo), a transição entre elas,
 // o progresso salvo e o som.
@@ -100,6 +100,36 @@ export class App {
     if (!this.canBuyPerk(id)) return false;
     this.save.darknet = { ...this.perks, [id]: true };
     this.save.coffeeSpent = (this.save.coffeeSpent ?? 0) + NODE[id].cost;
+    writeSave(this.save);
+    return true;
+  }
+
+  // Nós que saem junto num rollback: o próprio e os comprados que dependem dele
+  perkRollbackSet(id) {
+    const out = [];
+    const walk = (pid) => {
+      if (!this.perks[pid]) return;
+      out.push(pid);
+      for (const n of TREE) if (n.parent === pid) walk(n.id);
+    };
+    walk(id);
+    return out;
+  }
+
+  // Cafés que voltam ao desfazer esse nó (com os que dependem dele)
+  perkRefund(id) {
+    return this.perkRollbackSet(id).reduce((sum, k) => sum + NODE[k].cost, 0);
+  }
+
+  // Rollback: desfaz o nó (e os que dependem dele) e devolve os cafés
+  refundPerk(id) {
+    const ids = this.perkRollbackSet(id);
+    if (!ids.length) return false;
+    const back = this.perkRefund(id);
+    const darknet = { ...this.perks };
+    for (const k of ids) delete darknet[k];
+    this.save.darknet = darknet;
+    this.save.coffeeSpent = Math.max(0, (this.save.coffeeSpent ?? 0) - back);
     writeSave(this.save);
     return true;
   }
