@@ -1,18 +1,19 @@
-import { Game } from './game.js';
+import { App } from './app.js';
 import { VIEW_H, MIN_VIEW_W, MAX_VIEW_W } from './config.js';
+import { bumpFontEpoch } from './render/maps/index.js';
 import { clamp } from './util.js';
 
 const stage = document.getElementById('stage'); // área útil da tela (fora do notch)
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
-// Abra com ?debug na URL pra começar com dinheiro infinito
+// Abra com ?debug na URL: dinheiro infinito e todos os mapas liberados
 const debug = new URLSearchParams(location.search).has('debug');
-const game = new Game({ debug });
-window.game = game; // acesso pelo console do navegador pra testar coisas
+const app = new App({ debug });
+window.app = app; // acesso pelo console do navegador pra testar coisas
 
-// O canvas só baixa a fonte se alguém pedir; quando chega, o mapa é redesenhado
-document.fonts?.load('20px "Lilita One"').then(() => game.mapRenderer && (game.mapRenderer.key = ''));
+// O canvas só baixa a fonte se alguém pedir; quando chega, os mapas são redesenhados
+document.fonts?.load('20px "Lilita One"').then(bumpFontEpoch).catch(() => {});
 
 // ── Escala: resolução virtual → tela real ─────────────────────
 const view = { scale: 1, offX: 0, offY: 0, dpr: 1 };
@@ -25,7 +26,7 @@ function resize() {
   view.offX = (cssW - viewW * view.scale) / 2;
   view.offY = (cssH - VIEW_H * view.scale) / 2;
   view.dpr = Math.min(window.devicePixelRatio || 1, 2); // limita pra não pesar em celular fraco
-  game.resize(viewW, view.scale * view.dpr);
+  app.resize(viewW, view.scale * view.dpr);
   canvas.width = Math.round(cssW * view.dpr);
   canvas.height = Math.round(cssH * view.dpr);
   canvas.style.width = `${cssW}px`;
@@ -49,26 +50,25 @@ canvas.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   canvas.setPointerCapture?.(e.pointerId);
   const p = toWorld(e);
-  game.pointerDown(p.x, p.y, e.pointerType);
+  app.pointerDown(p.x, p.y, e.pointerType);
   requestFullscreenOnMobile();
 });
 canvas.addEventListener('pointermove', (e) => {
   if (!e.isPrimary) return;
   const p = toWorld(e);
-  game.pointerMove(p.x, p.y, e.pointerType);
+  app.pointerMove(p.x, p.y, e.pointerType);
 });
 canvas.addEventListener('pointerup', (e) => {
   if (!e.isPrimary) return;
   const p = toWorld(e);
-  game.pointerUp(p.x, p.y);
+  app.pointerUp(p.x, p.y);
 });
-canvas.addEventListener('pointercancel', () => game.pointerCancel());
+canvas.addEventListener('pointercancel', () => app.pointerCancel());
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+window.addEventListener('keydown', (e) => app.key(e.key));
 
 // Pausa sozinho quando o app vai pro fundo (ligação, troca de app...)
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) game.pause();
-});
+document.addEventListener('visibilitychange', () => (document.hidden ? app.hidden() : app.shown()));
 
 // No celular, entra em tela cheia e trava em paisagem no primeiro toque
 let fullscreenTried = false;
@@ -94,7 +94,7 @@ let last = performance.now();
 function frame(now) {
   const dt = Math.min((now - last) / 1000, 0.05); // evita "teleporte" depois de travadas
   last = now;
-  game.update(dt);
+  app.update(dt);
 
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = '#1f2b52';
@@ -104,9 +104,9 @@ function frame(now) {
   ctx.setTransform(s, 0, 0, s, view.offX * view.dpr, view.offY * view.dpr);
   ctx.save();
   ctx.beginPath();
-  ctx.rect(0, 0, game.viewW, VIEW_H);
+  ctx.rect(0, 0, app.viewW, VIEW_H);
   ctx.clip();
-  game.render(ctx);
+  app.render(ctx);
   ctx.restore();
 
   requestAnimationFrame(frame);

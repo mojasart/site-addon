@@ -1,99 +1,125 @@
-import { VIEW_H, MIN_VIEW_W, PANEL_W, START_MONEY, START_LIVES, MAX_SPEED } from './config.js';
-import { MAP } from './data/map.js';
+import { VIEW_H, PANEL_W, MAX_SPEED } from './config.js';
+import { MAPS } from './data/maps.js';
 import { ROUNDS } from './data/rounds.js';
 import { TOWERS, TARGET_MODES } from './data/towers.js';
-import { Path } from './core/Path.js';
+import { fitsTerrain } from './core/terrain.js';
 import { Tower } from './entities/Tower.js';
 import { Projectile } from './entities/Projectile.js';
 import { Packet } from './entities/Packet.js';
 import { RoundManager } from './systems/RoundManager.js';
 import { Effects } from './systems/Effects.js';
-import { MapRenderer, serverPos, layoutDecor, blocksTower } from './render/map.js';
-import { layout, inRect, drawHud, drawPanel, drawRange } from './render/ui.js';
-import { drawBanner, drawOverlay, screenButton } from './render/screens.js';
-import { drawTower, drawPips, drawEnemy, drawProjectile, drawCoin, drawServer, setPixelScale } from './render/sprites.js';
+import { MapView, blocksTower } from './render/maps/index.js';
+import { layout, drawHud, drawPanel, drawRange } from './render/ui.js';
+import { inRect } from './render/widgets.js';
+import { drawBanner, drawOverlay, overlayLayout } from './render/screens.js';
+import { drawCharacter, drawPips } from './render/characters.js';
+import { drawEnemy } from './render/viruses.js';
+import { drawProjectile, drawCoin, drawServer } from './render/sprites.js';
 import { rrect, fillOutline } from './render/canvas.js';
+import { rand } from './util.js';
 
-const TOUCH_LIFT = 46; // ao arrastar com o dedo, a torre aparece acima dele
+const TOUCH_LIFT = 46; // ao arrastar com o dedo, a defesa aparece acima dele
 
+// A partida em si (uma fase). Criada pelo App ao escolher um mapa.
 export class Game {
-  constructor({ debug = false } = {}) {
-    this.debug = debug;
-    this.anim = 0; // relógio das animações (roda até no menu)
-    this.pixelScale = 1;
-    this.path = new Path(MAP.points, MAP.pathWidth);
-    this.mapRenderer = new MapRenderer();
+  constructor(app, mapIndex) {
+    this.app = app;
+    this.sound = app.sound;
+    this.mapIndex = mapIndex;
+    this.map = MAPS[mapIndex];
+    this.anim = 0;
     this.pointer = { x: -1, y: -1, down: false, type: 'touch' };
     this.drag = null;
-    this.resize(MIN_VIEW_W, 1);
+    this.resize(app.viewW);
     this.reset();
-    this.state = 'menu'; // menu | playing | paused | won | lost
   }
 
-  // Chamado pelo main.js quando a tela muda de tamanho
-  resize(viewW, pixelScale) {
-    this.viewW = viewW;
-    this.mapW = viewW - PANEL_W;
-    this.offsetX = Math.max(0, (this.mapW - MAP.width) / 2); // centraliza o mapa
-    this.pixelScale = pixelScale;
-    setPixelScale(pixelScale);
-    // inimigos nascem logo antes da borda esquerda visível
-    this.spawnDist = 0;
-    while (this.spawnDist < this.path.length && this.path.pointAt(this.spawnDist).x < -this.offsetX - 30) this.spawnDist += 2;
-    this.server = serverPos(this.path);
-    this.decor = layoutDecor(this);
+  get viewW() { return this.app.viewW; }
+  get path() { return this.view.path; }
+  get server() { return this.view.server; }
+  get spawnDist() { return this.view.spawnDist; }
+  get offsetX() { return this.view.offsetX; }
+  get nextMap() { return MAPS[this.mapIndex + 1] ?? null; }
+
+  resize(viewW) {
+    const mapW = viewW - PANEL_W;
+    if (this.view?.mapW !== mapW) this.view = new MapView(this.map, mapW);
+    this.mapW = mapW;
   }
 
   reset() {
-    this.money = this.debug ? 99999 : START_MONEY;
-    this.lives = START_LIVES;
+    this.money = this.app.debug ? 99999 : this.map.money;
+    this.lives = this.map.lives;
     this.towers = [];
     this.enemies = [];
     this.newEnemies = [];
     this.projectiles = [];
     this.packets = [];
-    this.rounds = new RoundManager(ROUNDS);
+    this.rounds = new RoundManager(ROUNDS.slice(0, this.map.rounds));
     this.fx = new Effects();
     this.speed = 1;
-    this.placing = null; // tipo de torre sendo posicionada
+    this.placing = null; // tipo de defesa sendo posicionada
     this.selectedTower = null;
     this.banner = null;
     this.hurt = 0;
+    this.coinBump = 0;
+    this.shakeAmt = 0;
     this.endDelay = 0;
+    this.overlayTime = 0;
+    this.stars = 0;
     this.stats = { pops: 0 };
-  }
-
-  start() {
-    this.reset();
-    this.state = 'playing';
+    this.state = 'playing'; // playing | paused | won | lost
+    this.showBanner(this.map.name, 2.2, '#ffffff', 46, 'Arraste as defesas pro mapa!');
   }
 
   pause() {
-    if (this.state === 'playing') {
-      this.state = 'paused';
-      this.drag = null;
-    }
+    if (this.state !== 'playing') return;
+    this.state = 'paused';
+    this.overlayTime = 0;
+    this.drag = null;
+    this.sound.play('click');
+  }
+
+  resume() {
+    this.state = 'playing';
+    this.sound.play('click');
   }
 
   end(won) {
     this.state = won ? 'won' : 'lost';
-    this.endDelay = 0.8; // evita reiniciar com um toque atrasado
+    this.endDelay = won ? 1.6 : 0.9;
+    this.overlayTime = 0;
     this.placing = null;
     this.selectedTower = null;
     this.drag = null;
+    if (won) {
+      const L = this.map.lives;
+      this.stars = this.lives >= L ? 3 : this.lives >= L * 0.5 ? 2 : 1;
+      this.app.recordStars(this.map.id, this.stars);
+      this.fx.celebrate(this.viewW, VIEW_H);
+      this.sound.play('win');
+      for (let i = 0; i < this.stars; i++) setTimeout(() => this.sound.play('star'), 500 + i * 350);
+    } else this.sound.play('lose');
   }
 
-  showBanner(text, duration = 1.2, color = '#ffffff', size = 46) {
-    this.banner = { text, color, size, time: duration, total: duration };
+  showBanner(text, duration = 1.2, color = '#ffffff', size = 46, sub = null) {
+    this.banner = { text, sub, color, size, time: duration, total: duration };
+  }
+
+  shake(amount) {
+    this.shakeAmt = Math.max(this.shakeAmt, amount);
   }
 
   // ── Atualização ───────────────────────────────────────────
 
   update(dt) {
     this.anim += dt;
+    if (this.state !== 'playing') this.overlayTime += dt;
     if (this.state === 'paused') return;
     this.endDelay = Math.max(0, this.endDelay - dt);
     this.hurt = Math.max(0, this.hurt - dt);
+    this.coinBump = Math.max(0, this.coinBump - dt * 4);
+    this.shakeAmt = Math.max(0, this.shakeAmt - dt * 30);
     if (this.banner && (this.banner.time -= dt) <= 0) this.banner = null;
     if (this.state !== 'playing') {
       this.fx.update(dt);
@@ -116,7 +142,7 @@ export class Game {
     for (const p of this.projectiles) p.update(dt, this);
     this.flushSpawns();
     for (const e of this.enemies) if (!e.dead) e.update(dt, this);
-    for (const p of this.packets) p.update(dt);
+    for (const p of this.packets) p.update(dt, this);
     this.fx.update(dt);
 
     this.enemies = this.enemies.filter((e) => !e.dead);
@@ -125,8 +151,8 @@ export class Game {
     if (this.towers.some((t) => t.dead)) {
       this.towers = this.towers.filter((t) => !t.dead);
       if (this.selectedTower?.dead) this.selectedTower = null;
+      this.recomputeBuffs();
     }
-
     if (this.lives <= 0) this.end(false);
   }
 
@@ -140,56 +166,74 @@ export class Game {
   leak(enemy) {
     this.lives -= enemy.threat;
     this.hurt = 0.4;
-    buzz(40);
+    this.shake(4);
+    this.sound.play('leak');
     this.fx.text(this.server.x, this.server.y - 50, `-${enemy.threat}`, '#ff5a6a', 26);
+    buzz(40);
   }
 
   onRoundEnd() {
-    const bonus = 100 + this.rounds.index;
+    const n = this.rounds.index;
+    const bonus = 100 + n;
     this.money += bonus;
-    this.fx.text(150 - this.offsetX, 110, `+$${bonus} bônus`, '#ffd23f', 20);
-    if (this.rounds.finished) this.end(true);
+    this.coinBump = 1;
+    if (this.rounds.finished) {
+      this.end(true);
+      return;
+    }
+    this.sound.play('roundEnd');
+    this.showBanner(`RODADA ${n} COMPLETA!`, 1.6, '#3dff9a', 36, `+$${bonus}`);
   }
 
   playPressed() {
     if (this.rounds.active) {
       this.speed = (this.speed % MAX_SPEED) + 1;
+      this.sound.play('click');
       return;
     }
     if (this.rounds.start()) {
       for (const t of this.towers) t.onRoundStart();
       this.showBanner(`RODADA ${this.rounds.index + 1}`, 1.1);
+      this.sound.play('round');
     }
   }
 
-  // ── Consultas usadas pelas torres ─────────────────────────
+  coinTarget() {
+    return { x: 30 - this.offsetX, y: 72 };
+  }
+
+  // ── Consultas usadas pelas defesas ────────────────────────
 
   isVisible(e) {
     return e.x > -this.offsetX - 5;
   }
 
-  findTarget(tower) {
-    const s = tower.stats;
-    let best = null;
-    let bestScore = -Infinity;
+  score(tower, e, d) {
+    switch (tower.targetMode) {
+      case 'last': return -e.dist;
+      case 'strong': return e.threat * 10000 + e.dist;
+      case 'close': return -d;
+      default: return e.dist;
+    }
+  }
+
+  findTargets(tower, n) {
+    const range = tower.stats.range;
+    const armored = tower.hitsArmored;
+    const list = [];
     for (const e of this.enemies) {
       if (e.dead || !this.isVisible(e)) continue;
-      if (e.def.armored && !s.canHitArmored) continue;
+      if (e.def.armored && !armored) continue;
       const d = Math.hypot(e.x - tower.x, e.y - tower.y);
-      if (d > s.range + e.r) continue;
-      let score;
-      switch (tower.targetMode) {
-        case 'last': score = -e.dist; break;
-        case 'strong': score = e.threat * 10000 + e.dist; break;
-        case 'close': score = -d; break;
-        default: score = e.dist;
-      }
-      if (score > bestScore) {
-        bestScore = score;
-        best = e;
-      }
+      if (d > range + e.r) continue;
+      list.push({ e, score: this.score(tower, e, d) });
     }
-    return best;
+    list.sort((a, b) => b.score - a.score);
+    return list.slice(0, n).map((x) => x.e);
+  }
+
+  findTarget(tower) {
+    return this.findTargets(tower, 1)[0] ?? null;
   }
 
   enemiesInRange(x, y, range) {
@@ -204,13 +248,32 @@ export class Game {
 
   spawnProjectile(tower, angle) {
     this.projectiles.push(new Projectile(tower, angle));
+    this.sound.play(tower.def.sound ?? 'throw');
   }
 
   spawnPacket(x, y, value) {
     this.packets.push(new Packet(x, y, value));
   }
 
-  // ── Torres: colocar, selecionar, upgrade, vender ──────────
+  // Sysadmin acelera (e talvez dá "root") as defesas no alcance dele
+  recomputeBuffs() {
+    for (const t of this.towers) t.buff = { rate: 1, armored: false };
+    for (const s of this.towers) {
+      if (s.stats.attack !== 'buff') continue;
+      for (const t of this.towers) {
+        if (t === s || Math.hypot(t.x - s.x, t.y - s.y) > s.stats.range + t.r) continue;
+        t.buff.rate = Math.min(t.buff.rate, s.stats.buffRate);
+        t.buff.armored ||= s.stats.buffArmored;
+      }
+    }
+  }
+
+  // ── Defesas: colocar, selecionar, upgrade, vender ─────────
+
+  canUseTower(type) {
+    if (TOWERS[type].terrain !== 'water') return true;
+    return this.map.terrain === 'water' || this.map.zones.some((z) => z.terrain === 'water');
+  }
 
   canPlace(type, x, y) {
     const def = TOWERS[type];
@@ -219,7 +282,10 @@ export class Game {
     const d = this.path.distanceTo(x, y);
     if (def.onPath ? d > this.path.width / 2 - 6 : d < this.path.width / 2 + r - 6) return false;
     if (Math.hypot(x - this.server.x, y - this.server.y) < 44 + r) return false;
-    if (!def.onPath && this.decor.parts.some((p) => blocksTower(p, x, y, r))) return false;
+    if (!def.onPath) {
+      if (!fitsTerrain(this.map, x, y, r, def.terrain ?? 'land')) return false;
+      if (this.view.decor.parts.some((p) => blocksTower(p, x, y, r))) return false;
+    }
     return this.towers.every((t) => Math.hypot(t.x - x, t.y - y) >= t.r + r);
   }
 
@@ -230,15 +296,17 @@ export class Game {
     const tower = new Tower(type, x, y);
     if (this.rounds.active) tower.onRoundStart();
     this.towers.push(tower);
-    this.fx.burst(x, y, '#ffffff', 14, 160, 0.35, 5);
-    buzz(12);
+    this.recomputeBuffs();
+    this.fx.burst(x, y, '#ffffff', 14, 160, 0.35, 5, true);
+    this.sound.play('place');
     this.placing = null;
+    buzz(12);
     return true;
   }
 
   towerAt(x, y) {
     let best = null;
-    for (const t of this.towers) if (Math.hypot(t.x - x, t.y - y) < t.r + 10) best = t;
+    for (const t of this.towers) if (Math.hypot(t.x - x, t.y - (y + 8)) < t.r + 12) best = t;
     return best;
   }
 
@@ -246,12 +314,15 @@ export class Game {
     const up = tower.nextUpgrade;
     if (!up) return;
     if (this.money < up.cost) {
-      this.fx.text(tower.x, tower.y - 40, 'Sem bits!', '#ff7a8a', 18);
+      this.fx.text(tower.x, tower.y - 50, 'Sem dinheiro!', '#ff7a8a', 18);
+      this.sound.play('error');
       return;
     }
     this.money -= up.cost;
     tower.upgrade();
-    this.fx.burst(tower.x, tower.y, '#ffd23f', 20, 180, 0.5, 5);
+    this.recomputeBuffs();
+    this.fx.burst(tower.x, tower.y - 10, '#ffd23f', 22, 190, 0.55, 5, true);
+    this.sound.play('upgrade');
   }
 
   sell(tower) {
@@ -259,50 +330,57 @@ export class Game {
     tower.dead = true;
     this.towers = this.towers.filter((t) => t !== tower);
     this.selectedTower = null;
-    this.fx.burst(tower.x, tower.y, '#ffd23f', 16, 160, 0.4, 5);
-    this.fx.text(tower.x, tower.y - 30, `+$${tower.sellValue}`, '#ffd23f', 20);
-  }
-
-  collectAt(x, y) {
-    for (let i = this.packets.length - 1; i >= 0; i--) {
-      const p = this.packets[i];
-      if (!p.hit(x, y)) continue;
-      p.state = 'collected';
-      p.target = { x: 30 - this.offsetX, y: 72 };
-      this.money += p.value;
-      this.fx.text(p.x, p.y - 24, `+$${p.value}`, '#ffd23f', 20);
-      return true;
-    }
-    return false;
+    this.recomputeBuffs();
+    this.fx.burst(tower.x, tower.y, '#ffd23f', 16, 160, 0.4, 5, true);
+    this.fx.text(tower.x, tower.y - 40, `+$${tower.sellValue}`, '#ffd23f', 20);
+    this.sound.play('sell');
   }
 
   // ── Input (coordenadas de tela já convertidas) ────────────
 
+  key(k) {
+    if (k === ' ' && this.state === 'playing') this.playPressed();
+    else if (k === 'Escape') {
+      if (this.state === 'paused') this.resume();
+      else this.pause();
+    }
+  }
+
   pointerDown(sx, sy, type = 'touch') {
     Object.assign(this.pointer, { x: sx, y: sy, down: true, type });
-
-    if (this.state === 'menu') return this.start();
-    if (this.state === 'paused') {
-      this.state = 'playing';
-      return;
-    }
-    if (this.state === 'won' || this.state === 'lost') {
-      if (this.endDelay <= 0 && inRect(screenButton(this), sx, sy)) this.start();
-      return;
-    }
+    if (this.state !== 'playing') return this.overlayTap(sx, sy);
 
     const L = layout(this);
     if (sx >= L.panel.x) return this.panelTap(sx, sy, L);
     if (inRect(L.pause, sx, sy)) return this.pause();
 
     const mx = sx - this.offsetX;
-    if (this.collectAt(mx, sy)) return;
     if (this.placing) {
       // decide no pointerUp: toque rápido coloca ali, arrastar ajusta a posição
       this.drag = { type: this.placing, x: sx, y: sy, moved: false, fromMap: true };
       return;
     }
-    this.selectedTower = this.towerAt(mx, sy);
+    const tw = this.towerAt(mx, sy);
+    if (tw) this.sound.play('click');
+    this.selectedTower = tw;
+  }
+
+  overlayTap(sx, sy) {
+    const L = overlayLayout(this);
+    if (this.state === 'paused') {
+      if (inRect(L.resume, sx, sy)) this.resume();
+      else if (inRect(L.restart, sx, sy)) this.app.startMap(this.mapIndex);
+      else if (inRect(L.maps, sx, sy)) this.app.goMaps();
+      else if (inRect(L.music, sx, sy)) this.app.toggleMusic();
+      else if (inRect(L.sfx, sx, sy)) this.app.toggleSfx();
+      return;
+    }
+    if (this.endDelay > 0) return;
+    if (inRect(L.maps, sx, sy)) this.app.goMaps();
+    else if (inRect(L.next, sx, sy)) {
+      const next = this.state === 'won' && this.nextMap ? this.mapIndex + 1 : this.mapIndex;
+      this.app.startMap(next);
+    }
   }
 
   panelTap(sx, sy, L) {
@@ -310,11 +388,14 @@ export class Game {
 
     const tw = this.selectedTower;
     if (tw) {
-      if (inRect(L.close, sx, sy)) this.selectedTower = null;
-      else if (inRect(L.sell, sx, sy)) this.sell(tw);
+      if (inRect(L.close, sx, sy)) {
+        this.selectedTower = null;
+        this.sound.play('click');
+      } else if (inRect(L.sell, sx, sy)) this.sell(tw);
       else if (tw.def.targeting && inRect(L.target, sx, sy)) {
         const i = TARGET_MODES.findIndex((m) => m.id === tw.targetMode);
         tw.targetMode = TARGET_MODES[(i + 1) % TARGET_MODES.length].id;
+        this.sound.play('click');
       } else {
         tw.def.upgrades.forEach((_, i) => {
           if (inRect(L.upgrades[i], sx, sy) && tw.level === i) this.buyUpgrade(tw);
@@ -327,12 +408,15 @@ export class Game {
       if (!inRect(tile, sx, sy)) continue;
       const def = TOWERS[tile.type];
       const toggleOff = this.placing === tile.type;
-      if (!toggleOff && this.money < def.cost) {
-        this.fx.text(tile.x + tile.w / 2 - this.offsetX, tile.y + 30, 'Sem bits!', '#ff7a8a', 18);
+      if (!toggleOff && (!this.canUseTower(tile.type) || this.money < def.cost)) {
+        const why = this.canUseTower(tile.type) ? 'Sem dinheiro!' : 'Sem água aqui!';
+        this.fx.text(tile.x + tile.w / 2 - this.offsetX, tile.y + 30, why, '#ff7a8a', 16);
+        this.sound.play('error');
         return;
       }
       this.placing = tile.type;
       this.drag = { type: tile.type, x: sx, y: sy, moved: false, fromMap: false, toggleOff };
+      this.sound.play('click');
       return;
     }
   }
@@ -341,8 +425,6 @@ export class Game {
     Object.assign(this.pointer, { x: sx, y: sy, type });
     const d = this.drag;
     if (d && !d.moved && Math.hypot(sx - d.x, sy - d.y) > 10) d.moved = true;
-    // passar o dedo por cima também coleta os pacotes
-    if (this.pointer.down && !d && this.state === 'playing') this.collectAt(sx - this.offsetX, sy);
   }
 
   pointerUp(sx, sy) {
@@ -362,7 +444,13 @@ export class Game {
   }
 
   tryPlace(type, x, y) {
-    if (!this.place(type, x, y)) this.fx.text(x, y - 30, 'Aqui não dá!', '#ff7a8a', 18);
+    if (this.place(type, x, y)) return;
+    const def = TOWERS[type];
+    let why = 'Aqui não dá!';
+    if (def.onPath) why = 'Só no caminho!';
+    else if (def.terrain === 'water') why = 'Só na água!';
+    this.fx.text(x, y - 30, why, '#ff7a8a', 18);
+    this.sound.play('error');
   }
 
   pointerCancel() {
@@ -370,7 +458,7 @@ export class Game {
     this.drag = null;
   }
 
-  // Onde a torre "fantasma" aparece enquanto escolhe o lugar
+  // Onde a defesa "fantasma" aparece enquanto escolhe o lugar
   ghost() {
     if (!this.placing || this.state !== 'playing') return null;
     const p = this.pointer;
@@ -385,12 +473,16 @@ export class Game {
 
   render(ctx) {
     const t = this.anim;
+    const shx = this.shakeAmt ? rand(-1, 1) * this.shakeAmt : 0;
+    const shy = this.shakeAmt ? rand(-1, 1) * this.shakeAmt : 0;
     ctx.save();
     ctx.beginPath();
     ctx.rect(0, 0, this.mapW, VIEW_H);
     ctx.clip();
-    this.mapRenderer.draw(ctx, this);
+    ctx.translate(shx, shy);
+    this.view.draw(ctx, this.app.pixelScale);
     ctx.translate(this.offsetX, 0);
+    this.view.animate(ctx, t);
 
     ctx.save();
     ctx.translate(this.server.x, this.server.y);
@@ -398,24 +490,31 @@ export class Game {
     ctx.restore();
 
     const sel = this.selectedTower;
-    if (sel) drawRange(ctx, sel.x, sel.y, sel.stats.range);
+    if (sel) drawRange(ctx, sel.x, sel.y, sel.stats.range, true, sel.stats.attack === 'buff' ? 'rgba(120,255,170,0.18)' : null);
 
     // armadilhas ficam no chão, embaixo dos vírus
     for (const tw of this.towers) if (tw.def.onPath) this.drawTowerAt(ctx, tw);
 
-    for (const e of this.enemies) {
+    // vírus e defesas ordenados pela altura (quem está mais embaixo fica na frente)
+    const things = [
+      ...this.enemies.map((e) => ({ y: e.y, e })),
+      ...this.towers.filter((tw) => !tw.def.onPath).map((tw) => ({ y: tw.y, tw })),
+    ].sort((a, b) => a.y - b.y);
+    for (const th of things) {
+      if (th.tw) {
+        this.drawTowerAt(ctx, th.tw);
+        continue;
+      }
+      const e = th.e;
       ctx.save();
       ctx.translate(e.x, e.y);
       drawEnemy(ctx, e);
       ctx.restore();
       if (e.def.boss) drawBossBar(ctx, e);
     }
-
-    const towers = this.towers.filter((tw) => !tw.def.onPath).sort((a, b) => a.y - b.y);
-    for (const tw of towers) this.drawTowerAt(ctx, tw);
     if (sel) {
       ctx.beginPath();
-      ctx.arc(sel.x, sel.y, sel.r + 8, 0, Math.PI * 2);
+      ctx.ellipse(sel.x, sel.y + 15, sel.r + 6, (sel.r + 6) * 0.4, 0, 0, Math.PI * 2);
       ctx.lineWidth = 3;
       ctx.strokeStyle = '#ffffff';
       ctx.stroke();
@@ -424,7 +523,7 @@ export class Game {
     for (const p of this.projectiles) {
       ctx.save();
       ctx.translate(p.x, p.y);
-      drawProjectile(ctx, p);
+      drawProjectile(ctx, p, t);
       ctx.restore();
     }
 
@@ -434,25 +533,25 @@ export class Game {
     if (g) {
       const def = TOWERS[this.placing];
       const valid = this.canPlace(this.placing, g.x, g.y) && this.money >= def.cost;
-      drawRange(ctx, g.x, g.y, def.range ?? 0, valid);
+      if (Number.isFinite(def.range) && def.range > 0) drawRange(ctx, g.x, g.y, def.range, valid);
+      else drawRange(ctx, g.x, g.y, def.radius + 8, valid);
       ctx.save();
       ctx.globalAlpha = 0.85;
       ctx.translate(g.x, g.y);
-      drawTower(ctx, this.placing, { t, angle: -Math.PI / 2 });
+      drawCharacter(ctx, this.placing, { t, face: 1 });
       ctx.restore();
     }
     ctx.restore();
 
     drawHud(ctx, this);
 
-    // pacotes por cima do HUD (os coletados voam até o contador)
+    // moedas voando até o contador (por cima do HUD)
     ctx.save();
     ctx.translate(this.offsetX, 0);
     for (const p of this.packets) {
-      if (!p.visible) continue;
       ctx.save();
       ctx.translate(p.x, p.y);
-      drawCoin(ctx, p.state === 'collected' ? 11 : 15, p.spin);
+      drawCoin(ctx, p.state === 'flying' ? 11 : 13, p.spin);
       ctx.restore();
     }
     ctx.restore();
@@ -460,13 +559,19 @@ export class Game {
     drawPanel(ctx, this);
     drawBanner(ctx, this);
     drawOverlay(ctx, this);
+    this.fx.drawConfetti(ctx);
   }
 
   drawTowerAt(ctx, tw) {
     ctx.save();
     ctx.translate(tw.x, tw.y);
-    drawTower(ctx, tw.type, { t: tw.anim, angle: tw.angle, recoil: tw.recoil, pulse: tw.pulse });
+    drawCharacter(ctx, tw.type, { t: tw.anim, face: tw.face, attack: tw.attack, pulse: tw.pulse, spawn: tw.spawnAnim });
     drawPips(ctx, tw.level, tw.r);
+    if (tw.buff.rate < 1) {
+      // xicrinha de café: está sendo acelerada por um Sysadmin
+      rrect(ctx, tw.r - 4, -tw.r - 22, 9, 9, 2);
+      fillOutline(ctx, '#ff5a5a', 2);
+    }
     ctx.restore();
   }
 }
@@ -481,9 +586,9 @@ function buzz(ms) {
 }
 
 function drawBossBar(ctx, e) {
-  const w = 76;
+  const w = e.r * 2;
   const x = e.x - w / 2;
-  const y = e.y - e.r - 26;
+  const y = e.y - e.r - 34;
   rrect(ctx, x, y, w, 12, 6);
   fillOutline(ctx, '#2a1840', 3);
   const k = Math.max(0, e.hp / e.def.hp);

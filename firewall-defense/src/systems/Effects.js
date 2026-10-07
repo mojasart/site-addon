@@ -1,13 +1,13 @@
 import { OUTLINE } from '../config.js';
 import { text } from '../render/canvas.js';
-import { TAU } from '../util.js';
+import { TAU, rand } from '../util.js';
 
-const MAX_PARTICLES = 400;
+const MAX_PARTICLES = 450;
 const MAX_POPS = 60;
 
 const RING_COLORS = {
-  fire: { fill: 'rgba(255,122,26,0.28)', stroke: '#ff9a2e' },
-  frost: { fill: 'rgba(120,220,255,0.28)', stroke: '#9fe8ff' },
+  fire: { fill: 'rgba(255,122,26,0.30)', stroke: '#ff9a2e' },
+  frost: { fill: 'rgba(140,225,255,0.32)', stroke: '#c8f4ff' },
 };
 
 // Efeitos visuais. Tudo em coordenadas do mapa.
@@ -17,20 +17,23 @@ export class Effects {
     this.pops = [];
     this.rings = [];
     this.beams = [];
+    this.hooks = [];
     this.texts = [];
+    this.confetti = [];
   }
 
-  // "POP!" estilo Bloons: estrelinha branca + pedacinhos coloridos
+  // "POP!" estilo Bloons: estrelinha branca + gotinhas da cor do vírus
   pop(x, y, color, r) {
-    if (this.pops.length < MAX_POPS) this.pops.push({ x, y, r: r * 1.5, life: 0.16, max: 0.16, rot: Math.random() * TAU });
-    this.burst(x, y, color, r > 30 ? 30 : 6, r > 30 ? 260 : 150, 0.35, r > 30 ? 7 : 4);
+    if (this.pops.length < MAX_POPS) this.pops.push({ x, y, r: r * 1.6, life: 0.16, max: 0.16, rot: Math.random() * TAU });
+    const big = r > 22;
+    this.burst(x, y, color, big ? 34 : 7, big ? 280 : 170, big ? 0.6 : 0.35, big ? 7 : 4.5, true);
   }
 
-  burst(x, y, color, count = 10, speed = 140, life = 0.4, size = 4) {
+  burst(x, y, color, count = 10, speed = 140, life = 0.4, size = 4, round = false) {
     for (let i = 0; i < count && this.particles.length < MAX_PARTICLES; i++) {
       const a = Math.random() * TAU;
       const s = speed * (0.4 + Math.random() * 0.6);
-      this.particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life, max: life, size: size * (0.7 + Math.random() * 0.6), color });
+      this.particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 40, g: 300, life, max: life, size: size * (0.7 + Math.random() * 0.6), color, round });
     }
   }
 
@@ -38,36 +41,65 @@ export class Effects {
     this.rings.push({ x, y, radius, life: 0.3, max: 0.3, ...RING_COLORS[kind] });
   }
 
+  explosion(x, y, radius) {
+    this.rings.push({ x, y, radius, life: 0.28, max: 0.28, fill: 'rgba(255,200,80,0.45)', stroke: '#ffef9a' });
+    this.burst(x, y, '#ff8a1f', 16, 200, 0.45, 6, true);
+    this.burst(x, y, '#5a5f70', 10, 120, 0.6, 7, true);
+  }
+
   beam(x1, y1, x2, y2) {
     this.beams.push({ x1, y1, x2, y2, life: 0.1, max: 0.1 });
   }
 
+  hook(x1, y1, x2, y2) {
+    this.hooks.push({ x1, y1, x2, y2, life: 0.3, max: 0.3 });
+    this.burst(x2, y2, '#bfe9ff', 8, 120, 0.35, 4, true);
+  }
+
   blocked(x, y) {
-    if (this.texts.length < 30) this.texts.push({ x, y, str: 'BLOQ!', color: '#cfd6e6', size: 14, life: 0.5, max: 0.5 });
+    if (this.texts.length < 30) this.texts.push({ x, y, str: 'BLOQ!', color: '#d6deea', size: 14, life: 0.5, max: 0.5 });
   }
 
   text(x, y, str, color = '#ffffff', size = 22) {
     this.texts.push({ x, y, str, color, size, life: 1.1, max: 1.1 });
   }
 
+  celebrate(w, h) {
+    const colors = ['#ff4d5e', '#ffd23f', '#3dff9a', '#5fb4ff', '#ff6fd0', '#ffffff'];
+    for (let i = 0; i < 140; i++) {
+      this.confetti.push({
+        x: rand(0, w), y: rand(-h * 0.6, -10), vx: rand(-40, 40), vy: rand(80, 220),
+        rot: rand(0, TAU), vr: rand(-8, 8), w: rand(6, 11), h: rand(4, 7), color: colors[i % colors.length], life: 4,
+      });
+    }
+  }
+
   update(dt) {
     for (const p of this.particles) {
       p.life -= dt;
+      p.vy += p.g * dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      p.vx *= 0.92;
-      p.vy *= 0.92;
+      p.vx *= 0.93;
     }
-    for (const list of [this.pops, this.rings, this.beams]) for (const e of list) e.life -= dt;
+    for (const list of [this.pops, this.rings, this.beams, this.hooks]) for (const e of list) e.life -= dt;
     for (const t of this.texts) {
       t.life -= dt;
       t.y -= 34 * dt;
+    }
+    for (const c of this.confetti) {
+      c.life -= dt;
+      c.x += c.vx * dt + Math.sin(c.rot) * 20 * dt;
+      c.y += c.vy * dt;
+      c.rot += c.vr * dt;
     }
     this.particles = this.particles.filter((p) => p.life > 0);
     this.pops = this.pops.filter((p) => p.life > 0);
     this.rings = this.rings.filter((r) => r.life > 0);
     this.beams = this.beams.filter((b) => b.life > 0);
+    this.hooks = this.hooks.filter((h) => h.life > 0);
     this.texts = this.texts.filter((t) => t.life > 0);
+    this.confetti = this.confetti.filter((c) => c.life > 0);
   }
 
   draw(ctx) {
@@ -84,17 +116,33 @@ export class Effects {
     }
     ctx.globalAlpha = 1;
 
+    ctx.lineCap = 'round';
     for (const b of this.beams) {
       ctx.globalAlpha = b.life / b.max;
-      ctx.lineCap = 'round';
       ctx.strokeStyle = '#ff3b5c';
-      ctx.lineWidth = 7;
+      ctx.lineWidth = 8;
       ctx.beginPath();
       ctx.moveTo(b.x1, b.y1);
       ctx.lineTo(b.x2, b.y2);
       ctx.stroke();
       ctx.strokeStyle = '#ffe1e6';
-      ctx.lineWidth = 2.5;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+    for (const h of this.hooks) {
+      ctx.globalAlpha = Math.min(1, (h.life / h.max) * 2);
+      const mx = (h.x1 + h.x2) / 2;
+      const my = Math.max(h.y1, h.y2) + 20;
+      ctx.strokeStyle = '#f4f7fb';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(h.x1, h.y1);
+      ctx.quadraticCurveTo(mx, my, h.x2, h.y2);
+      ctx.stroke();
+      ctx.strokeStyle = '#8a96aa';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(h.x2, h.y2 - 4, 5, 0.2, Math.PI);
       ctx.stroke();
     }
     ctx.globalAlpha = 1;
@@ -102,7 +150,11 @@ export class Effects {
     for (const p of this.particles) {
       ctx.globalAlpha = Math.max(0, p.life / p.max);
       ctx.fillStyle = p.color;
-      ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+      if (p.round) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size / 2, 0, TAU);
+        ctx.fill();
+      } else ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
     }
     ctx.globalAlpha = 1;
 
@@ -133,5 +185,17 @@ export class Effects {
       text(ctx, t.str, t.x, t.y, { size: t.size, color: t.color });
     }
     ctx.globalAlpha = 1;
+  }
+
+  // Confete é desenhado em coordenadas de tela, por cima de tudo
+  drawConfetti(ctx) {
+    for (const c of this.confetti) {
+      ctx.save();
+      ctx.translate(c.x, c.y);
+      ctx.rotate(c.rot);
+      ctx.fillStyle = c.color;
+      ctx.fillRect(-c.w / 2, -c.h / 2, c.w, c.h);
+      ctx.restore();
+    }
   }
 }

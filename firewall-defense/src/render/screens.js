@@ -1,30 +1,40 @@
 import { VIEW_H, GOLD } from '../config.js';
-import { rrect, fillOutline, text, button } from './canvas.js';
-import { drawTower, drawVirus, drawEnemy } from './sprites.js';
+import { rrect, fillOutline, text } from './canvas.js';
+import { bigButton, iconButton, stars, ribbon } from './widgets.js';
+import { drawEnemy } from './viruses.js';
+import { drawCharacter } from './characters.js';
 import { ENEMIES } from '../data/enemies.js';
+import { easeOutBack, clamp } from '../util.js';
 
-// Botão grande das telas (menu, vitória, derrota). Usado pra desenhar e pro toque.
-export function screenButton(game) {
-  return { x: game.viewW / 2 - 130, y: VIEW_H / 2 + 92, w: 260, h: 76 };
+// Posições dos botões das telas de pausa/vitória/derrota (desenho e toque)
+export function overlayLayout(game) {
+  const cx = game.viewW / 2;
+  const L = { card: { x: cx - 270, y: 40, w: 540, h: 460 } };
+  if (game.state === 'paused') {
+    L.resume = { x: cx - 150, y: 150, w: 300, h: 72 };
+    L.restart = { x: cx - 150, y: 234, w: 300, h: 66 };
+    L.maps = { x: cx - 150, y: 312, w: 300, h: 66 };
+    L.music = { x: cx - 70, y: 400, w: 60, h: 60 };
+    L.sfx = { x: cx + 10, y: 400, w: 60, h: 60 };
+  } else if (game.state === 'won' || game.state === 'lost') {
+    L.maps = { x: cx - 230, y: 392, w: 210, h: 72 };
+    L.next = { x: cx + 20, y: 392, w: 210, h: 72 };
+  }
+  return L;
 }
 
 export function drawBanner(ctx, game) {
   const b = game.banner;
   if (!b) return;
   const k = Math.min(1, (b.total - b.time) * 5);
-  const a = Math.min(1, b.time * 2.5);
   ctx.save();
-  ctx.globalAlpha = a;
+  ctx.globalAlpha = Math.min(1, b.time * 2.5);
   ctx.translate(game.mapW / 2, VIEW_H / 2 - 40);
-  ctx.scale(0.6 + 0.4 * easeOutBack(k), 0.6 + 0.4 * easeOutBack(k));
+  const s = 0.6 + 0.4 * easeOutBack(k);
+  ctx.scale(s, s);
   text(ctx, b.text, 0, 0, { size: b.size ?? 46, color: b.color });
+  if (b.sub) text(ctx, b.sub, 0, 44, { size: 24, color: GOLD });
   ctx.restore();
-}
-
-function easeOutBack(x) {
-  const c1 = 1.70158;
-  const c3 = c1 + 1;
-  return 1 + c3 * (x - 1) ** 3 + c1 * (x - 1) ** 2;
 }
 
 export function drawOverlay(ctx, game) {
@@ -32,71 +42,69 @@ export function drawOverlay(ctx, game) {
   const W = game.viewW;
   const cx = W / 2;
   const t = game.anim;
+  const k = clamp(game.overlayTime * 4, 0, 1);
+  const L = overlayLayout(game);
 
-  ctx.fillStyle = 'rgba(10,18,40,0.62)';
+  ctx.fillStyle = `rgba(10,18,40,${0.62 * k})`;
   ctx.fillRect(0, 0, W, VIEW_H);
 
-  const card = { x: cx - 300, y: 40, w: 600, h: VIEW_H - 80 };
+  ctx.save();
+  ctx.translate(cx, VIEW_H / 2);
+  const s = 0.7 + 0.3 * easeOutBack(k);
+  ctx.scale(s, s);
+  ctx.translate(-cx, -VIEW_H / 2);
+
+  const c = L.card;
+  rrect(ctx, c.x, c.y + 10, c.w, c.h, 30);
+  ctx.fillStyle = 'rgba(10,16,40,0.55)';
+  ctx.fill();
+  rrect(ctx, c.x, c.y, c.w, c.h, 30);
+  fillOutline(ctx, '#34497f', 5);
+  rrect(ctx, c.x + 10, c.y + 10, c.w - 20, c.h - 20, 22);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.stroke();
 
   if (game.state === 'paused') {
-    text(ctx, 'PAUSADO', cx, VIEW_H / 2 - 20, { size: 64 });
-    text(ctx, 'Toque para continuar', cx, VIEW_H / 2 + 40, { size: 22, color: '#d8f5ff' });
-    return;
-  }
-
-  rrect(ctx, card.x, card.y + 8, card.w, card.h, 28);
-  ctx.fillStyle = 'rgba(10,16,40,0.6)';
-  ctx.fill();
-  rrect(ctx, card.x, card.y, card.w, card.h, 28);
-  fillOutline(ctx, '#30437a', 5);
-
-  const btn = screenButton(game);
-
-  if (game.state === 'menu') {
-    // vitrine: vírus girando em volta do título
-    const showcase = ['v1', 'v2', 'v3', 'v4', 'v5'];
-    showcase.forEach((type, i) => {
-      const a = t * 0.6 + (i / showcase.length) * Math.PI * 2;
+    ribbon(ctx, cx, c.y + 46, 260, 'PAUSADO', '#5fb4ff', 30);
+    bigButton(ctx, L.resume, '#3fd16b', 'CONTINUAR', { icon: 'play', size: 28 });
+    bigButton(ctx, L.restart, '#5fb4ff', 'REINICIAR', { icon: 'restart', size: 24 });
+    bigButton(ctx, L.maps, '#ff9a2e', 'MAPAS', { icon: 'map', size: 24 });
+    iconButton(ctx, L.music, game.app.save.music ? '#8a7dff' : '#7d8fa8', 'music', game.app.save.music);
+    iconButton(ctx, L.sfx, game.app.save.sfx ? '#8a7dff' : '#7d8fa8', 'sfx', game.app.save.sfx);
+  } else {
+    const won = game.state === 'won';
+    ribbon(ctx, cx, c.y + 46, won ? 280 : 360, won ? 'VITÓRIA!' : 'SERVIDOR INVADIDO', won ? '#3fd16b' : '#ff5a6a', 30);
+    if (won) {
+      stars(ctx, cx, 175, game.stars, 30, 78, (i) => easeOutBack(clamp((game.overlayTime - 0.4 - i * 0.35) * 3, 0, 1)));
+    } else {
       ctx.save();
-      ctx.translate(cx + Math.cos(a) * 250, 150 + Math.sin(a) * 60);
-      drawVirus(ctx, 16, ENEMIES[type].color, t + i);
+      ctx.translate(cx, 180);
+      ctx.scale(2.6, 2.6);
+      drawEnemy(ctx, { type: 'v1', def: ENEMIES.v1, r: 15, phase: t, face: 1, slowTimer: 0, flash: 0 });
       ctx.restore();
-    });
-    text(ctx, 'FIREWALL', cx, 120, { size: 76, color: '#5fd8ff', strokeWidth: 12 });
-    text(ctx, 'DEFENSE', cx, 190, { size: 76, color: GOLD, strokeWidth: 12 });
-
-    const towers = ['antivirus', 'firewall', 'criptografia', 'scanner', 'minerador'];
-    towers.forEach((type, i) => {
-      ctx.save();
-      ctx.translate(cx + (i - 2) * 76, 288);
-      drawTower(ctx, type, { t, angle: -Math.PI / 4 + Math.sin(t + i) * 0.4 });
-      ctx.restore();
-    });
-    text(ctx, 'Proteja o servidor! Estoure os vírus antes que cheguem nele.', cx, 345, { size: 17, color: '#d8f5ff' });
-
-    button(ctx, btn, '#3fd16b', { radius: 20, depth: 7 });
-    text(ctx, 'JOGAR', cx, btn.y + (btn.h - 7) / 2 + 1, { size: 38 });
-    return;
-  }
-
-  const won = game.state === 'won';
-  ctx.save();
-  ctx.translate(cx, 150);
-  if (won) drawTower(ctx, 'antivirus', { t, angle: -Math.PI / 2 });
-  else {
-    ctx.scale(1.6, 1.6);
-    drawEnemy(ctx, { def: ENEMIES.v1, r: 16, phase: t, angle: 0, slowTimer: 0, flash: 0 });
+    }
+    const lines = won
+      ? [`${game.map.name} protegida!`, `Vidas restantes: ${game.lives}/${game.map.lives}`]
+      : [`Os vírus venceram na rodada ${game.rounds.index + 1}.`, 'Tente outras defesas ou upgrades!'];
+    text(ctx, lines[0], cx, 262, { size: 24 });
+    text(ctx, lines[1], cx, 296, { size: 18, color: '#d8e6ff' });
+    text(ctx, `Vírus estourados: ${game.stats.pops}`, cx, 330, { size: 18, color: GOLD });
+    if (won) {
+      // a galera comemorando dos lados das estrelas
+      for (const [type, x, face] of [['hacker', c.x + 72, 1], ['pinguim', c.x + c.w - 72, -1]]) {
+        ctx.save();
+        ctx.translate(x, 200 - Math.abs(Math.sin(t * 5 + x)) * 10);
+        ctx.scale(1.5, 1.5);
+        drawCharacter(ctx, type, { t, face, attack: Math.sin(t * 5 + x) > 0 ? 1 : 0 });
+        ctx.restore();
+      }
+    }
+    if (game.endDelay <= 0) {
+      bigButton(ctx, L.maps, '#5fb4ff', 'MAPAS', { icon: 'map', size: 24 });
+      const label = won ? (game.nextMap ? 'PRÓXIMO' : 'DE NOVO') : 'DE NOVO';
+      bigButton(ctx, L.next, '#3fd16b', label, { icon: won && game.nextMap ? 'play' : 'restart', size: 24 });
+    }
   }
   ctx.restore();
-  text(ctx, won ? 'REDE PROTEGIDA!' : 'SERVIDOR INVADIDO', cx, 230, { size: 52, color: won ? '#3dff9a' : '#ff5a6a', strokeWidth: 10 });
-  text(ctx, won ? 'Você segurou todas as rodadas!' : `Os vírus chegaram na rodada ${game.rounds.index + 1}.`, cx, 285, {
-    size: 20,
-    color: '#d8f5ff',
-  });
-  text(ctx, `Vírus estourados: ${game.stats.pops}`, cx, 318, { size: 18, color: GOLD });
-
-  if (game.endDelay <= 0) {
-    button(ctx, btn, '#3fd16b', { radius: 20, depth: 7 });
-    text(ctx, won ? 'DE NOVO' : 'TENTAR DE NOVO', cx, btn.y + (btn.h - 7) / 2 + 1, { size: won ? 36 : 30 });
-  }
 }
