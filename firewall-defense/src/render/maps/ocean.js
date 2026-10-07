@@ -10,7 +10,7 @@ export function layout(h) {
     const x = h.rr(h.minX, h.maxX);
     const y = h.rr(20, VIEW_H - 20);
     if (!h.fits(x, y, 13, 'land')) continue;
-    h.add({ kind: 'palm', x, y, rad: 13, block: 'circle', rot: h.rr(0, 6) });
+    h.add({ kind: 'palm', x, y, rad: 13, rot: h.rr(0, 6) }); // só enfeite: a terra é pra construir
     n++;
   }
   for (let i = 0, n = 0; i < 300 && n < 7; i++) {
@@ -18,7 +18,7 @@ export function layout(h) {
     const y = h.rr(20, VIEW_H - 20);
     const r = h.rr(9, 14);
     if (!h.fits(x, y, r + 6, 'water')) continue;
-    h.add({ kind: 'rock', x, y, r, rad: r + 4, block: 'circle' });
+    h.add({ kind: 'rock', x, y, r, rad: r + 4 });
     n++;
   }
   for (let i = 0, n = 0; i < 300 && n < 10; i++) {

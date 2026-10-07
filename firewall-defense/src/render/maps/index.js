@@ -2,6 +2,7 @@ import { VIEW_H, MAP_W } from '../../config.js';
 import { seeded } from '../../util.js';
 import { PathSet } from '../../core/Path.js';
 import { terrainAt } from '../../core/terrain.js';
+import { COLS, ROWS, tileCenter, tileOf, tileKey, pathTiles } from '../../core/grid.js';
 import { drawServer } from '../sprites.js';
 import * as motherboard from './motherboard.js';
 import * as datacenter from './datacenter.js';
@@ -46,7 +47,11 @@ export class MapView {
     // vírus nascem logo antes da borda visível (uma distância por rota)
     this.spawnDists = this.path.routes.map((r) => spawnDistOf(r, this.offsetX));
     this.spawnDist = this.spawnDists[0];
-    this.decor = layoutDecor(map, this.path, -this.offsetX + 8, mapW - this.offsetX - 8);
+    // quadrados da grade: caminho e os que não aceitam defesa (servidor e obstáculos)
+    this.pathTiles = pathTiles(map.routes);
+    this.serverTiles = serverTiles(this.path);
+    this.decor = layoutDecor(map, this.path, -this.offsetX + 8, mapW - this.offsetX - 8, this);
+    this.blockedTiles = new Set([...this.serverTiles, ...this.decor.parts.filter((p) => p.tile).map((p) => tileKey(...p.tile))]);
     this.canvas = null;
     this.key = '';
   }
@@ -101,9 +106,16 @@ function paint(view, W, ox, ps) {
   return c;
 }
 
-// Sorteia a decoração (sempre igual, pela semente do mapa). Peças com
-// `block` impedem construir em cima, como as árvores do Bloons.
-export function layoutDecor(map, path, minX, maxX) {
+// Quadrados do servidor: o do fim do caminho e o de cima (a caixa é alta)
+function serverTiles(path) {
+  const [c, r] = tileOf(path.end.x, path.end.y);
+  return new Set([tileKey(c, r), tileKey(c, r - 1)]);
+}
+
+// Sorteia a decoração (sempre igual, pela semente do mapa). Peças que
+// impedem construir ocupam um quadrado inteiro (part.tile = [c, r]) e
+// ficam no centro dele; as outras são só enfeite, em qualquer lugar.
+export function layoutDecor(map, path, minX, maxX, view) {
   const rnd = seeded(map.seed);
   const sp = serverPos(path);
   const parts = [];
@@ -125,17 +137,28 @@ export function layoutDecor(map, path, minX, maxX) {
       free(x, y, rad + 6) && terrainOk(x, y, rad, terrain) &&
       parts.every((p) => Math.hypot(p.x - x, p.y - y) > p.rad + rad + 6),
     add: (part) => parts.push(part),
+    // quadrados livres (fora do caminho e do servidor, no terreno pedido),
+    // embaralhados; ocupar um deles com uma peça: tile(c, r) → centro
+    freeTiles: (terrain) => {
+      const out = [];
+      for (let c = 0; c < COLS; c++) {
+        for (let r = 0; r < ROWS; r++) {
+          const k = tileKey(c, r);
+          if (view.pathTiles.has(k) || view.serverTiles.has(k)) continue;
+          if (parts.some((p) => p.tile && tileKey(...p.tile) === k)) continue;
+          const { x, y } = tileCenter(c, r);
+          if (terrain && terrainAt(map, x, y) !== terrain) continue;
+          out.push([c, r]);
+        }
+      }
+      for (let i = out.length - 1; i > 0; i--) {
+        const j = Math.floor(rnd() * (i + 1));
+        [out[i], out[j]] = [out[j], out[i]];
+      }
+      return out;
+    },
+    tileCenter,
   };
   const extra = THEMES[map.theme].layout(helper) ?? {};
   return { parts, ...extra };
-}
-
-export function blocksTower(part, x, y, r) {
-  if (!part.block) return false;
-  if (part.block === 'rect') {
-    const dx = Math.max(Math.abs(x - part.x) - part.w / 2, 0);
-    const dy = Math.max(Math.abs(y - part.y) - part.h / 2, 0);
-    return Math.hypot(dx, dy) < r - 3;
-  }
-  return Math.hypot(x - part.x, y - part.y) < part.rad + r - 8;
 }

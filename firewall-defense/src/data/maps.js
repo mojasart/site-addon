@@ -6,7 +6,7 @@
 //  de cada season o mapa seguinte é sempre um pouco mais difícil.
 //
 //  Os caminhos são gerados (data/mapgen.js) a partir da semente de cada
-//  mapa — o mapa sai sempre igual. Coordenadas numa área de 770x540
+//  mapa — o mapa sai sempre igual. Coordenadas numa área de 756x540 (grade de 14×10 quadrados de 54px)
 //  (em telas mais largas o mapa fica centralizado).
 //
 //  Cada mapa tem:
@@ -28,6 +28,7 @@
 // ─────────────────────────────────────────────────────────────
 import { generateMap } from './mapgen.js';
 import { PRESSURE, SPEED } from './tuning.js';
+import { TILE } from '../config.js';
 
 export const SEASONS = [
   { id: 'placa-mae', name: 'Placa-Mãe', theme: 'motherboard', color: '#3fd16b', terrain: 'land', rounds: [12, 18] },
@@ -127,7 +128,7 @@ function buildMaps() {
         gapMul: +lerp(DIFF.gapMul[0], DIFF.gapMul[1], d).toFixed(3),
         speedMul: SPEED?.[g] ?? +lerp(DIFF.speedMul[0], DIFF.speedMul[1], d).toFixed(3),
         seed,
-        pathWidth: season.theme === 'ocean' ? 50 : 54,
+        pathWidth: TILE, // o caminho ocupa 1 quadrado da grade
         terrain: season.terrain,
         zones: gen.zones,
         hazards,
