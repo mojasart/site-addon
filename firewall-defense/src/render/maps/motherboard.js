@@ -1,6 +1,6 @@
 import { VIEW_H, OUTLINE, GOLD, TILE } from '../../config.js';
 import { rrect, circle, fillOutline } from '../canvas.js';
-import { strokePath, drawRaisedPath, lines, tileSeams } from './shared.js';
+import { strokePath, drawRaisedPath, lines, tileSeams, PATH_DEPTH } from './shared.js';
 
 // Tema PLACA-MÃE: placa verde, trilhas de cobre, resistores e LEDs.
 
@@ -165,21 +165,21 @@ export function paint(g, { path, decor, W, ox }) {
     outline: OUTLINE,
     top: (l, w) => tileSeams(l, path, w, '#9fb0c8', 3), // uma placa por quadrado da grade
   });
-  // setinhas do sentido dos vírus: escuras, com um brilho claro embaixo
-  // (parecem gravadas no piso) pra destacar no cinza claro
+  // setinhas do sentido dos vírus: uma no meio de cada placa (quadrado) do
+  // topo da rua, escuras com um brilho claro embaixo (parecem gravadas no
+  // piso); nas curvas, apontando pra saída
   g.lineCap = 'round';
   g.lineJoin = 'round';
-  g.lineWidth = 5.5;
-  for (const line of lines(path)) for (let d = 30; d < line.length - 40; d += 64) {
-    const p = line.pointAt(d);
+  g.lineWidth = 4.5;
+  for (const { x, y, angle } of plateCenters(path)) {
     for (const [dy, color] of [[1.5, '#f2f6fb'], [0, '#5f7393']]) {
       g.save();
-      g.translate(p.x, p.y + dy);
-      g.rotate(p.angle);
+      g.translate(x, y - PATH_DEPTH + dy);
+      g.rotate(angle);
       g.beginPath();
-      g.moveTo(-6, -10);
-      g.lineTo(5, 0);
-      g.lineTo(-6, 10);
+      g.moveTo(-4, -7);
+      g.lineTo(4, 0);
+      g.lineTo(-4, 7);
       g.strokeStyle = color;
       g.stroke();
       g.restore();
@@ -218,4 +218,29 @@ function drawLed(g, { x, y, color }) {
   circle(g, x - 1.5, y - 1.5, 1.5);
   g.fillStyle = 'rgba(255,255,255,0.8)';
   g.fill();
+}
+
+// Centro de cada placa (quadrado) da rua, com o sentido dos vírus. Os pontos
+// das rotas caem no centro dos quadrados, então anda de TILE em TILE a partir
+// do fim de cada trecho (o primeiro trecho vem de fora da tela). O fim da rota
+// (servidor) fica sem seta; a curva no começo de um trecho usa o sentido dele.
+function plateCenters(path) {
+  const out = [];
+  for (const line of lines(path)) {
+    const pts = line.points;
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1];
+      const b = pts[i];
+      const len = Math.hypot(b.x - a.x, b.y - a.y);
+      if (len < 1) continue;
+      const dx = (b.x - a.x) / len;
+      const dy = (b.y - a.y) / len;
+      const angle = Math.atan2(dy, dx);
+      for (let d = TILE; d <= len + 0.5; d += TILE) {
+        if (d > len - 0.5 && i === 1) break; // ponto de fora da tela
+        out.push({ x: b.x - dx * d, y: b.y - dy * d, angle });
+      }
+    }
+  }
+  return out;
 }
