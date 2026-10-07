@@ -34,24 +34,28 @@ export function drawCharacter(ctx, type, s = {}) {
 
 // Sprites olhando pra direita, pés em y=14.
 //   size → lado da imagem    foot → onde ficam os pés, em fração da imagem
-// (medidos em cada PNG; as poses do mesmo personagem têm que ficar do mesmo tamanho)
+//   dx   → acerto horizontal pros pés das poses ficarem no mesmo lugar
+// (medidos em cada PNG; as poses do mesmo personagem têm que ficar do mesmo
+// tamanho — a do golem atacando é maior porque os punhos erguidos "encolhem" a imagem)
 const SPRITE_META = {
   hacker: { size: 62, foot: 0.477 },
   pinguim: { size: 62, foot: 0.477 },
   pinguim_open: { size: 62, foot: 0.477 },
+  firewall: { size: 64, foot: 0.473 },
+  firewall_attack: { size: 75, foot: 0.434, dx: -1.7 },
 };
 // Pose usada logo depois de atacar (sem ela, o personagem dá um bote pra frente)
-const ATTACK_POSE = { pinguim: 'pinguim_open' };
+const ATTACK_POSE = { pinguim: 'pinguim_open', firewall: 'firewall_attack' };
 
 function drawSpriteCharacter(ctx, type, a, t) {
   const pose = ATTACK_POSE[type];
   const posing = pose && a > 0.2 && hasImage(pose);
   const name = posing ? pose : type;
-  const { size, foot } = SPRITE_META[name] ?? { size: 62, foot: 0.477 };
+  const { size, foot, dx = 0 } = SPRITE_META[name] ?? { size: 62, foot: 0.477 };
   ctx.save();
   ctx.translate(posing ? 0 : a * 4, 14);
   if (!pose) ctx.scale(1 + a * 0.08, 1 - a * 0.06);
-  drawImage(ctx, name, size, 0, -size * foot);
+  drawImage(ctx, name, size, dx, -size * foot);
   ctx.restore();
   // pinguim congelando: brilhinhos dos lados
   if (posing && type === 'pinguim') {

@@ -9,6 +9,8 @@ const NAMES = [
   'hacker',
   'pinguim',
   'pinguim_open',
+  'firewall',
+  'firewall_attack',
   'virus_red',
   'virus_blue',
   'virus_green',

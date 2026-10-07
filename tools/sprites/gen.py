@@ -107,6 +107,16 @@ ASSETS = {
     'pinguim_open': ('magenta', 'Edit this image: keep exactly the same penguin, scarf, colors, outline, size and style, '
                      'but raise both flippers wide open out to the sides (like a happy cheer, casting a freeze spell) '
                      'with a happy open-mouth expression. Do not add anything else. ', 'pinguim'),
+    # Golem Firewall: parado e batendo no chão (editado a partir do parado)
+    'firewall': ('green', 'Full body, chibi proportions (big blocky head-body, short legs), three-quarter view facing '
+                 'and looking to the RIGHT, standing on two feet. A cute but tough cartoon golem made of orange-red '
+                 'bricks with lighter mortar lines, a peach face plate with big determined eyes and thick eyebrows, '
+                 'bright orange-yellow flames burning on top of its head, two big chunky brick fists resting down '
+                 'at its sides. '),
+    'firewall_attack': ('green', 'Edit this image: keep exactly the same golem, bricks, colors, outline, size and style, '
+                        'but raise both big brick fists high above its head ready to smash the ground, with a fierce '
+                        'roaring open mouth and the head flames burning bigger and brighter. '
+                        'Do not add anything else. ', 'firewall'),
     # ── Servidor (o que estamos protegendo) ──────────────
     'server': ('magenta', 'Front view. A cute friendly server computer character: a chunky blue rack server box '
                'with a cyan screen showing a happy smiling face, small green status LEDs below. '),
