@@ -42,9 +42,10 @@ Com **3 estrelas** num mapa, tocar nele deixa escolher **NORMAL** ou **PLATINA**
 - As ondas vêm **uma atrás da outra**, sem esperar o mapa limpar, por **3 minutos** (o relógio fica no HUD).
   O bônus de cada onda vem quando ela começa.
 - Aos 3:00 vem o **chefão** (Locker nos mapas 1–5 da season, Ransomware nos 6–10 e Ransomware com
-  Lockers nos 11–15). Derrotou, ganhou a platina: as estrelas do mapa ficam **azul-gelo**.
-- Cada mapa tem um **aliado bloqueado** (sorteado pelo mapa, sempre o mesmo), que aparece do lado das
-  estrelas na seleção de mapas e fica trancado no painel.
+  Lockers nos 11–15). Derrotou, ganhou a platina: as estrelas do mapa ficam **azul-gelo** e ganham
+  um diamante do lado.
+- Cada mapa tem um **aliado bloqueado** (sorteado pelo mapa, sempre o mesmo). Ele só aparece dentro
+  da partida: no aviso do começo e trancado no painel.
 
 ## Defesas
 

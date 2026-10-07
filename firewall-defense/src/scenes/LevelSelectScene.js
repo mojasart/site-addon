@@ -7,9 +7,6 @@ import { iconButton, inRect, stars, ribbon, bigButton, starTier } from '../rende
 import { drawVirusIcon } from '../render/viruses.js';
 import { ICONS } from '../render/sprites.js';
 import { drawImage } from '../render/images.js';
-import { drawCharacter } from '../render/characters.js';
-import { TOWERS } from '../data/towers.js';
-import { blockedAlly } from '../data/platinum.js';
 
 const DIFF_COLOR = { 'FÁCIL': '#3fd16b', 'MÉDIO': '#ff9a2e', 'DIFÍCIL': '#ff5a6a', 'EXTREMO': '#b65cff' };
 
@@ -17,8 +14,8 @@ const DIFF_COLOR = { 'FÁCIL': '#3fd16b', 'MÉDIO': '#ff9a2e', 'DIFÍCIL': '#ff5
 // Cabo Submarino) e uma grade 5×3 com os 15 mapas da season escolhida.
 // Os mapas abrem em sequência: vencer um libera o próximo.
 // Com 3 estrelas libera o modo platina do mapa: tocar nele abre a escolha
-// NORMAL / PLATINA. Dos lados das estrelas: a gema da platina (apagada,
-// liberada ou vencida) e o aliado que fica bloqueado na platina.
+// NORMAL / PLATINA. Platina vencida: estrelas azul-gelo e a gema do lado.
+// (O aliado bloqueado só aparece dentro da partida.)
 export class LevelSelectScene {
   constructor(app) {
     this.app = app;
@@ -131,7 +128,6 @@ export class LevelSelectScene {
   drawModePicker(ctx, M, i) {
     const W = this.app.viewW;
     const map = MAPS[i];
-    const ally = blockedAlly(map);
     ctx.fillStyle = 'rgba(10,18,40,0.7)';
     ctx.fillRect(0, 0, W, VIEW_H);
     const c = M.card;
@@ -153,16 +149,8 @@ export class LevelSelectScene {
     ctx.restore();
     if (this.app.hasPlatinum(map.id)) text(ctx, '✔', p.x + p.w - 34, p.y + (p.h - 6) / 2, { size: 26, color: '#bdeeff' });
 
-    text(ctx, 'Ondas sem parar por 3:00, depois vem o chefão', W / 2, c.y + 268, { size: 16, color: '#d8e6ff' });
-    // o aliado bloqueado nesse mapa
-    const lx = W / 2 - 70;
-    ctx.save();
-    ctx.translate(lx, c.y + 300);
-    ctx.scale(0.42, 0.42);
-    drawCharacter(ctx, ally, { t: this.t, face: 1 });
-    ctx.restore();
-    noSign(ctx, lx + 12, c.y + 302, 8);
-    text(ctx, `${TOWERS[ally].name} bloqueado`, lx + 26, c.y + 298, { size: 17, color: '#ff9aa5', align: 'left' });
+    text(ctx, 'Ondas sem parar por 3:00, depois vem o chefão', W / 2, c.y + 272, { size: 16, color: '#d8e6ff' });
+    text(ctx, 'Um aliado fica bloqueado', W / 2, c.y + 298, { size: 15, color: '#ff9aa5' });
   }
 
   drawTab(ctx, r, season, s) {
@@ -231,28 +219,13 @@ export class LevelSelectScene {
     const plat = this.app.hasPlatinum(map.id);
     const sy = c.y + c.h - 18;
     stars(ctx, cx, sy, got, 9, 22, null, starTier(got, plat));
-    if (unlocked) {
-      // gema da platina: apagada, liberada (pulsando) ou vencida (brilhando)
-      const open = this.app.platinumOpen(i);
+    // gema da platina: só aparece depois de vencer a platina desse mapa
+    if (plat) {
       ctx.save();
       ctx.translate(cx - 58, sy - 2);
-      const pulse = open && !plat ? 1 + Math.sin(this.t * 4 + i) * 0.1 : 1;
-      ctx.scale(pulse, pulse);
-      drawImage(ctx, open || plat ? 'icon_gem' : 'icon_gem_empty', 24);
+      drawImage(ctx, 'icon_gem', 24);
       ctx.restore();
-      if (plat) sparkle(ctx, cx - 50, sy - 12, 3 + Math.sin(this.t * 6 + i) * 1.2);
-      // aliado bloqueado na platina desse mapa
-      if (open) {
-        const ally = blockedAlly(map);
-        ctx.save();
-        ctx.translate(cx + 56, sy + 5);
-        ctx.scale(0.36, 0.36);
-        drawCharacter(ctx, ally, { t: this.t + i, face: -1 });
-        ctx.restore();
-        noSign(ctx, cx + 67, sy + 3, 6); // selinho de "bloqueado" no canto
-      }
     }
-
     if (!unlocked) {
       rrect(ctx, c.x, c.y, c.w, c.h, 16);
       ctx.fillStyle = 'rgba(15,22,48,0.72)';
@@ -331,32 +304,4 @@ export class LevelSelectScene {
     if (k === 'ArrowRight') this.season = Math.min(SEASONS.length - 1, this.season + 1);
     if (k === 'ArrowLeft') this.season = Math.max(0, this.season - 1);
   }
-}
-
-// Símbolo de "proibido" (círculo vermelho cortado) por cima do aliado bloqueado
-function noSign(ctx, x, y, r) {
-  ctx.save();
-  ctx.lineCap = 'round';
-  for (const [w, color] of [[r * 0.55, OUTLINE], [r * 0.3, '#ff4d5e']]) {
-    ctx.lineWidth = w;
-    ctx.strokeStyle = color;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.moveTo(x - r * 0.7, y - r * 0.7);
-    ctx.lineTo(x + r * 0.7, y + r * 0.7);
-    ctx.stroke();
-  }
-  ctx.restore();
-}
-
-// Brilhinho de 4 pontas (gema da platina vencida)
-function sparkle(ctx, x, y, r) {
-  ctx.beginPath();
-  ctx.moveTo(x, y - r * 2);
-  ctx.quadraticCurveTo(x, y, x + r * 2, y);
-  ctx.quadraticCurveTo(x, y, x, y + r * 2);
-  ctx.quadraticCurveTo(x, y, x - r * 2, y);
-  ctx.quadraticCurveTo(x, y, x, y - r * 2);
-  ctx.fillStyle = '#ffffff';
-  ctx.fill();
 }
