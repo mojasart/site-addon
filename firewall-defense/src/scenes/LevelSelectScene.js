@@ -25,7 +25,7 @@ const tierOf = (rate) => TIERS.find((t) => rate >= t.min);
 // Cabo Submarino) e uma grade 5×3 com os 15 mapas da season escolhida.
 // Os mapas abrem em sequência: vencer um libera o próximo.
 // Tocar num mapa abre a escolha NORMAL / PLATINA; a platina só libera com
-// 3 estrelas (antes disso aparece trancada). Platina vencida: estrelas azul-gelo e a gema do lado.
+// 3 estrelas (antes disso aparece trancada). Platina vencida: estrelas azul-gelo e o card de platina.
 // (O aliado bloqueado só aparece dentro da partida.)
 // No canto de cima: o saldo de cafés, a Dark Net (libera com
 // DARKNET_STARS estrelas; antes disso fica trancada) e o catálogo.
@@ -320,18 +320,11 @@ export class LevelSelectScene {
 
     // estrelas embaixo (bronze, prata, ouro ou platina)
     const sy = c.y + c.h - 18;
-    // bolinha de dificuldade à direita das estrelas (espelhando a gema da platina):
+    // bolinha de dificuldade à direita das estrelas:
     // pela % de bots que venceram; sem dados, a dificuldade do mapa
     const rate = BOT_WIN.normal[i];
     diffDot(ctx, cx + 58, sy - 2, rate != null ? tierOf(rate).color : DIFF_COLOR[map.difficulty], 7);
     stars(ctx, cx, sy, got, 9, 22, null, starTier(got, plat));
-    // gema da platina: só aparece depois de vencer a platina desse mapa
-    if (plat) {
-      ctx.save();
-      ctx.translate(cx - 58, sy - 2);
-      drawImage(ctx, 'icon_gem', 24);
-      ctx.restore();
-    }
     if (!unlocked) {
       rrect(ctx, c.x, c.y, c.w, c.h, 16);
       ctx.fillStyle = 'rgba(15,22,48,0.72)';
