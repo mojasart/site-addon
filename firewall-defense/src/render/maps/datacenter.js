@@ -1,5 +1,5 @@
 import { VIEW_H, OUTLINE, TILE } from '../../config.js';
-import { strokePath, raisedPathBase } from './shared.js';
+import { strokePath, drawRaisedPath } from './shared.js';
 
 // Tema DATA CENTER: piso técnico limpo e a calha de cabos elevada.
 // Sem itens sorteados nem piscinas: o chão todo é terra (dá pra construir).
@@ -41,10 +41,12 @@ export function paint(g, { path, W, ox }) {
   g.translate(ox, 0);
 
   // calha de cabos elevada (3/4), com bordas amarelas no topo
-  raisedPathBase(g, path, { depth: 16, side: '#7c88a6', sideDark: '#465068', outline: OUTLINE });
-  strokePath(g, path, path.width + 8, OUTLINE);
-  strokePath(g, path, path.width, '#ffc72c');
-  strokePath(g, path, path.width - 12, '#3a4256');
-  strokePath(g, path, 3, '#5d6886', [14, 10]);
+  drawRaisedPath(g, path, {
+    side: '#5d6886',
+    rim: '#ffc72c',
+    inner: '#3a4256',
+    outline: OUTLINE,
+    top: (l) => strokePath(l, path, 3, '#5d6886', [14, 10]),
+  });
   g.restore();
 }

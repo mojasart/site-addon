@@ -1,5 +1,12 @@
 import { VIEW_H, TILE } from '../../config.js';
 
+// Medidas do caminho elevado: a pegada da peça é exatamente a dos quadrados
+// por onde ele passa (TILE de largura, nos dois sentidos). O 3D fica por
+// dentro: o topo sobe PATH_DEPTH e mostra a parede embaixo dele.
+export const PATH_DEPTH = 8; // altura da parede
+export const PATH_EDGE = 3; // contorno escuro
+export const PATH_TOP = TILE - PATH_EDGE * 2; // largura do topo (48)
+
 // Peças comuns aos temas de mapa
 
 // Pontos aleatórios dentro das zonas de água (pro brilho animado)
@@ -31,62 +38,53 @@ export function drawSparkles(ctx, list, t) {
   ctx.globalAlpha = 1;
 }
 
-// Base de um caminho ELEVADO em perspectiva 3/4 (mesmo ângulo do servidor):
-// sombra no chão + parede lateral aparecendo embaixo do traçado. O tema
-// desenha o topo depois, no lugar de sempre (onde os inimigos andam).
-//   depth → altura da parede     side/sideDark → cor da parede (topo → base)
-export function raisedPathBase(g, path, { depth, side, sideDark, outline, shadow = 'rgba(10,20,40,0.28)' }) {
-  const w = path.width;
+// Caminho elevado (3/4) que ocupa exatamente os quadrados por onde passa.
+// Tudo é desenhado numa camada à parte e recortado pela pegada do caminho
+// (traço de TILE de largura): parede embaixo, topo subido PATH_DEPTH por
+// cima, e o contorno por último.
+//   side          → cor da parede
+//   rim / inner   → borda do topo e o miolo (rimW = largura da borda)
+//   top(g, w)     → detalhes do tema no topo (já subido), w = largura do miolo
+export function drawRaisedPath(g, path, { side, rim, inner, rimW = 5, outline, top }) {
+  const layer = document.createElement('canvas');
+  layer.width = g.canvas.width;
+  layer.height = g.canvas.height;
+  const l = layer.getContext('2d');
+  l.setTransform(g.getTransform());
+  // parede (aparece embaixo do topo subido)
+  strokePath(l, path, TILE, side);
+  // filete escuro onde o topo encontra a parede
+  l.save();
+  l.translate(0, -PATH_DEPTH + 2);
+  strokePath(l, path, PATH_TOP, outline);
+  l.restore();
+  // topo
+  l.save();
+  l.translate(0, -PATH_DEPTH);
+  strokePath(l, path, PATH_TOP, rim);
+  strokePath(l, path, PATH_TOP - rimW * 2, inner);
+  top?.(l, PATH_TOP - rimW * 2);
+  l.restore();
+  // contorno: o anel entre a pegada e o topo
+  const ring = document.createElement('canvas');
+  ring.width = layer.width;
+  ring.height = layer.height;
+  const r = ring.getContext('2d');
+  r.setTransform(g.getTransform());
+  strokePath(r, path, TILE, outline);
+  r.globalCompositeOperation = 'destination-out';
+  strokePath(r, path, TILE - PATH_EDGE * 2, '#000');
+  l.save();
+  l.setTransform(1, 0, 0, 1, 0, 0);
+  l.drawImage(ring, 0, 0);
+  l.restore();
+  // recorta pela pegada exata (o topo subido não passa da borda de cima)
+  l.globalCompositeOperation = 'destination-in';
+  strokePath(l, path, TILE, '#000');
   g.save();
-  g.translate(6, depth + 6);
-  strokePath(g, path, w + 12, shadow);
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.drawImage(layer, 0, 0);
   g.restore();
-  // contorno da peça inteira (parede + topo)
-  for (let k = depth; k >= 0; k -= 2) {
-    g.save();
-    g.translate(0, k);
-    strokePath(g, path, w + 8, outline);
-    g.restore();
-  }
-  // parede: escurece de cima pra baixo
-  for (let k = depth; k >= 1; k--) {
-    g.save();
-    g.translate(0, k);
-    strokePath(g, path, w, mix(side, sideDark, k / depth));
-    g.restore();
-  }
-  // emendas verticais nas paredes dos trechos horizontais (lê como painéis)
-  g.strokeStyle = 'rgba(10,15,30,0.35)';
-  g.lineWidth = 2;
-  g.beginPath();
-  for (const line of lines(path)) {
-    const pts = line.points;
-    for (let i = 1; i < pts.length; i++) {
-      const a = pts[i - 1];
-      const b = pts[i];
-      if (Math.abs(a.y - b.y) > 1) continue;
-      const y = a.y + w / 2;
-      const [x0, x1] = a.x < b.x ? [a.x, b.x] : [b.x, a.x];
-      for (let x = x0 + w / 2 + 14; x < x1 - w / 2 - 4; x += 28) {
-        g.moveTo(x, y + 4);
-        g.lineTo(x, y + depth);
-      }
-    }
-  }
-  g.stroke();
-  // filete escuro onde a parede encontra o topo
-  g.save();
-  g.translate(0, 2);
-  strokePath(g, path, w + 8, outline);
-  g.restore();
-}
-
-// Mistura duas cores #rrggbb (t=0 → a, t=1 → b)
-function mix(a, b, t) {
-  const pa = parseInt(a.slice(1), 16);
-  const pb = parseInt(b.slice(1), 16);
-  const ch = (s) => Math.round(((pa >> s) & 255) * (1 - t) + ((pb >> s) & 255) * t);
-  return `rgb(${ch(16)},${ch(8)},${ch(0)})`;
 }
 
 // Linhas a desenhar: todas as rotas do mapa (sem repetir o trecho comum)

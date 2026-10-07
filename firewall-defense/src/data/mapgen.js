@@ -102,7 +102,8 @@ function tryGenerate(spec, rnd) {
   const hazards = [];
   const cells = cellsNextToPath(routesNodes);
   shuffle(cells);
-  // quadrados que ilha não pode ocupar: caminho e servidor (fim da rota + o de cima)
+  // quadrados que ilha não pode ocupar: o caminho e o quadrado acima do fim
+  // dele, onde fica o servidor (mantido assim pra não mudar os mapas calibrados)
   const taken = nodeTiles(routesNodes);
   const [bx, by] = main.nodes[main.nodes.length - 1];
   taken.add(tileKey(nodeCol(bx), nodeRow(by) - 1));

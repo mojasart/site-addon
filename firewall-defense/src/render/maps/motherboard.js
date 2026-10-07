@@ -1,6 +1,6 @@
 import { VIEW_H, OUTLINE, GOLD, TILE } from '../../config.js';
 import { rrect, circle, fillOutline } from '../canvas.js';
-import { strokePath, raisedPathBase, lines, tileSeams } from './shared.js';
+import { strokePath, drawRaisedPath, lines, tileSeams } from './shared.js';
 
 // Tema PLACA-MÃE: placa verde, trilhas de cobre, resistores e LEDs.
 
@@ -158,11 +158,13 @@ export function paint(g, { path, decor, W, ox }) {
   }
 
   // caminho de lajotas elevado (3/4) com setinhas
-  raisedPathBase(g, path, { depth: 14, side: '#9aa9c0', sideDark: '#5d6b85', outline: OUTLINE, shadow: 'rgba(0,30,10,0.3)' });
-  strokePath(g, path, path.width + 8, OUTLINE);
-  strokePath(g, path, path.width, '#7f92ad');
-  strokePath(g, path, path.width - 8, '#c8d4e4');
-  tileSeams(g, path, path.width - 8, '#9fb0c8', 3); // uma placa por quadrado da grade
+  drawRaisedPath(g, path, {
+    side: '#6f7f9c',
+    rim: '#7f92ad',
+    inner: '#c8d4e4',
+    outline: OUTLINE,
+    top: (l, w) => tileSeams(l, path, w, '#9fb0c8', 3), // uma placa por quadrado da grade
+  });
   // setinhas do sentido dos vírus: escuras, com um brilho claro embaixo
   // (parecem gravadas no piso) pra destacar no cinza claro
   g.lineCap = 'round';

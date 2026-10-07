@@ -12,13 +12,17 @@
 //  mapa. São sorteadas pela
 //  semente do mapa (sempre os mesmos), só onde dá pra colocar o Minerador,
 //  fora das zonas elétricas e da linha de cima (HUD), e espalhados.
+//  Os quadrados encostados no caminho têm bem mais chance (NEAR_PATH): a
+//  pilha ocupa um lugar disputado, bom também pra uma defesa.
 // ─────────────────────────────────────────────────────────────
 import { seeded } from '../util.js';
-import { TILE, COLS, ROWS, tileCenter, tileOf } from './grid.js';
+import { TILE, COLS, ROWS, tileCenter, tileOf, tileKey } from './grid.js';
 
 export { TILE };
 export const COIN_SEASONS = 2; // seasons com pilhas: 1 (Placa-Mãe) e 2 (Data Center)
 const MIN_GAP = 3; // distância mínima entre duas pilhas, em quadrados (linha + coluna)
+// peso no sorteio: encostado no caminho (lado a lado), só na diagonal, longe
+const NEAR_PATH = { side: 6, diagonal: 2, far: 1 };
 
 export function pickCoinTiles(game) {
   const map = game.map;
@@ -32,21 +36,29 @@ export function pickCoinTiles(game) {
       if (!game.canPlace('minerador', x, y)) continue;
       // nunca numa zona elétrica (o Minerador levaria choque)
       if (map.hazards?.some((h) => x >= h.x && x < h.x + h.w && y >= h.y && y < h.y + h.h)) continue;
-      free.push({ c, r, x, y });
+      free.push({ c, r, x, y, w: nearPath(game.view.pathTiles, c, r) });
     }
   }
-  // embaralha (sempre igual pra cada mapa) e pega os primeiros espalhados
-  for (let i = free.length - 1; i > 0; i--) {
-    const j = Math.floor(rnd() * (i + 1));
-    [free[i], free[j]] = [free[j], free[i]];
-  }
+  // sorteio com peso (sempre igual pra cada mapa): cada quadrado ganha a nota
+  // rnd^(1/peso) e os de nota maior vêm primeiro, então os encostados no
+  // caminho tendem a ser escolhidos
+  for (const t of free) t.k = rnd() ** (1 / t.w);
+  free.sort((a, b) => b.k - a.k);
   const out = [];
   for (const t of free) {
     if (out.length >= want) break;
     if (out.some((o) => Math.abs(o.c - t.c) + Math.abs(o.r - t.r) < MIN_GAP)) continue;
-    out.push(t);
+    out.push({ c: t.c, r: t.r, x: t.x, y: t.y });
   }
   return out;
+}
+
+// Peso do quadrado no sorteio: encostado no caminho vale mais
+function nearPath(path, c, r) {
+  const at = (dc, dr) => path.has(tileKey(c + dc, r + dr));
+  if (at(1, 0) || at(-1, 0) || at(0, 1) || at(0, -1)) return NEAR_PATH.side;
+  if (at(1, 1) || at(1, -1) || at(-1, 1) || at(-1, -1)) return NEAR_PATH.diagonal;
+  return NEAR_PATH.far;
 }
 
 // Pilha no quadrado que contém o ponto (x, y), ou null

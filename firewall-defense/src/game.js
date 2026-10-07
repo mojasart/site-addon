@@ -28,7 +28,7 @@ import { rrect, fillOutline, circle, text } from './render/canvas.js';
 import { rand } from './util.js';
 
 const TOUCH_LIFT = 46; // ao arrastar com o dedo, a defesa aparece acima dele
-const BASE_HIT = 40; // raio da hitbox do servidor
+const BASE_HIT = 24; // raio da hitbox do servidor (ele ocupa 1 quadrado)
 
 // A partida em si (uma fase). Criada pelo App ao escolher um mapa.
 // mode: 'normal' ou 'platinum' (ondas sem parar até o chefão; data/platinum.js)
@@ -224,7 +224,7 @@ export class Game {
   // (antes ele só contava no fim da rota, depois de passar por cima)
   touchesBase(e) {
     const s = this.server;
-    return Math.hypot(e.x - s.x, e.y - (s.y - 8)) < BASE_HIT + e.r * 0.5;
+    return Math.hypot(e.x - s.x, e.y - s.y) < BASE_HIT + e.r * 0.5;
   }
 
   leak(enemy) {
@@ -232,7 +232,7 @@ export class Game {
     this.hurt = 0.4;
     this.shake(4);
     this.sound.play('leak');
-    this.fx.text(this.server.x, this.server.y - 50, `-${enemy.threat}`, '#ff5a6a', 26);
+    this.fx.text(this.server.x, this.server.y - 40, `-${enemy.threat}`, '#ff5a6a', 26);
     buzz(40);
   }
 
@@ -662,8 +662,15 @@ export class Game {
     this.view.draw(ctx, this.app.pixelScale);
     ctx.translate(this.offsetX, 0);
     this.view.animate(ctx, t);
+    // zonas elétricas são placas no chão: o caminho (elevado) é redesenhado
+    // por cima delas e a parede dele cobre a parte de trás, como no piso
     drawHazards(ctx, this.hazards, t);
+    ctx.save();
+    ctx.translate(-this.offsetX, 0);
+    this.view.drawPath(ctx);
+    ctx.restore();
     drawSpawns(ctx, this, t);
+    // pilhas de bitcoin ficam em pé: na frente da parede do caminho
     drawCoinTiles(ctx, this.coinTiles, t, TOWERS[this.placing]?.attack === 'farm');
 
     ctx.save();
