@@ -53,6 +53,10 @@ export function drawCoin(ctx, r = 14, spin = 0) {
   const sx = Math.max(0.25, Math.abs(Math.cos(spin * 2)));
   ctx.save();
   ctx.scale(sx, 1);
+  if (drawImage(ctx, 'coin', r * 2.2)) {
+    ctx.restore();
+    return;
+  }
   circle(ctx, 0, 0, r);
   fillOutline(ctx, GOLD, 3);
   circle(ctx, 0, 0, r * 0.68);
@@ -64,6 +68,7 @@ export function drawCoin(ctx, r = 14, spin = 0) {
 }
 
 export function drawHeart(ctx, s = 14) {
+  if (drawImage(ctx, 'heart', s * 2.4)) return;
   ctx.beginPath();
   ctx.moveTo(0, s * 0.95);
   ctx.bezierCurveTo(-s * 1.4, 0, -s * 0.9, -s * 1.15, 0, -s * 0.45);

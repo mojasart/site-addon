@@ -71,6 +71,7 @@ firewall-defense/
 ├── index.html               página + meta tags de app mobile + fonte
 ├── style.css                tela cheia, aviso "gire o celular"
 ├── manifest.webmanifest     PWA (instalar na tela inicial)
+├── assets/sprites/          PNGs gerados (vírus, defesas, servidor, moeda, coração)
 └── src/
     ├── main.js              canvas, escala da tela, input touch, loop
     ├── app.js               troca de telas (título → mapas → jogo), save, som
@@ -91,6 +92,7 @@ firewall-defense/
         ├── characters.js    os personagens (defesas)
         ├── viruses.js       os vírus
         ├── sprites.js       moedas, servidor, projéteis, ícones
+        ├── images.js        carrega as sprites PNG e desenha com cache
         ├── ui.js            HUD e painel lateral
         ├── screens.js       pausa, vitória, derrota
         ├── widgets.js       botões, estrelas, fita de título
@@ -102,7 +104,16 @@ firewall-defense/
 - **Nova defesa:** entrada em `src/data/towers.js` (escolha um `attack`), desenho em `CHARACTERS` (`src/render/characters.js`) e o id em `TOWER_ORDER`. Use `terrain: 'water'` pra defesas de água.
 - **Novo vírus:** entrada em `src/data/enemies.js` (diga quais `children` ele solta) e, se quiser visual próprio, um `kind` novo em `src/render/viruses.js`.
 - **Novo mapa:** objeto em `src/data/maps.js` com `points` (caminho), `zones` (água/terra) e um `theme`. Pra um visual novo, crie um arquivo em `src/render/maps/` com `layout`, `paint` e `animate`.
-- **Arte de verdade:** cada personagem/vírus é uma função de desenho centrada em (0,0). Dá pra trocar por `ctx.drawImage(...)` de um spritesheet sem mexer no resto.
+- **Sprites (PNG):** ficam em `assets/sprites/` e são geradas com o Gemini por `tools/sprites/gen.py` (na raiz do repo).
+  - A chave vai num `.env` na raiz: `GEMINI_API_KEY=...` (o `.env` está no `.gitignore`, nunca commite).
+  - Pra criar ou refazer uma: edite o prompt dela em `ASSETS` e rode `python tools/sprites/gen.py <nome> --force`.
+    Variações (outra cor, outra pose) são geradas *editando* uma imagem base, pra ficarem idênticas
+    (ex.: `virus_blue` sai do `virus_red`, `pinguim_open` do `pinguim`).
+  - `python tools/sprites/preview.py saida.png` monta uma folha pra conferir o recorte.
+  - Pra usar no jogo: ponha o nome em `NAMES` (`src/render/images.js`). Inimigos usam o campo `sprite` em
+    `data/enemies.js`; defesas usam uma sprite com o mesmo nome do tipo (e uma pose de ataque opcional em
+    `ATTACK_POSE`, `src/render/characters.js`). Tamanho e posição dos pés ficam em `SPRITE_META`/`SPRITE_LOOK`.
+  - Sem a imagem, cada coisa cai no desenho antigo feito com formas.
 
 ## Próximos passos sugeridos
 
@@ -110,5 +121,5 @@ firewall-defense/
 - [ ] Heróis que sobem de nível durante a partida
 - [ ] Vírus camuflado (Rootkit) que só o Scanner enxerga
 - [ ] Modos de dificuldade por mapa
-- [ ] Spritesheets desenhados à mão
+- [ ] Sprites pras defesas que ainda usam desenho com formas (Roteador, Engenheiro, Scanner...)
 - [ ] Empacotar como app Android/iOS com [Capacitor](https://capacitorjs.com/) (`npx cap add android`)

@@ -117,6 +117,9 @@ ASSETS = {
                         'but raise both big brick fists high above its head ready to smash the ground, with a fierce '
                         'roaring open mouth and the head flames burning bigger and brighter. '
                         'Do not add anything else. ', 'firewall'),
+    # ── HUD ──────────────────────────────────────────────
+    'coin': ('magenta', 'A shiny golden hexagonal crypto coin with a dollar sign "$" in the middle, front view. '),
+    'heart': ('magenta', 'A glossy red cartoon heart icon for lives, front view. '),
     # ── Servidor (o que estamos protegendo) ──────────────
     'server': ('magenta', 'Front view. A cute friendly server computer character: a chunky blue rack server box '
                'with a cyan screen showing a happy smiling face, small green status LEDs below. '),
@@ -127,7 +130,7 @@ ASSETS = {
 }
 
 # estas usam o visual "3D de jogo mobile"; o resto é desenho animado 2D
-LOOK_3D_ASSETS = {'server', 'server_hurt'}
+LOOK_3D_ASSETS = {'server', 'server_hurt', 'coin', 'heart'}
 
 
 def load_key():
