@@ -14,8 +14,9 @@ export function overlayLayout(game) {
     L.resume = { x: cx - 150, y: 150, w: 300, h: 72 };
     L.restart = { x: cx - 150, y: 234, w: 300, h: 66 };
     L.maps = { x: cx - 150, y: 312, w: 300, h: 66 };
-    L.music = { x: cx - 70, y: 400, w: 60, h: 60 };
-    L.sfx = { x: cx + 10, y: 400, w: 60, h: 60 };
+    L.music = { x: cx - 105, y: 400, w: 60, h: 60 };
+    L.sfx = { x: cx - 30, y: 400, w: 60, h: 60 };
+    L.auto = { x: cx + 45, y: 400, w: 60, h: 60 };
   } else if (game.state === 'won' || game.state === 'lost') {
     L.maps = { x: cx - 230, y: 392, w: 210, h: 72 };
     L.next = { x: cx + 20, y: 392, w: 210, h: 72 };
@@ -72,6 +73,8 @@ export function drawOverlay(ctx, game) {
     bigButton(ctx, L.maps, '#ff9a2e', 'MAPAS', { icon: 'map', size: 24 });
     iconButton(ctx, L.music, game.app.save.music ? '#8a7dff' : '#7d8fa8', 'music', game.app.save.music);
     iconButton(ctx, L.sfx, game.app.save.sfx ? '#8a7dff' : '#7d8fa8', 'sfx', game.app.save.sfx);
+    iconButton(ctx, L.auto, game.autoRound ? '#3fd16b' : '#7d8fa8', 'auto', game.autoRound);
+    text(ctx, game.autoRound ? 'TURNO AUTOMÁTICO: LIGADO' : 'TURNO AUTOMÁTICO: DESLIGADO', game.viewW / 2, 478, { size: 13, color: '#d8e6ff' });
   } else {
     const won = game.state === 'won';
     ribbon(ctx, cx, c.y + 46, won ? 280 : 360, won ? 'VITÓRIA!' : 'SERVIDOR INVADIDO', won ? '#3fd16b' : '#ff5a6a', 30);

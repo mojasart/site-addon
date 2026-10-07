@@ -1,8 +1,8 @@
-// Progresso salvo no navegador (estrelas por mapa + som ligado/desligado).
+// Progresso salvo no navegador (estrelas por mapa, som e turno automático).
 // localStorage pode não existir (aba anônima, bloqueado...): aí só não salva.
 const KEY = 'firewall-defense-save-v1';
 
-const DEFAULTS = { stars: {}, music: true, sfx: true };
+const DEFAULTS = { stars: {}, music: true, sfx: true, autoRound: true };
 
 export function loadSave() {
   try {

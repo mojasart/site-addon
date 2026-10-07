@@ -137,8 +137,8 @@ function drawTowerInfo(ctx, game, L) {
 function towerInfo(tw) {
   const s = tw.stats;
   switch (s.attack) {
-    case 'trap':
-      return { title: 'CAPACIDADE', big: `${tw.capacity}/${tw.def.capacity}`, sub: 'Some quando estourar todos' };
+    case 'decoy':
+      return { title: 'VIDA DA ISCA', big: `${Math.ceil(tw.hp)}/${tw.maxHp}`, sub: 'Não dá dano: os vírus param pra atacar até ela quebrar' };
     case 'farm':
       return { sub: `Minera ${s.packetsPerRound} bitcoins de $${s.packetValue} por rodada${s.roundBonus ? ` e mais $${s.roundBonus} quando ela começa` : ''}` };
     default:

@@ -2,11 +2,12 @@ import { ENEMIES, threat } from '../data/enemies.js';
 import { rand } from '../util.js';
 
 export class Enemy {
-  constructor(type, dist) {
+  constructor(type, dist, route = null) {
     this.type = type;
     this.def = ENEMIES[type];
-    this.dist = dist; // quanto já andou no caminho
-    this.hp = this.def.hp;
+    this.dist = dist; // quanto já andou na rota
+    this.route = route; // rota (core/Path.js) que ele segue até a base
+    this.hp = this.maxHp = this.def.hp;
     this.r = this.def.radius;
     this.x = -999;
     this.y = -999;
@@ -18,10 +19,18 @@ export class Enemy {
     this.flash = 0;
     this.phase = rand(0, 10); // relógio da animação
     this.dead = false;
+    this.speedMul = 1; // dificuldade do mapa (RoundManager)
+  }
+
+  // Vida dos inimigos de várias camadas (Worm, Locker, Ransomware) muda
+  // com a dificuldade do mapa; os vírus comuns têm 1 de vida por camada
+  scaleHp(mul) {
+    if (this.def.hp <= 1) return;
+    this.hp = this.maxHp = Math.max(1, Math.round(this.def.hp * mul));
   }
 
   get speed() {
-    return this.def.speed * (this.slowTimer > 0 ? this.slowMul : 1);
+    return this.def.speed * this.speedMul * (this.slowTimer > 0 ? this.slowMul : 1);
   }
 
   // vidas que tira se escapar: o que sobrou dessa camada + todos os filhos
@@ -29,8 +38,14 @@ export class Enemy {
     return this.hp + threat(this.type) - this.def.hp;
   }
 
-  place(path) {
-    const p = path.pointAt(this.dist);
+  // quanto falta pra chegar na base (usado pra mirar no "primeiro")
+  get remaining() {
+    return this.route.length - this.dist;
+  }
+
+  place(route = this.route) {
+    this.route = route;
+    const p = route.pointAt(this.dist);
     this.x = p.x;
     this.y = p.y;
     this.angle = p.angle;
@@ -45,22 +60,44 @@ export class Enemy {
     this.phase += dt * (this.slowTimer > 0 ? this.slowMul : 1);
     // vira aos poucos pro lado em que anda (o desenho "gira" na curva)
     this.turn = this.turn == null ? this.face : this.turn + (this.face - this.turn) * Math.min(1, dt * 9);
+    // Honeypot no caminho: para e fica mordendo a isca até ela quebrar
+    const bait = game.baitAt?.(this);
+    if (bait) {
+      this.biting = bait;
+      if (Math.abs(bait.x - this.x) > 4) this.face = bait.x < this.x ? -1 : 1;
+      bait.bite(this.biteDps * dt, game);
+      return;
+    }
+    this.biting = null;
     this.dist += this.speed * dt;
-    if (this.dist >= game.path.length) {
+    if (this.dist >= this.route.length) {
       this.dead = true;
       game.leak(this);
       return;
     }
-    this.place(game.path);
+    this.place();
+    // encostou no servidor: já conta como invasão (não passa por cima dele)
+    if (game.touchesBase(this)) {
+      this.dead = true;
+      game.leak(this);
+      return;
+    }
     // Worm: vai soltando vírus pelo caminho enquanto está vivo
     const sp = this.def.spawn;
     if (sp && (this.spawnTimer = (this.spawnTimer ?? sp.every) - dt) <= 0) {
       this.spawnTimer = sp.every;
-      const child = new Enemy(sp.type, Math.max(0, this.dist - 16));
+      const child = new Enemy(sp.type, Math.max(0, this.dist - 16), this.route);
       child.round = this.round;
-      child.place(game.path);
+      child.speedMul = this.speedMul;
+      child.place();
       game.spawnEnemy(child);
     }
+  }
+
+  // quanto tira da isca por segundo (chefão morde forte)
+  get biteDps() {
+    if (this.def.boss) return 8;
+    return this.def.hp > 1 ? 2 : 1;
   }
 
   slow(mul, time) {
@@ -104,12 +141,13 @@ export class Enemy {
     let i = 0;
     for (const [type, n] of this.def.children) {
       for (let k = 0; k < n; k++, i++) {
-        const child = new Enemy(type, Math.max(0, this.dist - i * 12));
+        const child = new Enemy(type, Math.max(0, this.dist - i * 12), this.route);
         child.slowTimer = this.slowTimer;
         child.slowMul = this.slowMul;
         child.vulnTimer = this.vulnTimer;
         child.round = this.round;
-        child.place(game.path);
+        child.speedMul = this.speedMul;
+        child.place();
         game.spawnEnemy(child);
         opts.hitSet?.add(child); // o mesmo tiro não acerta os filhos
         // dano que sobrou passa pra camada de baixo (como no Bloons)

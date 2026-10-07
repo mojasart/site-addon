@@ -1,16 +1,17 @@
-import { VIEW_H, OUTLINE } from '../config.js';
-import { MAPS } from '../data/maps.js';
+import { VIEW_H, OUTLINE, GOLD } from '../config.js';
+import { MAPS, SEASONS, MAPS_PER_SEASON } from '../data/maps.js';
 import { ENEMIES } from '../data/enemies.js';
 import { renderThumb } from '../render/maps/index.js';
-import { rrect, fillOutline, text } from '../render/canvas.js';
+import { rrect, fillOutline, text, button } from '../render/canvas.js';
 import { iconButton, inRect, stars, ribbon } from '../render/widgets.js';
 import { drawVirusIcon } from '../render/viruses.js';
-import { drawHeart, drawCoin, ICONS } from '../render/sprites.js';
-import { wrapText } from '../render/ui.js';
+import { ICONS } from '../render/sprites.js';
 
-const DIFF_COLOR = { 'FÁCIL': '#3fd16b', 'MÉDIO': '#ff9a2e', 'DIFÍCIL': '#ff5a6a' };
+const DIFF_COLOR = { 'FÁCIL': '#3fd16b', 'MÉDIO': '#ff9a2e', 'DIFÍCIL': '#ff5a6a', 'EXTREMO': '#b65cff' };
 
-// Seleção de mapas: cards com miniatura, dificuldade, estrelas e cadeado
+// Seleção de mapas por season: abas no topo (Placa-Mãe, Data Center,
+// Cabo Submarino) e uma grade 5×3 com os 15 mapas da season escolhida.
+// Os mapas abrem em sequência: vencer um libera o próximo.
 export class LevelSelectScene {
   constructor(app) {
     this.app = app;
@@ -19,17 +20,32 @@ export class LevelSelectScene {
     this.thumbKey = '';
     this.pressed = -1;
     this.wiggle = { i: -1, t: 0 };
+    // abre na season do mapa mais avançado já liberado
+    let last = 0;
+    for (let i = 0; i < MAPS.length; i++) if (app.isUnlocked(i)) last = i;
+    this.season = MAPS[last].season;
   }
 
   layout() {
     const W = this.app.viewW;
-    const n = MAPS.length;
-    const gap = 26;
-    const cw = Math.min(290, (W - 80 - gap * (n - 1)) / n);
-    const x0 = (W - (n * cw + (n - 1) * gap)) / 2;
+    const tabW = Math.min(250, (W - 200) / SEASONS.length - 12);
+    const tabs0 = (W - (SEASONS.length * tabW + (SEASONS.length - 1) * 12)) / 2;
+    const cols = 5;
+    const gap = 12;
+    const gw = Math.min(W - 60, 900);
+    const tw = (gw - gap * (cols - 1)) / cols;
+    const th = 112;
+    const gx = (W - gw) / 2;
+    const gy = 160;
     return {
       back: { x: 18, y: 16, w: 56, h: 56 },
-      cards: MAPS.map((_, i) => ({ x: x0 + i * (cw + gap), y: 100, w: cw, h: 400 })),
+      tabs: SEASONS.map((_, s) => ({ x: tabs0 + s * (tabW + 12), y: 92, w: tabW, h: 52 })),
+      tiles: Array.from({ length: MAPS_PER_SEASON }, (_, k) => ({
+        x: gx + (k % cols) * (tw + gap),
+        y: gy + Math.floor(k / cols) * (th + gap),
+        w: tw,
+        h: th,
+      })),
     };
   }
 
@@ -41,6 +57,12 @@ export class LevelSelectScene {
     }
     this.thumbs[i] ??= renderThumb(MAPS[i], w, h, this.app.pixelScale);
     return this.thumbs[i];
+  }
+
+  seasonStars(s) {
+    let n = 0;
+    for (let k = 0; k < MAPS_PER_SEASON; k++) n += this.app.save.stars[MAPS[s * MAPS_PER_SEASON + k].id] ?? 0;
+    return n;
   }
 
   update(dt) {
@@ -70,87 +92,96 @@ export class LevelSelectScene {
       ctx.fill();
     }
     ctx.restore();
-    // vírus boiando nos cantos
-    [['v2', 60, 470], ['v5', W - 60, 120], ['v3', W - 90, 470], ['v4', 110, 150]].forEach(([type, x, y], i) => {
+    // vírus boiando nos cantos de cima
+    [['v2', 120, 52], ['v5', W - 60, 50]].forEach(([type, x, y], i) => {
       ctx.save();
-      ctx.translate(x, y + Math.sin(t * 2 + i) * 8);
+      ctx.translate(x, y + Math.sin(t * 2 + i) * 6);
       ctx.rotate(Math.sin(t + i) * 0.2);
-      drawVirusIcon(ctx, type, ENEMIES[type], 20);
+      drawVirusIcon(ctx, type, ENEMIES[type], 16);
       ctx.restore();
     });
 
     const L = this.layout();
-    ribbon(ctx, W / 2, 50, 340, 'ESCOLHA O MAPA', '#ff9a2e', 30);
+    ribbon(ctx, W / 2, 46, 340, 'ESCOLHA O MAPA', '#ff9a2e', 28);
     iconButton(ctx, L.back, '#5fb4ff', 'back');
 
-    L.cards.forEach((c, i) => this.drawCard(ctx, c, i));
+    SEASONS.forEach((season, s) => this.drawTab(ctx, L.tabs[s], season, s));
+    L.tiles.forEach((tile, k) => this.drawTile(ctx, tile, this.season * MAPS_PER_SEASON + k));
   }
 
-  drawCard(ctx, c, i) {
+  drawTab(ctx, r, season, s) {
+    const active = this.season === s;
+    const first = s * MAPS_PER_SEASON;
+    const open = this.app.isUnlocked(first);
+    ctx.save();
+    if (!active) ctx.globalAlpha = 0.75;
+    button(ctx, r, active ? season.color : '#4a5d92', { radius: 14, depth: 5, pressed: active });
+    const cy = r.y + (r.h - 5) / 2 + (active ? 4 : 0);
+    text(ctx, season.name.toUpperCase(), r.x + r.w / 2, cy - 7, { size: 17 });
+    if (open) {
+      text(ctx, `★ ${this.seasonStars(s)}/${MAPS_PER_SEASON * 3}`, r.x + r.w / 2, cy + 12, { size: 13, color: GOLD });
+    } else {
+      ctx.save();
+      ctx.translate(r.x + r.w / 2 - 34, cy + 12);
+      ICONS.lock(ctx, 8);
+      ctx.restore();
+      text(ctx, 'BLOQUEADA', r.x + r.w / 2 + 8, cy + 12, { size: 12, color: '#d8e6ff' });
+    }
+    ctx.restore();
+  }
+
+  drawTile(ctx, c, i) {
     const map = MAPS[i];
     const unlocked = this.app.isUnlocked(i);
     const got = this.app.save.stars[map.id] ?? 0;
     const cx = c.x + c.w / 2;
     ctx.save();
     let dx = 0;
-    if (this.wiggle.i === i && this.wiggle.t > 0) dx = Math.sin(this.wiggle.t * 60) * 6 * this.wiggle.t * 3;
-    const s = this.pressed === i ? 0.96 : 1;
-    ctx.translate(cx + dx, c.y + c.h / 2 + Math.sin(this.t * 2 + i) * 2);
+    if (this.wiggle.i === i && this.wiggle.t > 0) dx = Math.sin(this.wiggle.t * 60) * 5 * this.wiggle.t * 3;
+    const s = this.pressed === i ? 0.95 : 1;
+    ctx.translate(cx + dx, c.y + c.h / 2);
     ctx.scale(s, s);
     ctx.translate(-cx, -(c.y + c.h / 2));
 
-    rrect(ctx, c.x, c.y + 8, c.w, c.h, 24);
+    rrect(ctx, c.x, c.y + 5, c.w, c.h, 16);
     ctx.fillStyle = 'rgba(10,16,40,0.5)';
     ctx.fill();
-    rrect(ctx, c.x, c.y, c.w, c.h, 24);
-    fillOutline(ctx, '#34497f', 4);
+    rrect(ctx, c.x, c.y, c.w, c.h, 16);
+    fillOutline(ctx, '#34497f', 3);
 
-    const tw = c.w - 20;
-    const th = 176;
+    // miniatura do mapa
+    const tw = c.w - 12;
+    const th = 66;
     ctx.save();
-    rrect(ctx, c.x + 10, c.y + 10, tw, th, 16);
+    rrect(ctx, c.x + 6, c.y + 6, tw, th, 11);
     ctx.clip();
-    ctx.drawImage(this.thumb(i, Math.round(tw), th), c.x + 10, c.y + 10, tw, th);
+    ctx.drawImage(this.thumb(i, Math.round(tw), th), c.x + 6, c.y + 6, tw, th);
     ctx.restore();
-    rrect(ctx, c.x + 10, c.y + 10, tw, th, 16);
-    ctx.lineWidth = 3;
+    rrect(ctx, c.x + 6, c.y + 6, tw, th, 11);
+    ctx.lineWidth = 2.5;
     ctx.strokeStyle = OUTLINE;
     ctx.stroke();
 
-    const chip = { x: c.x + 18, y: c.y + 18, w: 84, h: 28 };
-    rrect(ctx, chip.x, chip.y, chip.w, chip.h, 14);
-    fillOutline(ctx, DIFF_COLOR[map.difficulty], 3);
-    text(ctx, map.difficulty, chip.x + chip.w / 2, chip.y + 15, { size: 15 });
+    // número (season-mapa) e selo de dificuldade
+    const label = `${map.season + 1}-${map.number}`;
+    rrect(ctx, c.x + 10, c.y + 10, 40, 22, 11);
+    fillOutline(ctx, 'rgba(20,28,60,0.85)', 2);
+    text(ctx, label, c.x + 30, c.y + 21, { size: 14 });
+    rrect(ctx, c.x + c.w - 16, c.y + 12, 8, 8, 4);
+    ctx.fillStyle = DIFF_COLOR[map.difficulty];
+    ctx.fill();
 
-    text(ctx, map.name, cx, c.y + 214, { size: 27 });
-    wrapText(ctx, map.desc, cx, c.y + 246, c.w - 30, 14, '#d8e6ff', 2);
-
-    // rodadas · vidas · dinheiro
-    const y = c.y + 296;
-    text(ctx, `${map.rounds}`, cx - 70, y, { size: 20 });
-    text(ctx, 'RODADAS', cx - 70, y + 20, { size: 11, color: '#bcd0f5' });
-    ctx.save();
-    ctx.translate(cx - 12, y);
-    drawHeart(ctx, 9);
-    ctx.restore();
-    text(ctx, `${map.lives}`, cx + 18, y, { size: 20 });
-    ctx.save();
-    ctx.translate(cx + 54, y);
-    drawCoin(ctx, 9);
-    ctx.restore();
-    text(ctx, `${map.money}`, cx + 86, y, { size: 18 });
-
-    stars(ctx, cx, c.y + 360, got, 18, 44);
+    // estrelas embaixo
+    stars(ctx, cx, c.y + c.h - 18, got, 9, 22);
 
     if (!unlocked) {
-      rrect(ctx, c.x, c.y, c.w, c.h, 24);
-      ctx.fillStyle = 'rgba(15,22,48,0.68)';
+      rrect(ctx, c.x, c.y, c.w, c.h, 16);
+      ctx.fillStyle = 'rgba(15,22,48,0.72)';
       ctx.fill();
       ctx.save();
-      ctx.translate(cx, c.y + 88);
-      ICONS.lock(ctx, 34);
+      ctx.translate(cx, c.y + c.h / 2 - 4);
+      ICONS.lock(ctx, 18);
       ctx.restore();
-      text(ctx, 'Vença o mapa anterior', cx, c.y + 156, { size: 17, color: '#e3f6ff' });
     }
     ctx.restore();
   }
@@ -162,8 +193,14 @@ export class LevelSelectScene {
       this.app.goTitle();
       return;
     }
-    L.cards.forEach((c, i) => {
+    L.tabs.forEach((r, s) => {
+      if (!inRect(r, x, y) || this.season === s) return;
+      this.season = s;
+      this.app.sound.play('click');
+    });
+    L.tiles.forEach((c, k) => {
       if (!inRect(c, x, y)) return;
+      const i = this.season * MAPS_PER_SEASON + k;
       if (this.app.isUnlocked(i)) this.pressed = i;
       else {
         this.wiggle = { i, t: 0.35 };
@@ -175,12 +212,16 @@ export class LevelSelectScene {
   pointerUp(x, y) {
     const i = this.pressed;
     this.pressed = -1;
-    if (i < 0 || !inRect(this.layout().cards[i], x, y)) return;
+    if (i < 0) return;
+    const tile = this.layout().tiles[i - this.season * MAPS_PER_SEASON];
+    if (!tile || !inRect(tile, x, y)) return;
     this.app.sound.play('click');
     this.app.startMap(i);
   }
 
   key(k) {
     if (k === 'Escape') this.app.goTitle();
+    if (k === 'ArrowRight') this.season = Math.min(SEASONS.length - 1, this.season + 1);
+    if (k === 'ArrowLeft') this.season = Math.max(0, this.season - 1);
   }
 }

@@ -65,6 +65,14 @@ export class App {
     this.sound.play('click');
   }
 
+  // Turno automático: a próxima rodada começa sozinha quando o mapa limpa
+  toggleAuto() {
+    this.save.autoRound = !this.save.autoRound;
+    writeSave(this.save);
+    this.sound.play('click');
+    this.game?.autoChanged();
+  }
+
   toggleSfx() {
     this.sound.setSfx(!this.save.sfx);
     writeSave(this.save);

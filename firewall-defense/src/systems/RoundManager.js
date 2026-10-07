@@ -4,13 +4,23 @@ import { Enemy } from '../entities/Enemy.js';
 // Dá pra chamar a próxima rodada com outra ainda rolando (as filas se somam);
 // cada rodada acaba quando tudo dela já entrou e morreu (filhos contam junto).
 export class RoundManager {
-  constructor(rounds) {
-    this.rounds = rounds;
+  // mod: dificuldade do mapa { count, gap, speed, hp } (multiplicadores)
+  constructor(rounds, mod = {}) {
+    this.mod = { count: mod.count ?? 1, gap: mod.gap ?? 1, speed: mod.speed ?? 1, hp: mod.hp ?? 1 };
+    this.rounds = rounds.map((r) =>
+      r.map((g) => ({
+        ...g,
+        count: Math.max(1, Math.round(g.count * this.mod.count)),
+        gap: g.gap * this.mod.gap,
+        at: (g.at ?? 0) * this.mod.gap,
+      })),
+    );
     this.started = 0; // quantas rodadas já começaram
     this.done = 0; // quantas já terminaram
     this.queue = []; // { type, t, round } em ordem de entrada
     this.pending = []; // por rodada: quantos vírus ainda vão entrar
     this.time = 0;
+    this.spawned = 0; // contador pra alternar as entradas (rotas)
   }
 
   get total() {
@@ -51,9 +61,14 @@ export class RoundManager {
     this.time += dt;
     while (this.queue.length && this.queue[0].t <= this.time) {
       const q = this.queue.shift();
-      const enemy = new Enemy(q.type, game.spawnDist);
+      // com várias entradas, cada vírus sai por uma (em revezamento)
+      const k = this.spawned++ % game.path.routes.length;
+      const enemy = new Enemy(q.type, game.view.spawnDists[k], game.path.routes[k]);
+      if (game.spawnFlash) game.spawnFlash[k] = 1;
       enemy.round = q.round;
-      enemy.place(game.path);
+      enemy.speedMul = this.mod.speed;
+      enemy.scaleHp(this.mod.hp);
+      enemy.place();
       game.spawnEnemy(enemy);
       this.pending[q.round]--;
     }

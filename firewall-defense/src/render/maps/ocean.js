@@ -1,6 +1,6 @@
 import { VIEW_H, OUTLINE } from '../../config.js';
-import { circle, ellipse, fillOutline, shadow, gloss } from '../canvas.js';
-import { strokePath, raisedPathBase, waterSparkles, drawSparkles } from './shared.js';
+import { circle, ellipse, rrect, fillOutline, shadow, gloss } from '../canvas.js';
+import { strokePath, raisedPathBase, waterSparkles, drawSparkles, lines } from './shared.js';
 
 // Tema CABO SUBMARINO: mar aberto, ilhas de areia com coqueiros,
 // pedras na água e o caminho como um píer de madeira.
@@ -59,17 +59,17 @@ export function paint(g, { map, path, decor, W, ox }) {
 
   const islands = map.zones.filter((z) => z.terrain === 'land');
   for (const z of islands) {
-    ellipse(g, z.x, z.y, z.rx + 14, z.ry + 14);
+    island(g, z, 14, 0, 0);
     g.fillStyle = 'rgba(170,240,255,0.55)';
     g.fill();
   }
   for (const z of islands) {
-    ellipse(g, z.x + 3, z.y + 6, z.rx, z.ry);
+    island(g, z, 0, 3, 6);
     g.fillStyle = 'rgba(0,40,80,0.25)';
     g.fill();
-    ellipse(g, z.x, z.y, z.rx, z.ry);
+    island(g, z, 0, 0, 0);
     fillOutline(g, '#f2d38a', 3);
-    ellipse(g, z.x, z.y - 3, z.rx * 0.78, z.ry * 0.74);
+    island(g, z, -7, 0, -3);
     g.fillStyle = '#6cc24a';
     g.fill();
     g.lineWidth = 3;
@@ -85,8 +85,8 @@ export function paint(g, { map, path, decor, W, ox }) {
   // píer de madeira elevado (3/4), com estacas na frente da lateral
   raisedPathBase(g, path, { depth: 12, side: '#9a6533', sideDark: '#5e3b1c', outline: OUTLINE, shadow: 'rgba(0,40,80,0.25)' });
   g.fillStyle = '#5a3a1e';
-  for (let d = 20; d < path.length; d += 46) {
-    const p = path.pointAt(d);
+  for (const line of lines(path)) for (let d = 20; d < line.length; d += 46) {
+    const p = line.pointAt(d);
     const nx = -Math.sin(p.angle);
     const ny = Math.cos(p.angle);
     for (const s of [-1, 1]) {
@@ -149,4 +149,15 @@ function drawPalm(g, { x, y, rot }) {
   }
   circle(g, x + 2, y - 18, 3.5);
   fillOutline(g, '#7a4b22', 2);
+}
+
+// Contorno de uma ilha: elipse (mapas antigos) ou retângulo arredondado
+// (mapas gerados). grow > 0 aumenta, < 0 encolhe; dx/dy deslocam.
+function island(g, z, grow, dx, dy) {
+  if (z.shape === 'ellipse') {
+    const k = grow < 0 ? 0.78 : 1;
+    ellipse(g, z.x + dx, z.y + dy, z.rx * k + Math.max(grow, 0), z.ry * k + Math.max(grow, 0));
+    return;
+  }
+  rrect(g, z.x - grow + dx, z.y - grow + dy, z.w + grow * 2, z.h + grow * 2, Math.max(4, (z.r ?? 0) + grow));
 }

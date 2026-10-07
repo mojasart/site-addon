@@ -18,10 +18,12 @@ import { drawCharacter, drawPips } from './render/characters.js';
 import { drawEnemy } from './render/viruses.js';
 import { drawProjectile, drawCoin, drawServer } from './render/sprites.js';
 import { drawHazards, drawStunned, drawHazardWarning } from './render/hazards.js';
+import { drawSpawns } from './render/spawns.js';
 import { rrect, fillOutline, circle, text } from './render/canvas.js';
 import { rand } from './util.js';
 
 const TOUCH_LIFT = 46; // ao arrastar com o dedo, a defesa aparece acima dele
+const BASE_HIT = 40; // raio da hitbox do servidor
 
 // A partida em si (uma fase). Criada pelo App ao escolher um mapa.
 export class Game {
@@ -58,9 +60,15 @@ export class Game {
     this.newEnemies = [];
     this.projectiles = [];
     this.packets = [];
-    this.rounds = new RoundManager(ROUNDS.slice(0, this.map.rounds));
+    this.rounds = new RoundManager(ROUNDS.slice(0, this.map.rounds), {
+      count: this.map.pressure,
+      gap: this.map.gapMul,
+      speed: this.map.speedMul,
+      hp: this.map.pressure, // chefões e worms acompanham a pressão
+    });
     this.fx = new Effects();
     this.hazards = new Hazards(this.map.hazards);
+    this.spawnFlash = this.map.routes.map(() => 0); // clarão de cada entrada ao soltar um vírus
     this.speed = 1;
     this.nextIn = null; // contagem pra próxima rodada começar sozinha (null = espera o jogador)
     this.callCooldown = 0;
@@ -75,7 +83,9 @@ export class Game {
     this.stars = 0;
     this.stats = { pops: 0 };
     this.state = 'playing'; // playing | paused | won | lost
-    this.showBanner(this.map.name, 2.2, '#ffffff', 46, 'Arraste as defesas pro mapa!');
+    // mapa com novidade (várias entradas, loop, zonas...) avisa no começo
+    const special = this.map.entries > 1 || this.map.loop || this.map.hazards?.length;
+    this.showBanner(this.map.name, 2.6, '#ffffff', 46, special ? this.map.desc : 'Arraste as defesas pro mapa!');
   }
 
   pause() {
@@ -152,6 +162,7 @@ export class Game {
     for (const e of this.enemies) if (!e.dead) e.update(dt, this);
     for (const p of this.packets) p.update(dt, this);
     this.hazards.update(dt, this);
+    for (let k = 0; k < this.spawnFlash.length; k++) this.spawnFlash[k] = Math.max(0, this.spawnFlash[k] - dt * 4);
     this.fx.update(dt);
 
     this.enemies = this.enemies.filter((e) => !e.dead);
@@ -169,6 +180,22 @@ export class Game {
     if (this.newEnemies.length === 0) return;
     for (const e of this.newEnemies) if (!e.dead) this.enemies.push(e);
     this.newEnemies.length = 0;
+  }
+
+  // Isca (Honeypot) que o vírus está encostando, se houver
+  baitAt(e) {
+    for (const t of this.towers) {
+      if (t.def.attack !== 'decoy' || t.dead) continue;
+      if (Math.hypot(e.x - t.x, e.y - t.y) < t.r + e.r * 0.8) return t;
+    }
+    return null;
+  }
+
+  // Hitbox da base: o vírus que encosta no servidor já invade
+  // (antes ele só contava no fim da rota, depois de passar por cima)
+  touchesBase(e) {
+    const s = this.server;
+    return Math.hypot(e.x - s.x, e.y - (s.y - 8)) < BASE_HIT + e.r * 0.5;
   }
 
   leak(enemy) {
@@ -190,8 +217,18 @@ export class Game {
     }
     this.sound.play('roundEnd');
     this.showBanner(`RODADA ${n} COMPLETA!`, 1.6, '#3dff9a', 36, `+$${bonus}`);
-    // mapa limpo: a próxima começa sozinha daqui a pouco
-    if (!this.rounds.active) this.nextIn = NEXT_ROUND_DELAY;
+    // mapa limpo: com turno automático, a próxima começa sozinha daqui a pouco
+    if (!this.rounds.active && this.autoRound) this.nextIn = NEXT_ROUND_DELAY;
+  }
+
+  get autoRound() {
+    return this.app.save?.autoRound !== false;
+  }
+
+  // Ligou/desligou o turno automático no menu com o mapa parado
+  autoChanged() {
+    if (this.rounds.active || !this.rounds.canStart || this.rounds.started === 0) return;
+    this.nextIn = this.autoRound ? NEXT_ROUND_DELAY : null;
   }
 
   // Bônus por chamar a próxima rodada com outra ainda rolando:
@@ -228,6 +265,7 @@ export class Game {
   startRound() {
     const bonus = this.earlyBonus();
     if (!this.rounds.start()) return;
+    if (this.rounds.started === 1) this.firstRoundAt = this.anim; // some o aviso das entradas
     this.nextIn = null;
     for (const t of this.towers) {
       t.onRoundStart();
@@ -254,10 +292,10 @@ export class Game {
 
   score(tower, e, d) {
     switch (tower.targetMode) {
-      case 'last': return -e.dist;
-      case 'strong': return e.threat * 10000 + e.dist;
+      case 'last': return e.remaining;
+      case 'strong': return e.threat * 10000 - e.remaining;
       case 'close': return -d;
-      default: return e.dist;
+      default: return -e.remaining;
     }
   }
 
@@ -283,15 +321,15 @@ export class Game {
   enemiesInRange(x, y, range) {
     return this.enemies
       .filter((e) => !e.dead && this.isVisible(e) && Math.hypot(e.x - x, e.y - y) <= range + e.r)
-      .sort((a, b) => b.dist - a.dist);
+      .sort((a, b) => a.remaining - b.remaining);
   }
 
   spawnEnemy(enemy) {
     this.newEnemies.push(enemy);
   }
 
-  spawnProjectile(tower, angle) {
-    this.projectiles.push(new Projectile(tower, angle));
+  spawnProjectile(tower, angle, target = null) {
+    this.projectiles.push(new Projectile(tower, angle, target));
     this.sound.play(tower.def.sound ?? 'throw');
   }
 
@@ -396,6 +434,7 @@ export class Game {
       else if (inRect(L.maps, sx, sy)) this.app.goMaps();
       else if (inRect(L.music, sx, sy)) this.app.toggleMusic();
       else if (inRect(L.sfx, sx, sy)) this.app.toggleSfx();
+      else if (inRect(L.auto, sx, sy)) this.app.toggleAuto();
       return;
     }
     if (this.endDelay > 0) return;
@@ -504,6 +543,7 @@ export class Game {
     ctx.translate(this.offsetX, 0);
     this.view.animate(ctx, t);
     drawHazards(ctx, this.hazards, t);
+    drawSpawns(ctx, this, t);
 
     ctx.save();
     ctx.translate(this.server.x, this.server.y);
@@ -590,6 +630,7 @@ export class Game {
     ctx.translate(tw.x, tw.y);
     drawCharacter(ctx, tw.type, { t: tw.anim, face: tw.face, attack: tw.attack, pulse: tw.pulse, spawn: tw.spawnAnim });
     drawPips(ctx, tw.level, tw.r);
+    if (tw.def.attack === 'decoy' && tw.hp < tw.maxHp) drawBaitBar(ctx, tw);
     if (tw.stunned > 0) drawStunned(ctx, this.anim);
     ctx.restore();
   }
@@ -604,13 +645,26 @@ function buzz(ms) {
   }
 }
 
+// Vida da isca (Honeypot), em cima dela, quando começa a apanhar
+function drawBaitBar(ctx, tw) {
+  const w = 34;
+  rrect(ctx, -w / 2, -34, w, 8, 4);
+  fillOutline(ctx, '#2a1840', 2.5);
+  const k = Math.max(0, tw.hp / tw.maxHp);
+  if (k > 0) {
+    rrect(ctx, -w / 2 + 1.5, -32.5, (w - 3) * k, 5, 2.5);
+    ctx.fillStyle = k > 0.5 ? '#ffc62e' : '#ff7a3d';
+    ctx.fill();
+  }
+}
+
 function drawBossBar(ctx, e) {
   const w = e.r * 2;
   const x = e.x - w / 2;
   const y = e.y - e.r - 34;
   rrect(ctx, x, y, w, 12, 6);
   fillOutline(ctx, '#2a1840', 3);
-  const k = Math.max(0, e.hp / e.def.hp);
+  const k = Math.max(0, e.hp / (e.maxHp ?? e.def.hp));
   if (k > 0) {
     rrect(ctx, x + 2, y + 2, (w - 4) * k, 8, 4);
     ctx.fillStyle = '#ff4d6d';
