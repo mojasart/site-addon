@@ -137,6 +137,7 @@ export class Game {
     this.coinBump = Math.max(0, this.coinBump - dt * 4);
     this.shakeAmt = Math.max(0, this.shakeAmt - dt * 30);
     if (this.banner && (this.banner.time -= dt) <= 0) this.banner = null;
+    if (this.toast && (this.toast.time -= dt) <= 0) this.toast = null;
     if (this.state !== 'playing') {
       this.fx.update(dt);
       return;
@@ -232,11 +233,18 @@ export class Game {
   }
 
   // Bônus por chamar a próxima rodada com outra ainda rolando:
-  // uma parte do dinheiro que os vírus dela valem
+  // uma parte do dinheiro que os vírus dela valem, proporcional ao que
+  // ainda falta da rodada atual (com 1 vírus sobrando, é só $1)
   earlyBonus() {
     if (!this.rounds.active || !this.canCall()) return 0;
-    const value = this.rounds.rounds[this.rounds.started].reduce((sum, g) => sum + g.count * worth(g.type), 0);
-    return Math.round(value * EARLY_BONUS);
+    const roundValue = (r) => this.rounds.rounds[r].reduce((sum, g) => sum + g.count * worth(g.type), 0);
+    const cur = this.rounds.done;
+    const alive = (e) => !e.dead && e.round === cur;
+    let left = this.rounds.queue.reduce((sum, q) => sum + (q.round === cur ? worth(q.type) : 0), 0);
+    for (const e of this.enemies) if (alive(e)) left += worth(e.type);
+    for (const e of this.newEnemies) if (alive(e)) left += worth(e.type);
+    const frac = Math.min(1, left / roundValue(cur));
+    return Math.max(1, Math.round(roundValue(this.rounds.started) * EARLY_BONUS * frac));
   }
 
   // Dá pra chamar a próxima com no máximo 1 rodada rolando
@@ -326,6 +334,8 @@ export class Game {
 
   spawnEnemy(enemy) {
     this.newEnemies.push(enemy);
+    // ameaça nova entra no catálogo (e avisa no topo da tela)
+    if (this.app.discover?.(enemy.type)) this.toast = { text: `NOVA AMEAÇA NO CATÁLOGO: ${enemy.def.name.toUpperCase()}`, time: 3 };
   }
 
   spawnProjectile(tower, angle, target = null) {
@@ -600,7 +610,7 @@ export class Game {
       ctx.save();
       ctx.globalAlpha = 0.85;
       ctx.translate(g.x, g.y);
-      drawCharacter(ctx, this.placing, { t, face: 1 });
+      drawCharacter(ctx, this.placing, { t, face: 1, level: 0 });
       ctx.restore();
       if (!def.onPath && this.hazards.at(g.x, g.y)) drawHazardWarning(ctx, g.x, g.y);
     }
@@ -620,6 +630,7 @@ export class Game {
     ctx.restore();
 
     drawPanel(ctx, this);
+    if (this.toast) drawToast(ctx, this);
     drawBanner(ctx, this);
     drawOverlay(ctx, this);
     this.fx.drawConfetti(ctx);
@@ -628,7 +639,7 @@ export class Game {
   drawTowerAt(ctx, tw) {
     ctx.save();
     ctx.translate(tw.x, tw.y);
-    drawCharacter(ctx, tw.type, { t: tw.anim, face: tw.face, attack: tw.attack, pulse: tw.pulse, spawn: tw.spawnAnim });
+    drawCharacter(ctx, tw.type, { t: tw.anim, face: tw.face, attack: tw.attack, pulse: tw.pulse, spawn: tw.spawnAnim, level: tw.level });
     drawPips(ctx, tw.level, tw.r);
     if (tw.def.attack === 'decoy' && tw.hp < tw.maxHp) drawBaitBar(ctx, tw);
     if (tw.stunned > 0) drawStunned(ctx, this.anim);
@@ -643,6 +654,23 @@ function buzz(ms) {
   } catch {
     // sem vibração
   }
+}
+
+// Aviso de ameaça nova (catálogo), no topo do mapa
+function drawToast(ctx, game) {
+  const a = Math.min(1, game.toast.time * 2, (3 - game.toast.time) * 4);
+  const w = 360;
+  const x = game.mapW / 2 - w / 2;
+  ctx.save();
+  ctx.globalAlpha = a;
+  rrect(ctx, x, 70, w, 34, 17);
+  fillOutline(ctx, '#0b2416', 3);
+  ctx.strokeStyle = '#3dff9a';
+  ctx.lineWidth = 2;
+  rrect(ctx, x + 4, 74, w - 8, 26, 13);
+  ctx.stroke();
+  text(ctx, game.toast.text, game.mapW / 2, 88, { size: 14, color: '#3dff9a' });
+  ctx.restore();
 }
 
 // Vida da isca (Honeypot), em cima dela, quando começa a apanhar

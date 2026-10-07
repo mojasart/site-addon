@@ -120,17 +120,17 @@ ASSETS = {
     # ── HUD ──────────────────────────────────────────────
     'coin': ('magenta', 'A shiny orange round Bitcoin coin with a big white tilted bitcoin symbol "₿" in the middle, front view. '),
     'heart': ('magenta', 'A glossy red cartoon heart icon for lives, front view. '),
-    # Minerador: parado e batendo a picareta no chão (editado a partir do parado)
-    'minerador': ('magenta', 'Full body, chibi proportions (big head, small body), three-quarter view facing and looking '
+    # Minerador com picareta (base das versões criança e adolescente)
+    'minerador_pickaxe': ('magenta', 'Full body, chibi proportions (big head, small body), three-quarter view facing and looking '
                   'to the RIGHT, standing on two feet. A jolly cartoon crypto miner with a yellow hard hat with a '
                   'glowing headlamp, a bushy orange beard, rosy cheeks, a red shirt, blue overalls and brown boots, '
                   'holding a wooden pickaxe with a grey metal head resting on his shoulder. '),
-    'minerador_attack': ('magenta', 'Edit this image: keep exactly the same miner, face, beard, helmet, clothes, colors, '
+    'minerador_pickaxe_attack': ('magenta', 'Edit this image: keep exactly the same miner, face, beard, helmet, clothes, colors, '
                          'outline, size and style. Change only the pose: he swings the SAME single pickaxe down with both '
                          'hands, the handle going from his hands diagonally down to the RIGHT, and its ONE metal head '
                          'striking the ground in front of his feet. The pickaxe has exactly one metal head, at the lower '
                          'end; nothing is left on his shoulder. Focused effort expression, a few small grey rock chips at '
-                         'the impact point. Do not add anything else. ', 'minerador'),
+                         'the impact point. Do not add anything else. ', 'minerador_pickaxe'),
     # ── Servidor (o que estamos protegendo) ──────────────
     'server': ('magenta', 'Front view. A cute friendly server computer character: a chunky blue rack server box '
                'with a cyan screen showing a happy smiling face, small green status LEDs below. '),
@@ -138,7 +138,98 @@ ASSETS = {
     'server_hurt': ('magenta', 'Edit this image: keep the exact same server box, angle, size, colors and style, '
                     'but make the screen red and showing a dizzy hurt face with X eyes and a wavy mouth, '
                     'and make the 3 LEDs red. Do not add arms, legs or anything else. ', 'server'),
+    # Minerador adulto (nível 3): o mesmo cara, agora minerando bitcoin num computador
+    # (rascunho → versão final sem o monitor que parecia estar no ombro)
+    'minerador_pc_draft': ('magenta', 'Edit this image: keep exactly the same man (same face, bushy orange beard, rosy cheeks, '
+                  'yellow hard hat with glowing headlamp, red shirt, blue overalls, brown boots), the same outline, colors '
+                  'and cartoon style, three-quarter view facing and looking to the RIGHT. Remove the pickaxe. Now he is a '
+                  'crypto miner at his computer: he sits on a small stool at a small wooden desk placed in front of him on '
+                  'the RIGHT, typing on a chunky keyboard, with a chunky retro computer monitor on the desk whose screen '
+                  'shows a big orange Bitcoin symbol, and a small PC tower with glowing green fans next to the desk. '
+                  'Compact composition: the man, desk and computer together, all fully visible. '
+                  'Do not add anything else. ', 'minerador_pickaxe'),
+    'minerador': ('magenta', 'Edit this image: REMOVE completely the beige monitor with the Bitcoin symbol that is on '
+                     'the left, next to his shoulder (only background there now). Keep the single grey monitor standing on '
+                     'the desk in front of him, but make its screen show a big glowing orange Bitcoin symbol. Keep exactly '
+                     'the same man, pose, desk, keyboard, PC tower, stool, colors, outline, size and style. '
+                     'Do not add anything else. ', 'minerador_pc_draft'),
+    'minerador_attack': ('magenta', 'Edit this image: keep exactly the same man, desk, computer, colors, outline, size, '
+                         'framing and style. Change only: he raises both fists in the air celebrating with a big happy '
+                         'open-mouth smile, and the monitor glows brighter with the Bitcoin symbol and a couple of small '
+                         'golden Bitcoin coins popping out of the screen. Do not add anything else. ', 'minerador'),
+    # Scanner (gerado em outra sessão; aqui só serve de referência pras idades)
+    'scanner': ('magenta', 'Full body, chibi proportions, three-quarter view facing and looking to the RIGHT, standing on '
+                'two feet. A cute round blue cartoon robot with a big red camera eye, one cartoon eye, a small white '
+                'satellite dish on its head, chunky arms and legs. '),
 }
+
+# ── Idades (nível 1 = criança, nível 2 = adolescente, nível 3 = adulto) ──
+# Editadas a partir do adulto pra manter roupa, cores e estilo; as poses de
+# ataque de cada idade são editadas a partir da versão parada da mesma idade.
+AGE = ('Edit this image: keep exactly the same character design, outfit, colors, accessories, outline style, pose, '
+       'facing direction (three-quarter view looking to the RIGHT) and cartoon style, but turn it into a {age} '
+       'version of the same character: {desc} Full body, fully visible. Do not add anything else. ')
+KID = 'small young CHILD (about 6 years old)'
+TEEN = 'TEENAGER (about 14 years old)'
+AGES = {
+    'hacker': ('green', 'hacker', {
+        'kid': 'a tiny NERDY kid hacker WITHOUT the mask: his face is visible, a cute nerd boy with big round thick-rimmed '
+               'glasses, freckles on his cheeks and nose, messy brown hair, a shy buck-tooth smile, the hood down on his '
+               'back, very round chibi body with a much bigger head than the body, short little arms and legs, the dark '
+               'hoodie oversized on him, holding a small toy-sized keyboard.',
+        'teen': 'a REBELLIOUS TEEN hacker, noticeably shorter and skinnier than the adult: the hood is DOWN on his back '
+                'and his face is visible, a messy brown MULLET haircut (short on top and sides, long hair at the back of '
+                'the neck), a cocky smirk and confident half-closed eyes, a small band-aid on the cheek, the white Guy '
+                'Fawkes mask pushed up to the side of his head, big chunky headphones around his neck, the hoodie a bit '
+                'loose with rolled-up sleeves, sneakers with bright green laces, same keyboard.',
+    }),
+    'pinguim': ('magenta', 'pinguim', {
+        'kid': 'a tiny fluffy newborn penguin chick, very round and small, with soft fluffy fuzz on the head, '
+               'stubby little flippers, the same cyan scarf a bit too long for him.',
+        'teen': 'a TEEN penguin, noticeably smaller and rounder than the adult, with a few leftover fluffy grey baby '
+                'down tufts sticking out on top of its head and on the chest, same navy body, white belly and cyan scarf.',
+    }),
+    'firewall': ('green', 'firewall', {
+        'kid': 'a tiny baby golem made of only a few small rounded orange-red bricks, very round and cute, '
+               'little stubby fists, only a small candle-sized flame on top of its head.',
+        'teen': 'a TEEN golem, noticeably smaller and rounder than the adult, made of fewer and bigger rounded bricks, '
+                'medium fists, a medium flame on its head and a cocky confident grin.',
+    }),
+    'minerador': ('magenta', 'minerador_pickaxe', {
+        'kid': 'a little kid miner with NO beard, chubby rosy cheeks, the yellow hard hat oversized on his head, '
+               'same red shirt and blue overalls, carrying a small pickaxe on his shoulder. The pickaxe is a normal mining pickaxe '
+               'with ONE wooden handle and exactly ONE metal head at the top end (not double, no second head).',
+        'teen': 'a tall skinny TEEN miner with freckles, a short scruffy orange goatee, a red bandana around the neck, '
+                'shirt sleeves rolled up, same yellow hard hat, red shirt and blue overalls, carrying the pickaxe on his '
+                'shoulder.',
+    }),
+    'scanner': ('magenta', 'scanner', {
+        'kid': 'a tiny BABY robot: a very small round egg-shaped body that is almost all head, tiny stubby arms and '
+               'legs, a mini toy-like satellite dish on its head, a huge cute natural eye, the same red camera eye '
+               'and blue color.',
+        'teen': 'a TEEN robot, noticeably smaller and rounder than the adult, with a smaller dish, a little antenna '
+                'with a blinking green light on the head, shiny fresh paint and a bigger cheeky eye. Keep the face layout exactly '
+                'like the original: the red camera eye on the LEFT side of the face (image left) and the natural cartoon '
+                'eye on the RIGHT side (image right), the dish on the upper left.',
+    }),
+}
+# poses de ataque (o mesmo texto do adulto, aplicado em cima da idade)
+AGE_ATTACK = {'pinguim': 'pinguim_open', 'firewall': 'firewall_attack', 'minerador': 'minerador_pickaxe_attack'}
+for base, (bg, ref, descs) in AGES.items():
+    for age, label in (('kid', KID), ('teen', TEEN)):
+        name = f'{base}_{age}'
+        ASSETS[name] = (bg, AGE.format(age=label, desc=descs[age]), ref)
+        if base in AGE_ATTACK:
+            pose = AGE_ATTACK[base]
+            suffix = 'attack' if base == 'minerador' else pose.split('_', 1)[1]
+            ASSETS[f'{name}_{suffix}'] = (bg, ASSETS[pose][1].replace('same miner, face, beard,', 'same young miner, same face (do not add or change facial hair),'), name)
+
+# o minerador criança batendo: rejuvenesce a pose do adulto (editar a criança
+# parada fazia a picareta ganhar duas pontas)
+ASSETS['minerador_kid_attack'] = ('magenta', AGE.format(age=KID, desc=(
+    'a little kid miner with NO beard and NO facial hair, chubby rosy cheeks, the yellow hard hat oversized on his '
+    'head, same red shirt and blue overalls, the SAME pose swinging the same single pickaxe down to the ground '
+    '(exactly one metal head, at the lower end, striking the ground; nothing on his shoulder).')), 'minerador_pickaxe_attack')
 
 # estas usam o visual "3D de jogo mobile"; o resto é desenho animado 2D
 LOOK_3D_ASSETS = {'server', 'server_hurt', 'coin', 'heart'}
@@ -249,10 +340,11 @@ def main():
             except Exception as e:  # noqa: BLE001
                 print('ERRO ', n, e, flush=True)
 
-        first = [n for n in todo if len(ASSETS[n]) < 3]
         with ThreadPoolExecutor(6) as ex:
-            list(ex.map(job, first))
-            list(ex.map(job, [n for n in todo if n not in first]))
+            while todo:
+                wave = [n for n in todo if len(ASSETS[n]) < 3 or ASSETS[n][2] not in todo]
+                list(ex.map(job, wave))
+                todo = [n for n in todo if n not in wave]
 
     for n in names:
         if (RAW_DIR / f'{n}.png').exists():

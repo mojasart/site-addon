@@ -10,6 +10,7 @@
 //    farm       → minera bitcoins durante as rodadas
 //
 //  upgrades: 2 níveis, cada um com custo e uma função que altera os status
+//  lore:     frase do catálogo de defesas (scenes/CatalogScene.js)
 //
 //  Pra criar uma defesa nova: adicione aqui, desenhe o personagem em
 //  render/characters.js e coloque o id em TOWER_ORDER.
@@ -18,6 +19,7 @@ export const TOWERS = {
   hacker: {
     name: 'Hacker',
     desc: 'Arremessa teclados nos vírus',
+    lore: 'Começou como um nerdzinho curioso. Hoje derruba qualquer vírus no arremesso de teclado.',
     cost: 200,
     radius: 18,
     range: 115,
@@ -38,6 +40,7 @@ export const TOWERS = {
   firewall: {
     name: 'Golem Firewall',
     desc: 'Bate no chão: onda de fogo que queima blindados',
+    lore: 'Tijolo por tijolo, cresce até virar uma muralha de fogo que nenhum malware atravessa.',
     cost: 350,
     radius: 20,
     range: 80,
@@ -56,6 +59,7 @@ export const TOWERS = {
   pinguim: {
     name: 'Pinguim',
     desc: 'Suporte: não dá dano, congela os vírus em volta e deixa lentos',
+    lore: 'O mascote do código aberto. Congela as ameaças com um abraço gelado.',
     cost: 300,
     radius: 18,
     range: 85,
@@ -75,8 +79,9 @@ export const TOWERS = {
     ],
   },
   scanner: {
-    name: 'Robô Scanner',
+    name: 'Robô NMAP',
     desc: 'Laser de longo alcance: lento, mas forte e fura blindagem',
+    lore: 'Varre a rede inteira com a parabólica e mira sempre no vírus mais forte.',
     cost: 450,
     radius: 18,
     range: 300,
@@ -95,6 +100,7 @@ export const TOWERS = {
   minerador: {
     name: 'Minerador',
     desc: 'Minera bitcoins nas rodadas. Caem direto no saldo',
+    lore: 'Da picareta ao computador: minera os bitcoins que pagam todas as defesas.',
     cost: 650,
     radius: 18,
     attack: 'farm',
@@ -109,6 +115,7 @@ export const TOWERS = {
   honeypot: {
     name: 'Honeypot',
     desc: 'Isca no caminho: os vírus param pra atacar até ela quebrar',
+    lore: 'Um pote de mel irresistível. Os vírus param pra atacar e esquecem do servidor.',
     cost: 80,
     radius: 15,
     attack: 'decoy',

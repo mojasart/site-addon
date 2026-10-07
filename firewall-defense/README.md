@@ -56,6 +56,10 @@ Os vírus funcionam como os balões do Bloons: cada camada estourada revela a de
 | **Locker** | Mini-chefão acorrentado (rodadas 15+). Solta 2 Trojans |
 | **Ransomware** | Chefão dirigível (rodadas 20 e 25). Solta 4 Trojans |
 
+## Catálogo de ameaças
+
+Na escolha de mapa, o ícone do monitor (canto de cima) abre o `THREAT_DB.EXE`: um computador com terminal verde listando os vírus. Cada ameaça entra no catálogo na primeira vez que aparece numa fase (avisa no topo: *NOVA AMEAÇA NO CATÁLOGO*). As que ainda não apareceram ficam como silhueta com cadeado. A ficha mostra vida, dano (vidas que tira se chegar no servidor), velocidade, faixa de dinheiro (da 1ª camada até destruir tudo o que ele solta), o que ele solta e uma frase (`lore` em `src/data/enemies.js`).
+
 ## Seasons e mapas
 
 São **3 seasons de 15 mapas** (45 fases), numa ordem só de dificuldade. Vencer um mapa libera o próximo, e a season seguinte abre ao vencer o último mapa da anterior.

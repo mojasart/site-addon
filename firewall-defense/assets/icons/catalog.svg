@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <defs>
+    <linearGradient id="w" gradientUnits="userSpaceOnUse" x1="0" y1="8" x2="0" y2="56"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dbe3f2"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe680"/><stop offset="1" stop-color="#f5b52e"/></linearGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fe3ff"/><stop offset="1" stop-color="#1fa3ef"/></linearGradient>
+  </defs>
+  <path d="M9 11 h46 v33 h-46 Z" stroke="#1b2340" stroke-width="9" fill="#1b2340"/>
+  <path d="M27 44 h10 v8 h-10 Z" stroke="#1b2340" stroke-width="9" fill="#1b2340"/>
+  <path d="M17 51 h30 v5 h-30 Z" stroke="#1b2340" stroke-width="9" fill="#1b2340"/>
+  <path d="M9 11 h46 v33 h-46 Z" stroke="url(#w)" stroke-width="1" fill="url(#w)"/>
+  <path d="M27 44 h10 v8 h-10 Z" stroke="url(#w)" stroke-width="1" fill="url(#w)"/>
+  <path d="M17 51 h30 v5 h-30 Z" stroke="url(#w)" stroke-width="1" fill="url(#w)"/>
+  <rect x="15" y="16.5" width="34" height="22.5" rx="3" fill="#0b2416"/>
+  <path d="M20 22.5 L25.5 27.5 L20 32.5" stroke="#3dff9a" stroke-width="3.2"/>
+  <path d="M29 33 H38" stroke="#3dff9a" stroke-width="3.2"/>
+</svg>

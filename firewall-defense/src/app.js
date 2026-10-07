@@ -6,6 +6,7 @@ import { setPixelScale } from './render/canvas.js';
 import { TitleScene } from './scenes/TitleScene.js';
 import { LevelSelectScene } from './scenes/LevelSelectScene.js';
 import { Game } from './game.js';
+import { CatalogScene } from './scenes/CatalogScene.js';
 
 // Controla as telas (título → mapas → jogo), a transição entre elas,
 // o progresso salvo e o som.
@@ -42,6 +43,24 @@ export class App {
 
   goMaps() {
     this.go(() => new LevelSelectScene(this));
+  }
+
+  goCatalog() {
+    this.go(() => new CatalogScene(this));
+  }
+
+  // Ameaça já apareceu numa fase? (no modo debug, todas)
+  hasSeen(type) {
+    return this.debug || !!this.save.seen?.[type];
+  }
+
+  // Primeira vez que um tipo de vírus aparece: entra no catálogo.
+  // Devolve true se for novidade.
+  discover(type) {
+    if (this.save.seen?.[type]) return false;
+    this.save.seen = { ...this.save.seen, [type]: true };
+    writeSave(this.save);
+    return true;
   }
 
   startMap(i) {
