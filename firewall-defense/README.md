@@ -37,13 +37,13 @@ python3 -m http.server 8080
 
 ### Modo platina
 
-Com **3 estrelas** num mapa, tocar nele deixa escolher **NORMAL** ou **PLATINA** (`src/data/platinum.js`):
+Tocar num mapa abre a escolha **NORMAL** / **PLATINA** (`src/data/platinum.js`); a platina só libera com **3 estrelas** (antes disso aparece trancada):
 
 - As ondas vêm **uma atrás da outra**, sem esperar o mapa limpar, por **3 minutos** (o relógio fica no HUD).
   O bônus de cada onda vem quando ela começa.
 - Aos 3:00 vem o **chefão** (Locker nos mapas 1–5 da season, Ransomware nos 6–10 e Ransomware com
-  Lockers nos 11–15). Derrotou, ganhou a platina: as estrelas do mapa ficam **azul-gelo** e ganham
-  um diamante do lado.
+  Lockers nos 11–15). Derrotou, ganhou a platina: as estrelas do mapa ficam **azul-gelo**, ganham
+  um diamante do lado e o card da fase vira **prata azulado metálico**.
 - Cada mapa tem um **aliado bloqueado** (sorteado pelo mapa, sempre o mesmo). Ele só aparece dentro
   da partida: no aviso do começo e trancado no painel.
 
@@ -102,6 +102,16 @@ node tools/sim/calibrate-platinum.js        # recalibra a platina (grava src/dat
 ```
 
 O modo platina tem a própria curva: de ~60% no 1-1 a ~15% no 3-15.
+
+O card de cada fase tem uma **bolinha de dificuldade** pela % de partidas de bots que venceram:
+🟢 fácil (90–100%) · 🟡 médio (65–90%) · 🟠 hard (45–65%) · 🔴 muito difícil (25–45%) · insano (0–25%,
+vermelho escuro). A janela de modo mostra a do normal e a da platina. Os números ficam em
+`src/data/botStats.js` e são regerados com:
+
+```bash
+node tools/sim/run.js --seeds 10 --save              # modo normal
+node tools/sim/run.js --platinum --seeds 10 --save   # modo platina
+```
 Mexeu em defesas, rodadas ou mapas? Rode os calibradores de novo e confira com `run.js`.
 
 ## Estrutura
@@ -126,7 +136,8 @@ firewall-defense/
     │   ├── maps.js          seasons e os 45 mapas (dificuldade de cada um)
     │   ├── mapgen.js        gerador de caminhos (loop, Y, várias entradas)
     │   ├── tuning.js        pressão de cada mapa, calibrada com bots
-    │   └── platinumTuning.js dificuldade da platina de cada mapa, calibrada com bots
+    │   ├── platinumTuning.js dificuldade da platina de cada mapa, calibrada com bots
+    │   └── botStats.js      % de vitória dos bots em cada mapa (bolinha de dificuldade)
     ├── audio/Sound.js       efeitos e música (sintetizados, sem arquivos)
     ├── core/                caminho e terreno
     ├── entities/            Tower, Enemy, Projectile, Packet
