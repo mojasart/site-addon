@@ -11,6 +11,8 @@ import { TREE, NODE, formatCoffee } from '../data/darknet.js';
  *  nó mostra o upgrade no terminal à direita; o botão compra (cafés saem
  *  do saldo e o bônus vale em todas as fases). De cada ramo sai um traço
  *  apagado com "?": é por onde a árvore vai crescer nas próximas fases.
+ *  A árvore fica num plano "infinito": arrastar move a câmera, roda do
+ *  mouse / pinça / botões +- dão zoom (o painel e o título ficam por cima).
  *  Libera com DARKNET_STARS estrelas (data/darknet.js).
  * ════════════════════════════════════════════════════════════ */
 
@@ -22,6 +24,11 @@ const CHARS = '01₿#$%<>/{}';
 const COLS = 64;
 const RADIUS = 150; // distância do centro da árvore até os ramos
 const BRANCH_ORDER = ['hacker', 'firewall', 'pinguim', 'scanner', 'minerador', 'honeypot'];
+const ZOOM_MIN = 0.45;
+const ZOOM_MAX = 2.4;
+const ROAM = 450; // quanto dá pra passear além da borda da árvore
+const DRAG_SLOP = 8; // até quantos px um toque ainda é toque (e não arrasto)
+const DOT_GAP = 48; // pontinhos do chão, pra sentir o movimento
 
 export class DarkNetScene {
   constructor(app) {
@@ -30,6 +37,8 @@ export class DarkNetScene {
     this.sel = 'root';
     this.flash = {}; // brilho de compra por nó (1 → 0)
     this.shake = 0; // painel treme quando não dá pra comprar
+    this.cam = null; // { x, y, z }: onde fica a raiz na tela e o zoom (começa no meio, no 1º layout)
+    this.drag = null; // arrasto em andamento
     // cada coluna da chuva tem sua velocidade e seu ponto de partida
     this.rain = Array.from({ length: COLS }, (_, i) => ({ speed: 60 + ((i * 37) % 90), start: (i * 131) % 700 }));
   }
@@ -37,25 +46,83 @@ export class DarkNetScene {
   layout() {
     const W = this.app.viewW;
     const panel = { x: W - 330, y: 128, w: 300, h: 330 };
-    const cx = (panel.x - 20) / 2 + 10; // centro da árvore: no meio do espaço à esquerda do painel
-    const cy = 300;
-    const nodes = { root: { x: cx, y: cy, r: 40 } };
+    // nós em coordenadas do mundo: a raiz no (0, 0)
+    const nodes = { root: { x: 0, y: 0, r: 40 } };
     BRANCH_ORDER.forEach((id, i) => {
       const a = -Math.PI / 2 + (i * Math.PI * 2) / BRANCH_ORDER.length;
-      nodes[id] = { x: cx + Math.cos(a) * RADIUS, y: cy + Math.sin(a) * RADIUS, r: 32, a };
+      nodes[id] = { x: Math.cos(a) * RADIUS, y: Math.sin(a) * RADIUS, r: 32, a };
     });
+    // câmera inicial: raiz no meio do espaço à esquerda do painel
+    const home = { x: (panel.x - 20) / 2 + 10, y: 300, z: 1 };
+    if (!this.cam) this.cam = { ...home };
+    const zy = VIEW_H - 64;
     return {
       back: { x: 18, y: 16, w: 56, h: 56 },
       panel,
       buy: { x: panel.x + 24, y: panel.y + panel.h - 74, w: panel.w - 48, h: 54 },
+      zoomIn: { x: 18, y: zy, w: 46, h: 46, label: '+' },
+      zoomOut: { x: 72, y: zy, w: 46, h: 46, label: '−' },
+      center: { x: 126, y: zy, w: 46, h: 46, label: 'center' },
       nodes,
+      home,
     };
+  }
+
+  // tela -> mundo
+  toWorld(x, y) {
+    const c = this.cam;
+    return { x: (x - c.x) / c.z, y: (y - c.y) / c.z };
+  }
+
+  // Zoom mantendo fixo o ponto da tela (x, y)
+  zoomAt(x, y, f) {
+    const c = this.cam;
+    const z = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, c.z * f));
+    c.x = x - ((x - c.x) * z) / c.z;
+    c.y = y - ((y - c.y) * z) / c.z;
+    c.z = z;
+    this.clampCam();
+  }
+
+  // Zoom pelos botões/teclado: em volta do meio da árvore na tela
+  zoomStep(f) {
+    this.homing = false;
+    this.zoomAt(this.layout().home.x, VIEW_H / 2, f);
+  }
+
+  // Não deixa a árvore sumir de vez: o centro da tela fica perto dela
+  clampCam() {
+    const c = this.cam;
+    const L = this.layout();
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const p of Object.values(L.nodes)) {
+      x0 = Math.min(x0, p.x);
+      y0 = Math.min(y0, p.y);
+      x1 = Math.max(x1, p.x);
+      y1 = Math.max(y1, p.y);
+    }
+    const mid = this.toWorld(this.app.viewW / 2, VIEW_H / 2);
+    const mx = Math.min(x1 + ROAM, Math.max(x0 - ROAM, mid.x));
+    const my = Math.min(y1 + ROAM, Math.max(y0 - ROAM, mid.y));
+    c.x -= (mx - mid.x) * c.z;
+    c.y -= (my - mid.y) * c.z;
   }
 
   update(dt) {
     this.t += dt;
     for (const k of Object.keys(this.flash)) this.flash[k] = Math.max(0, this.flash[k] - dt * 1.6);
     this.shake = Math.max(0, this.shake - dt * 3);
+    // botão de centralizar: volta deslizando
+    if (this.homing) {
+      const c = this.cam;
+      const h = this.layout().home;
+      const k = Math.min(1, dt * 8);
+      for (const key of ['x', 'y', 'z']) c[key] += (h[key] - c[key]) * k;
+      if (Math.abs(c.x - h.x) + Math.abs(c.y - h.y) + Math.abs(c.z - h.z) * 100 < 0.5) {
+        Object.assign(c, { x: h.x, y: h.y, z: h.z });
+        this.homing = false;
+      }
+    }
   }
 
   // estado do nó: 'owned' (comprado), 'open' (dá pra comprar se tiver café), 'locked'
@@ -78,13 +145,62 @@ export class DarkNetScene {
     ctx.fillStyle = vig;
     ctx.fillRect(0, 0, W, VIEW_H);
 
-    text(ctx, 'DARK NET', W / 2, 46, { size: 46, color: PURPLE, strokeWidth: 10 });
-    this.drawCoffee(ctx, W / 2, 92);
-
+    // árvore (com a câmera)
+    const c = this.cam;
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.scale(c.z, c.z);
+    this.drawDots(ctx, W);
     this.drawLinks(ctx, L, t);
     for (const n of TREE) this.drawNode(ctx, n, L.nodes[n.id], t);
+    ctx.restore();
+
+    // por cima: faixa escura atrás do título, título, painel e botões
+    const top = ctx.createLinearGradient(0, 0, 0, 120);
+    top.addColorStop(0, 'rgba(7,2,15,0.95)');
+    top.addColorStop(1, 'rgba(7,2,15,0)');
+    ctx.fillStyle = top;
+    ctx.fillRect(0, 0, W, 120);
+    text(ctx, 'DARK NET', W / 2, 46, { size: 46, color: PURPLE, strokeWidth: 10 });
+    this.drawCoffee(ctx, W / 2, 92);
     this.drawPanel(ctx, L);
     iconButton(ctx, L.back, '#5fb4ff', 'back');
+    for (const b of [L.zoomIn, L.zoomOut, L.center]) this.drawZoomButton(ctx, b);
+  }
+
+  // Pontinhos fixos no mundo: mostram o chão andando quando arrasta
+  drawDots(ctx, W) {
+    const a = this.toWorld(0, 0);
+    const b = this.toWorld(W, VIEW_H);
+    ctx.fillStyle = 'rgba(183,123,255,0.16)';
+    const r = 1.6 / this.cam.z;
+    for (let x = Math.floor(a.x / DOT_GAP) * DOT_GAP; x <= b.x; x += DOT_GAP) {
+      for (let y = Math.floor(a.y / DOT_GAP) * DOT_GAP; y <= b.y; y += DOT_GAP) {
+        ctx.fillRect(x - r, y - r, r * 2, r * 2);
+      }
+    }
+  }
+
+  // Botões de zoom no canto: "+", "-" e centralizar (alvo)
+  drawZoomButton(ctx, b) {
+    rrect(ctx, b.x, b.y, b.w, b.h, 12);
+    fillOutline(ctx, 'rgba(42,23,72,0.92)', 2.5);
+    ctx.strokeStyle = PURPLE;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    const cx = b.x + b.w / 2;
+    const cy = b.y + b.h / 2;
+    if (b.label === 'center') {
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#e6d0ff';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 9, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#e6d0ff';
+      ctx.fill();
+    } else text(ctx, b.label, cx, cy + 1, { size: 28, color: '#e6d0ff' });
   }
 
   // saldo de cafés (ícone + número, sem fundo), centralizado em x
@@ -113,7 +229,7 @@ export class DarkNetScene {
       ctx.lineWidth = owned ? 5 : 3;
       ctx.strokeStyle = owned ? GREEN : lit ? 'rgba(183,123,255,0.7)' : 'rgba(110,80,160,0.35)';
       ctx.shadowColor = owned ? GREEN : PURPLE;
-      ctx.shadowBlur = owned || lit ? 10 * this.app.pixelScale : 0;
+      ctx.shadowBlur = owned || lit ? 10 * this.app.pixelScale * this.cam.z : 0;
       ctx.beginPath();
       ctx.moveTo(root.x, root.y);
       ctx.lineTo(p.x, p.y);
@@ -160,7 +276,7 @@ export class DarkNetScene {
     // anel: verde comprado, roxo aberto (pulsando se dá pra comprar), cinza trancado
     const ring = st === 'owned' ? GREEN : st === 'open' ? PURPLE : '#4a3f63';
     ctx.shadowColor = ring;
-    ctx.shadowBlur = (st === 'locked' ? 0 : 14 + pulse * 10 + (this.flash[n.id] ?? 0) * 30) * this.app.pixelScale;
+    ctx.shadowBlur = (st === 'locked' ? 0 : 14 + pulse * 10 + (this.flash[n.id] ?? 0) * 30) * this.app.pixelScale * this.cam.z;
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
     ctx.fillStyle = st === 'owned' ? '#0f2a1f' : '#170a2c';
@@ -238,31 +354,34 @@ export class DarkNetScene {
     text(ctx, n.name.toUpperCase(), P.x + 18, P.y + 60, { size: 24, color: '#ffffff', align: 'left' });
     wrap(ctx, n.desc, P.x + 18, P.y + 98, P.w - 36, 17, '#e6d0ff');
 
-    // requisito / estado
+    // estado (trancado não diz nada: a árvore já mostra o caminho)
     ctx.font = `bold 13px ${MONO}`;
     ctx.textAlign = 'left';
-    let status;
+    let status = null;
     if (st === 'owned') status = ['> instalado. ativo em todas as fases', GREEN];
-    else if (st === 'locked') status = [`> requer: ${NODE[n.parent].name}`, '#ff8aa0'];
-    else if (!can) status = [`> faltam ${formatCoffee(n.cost - this.app.coffee)} café(s)`, '#ffc62e'];
-    else status = ['> pronto pra instalar', PURPLE];
-    ctx.fillStyle = status[1];
-    ctx.fillText(status[0], P.x + 18, P.y + 196);
-
-    // custo
-    if (st !== 'owned') {
-      ctx.save();
-      ctx.translate(P.x + 30, P.y + 230);
-      ICONS.coffee(ctx, 10);
-      ctx.restore();
-      text(ctx, `${n.cost} ${n.cost === 1 ? 'café' : 'cafés'}`, P.x + 50, P.y + 232, { size: 20, color: COFFEE_TXT, align: 'left' });
+    else if (st === 'open' && !can) status = [`> faltam ${formatCoffee(n.cost - this.app.coffee)} café(s)`, '#ffc62e'];
+    else if (st === 'open') status = ['> pronto pra instalar', PURPLE];
+    if (status) {
+      ctx.fillStyle = status[1];
+      ctx.fillText(status[0], P.x + 18, P.y + 196);
     }
 
-    // botão
+    // botão: o próprio custo em cafés (verde quando dá pra comprar)
     const B = L.buy;
-    const label = st === 'owned' ? 'INSTALADO' : st === 'locked' ? 'TRANCADO' : 'COMPRAR';
+    const cy = B.y + (B.h - 5) / 2 + 1;
     button(ctx, B, st === 'owned' ? '#2f8f5b' : can ? '#3fd16b' : '#5d5675', { radius: 14, depth: 5 });
-    text(ctx, label, B.x + B.w / 2, B.y + (B.h - 5) / 2 + 1, { size: 22 });
+    if (st === 'owned') text(ctx, 'INSTALADO', B.x + B.w / 2, cy, { size: 22 });
+    else {
+      const label = `${n.cost} ${n.cost === 1 ? 'CAFÉ' : 'CAFÉS'}`;
+      setFont(ctx, 22);
+      const lw = ctx.measureText(label).width;
+      const x0 = B.x + (B.w - lw - 34) / 2;
+      ctx.save();
+      ctx.translate(x0 + 12, cy - 2);
+      ICONS.coffee(ctx, 11);
+      ctx.restore();
+      text(ctx, label, x0 + 34, cy, { size: 22, align: 'left' });
+    }
     ctx.restore();
   }
 
@@ -302,9 +421,43 @@ export class DarkNetScene {
       }
       return;
     }
+    if (inRect(L.zoomIn, x, y) || inRect(L.zoomOut, x, y)) {
+      this.zoomStep(inRect(L.zoomIn, x, y) ? 1.25 : 0.8);
+      this.app.sound.play('click');
+      return;
+    }
+    if (inRect(L.center, x, y)) {
+      this.homing = true;
+      this.app.sound.play('click');
+      return;
+    }
+    if (inRect(L.panel, x, y)) return;
+    // começa um arrasto; se soltar sem mexer, vira toque no nó
+    this.homing = false;
+    this.drag = { x, y, cx: this.cam.x, cy: this.cam.y, moved: false };
+  }
+
+  pointerMove(x, y) {
+    const d = this.drag;
+    if (!d || this.pinching) return;
+    if (!d.moved && Math.hypot(x - d.x, y - d.y) < DRAG_SLOP) return;
+    d.moved = true;
+    this.cam.x = d.cx + x - d.x;
+    this.cam.y = d.cy + y - d.y;
+    this.clampCam();
+  }
+
+  pointerUp(x, y) {
+    const d = this.drag;
+    const pinched = this.pinching;
+    this.drag = null;
+    this.pinching = false;
+    if (!d || d.moved || pinched) return;
+    const L = this.layout();
+    const w = this.toWorld(x, y);
     for (const n of TREE) {
       const p = L.nodes[n.id];
-      if (Math.hypot(x - p.x, y - p.y) <= p.r + 6) {
+      if (Math.hypot(w.x - p.x, w.y - p.y) <= p.r + 6 / this.cam.z) {
         this.sel = n.id;
         this.app.sound.play('click');
         return;
@@ -312,8 +465,31 @@ export class DarkNetScene {
     }
   }
 
+  pointerCancel() {
+    this.drag = null;
+    this.pinching = false;
+  }
+
+  // roda do mouse / trackpad: zoom em volta do cursor
+  wheel(x, y, dy) {
+    this.homing = false;
+    this.zoomAt(x, y, Math.exp(-dy * 0.0015));
+  }
+
+  // pinça com dois dedos: f = quanto a distância mudou, (dx, dy) = quanto o meio andou
+  pinch(x, y, f, dx, dy) {
+    this.homing = false;
+    this.pinching = true;
+    this.cam.x += dx;
+    this.cam.y += dy;
+    this.zoomAt(x, y, f);
+  }
+
   key(k) {
     if (k === 'Escape') this.app.goMaps();
+    if (k === '+' || k === '=') this.zoomStep(1.25);
+    if (k === '-') this.zoomStep(0.8);
+    if (k === '0') this.homing = true;
   }
 }
 

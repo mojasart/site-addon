@@ -228,6 +228,14 @@ export class App {
     this.scene.pointerCancel?.();
   }
 
+  wheel(x, y, dy) {
+    if (!this.next) this.scene.wheel?.(x, y, dy);
+  }
+
+  pinch(x, y, f, dx, dy) {
+    if (!this.next) this.scene.pinch?.(x, y, f, dx, dy);
+  }
+
   key(k) {
     this.sound.unlock();
     if (!this.next) this.scene.key?.(k);
