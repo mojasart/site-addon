@@ -427,13 +427,12 @@ export class Game {
   }
 
   // O Minerador consegue minerar onde está? Nas seasons 1 e 2 só em cima
-  // de uma pilha de bitcoin (core/coinTiles.js), um Minerador por pilha.
-  // Na season 3 minera em qualquer lugar (vai precisar de upgrade: TODO)
+  // de uma pilha de bitcoin (core/coinTiles.js; uma defesa por quadrado,
+  // então um Minerador por pilha). Na season 3 minera em qualquer lugar
+  // (vai precisar de upgrade: TODO)
   canMine(tower) {
     if (this.map.season >= COIN_SEASONS) return true;
-    const tile = coinTileAt(this.coinTiles, tower.x, tower.y);
-    if (!tile) return false;
-    return this.towers.find((t) => t.def.attack === 'farm' && coinTileAt(this.coinTiles, t.x, t.y) === tile) === tower;
+    return !!coinTileAt(this.coinTiles, tower.x, tower.y);
   }
 
   spawnPacket(x, y, value) {

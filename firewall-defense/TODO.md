@@ -22,8 +22,6 @@ Lista do que falta fazer no jogo. Marque com `[x]` quando terminar.
   - Hoje ele minera em qualquer lugar na season 3; a regra fica em `Game.canMine` (`src/game.js`):
     trocar o `return true` da season 3 por algo como `return !!tower.stats.offshore`
   - Os bots (`tools/sim/bot.js`) vão precisar comprar esse upgrade antes de contar com o Minerador
-- [ ] **Pilhas de bitcoin na grade**: quando a grade de 54px (`src/core/grid.js`, branch `grid`)
-  entrar, usar `tileOf`/`tileCenter` dela em `src/core/coinTiles.js` (o formato `{ c, r }` já é o mesmo)
 
 ## Dark Net
 

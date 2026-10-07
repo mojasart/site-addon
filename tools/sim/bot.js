@@ -67,7 +67,7 @@ export function playMap(mapIndex, profileName, seed, mode = 'normal') {
     } else if (def.attack === 'farm') {
       // minerador: nas seasons com pilha de bitcoin, só em cima de uma pilha livre;
       // senão, onde cobre menos caminho (guarda os lugares bons)
-      const pool = game.coinTiles.length ? game.coinTiles.filter((c) => !game.towers.some((t) => t.def.attack === 'farm' && Math.hypot(t.x - c.x, t.y - c.y) < 27)) : spots;
+      const pool = game.coinTiles.length ? game.coinTiles : spots;
       for (const p of pool) if (game.canPlace(type, p.x, p.y)) list.push({ x: p.x, y: p.y, v: -coverage(p.x, p.y, 110) + rnd() });
     } else {
       const range = Number.isFinite(def.range) ? Math.min(def.range, 260) : 260;

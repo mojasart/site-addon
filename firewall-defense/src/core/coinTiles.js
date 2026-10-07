@@ -3,20 +3,20 @@
 //
 //  Cada mapa da Placa-Mãe e do Data Center tem de 1 a 4 quadrados no chão
 //  com uma pilha de bitcoin. O Minerador só minera em cima de um deles
-//  (um Minerador por pilha); fora deles ele fica parado (Game.canMine).
+//  (como cada quadrado tem uma defesa só, é um Minerador por pilha); fora
+//  deles ele fica parado (Game.canMine).
 //  Na season 3 o Minerador vai precisar de um upgrade pra minerar (TODO).
 //
-//  Os quadrados seguem a grade de 54px (14×10) que o mapa vai usar
-//  (core/grid.js, em outra branch): cada um é { c, r, x, y } — coluna,
-//  linha e o centro em pixels, nas coordenadas do mapa. São sorteados pela
+//  As pilhas são quadrados da grade do mapa (core/grid.js): cada uma é
+//  { c, r, x, y } — coluna, linha e o centro em pixels, nas coordenadas do
+//  mapa. São sorteadas pela
 //  semente do mapa (sempre os mesmos), só onde dá pra colocar o Minerador,
 //  fora da linha de cima (HUD) e espalhados (longe um do outro).
 // ─────────────────────────────────────────────────────────────
 import { seeded } from '../util.js';
+import { TILE, COLS, ROWS, tileCenter, tileOf } from './grid.js';
 
-export const TILE = 54;
-const COLS = 14;
-const ROWS = 10;
+export { TILE };
 export const COIN_SEASONS = 2; // seasons com pilhas: 1 (Placa-Mãe) e 2 (Data Center)
 const MIN_GAP = 3; // distância mínima entre duas pilhas, em quadrados (linha + coluna)
 
@@ -28,8 +28,7 @@ export function pickCoinTiles(game) {
   const free = [];
   for (let c = 0; c < COLS; c++) {
     for (let r = 1; r < ROWS; r++) { // a linha de cima fica embaixo do HUD
-      const x = c * TILE + TILE / 2;
-      const y = r * TILE + TILE / 2;
+      const { x, y } = tileCenter(c, r);
       if (game.canPlace('minerador', x, y)) free.push({ c, r, x, y });
     }
   }
@@ -47,7 +46,8 @@ export function pickCoinTiles(game) {
   return out;
 }
 
-// Quadrado com pilha que contém o ponto (x, y), ou null
+// Pilha no quadrado que contém o ponto (x, y), ou null
 export function coinTileAt(tiles, x, y) {
-  return tiles.find((t) => Math.abs(x - t.x) <= TILE / 2 && Math.abs(y - t.y) <= TILE / 2) ?? null;
+  const [c, r] = tileOf(x, y);
+  return tiles.find((t) => t.c === c && t.r === r) ?? null;
 }
