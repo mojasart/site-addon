@@ -1,4 +1,6 @@
-import { FONT, OUTLINE } from '../config.js';
+import { FONT, INK } from '../config.js';
+
+// ── Formas básicas ──────────────────────────────────────────
 
 export function rrect(ctx, x, y, w, h, r) {
   r = Math.min(r, w / 2, h / 2);
@@ -16,42 +18,65 @@ export function circle(ctx, x, y, r) {
   ctx.arc(x, y, r, 0, Math.PI * 2);
 }
 
-// Preenche e contorna o caminho atual com o contorno grosso padrão
+export function ellipse(ctx, x, y, rx, ry, rot = 0) {
+  ctx.beginPath();
+  ctx.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2);
+}
+
+// Preenche o caminho atual e contorna com a cor de contorno padrão
 export function fillOutline(ctx, fill, lineWidth = 3) {
   ctx.fillStyle = fill;
   ctx.fill();
-  ctx.lineWidth = lineWidth;
-  ctx.strokeStyle = OUTLINE;
+  if (lineWidth > 0) {
+    ctx.lineWidth = lineWidth;
+    ctx.strokeStyle = INK;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+  }
+}
+
+// Membro arredondado (braço, perna) com contorno
+export function limb(ctx, x1, y1, x2, y2, w, color) {
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.lineWidth = w + 5;
+  ctx.strokeStyle = INK;
+  ctx.stroke();
+  ctx.lineWidth = w;
+  ctx.strokeStyle = color;
   ctx.stroke();
 }
 
-export function shadow(ctx, x, y, rx, ry = rx * 0.45) {
-  ctx.fillStyle = 'rgba(10,20,30,0.28)';
-  ctx.beginPath();
-  ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+// Sombra suave no chão
+export function shadow(ctx, x, y, rx, ry = rx * 0.4, alpha = 0.22) {
+  ctx.fillStyle = `rgba(60,35,25,${alpha})`;
+  ellipse(ctx, x, y, rx, ry);
   ctx.fill();
 }
 
-// Brilho de "plástico" no canto de cima
-export function gloss(ctx, x, y, rx, ry, rot = -0.6) {
-  ctx.fillStyle = 'rgba(255,255,255,0.45)';
-  ctx.beginPath();
-  ctx.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2);
+// Brilho suave no canto de cima
+export function gloss(ctx, x, y, rx, ry, rot = -0.6, alpha = 0.45) {
+  ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+  ellipse(ctx, x, y, rx, ry, rot);
   ctx.fill();
 }
+
+// ── Texto ───────────────────────────────────────────────────
 
 export function setFont(ctx, size) {
   ctx.font = `${size}px ${FONT}`;
 }
 
-// Texto de jogo mobile: letra gorda com contorno escuro grosso
-export function text(ctx, str, x, y, { size = 20, color = '#ffffff', align = 'center', baseline = 'middle', stroke = OUTLINE, strokeWidth } = {}) {
+// Texto de jogo mobile: letra gorda com contorno
+export function text(ctx, str, x, y, { size = 20, color = '#ffffff', align = 'center', baseline = 'middle', stroke = INK, strokeWidth } = {}) {
   setFont(ctx, size);
   ctx.textAlign = align;
   ctx.textBaseline = baseline;
   if (stroke) {
     ctx.lineJoin = 'round';
-    ctx.lineWidth = strokeWidth ?? Math.max(3, size * 0.26);
+    ctx.lineWidth = strokeWidth ?? Math.max(3, size * 0.24);
     ctx.strokeStyle = stroke;
     ctx.strokeText(str, x, y);
   }
@@ -59,44 +84,12 @@ export function text(ctx, str, x, y, { size = 20, color = '#ffffff', align = 'ce
   ctx.fillText(str, x, y);
 }
 
-// Botão "3D" de jogo mobile: base escura embaixo + face colorida
-export function button(ctx, r, face, { pressed = false, radius = 14, depth = 5 } = {}) {
-  const d = pressed ? 1 : depth;
-  rrect(ctx, r.x, r.y + depth, r.w, r.h - depth, radius);
-  ctx.fillStyle = OUTLINE;
-  ctx.fill();
-  rrect(ctx, r.x, r.y + (depth - d), r.w, r.h - depth, radius);
-  fillOutline(ctx, face, 3);
-  // faixa de brilho em cima
-  ctx.save();
-  rrect(ctx, r.x, r.y + (depth - d), r.w, r.h - depth, radius);
-  ctx.clip();
-  ctx.fillStyle = 'rgba(255,255,255,0.22)';
-  ctx.fillRect(r.x, r.y + (depth - d), r.w, (r.h - depth) * 0.42);
-  ctx.restore();
-}
+export const inRect = (r, x, y) => !!r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+export const inCircle = (c, x, y) => !!c && Math.hypot(x - c.x, y - c.y) <= c.r;
 
-export function ellipse(ctx, x, y, rx, ry, rot = 0) {
-  ctx.beginPath();
-  ctx.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2);
-}
-
-// "Membro" arredondado (braço, perna) com contorno
-export function limb(ctx, x1, y1, x2, y2, w, color) {
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x2, y2);
-  ctx.lineWidth = w + 5;
-  ctx.strokeStyle = OUTLINE;
-  ctx.stroke();
-  ctx.lineWidth = w;
-  ctx.strokeStyle = color;
-  ctx.stroke();
-}
-
-// Sprite pré-desenhado num canvas pequeno (cache), pra coisas que aparecem
-// às dezenas na tela (vírus). Refeito quando a escala da tela muda.
+// ── Cache de sprites ────────────────────────────────────────
+// Coisas que aparecem muitas vezes podem ser pré-desenhadas num canvas
+// pequeno. O cache é refeito quando a escala da tela muda.
 let pixelScale = 1;
 const spriteCache = new Map();
 
@@ -106,20 +99,25 @@ export function setPixelScale(ps) {
   spriteCache.clear();
 }
 
-export function cachedSprite(key, size, draw) {
+export function getPixelScale() {
+  return pixelScale;
+}
+
+export function cachedSprite(key, w, h, draw) {
   let c = spriteCache.get(key);
   if (!c) {
     c = document.createElement('canvas');
-    c.width = c.height = Math.ceil(size * pixelScale);
+    c.width = Math.ceil(w * pixelScale);
+    c.height = Math.ceil(h * pixelScale);
     const g = c.getContext('2d');
     g.scale(pixelScale, pixelScale);
-    g.translate(size / 2, size / 2);
+    g.translate(w / 2, h / 2);
     draw(g);
     spriteCache.set(key, c);
   }
   return c;
 }
 
-export function blit(ctx, c, size) {
-  ctx.drawImage(c, -size / 2, -size / 2, size, size);
+export function blit(ctx, c, w, h) {
+  ctx.drawImage(c, -w / 2, -h / 2, w, h);
 }

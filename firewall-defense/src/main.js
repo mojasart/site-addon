@@ -1,13 +1,13 @@
 import { App } from './app.js';
 import { VIEW_H, MIN_VIEW_W, MAX_VIEW_W } from './config.js';
-import { bumpFontEpoch } from './render/maps/index.js';
+import { bumpFontEpoch } from './render/levelView.js';
 import { clamp } from './util.js';
 
 const stage = document.getElementById('stage'); // área útil da tela (fora do notch)
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
-// Abra com ?debug na URL: dinheiro infinito e todos os mapas liberados
+// Abra com ?debug na URL: dinheiro infinito
 const debug = new URLSearchParams(location.search).has('debug');
 const app = new App({ debug });
 window.app = app; // acesso pelo console do navegador pra testar coisas

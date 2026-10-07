@@ -1,4 +1,4 @@
-import { ENEMIES, threat } from '../data/enemies.js';
+import { ENEMIES } from '../data/enemies.js';
 import { rand } from '../util.js';
 
 export class Enemy {
@@ -6,26 +6,21 @@ export class Enemy {
     this.type = type;
     this.def = ENEMIES[type];
     this.dist = dist; // quanto já andou no caminho
-    this.hp = this.def.hp;
+    this.hp = this.maxHp = this.def.hp;
     this.r = this.def.radius;
     this.x = -999;
     this.y = -999;
     this.angle = 0;
     this.face = 1;
-    this.slowTimer = 0;
-    this.slowMul = 1;
-    this.flash = 0;
-    this.phase = rand(0, 10); // relógio da animação
+    this.stun = 0; // travado pelo Firewall
+    this.flash = 0; // piscada branca ao levar dano
+    this.kick = 0; // "tranco" ao levar dano (1 → 0)
+    this.phase = rand(0, 10); // relógio da animação de andar
     this.dead = false;
   }
 
   get speed() {
-    return this.def.speed * (this.slowTimer > 0 ? this.slowMul : 1);
-  }
-
-  // vidas que tira se escapar: o que sobrou dessa camada + todos os filhos
-  get threat() {
-    return this.hp + threat(this.type) - this.def.hp;
+    return this.stun > 0 ? 0 : this.def.speed;
   }
 
   place(path) {
@@ -38,10 +33,12 @@ export class Enemy {
   }
 
   update(dt, game) {
-    this.slowTimer = Math.max(0, this.slowTimer - dt);
     this.flash = Math.max(0, this.flash - dt);
-    this.phase += dt * (this.slowTimer > 0 ? this.slowMul : 1);
-    this.dist += this.speed * dt;
+    this.kick = Math.max(0, this.kick - dt * 6);
+    this.stun = Math.max(0, this.stun - dt);
+    if (this.stun > 0) return;
+    this.phase += dt;
+    this.dist += this.def.speed * dt;
     if (this.dist >= game.path.length) {
       this.dead = true;
       game.leak(this);
@@ -50,56 +47,25 @@ export class Enemy {
     this.place(game.path);
   }
 
-  slow(mul, time) {
-    if (this.def.boss) return; // chefão não fica lento
-    this.slowMul = Math.min(this.slowTimer > 0 ? this.slowMul : 1, mul);
-    this.slowTimer = Math.max(this.slowTimer, time);
+  stunFor(t) {
+    this.stun = Math.max(this.stun, t);
   }
 
-  // Pescador: puxa o vírus de volta no caminho
-  pullBack(px, game) {
-    if (this.def.boss) return;
-    this.dist = Math.max(game.spawnDist + 20, this.dist - px);
-    this.place(game.path);
-  }
-
-  // opts: { armored (fura blindagem?), source (torre que atacou), hitSet }
-  takeDamage(amount, game, opts = {}) {
-    if (this.dead || amount <= 0) return;
-    if (this.def.armored && !opts.armored) {
-      game.fx.blocked(this.x, this.y - this.r);
+  // Retorna true se o golpe feriu
+  hit(damage, game, source) {
+    if (this.dead) return false;
+    if (this.def.armored && !source?.def.pierceArmor) {
+      game.fx.blocked(this.x, this.y - this.r * 1.6);
       game.sound.play('block');
-      return;
+      return false;
     }
-    this.flash = 0.08;
-    this.hp -= amount;
-    if (this.hp <= 0) this.pop(game, -this.hp, opts);
-  }
-
-  pop(game, overflow, opts) {
-    this.dead = true;
-    game.money += this.def.reward ?? 1;
-    game.stats.pops++;
-    if (opts.source) opts.source.pops++;
-    game.fx.pop(this.x, this.y - this.r * 0.3, this.def.color, this.r);
-    if (this.def.boss) {
-      game.shake(this.r > 30 ? 10 : 6);
-      game.sound.play('bigpop');
-    } else game.sound.play('pop');
-
-    // solta os filhos um pouquinho atrás no caminho
-    let i = 0;
-    for (const [type, n] of this.def.children) {
-      for (let k = 0; k < n; k++, i++) {
-        const child = new Enemy(type, Math.max(0, this.dist - i * 12));
-        child.slowTimer = this.slowTimer;
-        child.slowMul = this.slowMul;
-        child.place(game.path);
-        game.spawnEnemy(child);
-        opts.hitSet?.add(child); // o mesmo tiro não acerta os filhos
-        // dano que sobrou passa pra camada de baixo (como no Bloons)
-        if (overflow > 0) child.takeDamage(overflow, game, opts);
-      }
-    }
+    this.hp -= damage;
+    this.flash = 0.09;
+    this.kick = 1;
+    if (this.hp <= 0) {
+      this.dead = true;
+      game.onKill(this);
+    } else game.sound.play('hit');
+    return true;
   }
 }

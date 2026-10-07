@@ -1,19 +1,18 @@
 import { MIN_VIEW_W, VIEW_H } from './config.js';
-import { MAPS } from './data/maps.js';
-import { loadSave, writeSave } from './save.js';
+import { loadSettings, saveSettings } from './save.js';
 import { Sound } from './audio/Sound.js';
 import { setPixelScale } from './render/canvas.js';
 import { TitleScene } from './scenes/TitleScene.js';
-import { LevelSelectScene } from './scenes/LevelSelectScene.js';
+import { SettingsScene } from './scenes/SettingsScene.js';
 import { Game } from './game.js';
 
-// Controla as telas (título → mapas → jogo), a transição entre elas,
-// o progresso salvo e o som.
+// Controla as telas (título → configurações / jogo), a transição entre
+// elas, as configurações salvas e o som.
 export class App {
   constructor({ debug = false } = {}) {
     this.debug = debug;
-    this.save = loadSave();
-    this.sound = new Sound(this.save);
+    this.settings = loadSettings();
+    this.sound = new Sound(this.settings);
     this.viewW = MIN_VIEW_W;
     this.pixelScale = 1;
     this.scene = new TitleScene(this);
@@ -40,35 +39,28 @@ export class App {
     this.go(() => new TitleScene(this));
   }
 
-  goMaps() {
-    this.go(() => new LevelSelectScene(this));
+  goSettings() {
+    this.go(() => new SettingsScene(this));
   }
 
-  startMap(i) {
-    this.go(() => new Game(this, i));
+  startGame() {
+    this.go(() => new Game(this));
   }
 
-  isUnlocked(i) {
-    return this.debug || i === 0 || (this.save.stars[MAPS[i - 1].id] ?? 0) > 0;
+  toggleSetting(key) {
+    this.settings[key] = !this.settings[key];
+    saveSettings(this.settings);
+    this.sound.play('click');
+    if (key === 'vibration' && this.settings.vibration) this.vibrate(30);
   }
 
-  recordStars(mapId, n) {
-    if (n > (this.save.stars[mapId] ?? 0)) {
-      this.save.stars[mapId] = n;
-      writeSave(this.save);
+  vibrate(ms) {
+    if (!this.settings.vibration) return;
+    try {
+      navigator.vibrate?.(ms);
+    } catch {
+      // sem vibração neste aparelho
     }
-  }
-
-  toggleMusic() {
-    this.sound.setMusic(!this.save.music);
-    writeSave(this.save);
-    this.sound.play('click');
-  }
-
-  toggleSfx() {
-    this.sound.setSfx(!this.save.sfx);
-    writeSave(this.save);
-    this.sound.play('click');
   }
 
   // App foi pro fundo (ligação, troca de app...)
@@ -85,6 +77,7 @@ export class App {
     if (this.next) {
       this.fade = Math.min(1, this.fade + dt * 5);
       if (this.fade >= 1) {
+        this.game?.fx.flushCoins();
         this.scene = this.next();
         this.next = null;
       }
@@ -95,12 +88,12 @@ export class App {
   render(ctx) {
     this.scene.render(ctx);
     if (this.fade > 0) {
-      ctx.fillStyle = `rgba(15,22,48,${this.fade})`;
+      ctx.fillStyle = `rgba(36,28,52,${this.fade})`;
       ctx.fillRect(0, 0, this.viewW, VIEW_H);
     }
   }
 
-  // ── input ──
+  // ── toque ──
   pointerDown(x, y, type) {
     this.sound.unlock();
     if (this.next) return;

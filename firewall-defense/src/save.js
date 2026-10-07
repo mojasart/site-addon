@@ -1,10 +1,10 @@
-// Progresso salvo no navegador (estrelas por mapa + som ligado/desligado).
+// Configurações salvas no navegador (som e vibração).
 // localStorage pode não existir (aba anônima, bloqueado...): aí só não salva.
-const KEY = 'firewall-defense-save-v1';
+const KEY = 'firewall-defense-settings-v1';
 
-const DEFAULTS = { stars: {}, music: true, sfx: true };
+const DEFAULTS = { sound: true, vibration: true };
 
-export function loadSave() {
+export function loadSettings() {
   try {
     const raw = localStorage.getItem(KEY);
     return raw ? { ...DEFAULTS, ...JSON.parse(raw) } : { ...DEFAULTS };
@@ -13,9 +13,9 @@ export function loadSave() {
   }
 }
 
-export function writeSave(save) {
+export function saveSettings(settings) {
   try {
-    localStorage.setItem(KEY, JSON.stringify(save));
+    localStorage.setItem(KEY, JSON.stringify(settings));
   } catch {
     // sem armazenamento: o jogo segue normal
   }
