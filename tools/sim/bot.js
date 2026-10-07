@@ -7,7 +7,8 @@
 // ─────────────────────────────────────────────────────────────
 import { Game } from '../../firewall-defense/src/game.js';
 import { TOWERS } from '../../firewall-defense/src/data/towers.js';
-import { VIEW_H } from '../../firewall-defense/src/config.js';
+import { MIN_VIEW_W } from '../../firewall-defense/src/config.js';
+import { COLS, ROWS, tileCenter } from '../../firewall-defense/src/core/grid.js';
 import { seeded } from '../../firewall-defense/src/util.js';
 
 // peso de cada defesa na hora de escolher o que colocar, chance de preferir
@@ -27,7 +28,7 @@ export function playMap(mapIndex, profileName, seed, mode = 'normal') {
   const rnd = seeded(seed * 9973 + mapIndex * 31 + 7);
   const app = {
     sound: { play() {} },
-    viewW: 960, // largura mínima do jogo: o mapa (770) cabe sem sobra
+    viewW: MIN_VIEW_W, // tela mais estreita: o mapa ocupa tudo
     debug: false,
     pixelScale: 1,
     recordStars() {},
@@ -162,10 +163,9 @@ function pathSamples(game) {
   return out;
 }
 
-function candidateSpots(game) {
+// Lugares possíveis pra uma defesa: o centro de cada quadrado da grade
+function candidateSpots() {
   const out = [];
-  for (let x = -game.offsetX + 24; x < game.mapW - game.offsetX - 24; x += 14) {
-    for (let y = 24; y < VIEW_H - 24; y += 14) out.push({ x, y });
-  }
+  for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) out.push(tileCenter(c, r));
   return out;
 }

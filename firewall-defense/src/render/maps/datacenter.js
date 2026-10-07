@@ -1,4 +1,4 @@
-import { VIEW_H, OUTLINE } from '../../config.js';
+import { VIEW_H, OUTLINE, TILE } from '../../config.js';
 import { strokePath, raisedPathBase } from './shared.js';
 
 // Tema DATA CENTER: piso técnico limpo e a calha de cabos elevada.
@@ -9,10 +9,10 @@ export function layout() {
 }
 
 export function paint(g, { path, W, ox }) {
-  // piso técnico
+  // piso técnico: cada placa do piso é um quadrado da grade do mapa
   g.fillStyle = '#d3dae6';
   g.fillRect(0, 0, W, VIEW_H);
-  const T = 45;
+  const T = TILE;
   for (let x = (ox % T) - T; x < W; x += T) {
     for (let y = 0; y < VIEW_H; y += T) {
       const k = Math.floor((x - ox) / T) + Math.floor(y / T);

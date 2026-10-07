@@ -11,10 +11,12 @@ import { Packet } from './entities/Packet.js';
 import { RoundManager } from './systems/RoundManager.js';
 import { Effects } from './systems/Effects.js';
 import { Hazards } from './systems/Hazards.js';
-import { MapView, blocksTower } from './render/maps/index.js';
+import { MapView } from './render/maps/index.js';
+import { TILE, tileOf, tileKey, inGrid, snapToTile } from './core/grid.js';
 import { layout, drawHud, drawPanel, drawRange } from './render/ui.js';
 import { inRect } from './render/widgets.js';
 import { drawBanner, drawOverlay, overlayLayout } from './render/screens.js';
+import { drawInfoPanel, infoLayout } from './render/infoPanel.js';
 import { drawCharacter, drawPips } from './render/characters.js';
 import { drawEnemy } from './render/viruses.js';
 import { drawProjectile, drawCoin, drawServer } from './render/sprites.js';
@@ -440,23 +442,28 @@ export class Game {
 
   // ── Defesas: colocar, selecionar, upgrade, vender ─────────
 
+  // Cada defesa ocupa 1 quadrado da grade (core/grid.js): o ponto vale pelo
+  // quadrado onde cai. Fora do caminho (o Honeypot é o contrário: só nele),
+  // fora do servidor e dos obstáculos, em terra e sem outra defesa ali.
   canPlace(type, x, y) {
     const def = TOWERS[type];
-    const r = def.radius;
-    if (x - r < -this.offsetX || x + r > this.mapW - this.offsetX || y - r < 0 || y + r > VIEW_H) return false;
-    const d = this.path.distanceTo(x, y);
-    if (def.onPath ? d > this.path.width / 2 - 6 : d < this.path.width / 2 + r - 6) return false;
-    if (Math.hypot(x - this.server.x, y - this.server.y) < 44 + r) return false;
+    const [c, r] = tileOf(x, y);
+    if (!inGrid(c, r)) return false;
+    const k = tileKey(c, r);
+    const v = this.view;
+    if (v.serverTiles.has(k) || v.blockedTiles.has(k)) return false;
+    if (!!def.onPath !== v.pathTiles.has(k)) return false;
     if (!def.onPath) {
-      if (!fitsTerrain(this.map, x, y, r, 'land')) return false;
-      if (this.view.decor.parts.some((p) => blocksTower(p, x, y, r))) return false;
+      const p = snapToTile(x, y);
+      if (!fitsTerrain(this.map, p.x, p.y, 10, 'land')) return false;
     }
-    return this.towers.every((t) => Math.hypot(t.x - x, t.y - y) >= t.r + r);
+    return this.towers.every((t) => tileKey(...tileOf(t.x, t.y)) !== k);
   }
 
   place(type, x, y) {
     const def = TOWERS[type];
     if (this.money < def.cost || !this.canPlace(type, x, y)) return false;
+    ({ x, y } = snapToTile(x, y)); // a defesa fica no centro do quadrado
     this.money -= def.cost;
     const tower = new Tower(type, x, y, !this.rounds.active);
     if (this.rounds.active) tower.onRoundStart();
@@ -515,6 +522,10 @@ export class Game {
     const L = layout(this);
     if (sx >= L.panel.x) return this.panelTap(sx, sy, L);
     if (inRect(L.pause, sx, sy)) return this.pause();
+    // aba de informações da defesa: a alça abre/recolhe; tocar na aba não mexe no mapa
+    const info = infoLayout(this);
+    if (info && inRect(info.toggle, sx, sy)) return this.app.toggleInfo?.();
+    if (info?.open && inRect(info.card, sx, sy)) return;
 
     const mx = sx - this.offsetX;
     if (this.placing) {
@@ -632,7 +643,10 @@ export class Game {
     if (!dragging && p.type !== 'mouse') return null;
     if (p.x >= this.mapW) return null;
     const lift = dragging && p.type !== 'mouse' ? TOUCH_LIFT : 0;
-    return { x: p.x - this.offsetX, y: p.y - lift };
+    const raw = { x: p.x - this.offsetX, y: p.y - lift };
+    // a prévia já aparece encaixada no quadrado onde a defesa vai ficar
+    const [c, r] = tileOf(raw.x, raw.y);
+    return inGrid(c, r) ? { ...snapToTile(raw.x, raw.y), raw } : null;
   }
 
   // ── Desenho ───────────────────────────────────────────────
@@ -682,13 +696,6 @@ export class Game {
       if (e.def.boss) drawBossBar(ctx, e);
       if (e.vulnTimer > 0) drawVulnerable(ctx, e, t);
     }
-    if (sel) {
-      ctx.beginPath();
-      ctx.ellipse(sel.x, sel.y + 15, sel.r + 6, (sel.r + 6) * 0.4, 0, 0, Math.PI * 2);
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = '#ffffff';
-      ctx.stroke();
-    }
 
     for (const p of this.projectiles) {
       ctx.save();
@@ -703,6 +710,7 @@ export class Game {
     if (g) {
       const def = TOWERS[this.placing];
       const valid = this.canPlace(this.placing, g.x, g.y) && this.money >= def.cost;
+      drawTileMark(ctx, g.x, g.y, valid);
       if (Number.isFinite(def.range) && def.range > 0) drawRange(ctx, g.x, g.y, def.range, valid);
       else drawRange(ctx, g.x, g.y, def.radius + 8, valid);
       ctx.save();
@@ -729,6 +737,7 @@ export class Game {
     }
     ctx.restore();
 
+    drawInfoPanel(ctx, this); // antes do painel: a alça recolhida "entra" embaixo dele
     drawPanel(ctx, this);
     if (this.toast) drawToast(ctx, this);
     drawBanner(ctx, this);
@@ -756,6 +765,17 @@ function buzz(ms) {
   } catch {
     // sem vibração
   }
+}
+
+// Quadrado onde a defesa vai ficar (verde = pode, vermelho = não pode)
+function drawTileMark(ctx, x, y, valid) {
+  const h = TILE / 2 - 2;
+  rrect(ctx, x - h, y - h, h * 2, h * 2, 8);
+  ctx.fillStyle = valid ? 'rgba(80,255,150,0.22)' : 'rgba(255,70,90,0.25)';
+  ctx.fill();
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = valid ? 'rgba(120,255,170,0.9)' : 'rgba(255,110,120,0.9)';
+  ctx.stroke();
 }
 
 // Aviso de ameaça nova (catálogo), no topo do mapa

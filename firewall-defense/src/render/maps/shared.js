@@ -1,4 +1,4 @@
-import { VIEW_H } from '../../config.js';
+import { VIEW_H, TILE } from '../../config.js';
 
 // Peças comuns aos temas de mapa
 
@@ -107,4 +107,35 @@ export function strokePath(g, path, width, style, dash) {
   g.setLineDash(dash ?? []);
   g.stroke();
   g.setLineDash([]);
+}
+
+// Divisões do caminho nas bordas dos quadrados da grade: cada "placa" do
+// caminho é exatamente um quadrado (o caminho anda pelos centros, em linha
+// reta, então as bordas caem a cada TILE px no eixo do trecho)
+export function tileSeams(g, path, width, style, lineWidth = 2) {
+  g.beginPath();
+  for (const line of lines(path)) {
+    const pts = line.points;
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1];
+      const b = pts[i];
+      const horizontal = Math.abs(b.x - a.x) > Math.abs(b.y - a.y);
+      const [from, to] = horizontal ? [a.x, b.x] : [a.y, b.y];
+      const lo = Math.min(from, to);
+      const hi = Math.max(from, to);
+      for (let k = Math.ceil((lo + 1) / TILE) * TILE; k < hi - 1; k += TILE) {
+        if (horizontal) {
+          g.moveTo(k, a.y - width / 2);
+          g.lineTo(k, a.y + width / 2);
+        } else {
+          g.moveTo(a.x - width / 2, k);
+          g.lineTo(a.x + width / 2, k);
+        }
+      }
+    }
+  }
+  g.lineCap = 'butt';
+  g.lineWidth = lineWidth;
+  g.strokeStyle = style;
+  g.stroke();
 }

@@ -22,8 +22,13 @@ python3 -m http.server 8080
 ## Como jogar
 
 - **Arraste** uma defesa do painel até o mapa (ou toque nela e depois no mapa).
-- As defesas não vão no caminho, na água nem em cima dos componentes (chips, racks, coqueiros...).
+- O mapa é uma **grade de 14×10 quadrados** (54 px). Cada defesa ocupa **exatamente 1 quadrado** (uma por quadrado),
+  fora do caminho, da água, do servidor e dos componentes que bloqueiam (resistores). Ao arrastar, o quadrado
+  de destino fica verde (pode) ou vermelho (não pode).
 - O **Honeypot** só vai **em cima do caminho**.
+- Ao escolher uma defesa na loja ou tocar numa colocada, aparece uma **aba de informações** do lado do
+  mapa: o que ela faz, dano, alcance, recarga, se fura blindagem e o próximo upgrade. A alça do lado
+  recolhe e abre a aba (o jogo lembra a escolha).
 - Toque numa defesa colocada para ver **upgrades**, trocar o **alvo** ou **vender** (devolve 70%).
   O **alvo** (Hacker e Robô NMAP) alterna entre: primeiro, último, mais forte (o que tira mais vidas
   se chegar), mais vida (maior vida máxima), mais rápido e mais perto.
@@ -162,7 +167,7 @@ firewall-defense/
     │   ├── platinumTuning.js dificuldade da platina de cada mapa, calibrada com bots
     │   └── botStats.js      % de vitória dos bots em cada mapa (bolinha de dificuldade)
     ├── audio/Sound.js       efeitos e música (sintetizados, sem arquivos)
-    ├── core/                caminho e terreno
+    ├── core/                grade de quadrados (grid.js), caminho e terreno
     ├── entities/            Tower, Enemy, Projectile, Packet
     ├── systems/             RoundManager, Effects (POP, ondas, confete)
     ├── scenes/              TitleScene, LevelSelectScene, CatalogScene, DarkNetScene

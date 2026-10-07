@@ -7,6 +7,7 @@ import { iconButton, inRect } from '../render/widgets.js';
 import { ICONS } from '../render/sprites.js';
 import { drawImage, hasImage } from '../render/images.js';
 import { drawCharacter } from '../render/characters.js';
+import { AGES, statsAt, statRows } from '../data/towerInfo.js';
 
 /* ════════════════════════════════════════════════════════════
  *  CATÁLOGO (ameaças e defesas)
@@ -23,7 +24,6 @@ const TABS = [
   { id: 'threats', label: 'AMEAÇAS', file: 'THREAT_DB.EXE', items: ORDER },
   { id: 'towers', label: 'DEFESAS', file: 'AGENTS_DB.EXE', items: TOWER_ORDER },
 ];
-const AGES = ['CRIANÇA', 'ADOLESCENTE', 'ADULTO'];
 const ATTACK_KIND = { projectile: 'PROJÉTIL', pulse: 'ONDA', beam: 'LASER', farm: 'ECONOMIA', decoy: 'ISCA' };
 const LEVEL_TIME = 2.2; // segundos de cada idade no retrato (quando nenhuma foi escolhida)
 const MONO = '"Courier New", ui-monospace, Menlo, Consolas, monospace';
@@ -480,36 +480,8 @@ function drawTowerIcon(ctx, type, size, level, t, attack) {
   ctx.restore();
 }
 
-// Status da defesa com os upgrades até esse nível aplicados (como no jogo)
-function statsAt(type, level) {
-  const def = TOWERS[type];
-  const s = { ...def };
-  for (let i = 0; i < level && i < def.upgrades.length; i++) def.upgrades[i].apply(s);
-  return s;
-}
-
-const num = (v) => String(Math.round(v * 100) / 100).replace('.', ',');
-
 function towerRows(type, s, level) {
   const def = TOWERS[type];
   const spent = def.cost + def.upgrades.slice(0, level).reduce((sum, u) => sum + u.cost, 0);
-  const rows = [['CUSTO', level ? `$${spent} (total)` : `$${spent}`]];
-  if (s.attack === 'farm') {
-    rows.push(['RENDA', `${s.packetsPerRound} × $${s.packetValue} por rodada`]);
-    if (s.roundBonus) rows.push(['BÔNUS', `+$${s.roundBonus} por rodada`]);
-    return rows;
-  }
-  if (s.attack === 'decoy') {
-    rows.push(['VIDA', `${s.hp}`], ['DURAÇÃO', `${s.duration}s sozinha`], ['DANO', '0 (só distrai)']);
-    return rows;
-  }
-  if (s.effect === 'frost') {
-    rows.push(['LENTIDÃO', `-${Math.round((1 - s.slow) * 100)}% por ${num(s.slowTime)}s`]);
-    if (s.vulnerable) rows.push(['CONGELADOS', 'levam dano 2×']);
-  } else {
-    rows.push(['DANO', s.multishot > 1 ? `${s.damage} × ${s.multishot} teclados` : `${s.damage}`]);
-    if (s.burn) rows.push(['QUEIMA', `${num(s.burn)}/s por ${num(s.burnTime)}s`]);
-  }
-  rows.push(['ALCANCE', `${s.range}`], ['RECARGA', `${num(s.fireRate)}s`]);
-  return rows.slice(0, 5);
+  return [['CUSTO', level ? `$${spent} (total)` : `$${spent}`], ...statRows(s)].slice(0, 5);
 }
