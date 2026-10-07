@@ -193,6 +193,22 @@ const SPRITE_META = {
 const MONITOR = [15, -28];
 // Parabólica do Robô NMAP em cada idade (de onde saem as ondas de rádio)
 const DISH = { scanner: [-11, -32], scanner_teen: [-14, -26], scanner_kid: [-7, -21] };
+// Olho vermelho do Robô NMAP em cada idade: pixel do centro do olho na
+// imagem de 256px (medido no PNG). É de lá que sai o laser
+const EYE = { scanner: [139.2, 93.3], scanner_teen: [138.6, 101.6], scanner_kid: [139, 93.6] };
+
+// De onde sai o laser, relativo à base da defesa olhando pra direita (pra
+// esquerda é só espelhar o x). Segue o desenho da sprite: tamanho da idade,
+// pés no chão e o bote ao atirar (a = 1 no tiro; ver drawSpriteCharacter)
+export function laserOrigin(type, level, a = 1) {
+  const sprite = spriteOf(type, level);
+  const px = EYE[sprite];
+  if (!px) return { x: 4, y: -26 }; // sem a sprite: desenho com formas
+  const { size, foot, dx = 0 } = SPRITE_META[sprite];
+  const x = dx + (px[0] / 256 - 0.5) * size;
+  const y = -size * foot + (px[1] / 256 - 0.5) * size;
+  return { x: a * 4 + x * (1 + a * 0.08), y: 14 + y * (1 - a * 0.06) };
+}
 
 // Idade de cada nível de upgrade (0 → criança, 1 → adolescente, 2 → adulto)
 const AGE_SUFFIX = ['_kid', '_teen', ''];
