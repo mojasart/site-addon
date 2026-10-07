@@ -6,6 +6,8 @@
 //    node tools/sim/run.js --maps 1-15     → só alguns mapas (números 1..45)
 //    node tools/sim/run.js --json out.json → salva o resultado
 //    node tools/sim/run.js --platinum      → joga o modo platina (data/platinum.js)
+//    node tools/sim/run.js --save          → grava a % de vitória de cada mapa em
+//                                            data/botStats.js (aparece no card da fase)
 //
 //  Cada mapa precisa ter pelo menos uma vitória (dá pra passar) e a taxa
 //  de vitória tem que cair conforme os mapas ficam mais difíceis.
@@ -13,6 +15,7 @@
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import { availableParallelism } from 'node:os';
 import { writeFileSync } from 'node:fs';
+import { BOT_WIN } from '../../firewall-defense/src/data/botStats.js';
 import { playMap, PROFILES } from './bot.js';
 import { MAPS } from '../../firewall-defense/src/data/maps.js';
 
@@ -73,4 +76,16 @@ if (!isMainThread) {
   console.log(`\n${results.length} partidas em ${((Date.now() - t0) / 1000).toFixed(1)}s`);
   const out = opt('json', null);
   if (out) writeFileSync(out, JSON.stringify(rows, null, 2));
+  if (args.includes('--save')) {
+    // só faz sentido com todos os mapas: atualiza o modo jogado e mantém o outro
+    if (rows.length !== MAPS.length) throw new Error('--save precisa rodar todos os mapas');
+    const stats = { ...BOT_WIN, [mode]: rows.map((r) => Math.round(r.rate * 100)) };
+    const file = `// Gerado por tools/sim/run.js --save — não edite à mão.
+// % de partidas de bots que venceram cada mapa (vira a bolinha de dificuldade do card).
+// ${seeds * Object.keys(PROFILES).length} partidas por mapa em cada modo.
+export const BOT_WIN = ${JSON.stringify(stats)};
+`;
+    writeFileSync(new URL('../../firewall-defense/src/data/botStats.js', import.meta.url), file);
+    console.log(`gravado em src/data/botStats.js (${mode})`);
+  }
 }
