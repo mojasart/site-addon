@@ -19,6 +19,7 @@ export class Enemy {
     this.burnTimer = 0; // pegando fogo (Golem com Incêndio): perde burnDps de vida por segundo
     this.burnDps = 0;
     this.burnSource = null;
+    this.hpMul = 1; // vida extra de cada camada (modo platina)
     this.flash = 0;
     this.phase = rand(0, 10); // relógio da animação
     this.dead = false;
@@ -36,9 +37,16 @@ export class Enemy {
     return this.def.speed * this.speedMul * (this.slowTimer > 0 ? this.slowMul : 1);
   }
 
-  // vidas que tira se escapar: o que sobrou dessa camada + todos os filhos
+  // Mais vida em cada camada (modo platina: os filhos ganham a mesma ao nascer)
+  toughen(mul) {
+    this.hpMul = mul;
+    this.hp = this.maxHp = this.hp * mul;
+  }
+
+  // vidas que tira se escapar: o que sobrou dessa camada + todos os filhos.
+  // Sempre inteiro (o fogo deixa vida quebrada) e sem contar a vida extra
   get threat() {
-    return this.hp + threat(this.type) - this.def.hp;
+    return Math.ceil(this.hp / this.hpMul - 1e-6) + threat(this.type) - this.def.hp;
   }
 
   // quanto falta pra chegar na base (usado pra mirar no "primeiro")
