@@ -13,7 +13,8 @@ import { drawImage, hasImage } from './images.js';
  *
  *  s: { t (relógio), face (1/-1), attack (1→0 logo após atacar),
  *       pulse (1→0), spawn (1→0 ao ser colocado),
- *       level (0 criança, 1 adolescente, 2 adulto; sem level = adulto) }
+ *       level (0 criança, 1 adolescente, 2 adulto; sem level = adulto),
+ *       idle (parado: sem os efeitos de ambiente, ex. Minerador fora da pilha) }
  *  Se existir sprite PNG com o nome do tipo (assets/sprites), ela é usada
  *  no lugar do desenho com formas (drawSpriteCharacter). Cada nível de
  *  upgrade tem a sua idade: <tipo>_kid, <tipo>_teen e <tipo> (adulto).
@@ -42,7 +43,7 @@ export function drawCharacter(ctx, type, s = {}) {
   AMBIENT[type]?.back?.(ctx, t, sprite);
   if (sprite) drawSpriteCharacter(ctx, sprite, type, s.attack ?? 0, t);
   else CHARACTERS[type]?.(ctx, s, t, s.attack ?? 0);
-  AMBIENT[type]?.front?.(ctx, t, sprite);
+  if (!s.idle) AMBIENT[type]?.front?.(ctx, t, sprite);
   ctx.restore();
 }
 

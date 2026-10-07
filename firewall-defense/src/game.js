@@ -20,6 +20,8 @@ import { drawEnemy } from './render/viruses.js';
 import { drawProjectile, drawCoin, drawServer } from './render/sprites.js';
 import { drawHazards, drawStunned, drawHazardWarning } from './render/hazards.js';
 import { drawSpawns } from './render/spawns.js';
+import { pickCoinTiles, coinTileAt, COIN_SEASONS } from './core/coinTiles.js';
+import { drawCoinTiles, drawNoMine } from './render/coinTiles.js';
 import { rrect, fillOutline, circle, text } from './render/canvas.js';
 import { rand } from './util.js';
 
@@ -60,6 +62,7 @@ export class Game {
     this.money = this.app.debug ? 99999 : this.map.money;
     this.lives = this.map.lives;
     this.towers = [];
+    this.coinTiles = pickCoinTiles(this); // pilhas de bitcoin (seasons 1 e 2)
     this.enemies = [];
     this.newEnemies = [];
     this.projectiles = [];
@@ -342,7 +345,7 @@ export class Game {
     for (const t of this.towers) {
       t.onRoundStart();
       // Minerador nível 3 (Fazenda de Mineração): um bitcoin a mais em toda rodada nova
-      if (t.stats.roundBonus) this.spawnPacket(t.x, t.y - 10, t.stats.roundBonus);
+      if (t.stats.roundBonus && this.canMine(t)) this.spawnPacket(t.x, t.y - 10, t.stats.roundBonus);
     }
     if (bonus > 0) {
       this.money += bonus;
@@ -419,6 +422,16 @@ export class Game {
   spawnProjectile(tower, angle, target = null) {
     this.projectiles.push(new Projectile(tower, angle, target));
     this.sound.play(tower.def.sound ?? 'throw');
+  }
+
+  // O Minerador consegue minerar onde está? Nas seasons 1 e 2 só em cima
+  // de uma pilha de bitcoin (core/coinTiles.js), um Minerador por pilha.
+  // Na season 3 minera em qualquer lugar (vai precisar de upgrade: TODO)
+  canMine(tower) {
+    if (this.map.season >= COIN_SEASONS) return true;
+    const tile = coinTileAt(this.coinTiles, tower.x, tower.y);
+    if (!tile) return false;
+    return this.towers.find((t) => t.def.attack === 'farm' && coinTileAt(this.coinTiles, t.x, t.y) === tile) === tower;
   }
 
   spawnPacket(x, y, value) {
@@ -638,6 +651,7 @@ export class Game {
     this.view.animate(ctx, t);
     drawHazards(ctx, this.hazards, t);
     drawSpawns(ctx, this, t);
+    drawCoinTiles(ctx, this.coinTiles, t, TOWERS[this.placing]?.attack === 'farm');
 
     ctx.save();
     ctx.translate(this.server.x, this.server.y);
@@ -697,6 +711,8 @@ export class Game {
       drawCharacter(ctx, this.placing, { t, face: 1, level: 0 });
       ctx.restore();
       if (!def.onPath && this.hazards.at(g.x, g.y)) drawHazardWarning(ctx, g.x, g.y);
+      // Minerador fora da pilha de bitcoin: avisa que ali ele não minera
+      if (def.attack === 'farm' && this.map.season < COIN_SEASONS && !coinTileAt(this.coinTiles, g.x, g.y)) drawNoMine(ctx, g.x, g.y, t);
     }
     ctx.restore();
 
@@ -723,8 +739,10 @@ export class Game {
   drawTowerAt(ctx, tw) {
     ctx.save();
     ctx.translate(tw.x, tw.y);
-    drawCharacter(ctx, tw.type, { t: tw.anim, face: tw.face, attack: tw.attack, pulse: tw.pulse, spawn: tw.spawnAnim, level: tw.level });
+    const idle = tw.def.attack === 'farm' && !this.canMine(tw); // Minerador fora da pilha
+    drawCharacter(ctx, tw.type, { t: tw.anim, face: tw.face, attack: tw.attack, pulse: tw.pulse, spawn: tw.spawnAnim, level: tw.level, idle });
     drawPips(ctx, tw.level, tw.r);
+    if (idle) drawNoMine(ctx, 0, 0, this.anim);
     if (tw.def.attack === 'decoy' && tw.hp < tw.maxHp) drawBaitBar(ctx, tw);
     if (tw.stunned > 0) drawStunned(ctx, this.anim);
     ctx.restore();

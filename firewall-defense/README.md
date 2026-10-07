@@ -57,8 +57,14 @@ Tocar num mapa abre a escolha **NORMAL** / **PLATINA** (`src/data/platinum.js`);
 | **Golem Firewall** | $350 | Onda de fogo em volta, queima blindados | Muralha de Fogo (mais alcance e ondas mais rápidas) · Incêndio (vírus pegam fogo: 0,33 de dano/s por até 3 s, mesmo fora do alcance; não acumula nem renova enquanto queima) |
 | **Penguin Linux** | $300 | Suporte: não dá dano, congela os vírus em volta (lentidão) | Criptografia AES · Era do Gelo (mais alcance e congelados ficam vulneráveis: levam dano dobrado) |
 | **Robô NMAP** | $450 | Laser de longo alcance: tiro lento, dano alto, fura blindagem | Alta Precisão (+3 de dano) · Varredura Contínua (40% mais rápido) |
-| **Minerador** | $650 | Minera bitcoins que vão direto pro saldo | GPU Extra · Fazenda de Mineração (+$120 a cada rodada nova) |
+| **Minerador** | $650 | Minera bitcoins que vão direto pro saldo. Nas seasons 1 e 2 só minera **em cima de uma pilha de bitcoin** (ver abaixo) | GPU Extra · Fazenda de Mineração (+$120 a cada rodada nova) |
 | **Honeypot** | $80 | *Só no caminho.* Isca: não dá dano; os vírus param pra atacar até a vida dela (40) acabar. Dura no máximo 15 s: nas rodadas vai gastando sozinha, e mais rápido com vírus mordendo | — |
+
+### Pilhas de bitcoin (Minerador)
+
+Na **Placa-Mãe** e no **Data Center**, cada mapa tem de **1 a 4 quadrados no chão com uma pilha de bitcoin** (`src/core/coinTiles.js`, sorteados pela semente do mapa, sempre os mesmos). O Minerador **só minera em cima de uma pilha**, um Minerador por pilha; fora delas ele fica parado ("z" em cima dele) e o painel avisa. Enquanto se arrasta um Minerador, as pilhas piscam em dourado. No **Cabo Submarino** ainda minera em qualquer lugar (vai precisar de um upgrade: ver `TODO.md`).
+
+Se a rodada acabar antes de ele soltar todos os bitcoins, os que faltaram saem na hora.
 
 ## Ameaças
 
