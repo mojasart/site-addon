@@ -1,20 +1,24 @@
 import { OUTLINE, GOLD } from '../config.js';
 import { TOWERS } from '../data/towers.js';
-import { AGES, statsAt, statRows } from '../data/towerInfo.js';
-import { rrect, fillOutline, text, setFont } from './canvas.js';
+import { statsAt, statRows } from '../data/towerInfo.js';
+import { rrect, fillOutline, text } from './canvas.js';
 
 /* ════════════════════════════════════════════════════════════
  *  ABA DE INFORMAÇÕES DA DEFESA
  *  Aparece na borda direita do mapa quando o jogador escolhe uma defesa
- *  na loja (antes de comprar) ou toca numa já colocada: o que ela faz,
- *  os números do nível atual e o próximo upgrade. A alça do lado recolhe
- *  e abre a aba (fica salvo em save.infoOpen).
+ *  na loja (antes de comprar) ou toca numa já colocada: o nome e os
+ *  números do nível atual. A alça do lado recolhe e abre a aba (fica
+ *  salvo em save.infoOpen). Abrir, fechar, aparecer e sumir são animados:
+ *  a aba desliza pela borda direita do mapa.
  * ════════════════════════════════════════════════════════════ */
 
 const W = 224; // largura da aba
 const TOP = 70; // abaixo do contador de rodada
 const PAD = 12;
 const ROW_H = 20;
+const SLIDE = W + 8; // recolhida: a aba sai da tela e só a alça fica na borda
+const SPEED = 4; // velocidade da animação: vai de ponta a ponta em 1/SPEED s (0,25 s)
+const ease = (k) => k * k * (3 - 2 * k);
 
 // Defesa mostrada: a selecionada no mapa ou a que está sendo colocada
 function subject(game) {
@@ -25,39 +29,62 @@ function subject(game) {
   return null;
 }
 
-// Posições da aba e da alça (desenho e toque). null = nada pra mostrar
+// Posições da aba e da alça (pro toque). null = nada pra mostrar
 export function infoLayout(game) {
   const sub = subject(game);
-  if (!sub) return null;
+  return sub ? layoutFor(game, sub) : null;
+}
+
+// Posições já com a animação: open (0→1) desliza a aba pra dentro e a
+// alça junto; vis (0→1) faz tudo entrar pela borda quando aparece uma defesa
+function layoutFor(game, sub) {
   const open = game.app.save?.infoOpen !== false;
+  const k = ease(game.infoOpenK ?? (open ? 1 : 0));
+  const vis = ease(game.infoVis ?? 1);
   const h = game.infoH ?? 220; // altura medida no último desenho
-  const card = { x: game.mapW - W - 10, y: TOP, w: W, h };
-  const toggle = open ? { x: card.x - 28, y: TOP + 8, w: 30, h: 46 } : { x: game.mapW - 30, y: TOP + 8, w: 30, h: 46 };
-  return { sub, open, card, toggle };
+  const card = { x: game.mapW - W - 10 + (1 - k) * SLIDE + (1 - vis) * 50, y: TOP, w: W, h };
+  const toggle = { x: card.x - 28, y: TOP + 8, w: 30, h: 46 };
+  return { sub, open, card, toggle, k };
+}
+
+// Avança a animação (a cada desenho, pelo relógio do jogo). Guarda a
+// última defesa mostrada pra aba continuar com ela enquanto some
+function animate(game) {
+  const sub = subject(game);
+  if (sub) game.infoSub = sub;
+  const dt = Math.min(0.05, Math.max(0, game.anim - (game.infoLast ?? game.anim)));
+  game.infoLast = game.anim;
+  const open = game.app.save?.infoOpen !== false;
+  const step = (v, to) => v + Math.sign(to - v) * Math.min(Math.abs(to - v), dt * SPEED);
+  game.infoVis = step(game.infoVis ?? 0, sub ? 1 : 0);
+  game.infoOpenK = step(game.infoOpenK ?? (open ? 1 : 0), open ? 1 : 0);
+  return game.infoVis > 0 ? game.infoSub : null;
 }
 
 export function drawInfoPanel(ctx, game) {
-  const L = infoLayout(game);
-  if (!L) return;
+  const sub = animate(game);
+  if (!sub) return;
+  const L = layoutFor(game, sub);
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, game.infoVis * 1.5);
   drawToggle(ctx, L);
-  if (!L.open) return;
+  if (L.k > 0.001) drawCard(ctx, L, game);
+  ctx.restore();
+}
 
+function drawCard(ctx, L, game) {
   const { sub, card } = L;
   const def = TOWERS[sub.type];
   const s = sub.stats;
-  const levels = def.upgrades.length + 1;
   const x = card.x + PAD;
   const w = card.w - PAD * 2;
 
   // conteúdo: mede antes pra saber a altura da aba
-  const desc = wrapLines(ctx, def.desc, w, 13);
   const rows = [
     ...(sub.placed ? [] : [['CUSTO', `$${def.cost}`]]),
     ...statRows(s, { armor: s.attack !== 'farm' && s.attack !== 'decoy' && s.effect !== 'frost' }),
   ];
-  const next = sub.placed ? def.upgrades[sub.level] : def.upgrades[0];
-  const nextLines = next ? wrapLines(ctx, next.desc, w, 12) : [];
-  const h = PAD + 22 + 18 + desc.length * 16 + 8 + rows.length * ROW_H + (next ? 14 + 18 + nextLines.length * 15 : 0) + PAD;
+  const h = PAD * 2 + 34 + (rows.length - 0.5) * ROW_H;
   game.infoH = h;
   card.h = h;
 
@@ -69,15 +96,7 @@ export function drawInfoPanel(ctx, game) {
 
   let y = card.y + PAD + 10;
   text(ctx, def.name, x, y, { size: 18, align: 'left' });
-  y += 20;
-  const lvl = levels > 1 ? `NÍVEL ${sub.level + 1}/${levels} · ${AGES[sub.level]}` : 'NÍVEL ÚNICO';
-  text(ctx, sub.placed ? lvl : 'NA LOJA · ' + lvl, x, y, { size: 11, align: 'left', color: '#9fb6e8' });
-  y += 18;
-  for (const line of desc) {
-    text(ctx, line, x, y, { size: 13, align: 'left', color: '#ffffff' });
-    y += 16;
-  }
-  y += 8;
+  y += 26;
 
   // status: rótulo à esquerda, valor à direita
   for (const [k, v] of rows) {
@@ -87,16 +106,6 @@ export function drawInfoPanel(ctx, game) {
     text(ctx, k, x, y, { size: 12, align: 'left', color: '#bcd0f5' });
     text(ctx, v, x + w, y, { size: 13, align: 'right', color: k === 'BLINDADOS' && v === 'não fura' ? '#ff9aa5' : GOLD });
     y += ROW_H;
-  }
-
-  if (next) {
-    y += 14;
-    text(ctx, `${sub.placed ? 'PRÓXIMO' : '1º UPGRADE'}: ${next.name} ($${next.cost})`, x, y, { size: 12, align: 'left', color: '#3dff9a' });
-    y += 18;
-    for (const line of nextLines) {
-      text(ctx, line, x, y, { size: 12, align: 'left', color: '#d8e6ff' });
-      y += 15;
-    }
   }
 }
 
@@ -123,20 +132,4 @@ function drawToggle(ctx, L) {
   } else {
     text(ctx, 'i', cx, cy + 1, { size: 24 });
   }
-}
-
-// Quebra o texto em linhas que cabem na largura
-function wrapLines(ctx, str, maxW, size) {
-  setFont(ctx, size);
-  const lines = [];
-  let line = '';
-  for (const word of str.split(' ')) {
-    const test = line ? `${line} ${word}` : word;
-    if (ctx.measureText(test).width > maxW && line) {
-      lines.push(line);
-      line = word;
-    } else line = test;
-  }
-  if (line) lines.push(line);
-  return lines;
 }
