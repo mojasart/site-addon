@@ -272,6 +272,8 @@ export class Game {
     const bonus = 100 + n;
     this.money += bonus;
     this.coinBump = 1;
+    // mapa limpo: os Mineradores entregam na hora o que faltou minerar
+    if (!this.rounds.active) for (const t of this.towers) t.finishMining(this);
     if (this.rounds.finished) {
       this.end(true);
       return;
@@ -339,7 +341,7 @@ export class Game {
     this.nextIn = null;
     for (const t of this.towers) {
       t.onRoundStart();
-      // Minerador nível 2: um bitcoin a mais em toda rodada nova
+      // Minerador nível 3 (Fazenda de Mineração): um bitcoin a mais em toda rodada nova
       if (t.stats.roundBonus) this.spawnPacket(t.x, t.y - 10, t.stats.roundBonus);
     }
     if (bonus > 0) {
