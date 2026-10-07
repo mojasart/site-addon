@@ -1,5 +1,5 @@
 import { VIEW_H } from '../config.js';
-import { rrect, fillOutline, text } from '../render/canvas.js';
+import { rrect, fillOutline, text, setFont } from '../render/canvas.js';
 import { iconButton, inRect } from '../render/widgets.js';
 import { ICONS } from '../render/sprites.js';
 
@@ -55,16 +55,17 @@ export class DarkNetScene {
 
     text(ctx, 'DARK NET', W / 2, 228, { size: 64, color: PURPLE, strokeWidth: 12 });
 
-    // saldo de cafés
-    const pill = { x: W / 2 - 95, y: 266, w: 190, h: 46 };
-    rrect(ctx, pill.x, pill.y, pill.w, pill.h, 23);
-    fillOutline(ctx, '#5a3a1e', 4);
+    // saldo de cafés (ícone + número, sem fundo), centralizado
+    const n = this.app.coffee;
+    const label = `${n} ${n === 1 ? 'CAFÉ' : 'CAFÉS'}`;
+    setFont(ctx, 24);
+    const lw = ctx.measureText(label).width;
+    const cx0 = W / 2 - (lw + 32) / 2; // ícone (~26) + espaço + texto
     ctx.save();
-    ctx.translate(pill.x + 30, pill.y + pill.h / 2 - 1);
+    ctx.translate(cx0 + 12, 288);
     ICONS.coffee(ctx, 11);
     ctx.restore();
-    const n = this.app.coffee;
-    text(ctx, `${n} ${n === 1 ? 'CAFÉ' : 'CAFÉS'}`, pill.x + 56, pill.y + pill.h / 2 + 1, { size: 24, color: '#ffe0b0', align: 'left' });
+    text(ctx, label, cx0 + 32, 290, { size: 24, color: '#ffe0b0', align: 'left' });
 
     // terminal
     const term = { x: W / 2 - 260, y: 334, w: 520, h: 130 };

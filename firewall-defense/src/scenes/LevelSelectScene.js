@@ -68,8 +68,7 @@ export class LevelSelectScene {
       },
       back: { x: 18, y: 16, w: 56, h: 56 },
       catalog: { x: W - 74, y: 16, w: 56, h: 56 },
-      darknet: { x: W - 140, y: 16, w: 56, h: 56 },
-      coffee: { x: W - 258, y: 26, w: 106, h: 38 },
+      darknet: { x: W - 140, y: 16, w: 56, h: 56 }, // do lado do catálogo
       tabs: SEASONS.map((_, s) => ({ x: tabs0 + s * (tabW + 12), y: 92, w: tabW, h: 52 })),
       tiles: Array.from({ length: MAPS_PER_SEASON }, (_, k) => ({
         x: gx + (k % cols) * (tw + gap),
@@ -125,8 +124,8 @@ export class LevelSelectScene {
       ctx.fill();
     }
     ctx.restore();
-    // vírus boiando nos cantos de cima
-    [['v2', 120, 52], ['v5', W - 60, 50]].forEach(([type, x, y], i) => {
+    // vírus boiando no canto de cima
+    [['v2', 120, 52]].forEach(([type, x, y], i) => {
       ctx.save();
       ctx.translate(x, y + Math.sin(t * 2 + i) * 6);
       ctx.rotate(Math.sin(t + i) * 0.2);
@@ -139,7 +138,6 @@ export class LevelSelectScene {
     iconButton(ctx, L.back, '#5fb4ff', 'back');
     iconButton(ctx, L.catalog, '#3fd16b', 'catalog');
     this.drawDarkNet(ctx, L.darknet);
-    this.drawCoffee(ctx, L.coffee);
 
     SEASONS.forEach((season, s) => this.drawTab(ctx, L.tabs[s], season, s));
     L.tiles.forEach((tile, k) => this.drawTile(ctx, tile, this.season * MAPS_PER_SEASON + k));
@@ -162,17 +160,6 @@ export class LevelSelectScene {
       ICONS.lock(ctx, 9);
     }
     ctx.restore();
-  }
-
-  // Saldo de cafés (gastos na Dark Net)
-  drawCoffee(ctx, r) {
-    rrect(ctx, r.x, r.y, r.w, r.h, r.h / 2);
-    fillOutline(ctx, '#5a3a1e', 3.5);
-    ctx.save();
-    ctx.translate(r.x + 22, r.y + r.h / 2 - 1);
-    ICONS.coffee(ctx, 9);
-    ctx.restore();
-    text(ctx, `${this.app.coffee}`, r.x + 42, r.y + r.h / 2 + 1, { size: 22, color: '#ffe0b0', align: 'left' });
   }
 
   drawToast(ctx, x, y) {

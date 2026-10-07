@@ -17,7 +17,7 @@ import { layout, drawHud, drawPanel, drawRange } from './render/ui.js';
 import { inRect } from './render/widgets.js';
 import { drawBanner, drawOverlay, overlayLayout } from './render/screens.js';
 import { drawInfoPanel, infoLayout } from './render/infoPanel.js';
-import { drawCharacter, drawPips } from './render/characters.js';
+import { drawCharacter } from './render/characters.js';
 import { drawEnemy } from './render/viruses.js';
 import { drawProjectile, drawCoin, drawServer } from './render/sprites.js';
 import { drawHazards, drawStunned, drawHazardWarning } from './render/hazards.js';
@@ -766,7 +766,6 @@ export class Game {
     ctx.translate(tw.x, tw.y);
     const idle = tw.def.attack === 'farm' && !this.canMine(tw); // Minerador fora da pilha
     drawCharacter(ctx, tw.type, { t: tw.anim, face: tw.face, attack: tw.attack, pulse: tw.pulse, spawn: tw.spawnAnim, level: tw.level, idle });
-    drawPips(ctx, tw.level, tw.r);
     if (idle) drawNoMine(ctx, 0, 0, this.anim);
     if (tw.def.attack === 'decoy' && tw.hp < tw.maxHp) drawBaitBar(ctx, tw);
     if (tw.stunned > 0) drawStunned(ctx, this.anim);
