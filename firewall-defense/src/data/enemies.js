@@ -44,7 +44,7 @@ export const ENEMIES = {
   locker: {
     name: 'Locker',
     desc: 'Mini-chefão acorrentado: solta 2 Trojans',
-    hp: 65,
+    hp: 80,
     speed: 35,
     radius: 26,
     color: '#a35cf0',
@@ -57,7 +57,7 @@ export const ENEMIES = {
   ransomware: {
     name: 'Ransomware',
     desc: 'Chefão: solta 4 Trojans quando destruído',
-    hp: 260,
+    hp: 300,
     speed: 30,
     radius: 38,
     color: '#7a3cc4',
@@ -70,6 +70,12 @@ export const ENEMIES = {
 };
 
 // Quantas vidas um vírus tira se escapar (ele + todos os filhos)
+// Quanto dinheiro um vírus dá até o fim (ele + todos os filhos)
+export function worth(type) {
+  const def = ENEMIES[type];
+  return (def.reward ?? 1) + def.children.reduce((sum, [child, n]) => sum + n * worth(child), 0);
+}
+
 export function threat(type) {
   const def = ENEMIES[type];
   return def.hp + def.children.reduce((sum, [child, n]) => sum + n * threat(child), 0);

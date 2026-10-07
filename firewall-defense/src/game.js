@@ -1,6 +1,7 @@
-import { VIEW_H, PANEL_W, MAX_SPEED } from './config.js';
+import { VIEW_H, PANEL_W, MAX_SPEED, NEXT_ROUND_DELAY, EARLY_BONUS } from './config.js';
 import { MAPS } from './data/maps.js';
 import { ROUNDS } from './data/rounds.js';
+import { worth } from './data/enemies.js';
 import { TOWERS, TARGET_MODES } from './data/towers.js';
 import { fitsTerrain } from './core/terrain.js';
 import { Tower } from './entities/Tower.js';
@@ -15,7 +16,7 @@ import { drawBanner, drawOverlay, overlayLayout } from './render/screens.js';
 import { drawCharacter, drawPips } from './render/characters.js';
 import { drawEnemy } from './render/viruses.js';
 import { drawProjectile, drawCoin, drawServer } from './render/sprites.js';
-import { rrect, fillOutline } from './render/canvas.js';
+import { rrect, fillOutline, circle, text } from './render/canvas.js';
 import { rand } from './util.js';
 
 const TOUCH_LIFT = 46; // ao arrastar com o dedo, a defesa aparece acima dele
@@ -58,6 +59,7 @@ export class Game {
     this.rounds = new RoundManager(ROUNDS.slice(0, this.map.rounds));
     this.fx = new Effects();
     this.speed = 1;
+    this.nextIn = null; // contagem pra próxima rodada começar sozinha (null = espera o jogador)
     this.placing = null; // tipo de defesa sendo posicionada
     this.selectedTower = null;
     this.banner = null;
@@ -135,6 +137,7 @@ export class Game {
   }
 
   step(dt) {
+    if (this.nextIn != null && (this.nextIn -= dt) <= 0) this.startRound();
     this.rounds.update(dt, this);
     this.flushSpawns();
     for (const t of this.towers) t.update(dt, this);
@@ -182,6 +185,15 @@ export class Game {
     }
     this.sound.play('roundEnd');
     this.showBanner(`RODADA ${n} COMPLETA!`, 1.6, '#3dff9a', 36, `+$${bonus}`);
+    this.nextIn = NEXT_ROUND_DELAY;
+  }
+
+  // Bônus por chamar a próxima rodada antes da contagem acabar:
+  // parte do dinheiro que ela vale, maior quanto mais cedo
+  earlyBonus() {
+    if (this.nextIn == null || this.rounds.finished) return 0;
+    const value = this.rounds.rounds[this.rounds.index].reduce((sum, g) => sum + g.count * worth(g.type), 0);
+    return Math.round(value * EARLY_BONUS * (this.nextIn / NEXT_ROUND_DELAY));
   }
 
   playPressed() {
@@ -190,11 +202,24 @@ export class Game {
       this.sound.play('click');
       return;
     }
-    if (this.rounds.start()) {
-      for (const t of this.towers) t.onRoundStart();
-      this.showBanner(`RODADA ${this.rounds.index + 1}`, 1.1);
-      this.sound.play('round');
+    this.startRound();
+  }
+
+  startRound() {
+    const bonus = this.earlyBonus();
+    if (!this.rounds.start()) return;
+    this.nextIn = null;
+    for (const t of this.towers) {
+      t.onRoundStart();
+      // Minerador nível 2: um bitcoin a mais em toda rodada nova
+      if (t.stats.roundBonus) this.spawnPacket(t.x, t.y - 10, t.stats.roundBonus);
     }
+    if (bonus > 0) {
+      this.money += bonus;
+      this.coinBump = 1;
+    }
+    this.showBanner(`RODADA ${this.rounds.index + 1}`, 1.1, '#ffffff', 46, bonus > 0 ? `Chamou antes: +$${bonus}` : null);
+    this.sound.play('round');
   }
 
   coinTarget() {
@@ -274,7 +299,7 @@ export class Game {
     const def = TOWERS[type];
     if (this.money < def.cost || !this.canPlace(type, x, y)) return false;
     this.money -= def.cost;
-    const tower = new Tower(type, x, y);
+    const tower = new Tower(type, x, y, !this.rounds.active);
     if (this.rounds.active) tower.onRoundStart();
     this.towers.push(tower);
     this.fx.burst(x, y, '#ffffff', 14, 160, 0.35, 5, true);
@@ -569,24 +594,11 @@ function drawBossBar(ctx, e) {
   }
 }
 
-// Escudinho rachado em cima do vírus: está vulnerável (Pinguim com Era do Gelo)
+// Selinho "x2" em cima do vírus: está vulnerável e leva dano dobrado (Era do Gelo)
 function drawVulnerable(ctx, e, t) {
-  ctx.save();
-  ctx.translate(e.x - e.r * 0.8, e.y - e.r - (e.def.boss ? 30 : 16) + Math.sin(t * 6) * 1.5);
-  ctx.beginPath();
-  ctx.moveTo(0, -8);
-  ctx.lineTo(7, -5);
-  ctx.quadraticCurveTo(7, 4, 0, 8);
-  ctx.quadraticCurveTo(-7, 4, -7, -5);
-  ctx.closePath();
-  fillOutline(ctx, '#8fe3ff', 2.5);
-  ctx.beginPath();
-  ctx.moveTo(1, -7);
-  ctx.lineTo(-2, -1);
-  ctx.lineTo(2, 1);
-  ctx.lineTo(-1, 7);
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = '#ffffff';
-  ctx.stroke();
-  ctx.restore();
+  const x = e.x - e.r * 0.8;
+  const y = e.y - e.r - (e.def.boss ? 30 : 18) + Math.sin(t * 6) * 1.5;
+  circle(ctx, x, y, 10);
+  fillOutline(ctx, '#3ec5ff', 2.5);
+  text(ctx, 'x2', x, y + 1, { size: 12 });
 }

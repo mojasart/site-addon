@@ -138,9 +138,9 @@ function towerInfo(tw) {
     case 'trap':
       return { title: 'CAPACIDADE', big: `${tw.capacity}/${tw.def.capacity}`, sub: 'Some quando estourar todos' };
     case 'farm':
-      return { sub: `Minera ${s.packetsPerRound} bitcoins de $${s.packetValue} por rodada` };
+      return { sub: `Minera ${s.packetsPerRound} bitcoins de $${s.packetValue} por rodada${s.roundBonus ? ` e mais $${s.roundBonus} quando ela começa` : ''}` };
     default:
-      if (s.vulnerable) return { sub: `Congelados levam +${s.vulnerable} de dano em cada acerto` };
+      if (s.vulnerable) return { sub: 'Congelados levam dano dobrado' };
       return { sub: tw.hitsArmored ? 'Fura blindagem dos Trojans' : 'Não fura blindagem (Trojans)' };
   }
 }
@@ -175,8 +175,12 @@ function drawPlayButton(ctx, game, r) {
   if (!active) ICONS.play(ctx, 14);
   else ICONS.ff(ctx, 11);
   ctx.restore();
-  if (!active) text(ctx, 'INICIAR', r.x + r.w / 2 + 20, cy + 1, { size: 24 });
-  else text(ctx, `${game.speed}x`, r.x + r.w / 2 + 24, cy + 1, { size: 28 });
+  if (active) text(ctx, `${game.speed}x`, r.x + r.w / 2 + 24, cy + 1, { size: 28 });
+  else if (game.nextIn != null) {
+    // contagem pra próxima rodada + bônus de chamar antes
+    text(ctx, 'INICIAR', r.x + r.w / 2 + 20, cy - 9, { size: 21 });
+    text(ctx, `${Math.ceil(game.nextIn)}s  +$${game.earlyBonus()}`, r.x + r.w / 2 + 20, cy + 15, { size: 15, color: GOLD });
+  } else text(ctx, 'INICIAR', r.x + r.w / 2 + 20, cy + 1, { size: 24 });
   ctx.restore();
 }
 

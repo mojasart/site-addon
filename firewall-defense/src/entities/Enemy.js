@@ -14,8 +14,7 @@ export class Enemy {
     this.face = 1;
     this.slowTimer = 0;
     this.slowMul = 1;
-    this.vulnTimer = 0; // vulnerável (Pinguim com Era do Gelo): leva dano a mais
-    this.vulnBonus = 0;
+    this.vulnTimer = 0; // vulnerável (Pinguim com Era do Gelo): leva dano dobrado
     this.flash = 0;
     this.phase = rand(0, 10); // relógio da animação
     this.dead = false;
@@ -61,14 +60,13 @@ export class Enemy {
     this.slowTimer = Math.max(this.slowTimer, time);
   }
 
-  // Era do Gelo: enquanto durar, cada acerto tira `bonus` a mais (vale pro chefão também)
-  weaken(bonus, time) {
-    this.vulnBonus = Math.max(this.vulnTimer > 0 ? this.vulnBonus : 0, bonus);
+  // Era do Gelo: enquanto durar, cada acerto tira o dobro (vale pro chefão também)
+  weaken(time) {
     this.vulnTimer = Math.max(this.vulnTimer, time);
   }
 
   // opts: { armored (fura blindagem?), source (torre que atacou), hitSet,
-  //         overflow (dano que sobrou da camada de cima: não ganha bônus de novo) }
+  //         overflow (dano que sobrou da camada de cima: não dobra de novo) }
   takeDamage(amount, game, opts = {}) {
     if (this.dead || amount <= 0) return;
     if (this.def.armored && !opts.armored) {
@@ -76,7 +74,7 @@ export class Enemy {
       game.sound.play('block');
       return;
     }
-    if (this.vulnTimer > 0 && !opts.overflow) amount += this.vulnBonus;
+    if (this.vulnTimer > 0 && !opts.overflow) amount *= 2;
     this.flash = 0.08;
     this.hp -= amount;
     if (this.hp <= 0) this.pop(game, -this.hp, opts);
@@ -101,7 +99,6 @@ export class Enemy {
         child.slowTimer = this.slowTimer;
         child.slowMul = this.slowMul;
         child.vulnTimer = this.vulnTimer;
-        child.vulnBonus = this.vulnBonus;
         child.place(game.path);
         game.spawnEnemy(child);
         opts.hitSet?.add(child); // o mesmo tiro não acerta os filhos

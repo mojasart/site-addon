@@ -63,13 +63,13 @@ export const TOWERS = {
     damage: 0,
     slow: 0.5, // multiplica a velocidade
     slowTime: 1.5,
-    vulnerable: 0, // dano a mais que os congelados levam (upgrade Era do Gelo)
+    vulnerable: false, // congelados levam dano dobrado (upgrade Era do Gelo)
     maxTargets: 30,
     canHitArmored: true,
     sound: 'frost',
     upgrades: [
       { name: 'Criptografia AES', desc: 'Lentidão mais forte e mais longa', cost: 220, apply: (s) => { s.slow = 0.3; s.slowTime = 2.5; } },
-      { name: 'Era do Gelo', desc: 'Mais alcance e congelados levam +1 de dano', cost: 380, apply: (s) => { s.vulnerable = 1; s.range += 25; } },
+      { name: 'Era do Gelo', desc: 'Mais alcance e congelados levam dano dobrado', cost: 450, apply: (s) => { s.vulnerable = true; s.range += 25; } },
     ],
   },
   minerador: {
@@ -83,7 +83,7 @@ export const TOWERS = {
     packetInterval: 3.5,
     upgrades: [
       { name: 'GPU Extra', desc: '6 bitcoins por rodada', cost: 500, apply: (s) => { s.packetsPerRound = 6; } },
-      { name: 'Fazenda de Mineração', desc: 'Cada bitcoin vale $35', cost: 900, apply: (s) => { s.packetValue = 35; } },
+      { name: 'Fazenda de Mineração', desc: 'Também rende $120 a cada rodada nova', cost: 900, apply: (s) => { s.roundBonus = 120; } },
     ],
   },
   honeypot: {

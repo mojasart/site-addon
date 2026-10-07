@@ -1,9 +1,10 @@
 import { TOWERS } from '../data/towers.js';
-import { SELL_RATE } from '../config.js';
+import { SELL_RATE, UPGRADE_RANGE } from '../config.js';
 import { rand } from '../util.js';
 
 export class Tower {
-  constructor(type, x, y) {
+  // fresh: comprada antes de a rodada começar → vende pelo preço cheio
+  constructor(type, x, y, fresh = false) {
     this.type = type;
     this.def = TOWERS[type];
     this.x = x;
@@ -11,6 +12,7 @@ export class Tower {
     this.r = this.def.radius;
     this.level = 0;
     this.spent = this.def.cost;
+    this.fresh = fresh;
     this.stats = { ...this.def }; // cópia: upgrades mexem aqui, não no original
     this.cooldown = 0.2;
     this.face = 1; // 1 = olhando pra direita, -1 = esquerda
@@ -32,7 +34,7 @@ export class Tower {
   }
 
   get sellValue() {
-    return Math.floor(this.spent * SELL_RATE);
+    return this.fresh ? this.spent : Math.floor(this.spent * SELL_RATE);
   }
 
   get hitsArmored() {
@@ -42,12 +44,14 @@ export class Tower {
   upgrade() {
     const up = this.nextUpgrade;
     up.apply(this.stats);
+    if (this.stats.range > 0 && Number.isFinite(this.stats.range)) this.stats.range += UPGRADE_RANGE;
     this.spent += up.cost;
     this.level++;
     this.spawnAnim = 1;
   }
 
   onRoundStart() {
+    this.fresh = false;
     this.dropped = 0;
     this.dropTimer = rand(1, 2.5);
   }
@@ -91,7 +95,7 @@ export class Tower {
         if (targets.length === 0) break;
         for (const e of targets.slice(0, s.maxTargets)) {
           if (s.slow) e.slow(s.slow, s.slowTime);
-          if (s.vulnerable) e.weaken(s.vulnerable, s.slowTime);
+          if (s.vulnerable) e.weaken(s.slowTime);
           if (s.damage) e.takeDamage(s.damage, game, this.opts());
         }
         game.fx.ring(this.x, this.y, s.range, s.effect);

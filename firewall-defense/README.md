@@ -25,7 +25,11 @@ python3 -m http.server 8080
 - As defesas não vão no caminho, na água nem em cima dos componentes (chips, racks, coqueiros...).
 - O **Honeypot** só vai **em cima do caminho**.
 - Toque numa defesa colocada para ver **upgrades**, trocar o **alvo** ou **vender** (devolve 70%).
-- **INICIAR** começa a rodada; durante a rodada o mesmo botão acelera (1x → 2x → 3x).
+  O que você comprou **antes de a rodada começar** volta pelo preço cheio (pra mudar de lugar se errou).
+- Todo upgrade também aumenta **um pouco o alcance**.
+- **INICIAR** começa a primeira rodada; durante a rodada o mesmo botão acelera (1x → 2x → 3x).
+- Quando o mapa limpa, a próxima rodada começa **sozinha em 10 s**. Chamar antes dá um **bônus**
+  de até 15% do dinheiro que a próxima rodada vale (quanto mais cedo, maior).
 - Cada camada de vírus estourada dá $1, e cada rodada completa dá um bônus.
 - Ao vencer você ganha de 1 a 3 estrelas (3 = não perdeu nenhuma vida), e o próximo mapa é liberado.
 
@@ -35,8 +39,8 @@ python3 -m http.server 8080
 | --- | --- | --- | --- |
 | **Hacker** | $200 | Arremessa teclados (atravessa 2 vírus) | Dedos Rápidos · Exploit Triplo |
 | **Golem Firewall** | $350 | Onda de fogo em volta, queima blindados | Chamas Intensas · Muralha de Fogo |
-| **Pinguim** | $300 | Congela os vírus em volta (lentidão) | Criptografia AES · Era do Gelo (mais alcance e congelados ficam vulneráveis: +1 de dano em cada acerto) |
-| **Minerador** | $650 | Minera bitcoins que vão direto pro saldo | GPU Extra · Fazenda de Mineração |
+| **Pinguim** | $300 | Congela os vírus em volta (lentidão) | Criptografia AES · Era do Gelo (mais alcance e congelados ficam vulneráveis: levam dano dobrado) |
+| **Minerador** | $650 | Minera bitcoins que vão direto pro saldo | GPU Extra · Fazenda de Mineração (+$120 a cada rodada nova) |
 | **Honeypot** | $80 | *Só no caminho.* Estoura 6 vírus e some | — |
 
 ## Ameaças
