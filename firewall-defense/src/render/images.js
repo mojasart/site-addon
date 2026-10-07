@@ -73,6 +73,7 @@ const ICON_NAMES = [
   'catalog',
   'coffee',
   'darknet',
+  'danger',
 ];
 
 const images = new Map();
