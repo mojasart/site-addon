@@ -554,6 +554,7 @@ export class Game {
     }
     if (this.endDelay > 0) return;
     if (inRect(L.maps, sx, sy)) this.app.goMaps();
+    else if (L.retry && inRect(L.retry, sx, sy)) this.app.startMap(this.mapIndex, 'normal'); // tentar as 3 estrelas
     else if (inRect(L.next, sx, sy)) {
       // venceu: vai pro próximo mapa (normal); perdeu: tenta de novo no mesmo modo
       if (this.state === 'won' && this.nextMap) this.app.startMap(this.mapIndex + 1);
