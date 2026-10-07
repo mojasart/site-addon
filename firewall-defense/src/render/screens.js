@@ -91,10 +91,9 @@ export function drawOverlay(ctx, game) {
       ctx.restore();
     }
     if (won) {
-      // vidas que sobraram (coraçãozinho + número), ameaças contidas e os cafés novos
-      drawLives(ctx, cx, 266, game.lives);
-      text(ctx, `Ameaças contidas: ${game.stats.pops}`, cx, 310, { size: 19, color: GOLD });
-      if (game.coffeeGain > 0) drawCoffeeGain(ctx, cx, 350, game.coffeeGain, game.overlayTime);
+      // vidas que sobraram e cafés novos lado a lado; ameaças contidas embaixo
+      drawResults(ctx, cx, 270, game.lives, game.coffeeGain, game.overlayTime);
+      text(ctx, `Ameaças contidas: ${game.stats.pops}`, cx, 318, { size: 19, color: GOLD });
     } else {
       const survived = Math.floor(Math.min(game.platTime, 180));
       const lines = game.platinum
@@ -124,33 +123,48 @@ export function drawOverlay(ctx, game) {
 }
 
 // "+1 CAFÉ" na vitória (cafés da Dark Net), aparece logo depois das estrelas
-function drawCoffeeGain(ctx, x, y, n, time) {
+// Vidas (coraçãozinho do HUD + número) e, se teve, os cafés novos (ícone do
+// café + "+N") na mesma linha, centralizados juntos. O café entra com um
+// pulinho logo depois das estrelas
+function drawResults(ctx, cx, y, lives, coffee, time) {
+  const SEP = 44;
+  const SIZE = 30;
+  const wl = groupWidth(`${lives}`, SIZE);
+  const wc = coffee > 0 ? groupWidth(`+${coffee}`, SIZE) : 0;
+  const total = wl + (coffee > 0 ? SEP + wc : 0);
+  ctx.save();
+  ctx.translate(cx - total / 2 + wl / 2, y);
+  iconAndNumber(ctx, (g) => drawHeart(g, 13), `${lives}`, SIZE, '#ffffff');
+  ctx.restore();
+  if (coffee <= 0) return;
   const k = easeOutBack(clamp((time - 1.5) * 3, 0, 1));
   if (k <= 0) return;
   ctx.save();
-  ctx.translate(x, y);
+  ctx.translate(cx + total / 2 - wc / 2, y);
   ctx.scale(k, k);
-  iconAndNumber(ctx, (g) => ICONS.coffee(g, 10), `+${n}`, 26, '#ffe0b0');
-  ctx.restore();
-}
-
-// Vidas que sobraram: o coraçãozinho do HUD com o número do lado
-function drawLives(ctx, x, y, lives) {
-  ctx.save();
-  ctx.translate(x, y);
-  iconAndNumber(ctx, (g) => drawHeart(g, 13), `${lives}`, 30, '#ffffff');
+  iconAndNumber(ctx, (g) => ICONS.coffee(g, 11), `+${coffee}`, SIZE, '#ffe0b0');
   ctx.restore();
 }
 
 // Ícone + número, os dois juntos centralizados na origem
+const ICON_W = 32;
+const ICON_GAP = 8;
+
+function groupWidth(str, size) {
+  return ICON_W + ICON_GAP + measure(str, size);
+}
+
+function measure(str, size) {
+  const c = measure.ctx ?? (measure.ctx = document.createElement('canvas').getContext('2d'));
+  setFont(c, size);
+  return c.measureText(str).width;
+}
+
 function iconAndNumber(ctx, icon, str, size, color) {
-  const ICON_W = 32;
-  const GAP = 8;
-  setFont(ctx, size);
-  const w = ICON_W + GAP + ctx.measureText(str).width;
+  const w = groupWidth(str, size);
   ctx.save();
   ctx.translate(-w / 2 + ICON_W / 2, 0);
   icon(ctx);
   ctx.restore();
-  text(ctx, str, -w / 2 + ICON_W + GAP, 2, { size, color, align: 'left' });
+  text(ctx, str, -w / 2 + ICON_W + ICON_GAP, 2, { size, color, align: 'left' });
 }
