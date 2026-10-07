@@ -58,12 +58,12 @@ Tocar num mapa abre a escolha **NORMAL** / **PLATINA** (`src/data/platinum.js`);
 
 | Defesa | Custo | O que faz | Upgrades |
 | --- | --- | --- | --- |
-| **Hacker** | $200 | Arremessa teclados (1 vírus por teclado) | Dedos Rápidos · Exploit Triplo |
+| **Hacker** | $250 | Arremessa teclados (1 vírus por teclado) | Dedos Rápidos · Exploit Triplo |
 | **Golem Firewall** | $350 | Onda de fogo em volta, queima blindados | Muralha de Fogo (mais alcance e ondas mais rápidas) · Incêndio (vírus pegam fogo: 0,33 de dano/s por até 3 s, mesmo fora do alcance; não acumula nem renova enquanto queima) |
-| **Penguin Linux** | $300 | Suporte: não dá dano, congela os vírus em volta (lentidão) | Criptografia AES · Era do Gelo (mais alcance e congelados ficam vulneráveis: levam dano dobrado) |
-| **Robô NMAP** | $450 | Laser de longo alcance: tiro lento, dano alto, fura blindagem | Alta Precisão (+3 de dano) · Varredura Contínua (40% mais rápido) |
+| **Penguin Linux** | $250 | Suporte: não dá dano, congela os vírus em volta (lentidão) | Criptografia AES · Era do Gelo (mais alcance e congelados ficam vulneráveis: levam dano dobrado) |
+| **Robô NMAP** | $500 | Laser de longo alcance: tiro lento, dano alto, fura blindagem | Feixe Perfurante (o laser atravessa e acerta até 2 vírus em linha) · Varredura Contínua (40% mais rápido) |
 | **Minerador** | $650 | Minera bitcoins que vão direto pro saldo. Nas seasons 1 e 2 só minera **em cima de uma pilha de bitcoin** (ver abaixo) | GPU Extra · Fazenda de Mineração (+$120 a cada rodada nova) |
-| **Honeypot** | $80 | *Só no caminho.* Isca: não dá dano; os vírus param pra atacar até a vida dela (40) acabar. Dura no máximo 15 s: nas rodadas vai gastando sozinha, e mais rápido com vírus mordendo | — |
+| **Honeypot** | $90 | *Só no caminho.* Isca: não dá dano; os vírus param pra atacar até a vida dela (40) acabar. Dura no máximo 15 s: nas rodadas vai gastando sozinha, e mais rápido com vírus mordendo | — |
 
 ### Pilhas de bitcoin (Minerador)
 

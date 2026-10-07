@@ -1,6 +1,7 @@
 import { TOWERS } from '../data/towers.js';
 import { SELL_RATE } from '../config.js';
 import { rand } from '../util.js';
+import { laserOrigin } from '../render/characters.js';
 
 export class Tower {
   // fresh: comprada antes de a rodada começar → vende pelo preço cheio
@@ -94,6 +95,24 @@ export class Tower {
     game.sound.play('pop');
   }
 
+  // Laser perfurante: até n vírus atrás do alvo, na linha do tiro (os mais
+  // perto do alvo primeiro), dentro do alcance
+  behind(game, target, x0, y0, n) {
+    if (n <= 0) return [];
+    const len = Math.hypot(target.x - x0, target.y - y0) || 1;
+    const dx = (target.x - x0) / len;
+    const dy = (target.y - y0) / len;
+    const list = [];
+    for (const e of game.enemies) {
+      if (e === target || e.dead || !game.isVisible(e)) continue;
+      const along = (e.x - x0) * dx + (e.y - y0) * dy; // distância ao longo do raio
+      const side = Math.abs((e.x - x0) * dy - (e.y - y0) * dx); // distância até a linha
+      if (along <= len || along > this.stats.range + e.r || side > e.r + 6) continue;
+      list.push({ e, along });
+    }
+    return list.sort((a, b) => a.along - b.along).slice(0, n).map((h) => h.e);
+  }
+
   stun(time) {
     this.stunned = Math.max(this.stunned, time);
   }
@@ -140,8 +159,16 @@ export class Tower {
         const target = game.findTarget(this);
         if (!target) break;
         this.lookAt(target.x);
-        game.fx.beam(this.x + this.face * 4, this.y - 26, target.x, target.y);
-        target.takeDamage(s.damage, game, this.opts());
+        // o laser sai do olho vermelho, do lado pra onde ele está olhando
+        // (0,8: o meio do bote que ele dá enquanto o raio aparece)
+        const eye = laserOrigin(this.type, this.level, 0.8);
+        const x0 = this.x + this.face * eye.x;
+        const y0 = this.y + eye.y;
+        // Feixe Perfurante: o laser segue reto e acerta quem está atrás do alvo
+        const hits = [target, ...this.behind(game, target, x0, y0, (s.pierce ?? 1) - 1)];
+        const last = hits[hits.length - 1];
+        game.fx.beam(x0, y0, last.x, last.y);
+        for (const e of hits) e.takeDamage(s.damage, game, this.opts());
         this.fire();
         break;
       }
