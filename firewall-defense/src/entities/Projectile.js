@@ -1,4 +1,4 @@
-// Projéteis: dardo do Hacker, pacote do Roteador e bomba do Engenheiro.
+// Projéteis: teclado do Hacker, pacote do Roteador e bomba do Engenheiro.
 export class Projectile {
   constructor(tower, angle) {
     const s = tower.stats;

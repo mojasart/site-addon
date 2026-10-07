@@ -2,6 +2,7 @@ import { OUTLINE, GOLD } from '../config.js';
 import { rrect, circle, ellipse, fillOutline, shadow, gloss, text } from './canvas.js';
 import { bomb } from './characters.js';
 import { TAU } from '../util.js';
+import { drawImage, hasImage } from './images.js';
 
 // ── Projéteis ───────────────────────────────────────────────
 export function drawProjectile(ctx, p, t) {
@@ -9,6 +10,17 @@ export function drawProjectile(ctx, p, t) {
   if (p.kind === 'bomb') {
     ctx.rotate(p.spin);
     bomb(ctx, 0, 0, t);
+  } else if (p.kind === 'keyboard') {
+    // tecladinho girando no ar (o Hacker arremessa)
+    ctx.rotate(p.spin * 0.8);
+    rrect(ctx, -10, -5.5, 20, 11, 3);
+    fillOutline(ctx, '#3a3f52', 2.5);
+    for (let row = 0; row < 2; row++) {
+      for (let k = 0; k < 4; k++) {
+        ctx.fillStyle = (row + k) % 3 === 0 ? '#5dff9d' : '#c9d1de';
+        ctx.fillRect(-7.5 + k * 4, -3 + row * 3.5, 3, 2.4);
+      }
+    }
   } else if (p.kind === 'packet') {
     ctx.rotate(p.angle);
     rrect(ctx, -6, -5, 12, 10, 3);
@@ -67,6 +79,10 @@ export function drawServer(ctx, t, hurt) {
   ctx.save();
   ctx.translate(shake, 0);
   shadow(ctx, 5, 34, 44, 12);
+  if (drawImage(ctx, hurt > 0 && hasImage('server_hurt') ? 'server_hurt' : 'server', 96, 0, -10)) {
+    ctx.restore();
+    return;
+  }
   rrect(ctx, -42, -30, 84, 64, 12);
   fillOutline(ctx, '#3a4f86', 4);
   rrect(ctx, -32, -22, 64, 34, 7);

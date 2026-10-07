@@ -1,6 +1,7 @@
 import { OUTLINE, GOLD, SKIN } from '../config.js';
 import { rrect, circle, ellipse, fillOutline, limb, gloss, shadow, setFont } from './canvas.js';
 import { TAU, clamp } from '../util.js';
+import { drawImage, hasImage } from './images.js';
 
 /* ════════════════════════════════════════════════════════════
  *  PERSONAGENS (as defesas)
@@ -12,6 +13,8 @@ import { TAU, clamp } from '../util.js';
  *
  *  s: { t (relógio), face (1/-1), attack (1→0 logo após atacar),
  *       pulse (1→0), spawn (1→0 ao ser colocado) }
+ *  Se existir sprite PNG com o nome do tipo (assets/sprites), ela é usada
+ *  no lugar do desenho com formas (drawSpriteCharacter).
  * ════════════════════════════════════════════════════════════ */
 
 export function drawCharacter(ctx, type, s = {}) {
@@ -24,8 +27,40 @@ export function drawCharacter(ctx, type, s = {}) {
   ctx.translate(0, 15);
   ctx.scale((s.face ?? 1) * pop, breath * pop);
   ctx.translate(0, -15);
-  CHARACTERS[type]?.(ctx, s, t, s.attack ?? 0);
+  if (hasImage(type)) drawSpriteCharacter(ctx, type, s.attack ?? 0, t);
+  else CHARACTERS[type]?.(ctx, s, t, s.attack ?? 0);
   ctx.restore();
+}
+
+// Sprites olhando pra direita, pés em y=14.
+//   size → lado da imagem    foot → onde ficam os pés, em fração da imagem
+//   dx   → acerto horizontal pros pés das poses ficarem no mesmo lugar
+// (medidos em cada PNG; as poses do mesmo personagem têm que ficar do mesmo
+// tamanho — a do golem atacando é maior porque os punhos erguidos "encolhem" a imagem)
+const SPRITE_META = {
+  hacker: { size: 62, foot: 0.477 },
+  pinguim: { size: 62, foot: 0.477 },
+  pinguim_open: { size: 62, foot: 0.477 },
+  firewall: { size: 64, foot: 0.473 },
+  firewall_attack: { size: 75, foot: 0.434, dx: -1.7 },
+};
+// Pose usada logo depois de atacar (sem ela, o personagem dá um bote pra frente)
+const ATTACK_POSE = { pinguim: 'pinguim_open', firewall: 'firewall_attack' };
+
+function drawSpriteCharacter(ctx, type, a, t) {
+  const pose = ATTACK_POSE[type];
+  const posing = pose && a > 0.2 && hasImage(pose);
+  const name = posing ? pose : type;
+  const { size, foot, dx = 0 } = SPRITE_META[name] ?? { size: 62, foot: 0.477 };
+  ctx.save();
+  ctx.translate(posing ? 0 : a * 4, 14);
+  if (!pose) ctx.scale(1 + a * 0.08, 1 - a * 0.06);
+  drawImage(ctx, name, size, dx, -size * foot);
+  ctx.restore();
+  // pinguim congelando: brilhinhos dos lados
+  if (posing && type === 'pinguim') {
+    for (const sx of [-26, 26]) sparkle(ctx, sx, -24 + Math.sin(t * 9) * 2, 4.5);
+  }
 }
 
 const OWN_SHADOW = new Set(['pescador', 'honeypot']);

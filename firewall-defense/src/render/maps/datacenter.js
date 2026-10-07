@@ -1,6 +1,6 @@
 import { VIEW_H, OUTLINE } from '../../config.js';
 import { rrect, circle, ellipse, fillOutline, shadow, gloss } from '../canvas.js';
-import { strokePath, waterSparkles, drawSparkles } from './shared.js';
+import { strokePath, raisedPathBase, waterSparkles, drawSparkles } from './shared.js';
 
 // Tema DATA CENTER: piso técnico, racks de servidores, ar-condicionado,
 // cabos pelo chão e piscinas de refrigeração líquida (zona de água).
@@ -100,11 +100,8 @@ export function paint(g, { map, path, decor, W, ox }) {
     else drawPlant(g, p);
   }
 
-  // calha de cabos com bordas amarelas
-  g.save();
-  g.translate(4, 7);
-  strokePath(g, path, path.width + 10, 'rgba(10,20,40,0.28)');
-  g.restore();
+  // calha de cabos elevada (3/4), com bordas amarelas no topo
+  raisedPathBase(g, path, { depth: 16, side: '#7c88a6', sideDark: '#465068', outline: OUTLINE });
   strokePath(g, path, path.width + 8, OUTLINE);
   strokePath(g, path, path.width, '#ffc72c');
   strokePath(g, path, path.width - 12, '#3a4256');
