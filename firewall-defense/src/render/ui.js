@@ -1,5 +1,6 @@
 import { INK } from '../config.js';
 import { rrect, circle, fillOutline, text } from './canvas.js';
+import { drawImage } from './images.js';
 
 /* ════════════════════════════════════════════════════════════
  *  PEÇAS DE INTERFACE (Etapa 4): botões e ícones reaproveitados
@@ -48,6 +49,7 @@ export const ICONS = {
     }
   },
   heart(ctx, s) {
+    if (drawImage(ctx, 'heart', s * 2.6)) return;
     ctx.beginPath();
     ctx.moveTo(0, s * 0.95);
     ctx.bezierCurveTo(-s * 1.4, 0, -s * 0.9, -s * 1.15, 0, -s * 0.45);
@@ -56,6 +58,7 @@ export const ICONS = {
     fillOutline(ctx, '#ff5a6e', 2.5);
   },
   coin(ctx, s) {
+    if (drawImage(ctx, 'coin', s * 2.4)) return;
     circle(ctx, 0, 0, s);
     fillOutline(ctx, '#ffc83d', 2.5);
     circle(ctx, 0, 0, s * 0.62);
