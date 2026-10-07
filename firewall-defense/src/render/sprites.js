@@ -38,12 +38,13 @@ export function drawProjectile(ctx, p, t) {
 }
 
 // ── Ícones do HUD ───────────────────────────────────────────
-// Moeda de bitcoin: disco laranja com o ₿ inclinado. spin achata no eixo x (girando).
+// Moeda de bitcoin: disco laranja com o ₿ em pé. spin achata no eixo x (girando).
+// Usa o SVG (assets/icons/coin.svg); se faltar, a sprite PNG; se faltar, o desenho abaixo.
 export function drawCoin(ctx, r = 14, spin = 0) {
   const sx = Math.max(0.25, Math.abs(Math.cos(spin * 2)));
   ctx.save();
   ctx.scale(sx, 1);
-  if (drawImage(ctx, 'coin', r * 2.2)) {
+  if (drawImage(ctx, 'icon_coin', r * 2.15) || drawImage(ctx, 'coin', r * 2.2)) {
     ctx.restore();
     return;
   }
@@ -52,7 +53,6 @@ export function drawCoin(ctx, r = 14, spin = 0) {
   circle(ctx, 0, 0, r * 0.76);
   ctx.fillStyle = '#f9a13a';
   ctx.fill();
-  ctx.rotate(0.24);
   bitcoinMark(ctx, r);
   ctx.restore();
   gloss(ctx, -r * 0.38 * sx, -r * 0.5, r * 0.26 * sx, r * 0.14);

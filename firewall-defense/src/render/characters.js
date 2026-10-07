@@ -20,17 +20,88 @@ import { drawImage, hasImage } from './images.js';
 export function drawCharacter(ctx, type, s = {}) {
   const t = s.t ?? 0;
   const own = OWN_SHADOW.has(type);
-  if (!own) shadow(ctx, 0, 15, 17, 5.5);
+  // sombra colada nos pés (as sprites pisam em y≈14; o desenho antigo em y≈15)
+  if (!own) {
+    if (hasImage(type)) shadow(ctx, 0, 12, 14, 4.5);
+    else shadow(ctx, 0, 15, 17, 5.5);
+  }
   const pop = 1 + Math.sin((s.spawn ?? 0) * Math.PI) * 0.28;
   const breath = 1 + Math.sin(t * 3) * 0.02;
   ctx.save();
   ctx.translate(0, 15);
   ctx.scale((s.face ?? 1) * pop, breath * pop);
   ctx.translate(0, -15);
+  AMBIENT[type]?.back?.(ctx, t);
   if (hasImage(type)) drawSpriteCharacter(ctx, type, s.attack ?? 0, t);
   else CHARACTERS[type]?.(ctx, s, t, s.attack ?? 0);
+  AMBIENT[type]?.front?.(ctx, t);
   ctx.restore();
 }
+
+/* ── Animações de ambiente (como a abelhinha do Honeypot) ──────────
+ *  Só dependem do relógio t (nada guardado), então são suaves e leves.
+ *  Cada partícula percorre um ciclo p de 0 a 1 e some nas pontas
+ *  (alpha = sin(p·π)); os desvios de fase (i / n) espalham as partículas.
+ *  Tudo bem transparente pra não poluir o mapa. */
+const AMBIENT = {
+  // Hacker: aura verde pulsando atrás + pontinhos verdes subindo
+  hacker: {
+    back(ctx, t) {
+      const k = 0.75 + Math.sin(t * 2.2) * 0.25;
+      const g = ctx.createRadialGradient(0, -14, 4, 0, -14, 30);
+      g.addColorStop(0, `rgba(90,255,150,${0.42 * k})`);
+      g.addColorStop(1, 'rgba(90,255,150,0)');
+      ctx.fillStyle = g;
+      ellipse(ctx, 0, -14, 30, 32);
+      ctx.fill();
+    },
+    front(ctx, t) {
+      for (let i = 0; i < 4; i++) {
+        const p = (t * 0.45 + i / 4) % 1;
+        const x = Math.sin(i * 2.4 + p * 4) * 16;
+        const y = 8 - p * 46;
+        ctx.globalAlpha = Math.sin(p * Math.PI) * 0.55;
+        circle(ctx, x, y, 1.6);
+        ctx.fillStyle = '#7dffb0';
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    },
+  },
+  // Golem: brasinhas saindo das chamas da cabeça
+  firewall: {
+    front(ctx, t) {
+      for (let i = 0; i < 4; i++) {
+        const p = (t * 0.7 + i / 4) % 1;
+        const x = Math.sin(i * 1.9 + p * 5) * 9 + (i - 1.5) * 4;
+        const y = -40 - p * 24;
+        ctx.globalAlpha = Math.sin(p * Math.PI) * 0.75;
+        circle(ctx, x, y, 2.2 * (1 - p) + 0.7);
+        ctx.fillStyle = p < 0.4 ? '#ffe066' : p < 0.7 ? '#ffa62b' : '#ff5a2b';
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    },
+  },
+  // Pinguim: floquinhos de gelo caindo devagar em volta
+  pinguim: {
+    front(ctx, t) {
+      for (let i = 0; i < 4; i++) {
+        const p = (t * 0.28 + i / 4) % 1;
+        const side = i % 2 ? 1 : -1;
+        const x = side * (18 + Math.sin(p * 6 + i) * 4);
+        const y = -48 + p * 54;
+        ctx.globalAlpha = Math.sin(p * Math.PI) * 0.7;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(t * 1.5 + i);
+        sparkle(ctx, 0, 0, 3.2, '#dff7ff');
+        ctx.restore();
+      }
+      ctx.globalAlpha = 1;
+    },
+  },
+};
 
 // Sprites olhando pra direita, pés em y=14.
 //   size → lado da imagem    foot → onde ficam os pés, em fração da imagem
@@ -43,9 +114,11 @@ const SPRITE_META = {
   pinguim_open: { size: 62, foot: 0.477 },
   firewall: { size: 64, foot: 0.473 },
   firewall_attack: { size: 75, foot: 0.434, dx: -1.7 },
+  minerador: { size: 62, foot: 0.477 },
+  minerador_attack: { size: 62, foot: 0.477, dx: 6 }, // ele se inclina: alinha pelo capacete
 };
 // Pose usada logo depois de atacar (sem ela, o personagem dá um bote pra frente)
-const ATTACK_POSE = { pinguim: 'pinguim_open', firewall: 'firewall_attack' };
+const ATTACK_POSE = { pinguim: 'pinguim_open', firewall: 'firewall_attack', minerador: 'minerador_attack' };
 
 function drawSpriteCharacter(ctx, type, a, t) {
   const pose = ATTACK_POSE[type];
