@@ -5,6 +5,7 @@ import { drawEnemy } from './viruses.js';
 import { drawCharacter } from './characters.js';
 import { ENEMIES } from '../data/enemies.js';
 import { easeOutBack, clamp } from '../util.js';
+import { ICONS } from './sprites.js';
 
 // Posições dos botões das telas de pausa/vitória/derrota (desenho e toque)
 export function overlayLayout(game) {
@@ -100,6 +101,7 @@ export function drawOverlay(ctx, game) {
     text(ctx, lines[0], cx, 262, { size: 24 });
     text(ctx, lines[1], cx, 296, { size: 18, color: '#d8e6ff' });
     text(ctx, `Vírus estourados: ${game.stats.pops}`, cx, 330, { size: 18, color: GOLD });
+    if (won && game.coffeeGain > 0) drawCoffeeGain(ctx, cx, 364, game.coffeeGain, game.overlayTime);
     if (won) {
       // a galera comemorando dos lados das estrelas
       for (const [type, x, face] of [['hacker', c.x + 72, 1], ['pinguim', c.x + c.w - 72, -1]]) {
@@ -116,5 +118,22 @@ export function drawOverlay(ctx, game) {
       bigButton(ctx, L.next, '#3fd16b', label, { icon: won && game.nextMap ? 'play' : 'restart', size: 24 });
     }
   }
+  ctx.restore();
+}
+
+// "+1 CAFÉ" na vitória (cafés da Dark Net), aparece logo depois das estrelas
+function drawCoffeeGain(ctx, x, y, n, time) {
+  const k = easeOutBack(clamp((time - 1.5) * 3, 0, 1));
+  if (k <= 0) return;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(k, k);
+  rrect(ctx, -80, -17, 160, 34, 17);
+  fillOutline(ctx, '#5a3a1e', 3.5);
+  ctx.save();
+  ctx.translate(-54, -1);
+  ICONS.coffee(ctx, 8);
+  ctx.restore();
+  text(ctx, `+${n} ${n === 1 ? 'CAFÉ' : 'CAFÉS'}`, 12, 1, { size: 19, color: '#ffe0b0' });
   ctx.restore();
 }

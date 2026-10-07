@@ -2,12 +2,13 @@ import { VIEW_H, OUTLINE, GOLD } from '../config.js';
 import { MAPS, SEASONS, MAPS_PER_SEASON } from '../data/maps.js';
 import { ENEMIES } from '../data/enemies.js';
 import { renderThumb } from '../render/maps/index.js';
-import { rrect, fillOutline, text, button } from '../render/canvas.js';
+import { rrect, fillOutline, text, button, setFont } from '../render/canvas.js';
 import { iconButton, inRect, stars, ribbon, bigButton, starTier } from '../render/widgets.js';
 import { drawVirusIcon } from '../render/viruses.js';
 import { ICONS } from '../render/sprites.js';
 import { drawImage } from '../render/images.js';
 import { BOT_WIN } from '../data/botStats.js';
+import { DARKNET_STARS } from '../data/darknet.js';
 
 const DIFF_COLOR = { 'FÁCIL': '#3fd16b', 'MÉDIO': '#ff9a2e', 'DIFÍCIL': '#ff5a6a', 'EXTREMO': '#b65cff' };
 // Dificuldade pela % de partidas de bots que venceram o mapa (data/botStats.js)
@@ -26,6 +27,8 @@ const tierOf = (rate) => TIERS.find((t) => rate >= t.min);
 // Tocar num mapa abre a escolha NORMAL / PLATINA; a platina só libera com
 // 3 estrelas (antes disso aparece trancada). Platina vencida: estrelas azul-gelo e a gema do lado.
 // (O aliado bloqueado só aparece dentro da partida.)
+// No canto de cima: o saldo de cafés, a Dark Net (libera com
+// DARKNET_STARS estrelas; antes disso fica trancada) e o catálogo.
 export class LevelSelectScene {
   constructor(app) {
     this.app = app;
@@ -35,6 +38,8 @@ export class LevelSelectScene {
     this.pressed = -1;
     this.wiggle = { i: -1, t: 0 };
     this.pick = -1; // mapa com a janela de escolha do modo aberta
+    this.toast = null; // aviso no topo (ex.: Dark Net trancada)
+    this.darkWiggle = 0;
     // abre na season do mapa mais avançado já liberado
     let last = 0;
     for (let i = 0; i < MAPS.length; i++) if (app.isUnlocked(i)) last = i;
@@ -63,6 +68,8 @@ export class LevelSelectScene {
       },
       back: { x: 18, y: 16, w: 56, h: 56 },
       catalog: { x: W - 74, y: 16, w: 56, h: 56 },
+      darknet: { x: W - 140, y: 16, w: 56, h: 56 },
+      coffee: { x: W - 258, y: 26, w: 106, h: 38 },
       tabs: SEASONS.map((_, s) => ({ x: tabs0 + s * (tabW + 12), y: 92, w: tabW, h: 52 })),
       tiles: Array.from({ length: MAPS_PER_SEASON }, (_, k) => ({
         x: gx + (k % cols) * (tw + gap),
@@ -92,6 +99,8 @@ export class LevelSelectScene {
   update(dt) {
     this.t += dt;
     this.wiggle.t = Math.max(0, this.wiggle.t - dt);
+    this.darkWiggle = Math.max(0, this.darkWiggle - dt);
+    if (this.toast && (this.toast.time -= dt) <= 0) this.toast = null;
   }
 
   render(ctx) {
@@ -129,10 +138,53 @@ export class LevelSelectScene {
     ribbon(ctx, W / 2, 46, 340, 'ESCOLHA O MAPA', '#ff9a2e', 28);
     iconButton(ctx, L.back, '#5fb4ff', 'back');
     iconButton(ctx, L.catalog, '#3fd16b', 'catalog');
+    this.drawDarkNet(ctx, L.darknet);
+    this.drawCoffee(ctx, L.coffee);
 
     SEASONS.forEach((season, s) => this.drawTab(ctx, L.tabs[s], season, s));
     L.tiles.forEach((tile, k) => this.drawTile(ctx, tile, this.season * MAPS_PER_SEASON + k));
     if (this.pick >= 0) this.drawModePicker(ctx, L.modal, this.pick);
+    if (this.toast) this.drawToast(ctx, W / 2, 118);
+  }
+
+  // Botão da Dark Net: roxo quando liberada; cinza com cadeado antes
+  drawDarkNet(ctx, r) {
+    const open = this.app.darkNetOpen();
+    ctx.save();
+    if (this.darkWiggle > 0) {
+      ctx.translate(r.x + r.w / 2, r.y + r.h / 2);
+      ctx.rotate(Math.sin(this.darkWiggle * 40) * 0.12);
+      ctx.translate(-(r.x + r.w / 2), -(r.y + r.h / 2));
+    }
+    iconButton(ctx, r, open ? '#7b3fe0' : '#5d6680', 'darknet');
+    if (!open) {
+      ctx.translate(r.x + r.w - 9, r.y + r.h - 12);
+      ICONS.lock(ctx, 9);
+    }
+    ctx.restore();
+  }
+
+  // Saldo de cafés (gastos na Dark Net)
+  drawCoffee(ctx, r) {
+    rrect(ctx, r.x, r.y, r.w, r.h, r.h / 2);
+    fillOutline(ctx, '#5a3a1e', 3.5);
+    ctx.save();
+    ctx.translate(r.x + 22, r.y + r.h / 2 - 1);
+    ICONS.coffee(ctx, 9);
+    ctx.restore();
+    text(ctx, `${this.app.coffee}`, r.x + 42, r.y + r.h / 2 + 1, { size: 22, color: '#ffe0b0', align: 'left' });
+  }
+
+  drawToast(ctx, x, y) {
+    const a = Math.min(1, this.toast.time * 3);
+    ctx.save();
+    ctx.globalAlpha = a;
+    setFont(ctx, 18);
+    const w = ctx.measureText(this.toast.text).width + 40;
+    rrect(ctx, x - w / 2, y - 21, w, 42, 21);
+    fillOutline(ctx, '#2a1840', 4);
+    text(ctx, this.toast.text, x, y + 1, { size: 18, color: '#e3c9ff' });
+    ctx.restore();
   }
 
   // Card de mapa com a platina vencida: prata azulado metálico, com faixas
@@ -329,6 +381,17 @@ export class LevelSelectScene {
     if (inRect(L.catalog, x, y)) {
       this.app.sound.play('click');
       this.app.goCatalog();
+      return;
+    }
+    if (inRect(L.darknet, x, y)) {
+      if (this.app.darkNetOpen()) {
+        this.app.sound.play('click');
+        this.app.goDarkNet();
+      } else {
+        this.app.sound.play('error');
+        this.darkWiggle = 0.35;
+        this.toast = { text: `DARK NET: junte ${DARKNET_STARS} estrelas pra liberar (${this.app.totalStars}/${DARKNET_STARS})`, time: 2.6 };
+      }
       return;
     }
     L.tabs.forEach((r, s) => {

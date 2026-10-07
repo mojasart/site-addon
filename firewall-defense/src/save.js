@@ -1,8 +1,9 @@
-// Progresso salvo no navegador (estrelas e platina por mapa, som e turno automático).
+// Progresso salvo no navegador (estrelas e platina por mapa, cafés gastos na
+// Dark Net, som e turno automático).
 // localStorage pode não existir (aba anônima, bloqueado...): aí só não salva.
 const KEY = 'firewall-defense-save-v1';
 
-const DEFAULTS = { stars: {}, platinum: {}, seen: {}, music: true, sfx: true, autoRound: true };
+const DEFAULTS = { stars: {}, platinum: {}, seen: {}, coffeeSpent: 0, music: true, sfx: true, autoRound: true };
 
 export function loadSave() {
   try {

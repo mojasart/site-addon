@@ -18,6 +18,11 @@ Lista do que falta fazer no jogo. Marque com `[x]` quando terminar.
 - [ ] **Upgrade de pierce pro Hacker**: o teclado volta a atravessar vários vírus
   (no `apply` do upgrade: `s.pierce = 2`)
 
+## Dark Net
+
+- [ ] **Árvore de upgrades** paga com cafés (`src/scenes/DarkNetScene.js`, hoje só mostra o saldo
+  e "em construção"). Ao comprar, somar o custo em `save.coffeeSpent`
+
 ## Balanceamento
 
 - [ ] Recalibrar os mapas com os bots (`node tools/sim/calibrate.js` e conferir com `run.js`)

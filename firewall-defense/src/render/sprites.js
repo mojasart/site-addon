@@ -283,6 +283,18 @@ export const ICONS = {
     rrect(ctx, -s, -s * 0.8, s * 2, s * 1.4, 3);
     fillOutline(ctx, '#ffffff', 2.5);
   },
+  // café (o que se gasta na Dark Net)
+  coffee(ctx, s = 12) {
+    if (svgIcon(ctx, 'coffee', s)) return;
+    rrect(ctx, -s * 0.8, -s * 0.6, s * 1.4, s * 1.4, 4);
+    fillOutline(ctx, '#f3e6d4', 2.5);
+  },
+  // Dark Net (cebola roxa, como a do Tor)
+  darknet(ctx, s = 12) {
+    if (svgIcon(ctx, 'darknet', s)) return;
+    circle(ctx, 0, s * 0.2, s * 0.9);
+    fillOutline(ctx, '#8a4fe0', 2.5);
+  },
   lock(ctx, s = 16) {
     if (svgIcon(ctx, 'lock', s, 2.5)) return;
     ctx.beginPath();

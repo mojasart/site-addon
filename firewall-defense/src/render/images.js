@@ -71,6 +71,8 @@ const ICON_NAMES = [
   'auto',
   'auto_off',
   'catalog',
+  'coffee',
+  'darknet',
 ];
 
 const images = new Map();
