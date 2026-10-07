@@ -130,22 +130,33 @@ export class Game {
     this.inspect = null;
     this.selectedTower = null;
     this.drag = null;
+    const coffeeBefore = this.app.coffeeEarned ?? 0;
     if (won) {
       const L = this.map.lives;
       // 3 estrelas com 90% das vidas ou mais, 2 com pelo menos metade, 1 com menos
       this.stars = this.lives >= L * 0.9 ? 3 : this.lives >= L * 0.5 ? 2 : 1;
-      const coffeeBefore = this.app.coffeeEarned ?? 0;
       if (this.platinum) {
         this.stars = 3; // vencer a platina já vale as 3 (em platina)
         this.app.recordPlatinum?.(this.map.id);
       }
       this.app.recordStars(this.map.id, this.stars);
-      // cafés novos dessa vitória (só o que passou do recorde do mapa: data/darknet.js)
-      this.coffeeGain = (this.app.coffeeEarned ?? 0) - coffeeBefore;
       this.fx.celebrate(this.viewW, VIEW_H);
       this.sound.play('win');
       for (let i = 0; i < this.stars; i++) setTimeout(() => this.sound.play('star'), 500 + i * 350);
     } else this.sound.play('lose');
+    // cafés novos da partida: o que passou do recorde do mapa e os monstros
+    // abatidos (data/darknet.js)
+    this.bankKills();
+    this.coffeeGain = (this.app.coffeeEarned ?? 0) - coffeeBefore;
+  }
+
+  // Monstros abatidos viram cafés: soma no save os desta partida que ainda
+  // não foram contados (no fim da partida e ao sair dela no meio)
+  bankKills() {
+    const n = this.stats.pops - (this.killsBanked ?? 0);
+    if (n <= 0) return;
+    this.killsBanked = this.stats.pops;
+    this.app.addKills?.(n);
   }
 
   showBanner(text, duration = 1.2, color = '#ffffff', size = 46, sub = null) {

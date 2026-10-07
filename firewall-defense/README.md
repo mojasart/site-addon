@@ -99,7 +99,9 @@ Os cafés vêm do melhor resultado de cada mapa (`src/data/darknet.js`), então 
 | 3 estrelas | 2 (quem já tinha 1 ganha só mais 1) |
 | Platina | +2 |
 
-A tela de vitória mostra os cafés novos (*+1 CAFÉ*). O save guarda só os cafés gastos (`coffeeSpent`); o saldo é o que ganhou menos o que gastou.
+Além disso, **cada monstro abatido vale café**: 0,25 café a cada 1000 abatidos, ou seja 0,25 / 1000 = **0,00025 por monstro** (cada camada estourada conta, em qualquer partida, até nas derrotas). O total de abatidos fica no save (`kills`) e é somado no fim da partida ou ao sair dela.
+
+A tela de vitória mostra os cafés novos da partida (ex.: *+2,1*: 2 das estrelas e 0,1 dos abatidos). O save guarda os cafés gastos (`coffeeSpent`); o saldo é o que ganhou menos o que gastou, com até 2 casas.
 
 ## Seasons e mapas
 

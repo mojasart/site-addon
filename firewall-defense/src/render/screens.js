@@ -6,6 +6,7 @@ import { drawCharacter } from './characters.js';
 import { ENEMIES } from '../data/enemies.js';
 import { easeOutBack, clamp } from '../util.js';
 import { ICONS, drawHeart } from './sprites.js';
+import { formatCoffee } from '../data/darknet.js';
 
 // Posições dos botões das telas de pausa/vitória/derrota (desenho e toque)
 export function overlayLayout(game) {
@@ -144,19 +145,19 @@ function drawResults(ctx, cx, y, lives, coffee, time) {
   const SEP = 44;
   const SIZE = 30;
   const wl = groupWidth(`${lives}`, SIZE);
-  const wc = coffee > 0 ? groupWidth(`+${coffee}`, SIZE) : 0;
-  const total = wl + (coffee > 0 ? SEP + wc : 0);
+  const wc = coffee >= 0.01 ? groupWidth(`+${formatCoffee(coffee)}`, SIZE) : 0;
+  const total = wl + (coffee >= 0.01 ? SEP + wc : 0);
   ctx.save();
   ctx.translate(cx - total / 2 + wl / 2, y);
   iconAndNumber(ctx, (g) => drawHeart(g, 13), `${lives}`, SIZE, '#ffffff');
   ctx.restore();
-  if (coffee <= 0) return;
+  if (coffee < 0.01) return;
   const k = easeOutBack(clamp((time - 1.5) * 3, 0, 1));
   if (k <= 0) return;
   ctx.save();
   ctx.translate(cx + total / 2 - wc / 2, y);
   ctx.scale(k, k);
-  iconAndNumber(ctx, (g) => ICONS.coffee(g, 11), `+${coffee}`, SIZE, '#ffe0b0');
+  iconAndNumber(ctx, (g) => ICONS.coffee(g, 11), `+${formatCoffee(coffee)}`, SIZE, '#ffe0b0');
   ctx.restore();
 }
 

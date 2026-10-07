@@ -2,6 +2,7 @@ import { VIEW_H } from '../config.js';
 import { rrect, fillOutline, text, setFont } from '../render/canvas.js';
 import { iconButton, inRect } from '../render/widgets.js';
 import { ICONS } from '../render/sprites.js';
+import { formatCoffee } from '../data/darknet.js';
 
 /* ════════════════════════════════════════════════════════════
  *  DARK NET
@@ -57,7 +58,7 @@ export class DarkNetScene {
 
     // saldo de cafés (ícone + número, sem fundo), centralizado
     const n = this.app.coffee;
-    const label = `${n} ${n === 1 ? 'CAFÉ' : 'CAFÉS'}`;
+    const label = `${formatCoffee(n)} ${n === 1 ? 'CAFÉ' : 'CAFÉS'}`; // com fração: os monstros abatidos dão cafés quebrados
     setFont(ctx, 24);
     const lw = ctx.measureText(label).width;
     const cx0 = W / 2 - (lw + 32) / 2; // ícone (~26) + espaço + texto
