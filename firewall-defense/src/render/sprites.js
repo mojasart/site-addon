@@ -156,8 +156,15 @@ export function drawServer(ctx, t, hurt) {
 }
 
 // Ícones brancos dos botões (desenhados centrados em 0,0)
+// Ícone SVG (assets/icons) num quadrado de lado s*k; devolve false se não carregou.
+// O desenho do SVG ocupa ~70% do quadrado, por isso o k ~3 (s é "meia altura").
+function svgIcon(ctx, name, s, k = 3.1) {
+  return drawImage(ctx, `icon_${name}`, s * k);
+}
+
 export const ICONS = {
   play(ctx, s = 14) {
+    if (svgIcon(ctx, 'play', s)) return;
     ctx.beginPath();
     ctx.moveTo(-s * 0.6, -s);
     ctx.lineTo(s * 0.9, 0);
@@ -167,6 +174,7 @@ export const ICONS = {
     fillOutline(ctx, '#ffffff', 3);
   },
   ff(ctx, s = 12) {
+    if (svgIcon(ctx, 'ff', s, 3.4)) return;
     ctx.save();
     ctx.translate(-s * 0.55, 0);
     ICONS.play(ctx, s);
@@ -175,12 +183,14 @@ export const ICONS = {
     ctx.restore();
   },
   pause(ctx, s = 12) {
+    if (svgIcon(ctx, 'pause', s)) return;
     for (const dx of [-s * 0.55, s * 0.55]) {
       rrect(ctx, dx - s * 0.3, -s, s * 0.6, s * 2, 2);
       fillOutline(ctx, '#ffffff', 2.5);
     }
   },
   close(ctx, s = 8) {
+    if (svgIcon(ctx, 'close', s, 3.6)) return;
     stroked(ctx, () => {
       ctx.moveTo(-s, -s);
       ctx.lineTo(s, s);
@@ -189,6 +199,7 @@ export const ICONS = {
     }, 4);
   },
   back(ctx, s = 11) {
+    if (svgIcon(ctx, 'back', s)) return;
     stroked(ctx, () => {
       ctx.moveTo(s * 0.4, -s);
       ctx.lineTo(-s * 0.6, 0);
@@ -196,6 +207,7 @@ export const ICONS = {
     }, 4.5);
   },
   restart(ctx, s = 11) {
+    if (svgIcon(ctx, 'restart', s)) return;
     stroked(ctx, () => ctx.arc(0, 0, s, -0.3, Math.PI * 1.5), 4);
     ctx.beginPath();
     ctx.moveTo(s * 0.55, -s * 1.35);
@@ -205,6 +217,7 @@ export const ICONS = {
     fillOutline(ctx, '#ffffff', 2.5);
   },
   map(ctx, s = 12) {
+    if (svgIcon(ctx, 'map', s)) return;
     ctx.beginPath();
     ctx.moveTo(-s, -s * 0.7);
     ctx.lineTo(-s * 0.33, -s);
@@ -226,6 +239,7 @@ export const ICONS = {
     ctx.stroke();
   },
   music(ctx, s = 12, on = true) {
+    if (svgIcon(ctx, on ? 'music' : 'music_off', s)) return;
     ellipse(ctx, -s * 0.4, s * 0.55, s * 0.42, s * 0.32, -0.4);
     fillOutline(ctx, '#ffffff', 2.5);
     ellipse(ctx, s * 0.6, s * 0.3, s * 0.42, s * 0.32, -0.4);
@@ -239,6 +253,7 @@ export const ICONS = {
     if (!on) slash(ctx, s);
   },
   sfx(ctx, s = 12, on = true) {
+    if (svgIcon(ctx, on ? 'sfx' : 'sfx_off', s)) return;
     ctx.beginPath();
     ctx.moveTo(-s, -s * 0.35);
     ctx.lineTo(-s * 0.45, -s * 0.35);
@@ -254,6 +269,7 @@ export const ICONS = {
     } else slash(ctx, s);
   },
   lock(ctx, s = 16) {
+    if (svgIcon(ctx, 'lock', s, 2.5)) return;
     ctx.beginPath();
     ctx.arc(0, -s * 0.35, s * 0.55, Math.PI, 0);
     ctx.lineWidth = s * 0.5;
