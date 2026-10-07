@@ -12,19 +12,25 @@ import { drawImage, hasImage } from './images.js';
  *  o "pulinho" ao ser colocado. Cada personagem só se desenha.
  *
  *  s: { t (relógio), face (1/-1), attack (1→0 logo após atacar),
- *       pulse (1→0), spawn (1→0 ao ser colocado) }
+ *       pulse (1→0), spawn (1→0 ao ser colocado),
+ *       level (0 criança, 1 adolescente, 2 adulto; sem level = adulto) }
  *  Se existir sprite PNG com o nome do tipo (assets/sprites), ela é usada
- *  no lugar do desenho com formas (drawSpriteCharacter).
+ *  no lugar do desenho com formas (drawSpriteCharacter). Cada nível de
+ *  upgrade tem a sua idade: <tipo>_kid, <tipo>_teen e <tipo> (adulto).
  * ════════════════════════════════════════════════════════════ */
 
 export function drawCharacter(ctx, type, s = {}) {
   const t = s.t ?? 0;
   const own = OWN_SHADOW.has(type);
+  const sprite = spriteOf(type, s.level);
   // sombra colada nos pés (as sprites pisam em y≈14; o desenho antigo em y≈15).
   // Nas sprites os pés nem sempre ficam no meio da imagem: a sombra vai
   // embaixo deles (feet) e acompanha o lado pra onde o personagem olha
   if (!own) {
-    if (hasImage(type)) shadow(ctx, (s.face ?? 1) * spriteFeetX(type, s.attack ?? 0), 12, 14, 4.5);
+    if (sprite) {
+      const sw = SPRITE_META[sprite]?.shadow ?? 12;
+      shadow(ctx, (s.face ?? 1) * spriteFeetX(sprite, type, s.attack ?? 0), 12, sw + 2, Math.min(5, sw / 3 + 0.5));
+    }
     else shadow(ctx, 0, 15, 17, 5.5);
   }
   const pop = 1 + Math.sin((s.spawn ?? 0) * Math.PI) * 0.28;
@@ -33,10 +39,10 @@ export function drawCharacter(ctx, type, s = {}) {
   ctx.translate(0, 15);
   ctx.scale((s.face ?? 1) * pop, breath * pop);
   ctx.translate(0, -15);
-  AMBIENT[type]?.back?.(ctx, t);
-  if (hasImage(type)) drawSpriteCharacter(ctx, type, s.attack ?? 0, t);
+  AMBIENT[type]?.back?.(ctx, t, sprite);
+  if (sprite) drawSpriteCharacter(ctx, sprite, type, s.attack ?? 0, t);
   else CHARACTERS[type]?.(ctx, s, t, s.attack ?? 0);
-  AMBIENT[type]?.front?.(ctx, t);
+  AMBIENT[type]?.front?.(ctx, t, sprite);
   ctx.restore();
 }
 
@@ -48,12 +54,14 @@ export function drawCharacter(ctx, type, s = {}) {
 const AMBIENT = {
   // Minerador: moedinhas de bitcoin subindo devagar e sumindo
   minerador: {
-    front(ctx, t) {
+    front(ctx, t, sprite) {
+      // o adulto minera no computador: as moedas saem da tela
+      const [x0, y0] = sprite === 'minerador' ? MONITOR : [25, 4];
       for (let i = 0; i < 3; i++) {
         const p = (t * 0.35 + i / 3) % 1;
         // saem do lado da frente (onde a picareta bate), sem passar no rosto
-        const x = 25 + Math.sin(i * 2.1 + p * 4) * 5;
-        const y = 4 - p * 46;
+        const x = x0 + Math.sin(i * 2.1 + p * 4) * 5;
+        const y = y0 - p * 46;
         ctx.globalAlpha = Math.sin(p * Math.PI) * 0.8;
         ctx.save();
         ctx.translate(x, y);
@@ -63,6 +71,24 @@ const AMBIENT = {
           fillOutline(ctx, GOLD, 1.5);
         }
         ctx.restore();
+      }
+      ctx.globalAlpha = 1;
+    },
+  },
+  // Scanner: ondas de rádio saindo da parabólica (arcos abrindo e sumindo)
+  scanner: {
+    front(ctx, t, sprite) {
+      const [x, y] = DISH[sprite] ?? DISH.scanner;
+      const dir = -2.3; // a parabólica aponta pra cima e pra trás
+      ctx.lineCap = 'round';
+      for (let i = 0; i < 3; i++) {
+        const p = (t * 0.6 + i / 3) % 1;
+        ctx.globalAlpha = Math.sin(p * Math.PI) * 0.6;
+        ctx.strokeStyle = '#9ff0ff';
+        ctx.lineWidth = 2.2 - p;
+        ctx.beginPath();
+        ctx.arc(x, y, 5 + p * 20, dir - 0.6, dir + 0.6);
+        ctx.stroke();
       }
       ctx.globalAlpha = 1;
     },
@@ -133,34 +159,69 @@ const AMBIENT = {
 // (medidos em cada PNG; as poses do mesmo personagem têm que ficar do mesmo
 // tamanho — a do golem atacando é maior porque os punhos erguidos "encolhem" a imagem)
 const SPRITE_META = {
+  // nível 1 (criança) e 2 (adolescente): menores que o adulto (76% e 88% da altura)
+  hacker_kid: { size: 47, foot: 0.48, feet: 0.001, shadow: 9 },
+  hacker_teen: { size: 55, foot: 0.48, feet: -0.122, shadow: 10.5 },
+  pinguim_kid: { size: 47, foot: 0.48, feet: -0.108, shadow: 9 },
+  pinguim_kid_open: { size: 47, foot: 0.48, feet: -0.107, shadow: 9 },
+  pinguim_teen: { size: 55, foot: 0.48, feet: -0.021, shadow: 10.5 },
+  pinguim_teen_open: { size: 55, foot: 0.48, feet: -0.021, shadow: 10.5 },
+  firewall_kid: { size: 49, foot: 0.477, feet: -0.067, shadow: 10 },
+  firewall_kid_attack: { size: 54, foot: 0.48, dx: -0.9, feet: -0.024, shadow: 10 },
+  firewall_teen: { size: 56, foot: 0.48, feet: -0.053, shadow: 11 },
+  firewall_teen_attack: { size: 67, foot: 0.441, dx: -1.1, feet: -0.009, shadow: 11 },
+  scanner_kid: { size: 47, foot: 0.48, feet: -0.07, shadow: 9 },
+  scanner_teen: { size: 55, foot: 0.48, feet: -0.06, shadow: 10.5 },
+  minerador_kid: { size: 47, foot: 0.48, feet: 0.039, shadow: 9 },
+  minerador_kid_attack: { size: 46, foot: 0.48, dx: 1.5, feet: 0.007, shadow: 9 }, // alinhado pelo capacete
+  minerador_teen: { size: 54, foot: 0.48, feet: 0.053, shadow: 10.5 },
+  minerador_teen_attack: { size: 55, foot: 0.48, dx: 3.8, feet: 0.087, shadow: 10.5 },
+  // nível 3 do Minerador: minerando no computador (com a mesa, é mais largo)
+  minerador: { size: 62, foot: 0.48, feet: 0.034, shadow: 18 },
+  minerador_attack: { size: 62, foot: 0.48, dx: -0.8, feet: 0.045, shadow: 18 },
+  // nível 3 (adulto)
   hacker: { size: 62, foot: 0.477, feet: -0.096 },
   pinguim: { size: 62, foot: 0.477, feet: 0.029 },
   pinguim_open: { size: 62, foot: 0.477, feet: 0.029 },
   firewall: { size: 64, foot: 0.473, feet: -0.076 },
   firewall_attack: { size: 75, foot: 0.434, dx: -1.7, feet: 0.018 },
-  minerador: { size: 62, foot: 0.477, feet: 0.102 },
-  minerador_attack: { size: 62, foot: 0.477, dx: 6, feet: -0.031 }, // ele se inclina: alinha pelo capacete
   scanner: { size: 62, foot: 0.477, feet: -0.002 },
 };
 
+// Tela do computador do Minerador adulto (de onde saem as moedas)
+const MONITOR = [15, -28];
+// Parabólica do Scanner em cada idade (de onde saem as ondas de rádio)
+const DISH = { scanner: [-11, -32], scanner_teen: [-14, -26], scanner_kid: [-7, -21] };
+
+// Idade de cada nível de upgrade (0 → criança, 1 → adolescente, 2 → adulto)
+const AGE_SUFFIX = ['_kid', '_teen', ''];
+
+// Sprite parada do personagem nesse nível (sem a imagem da idade, usa a
+// adulta; sem nenhuma, null → desenho com formas)
+function spriteOf(type, level = 2) {
+  const name = type + (AGE_SUFFIX[level] ?? '');
+  if (hasImage(name)) return name;
+  return hasImage(type) ? type : null;
+}
+
 // Pose que está sendo mostrada (a de ataque logo depois de atacar)
-function poseOf(type, a) {
-  const pose = ATTACK_POSE[type];
-  return pose && a > 0.2 && hasImage(pose) ? pose : type;
+function poseOf(sprite, type, a) {
+  const pose = POSE_SUFFIX[type] && sprite + POSE_SUFFIX[type];
+  return pose && a > 0.2 && hasImage(pose) ? pose : sprite;
 }
 
 // x do centro dos pés da pose atual (pra sombra)
-function spriteFeetX(type, a) {
-  const m = SPRITE_META[poseOf(type, a)];
+function spriteFeetX(sprite, type, a) {
+  const m = SPRITE_META[poseOf(sprite, type, a)];
   return m ? m.size * (m.feet ?? 0) + (m.dx ?? 0) : 0;
 }
 // Pose usada logo depois de atacar (sem ela, o personagem dá um bote pra frente)
-const ATTACK_POSE = { pinguim: 'pinguim_open', firewall: 'firewall_attack', minerador: 'minerador_attack' };
+const POSE_SUFFIX = { pinguim: '_open', firewall: '_attack', minerador: '_attack' };
 
-function drawSpriteCharacter(ctx, type, a, t) {
-  const pose = ATTACK_POSE[type];
-  const name = poseOf(type, a);
-  const posing = name !== type;
+function drawSpriteCharacter(ctx, sprite, type, a, t) {
+  const pose = POSE_SUFFIX[type];
+  const name = poseOf(sprite, type, a);
+  const posing = name !== sprite;
   const { size, foot, dx = 0 } = SPRITE_META[name] ?? { size: 62, foot: 0.477 };
   ctx.save();
   ctx.translate(posing ? 0 : a * 4, 14);

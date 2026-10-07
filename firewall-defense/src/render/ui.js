@@ -90,7 +90,7 @@ function drawShop(ctx, game, L) {
     ctx.clip();
     ctx.translate(tile.x + tile.w / 2, tile.y + 56);
     ctx.scale(0.8, 0.8);
-    drawCharacter(ctx, tile.type, { t: game.anim + tile.x * 0.01, face: 1 });
+    drawCharacter(ctx, tile.type, { t: game.anim + tile.x * 0.01, face: 1, level: 0 });
     ctx.restore();
     if (!affordable) {
       rrect(ctx, tile.x, tile.y, tile.w, tile.h - 5, 14);

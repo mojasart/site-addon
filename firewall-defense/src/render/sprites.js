@@ -277,6 +277,12 @@ export const ICONS = {
     ICONS.restart(ctx, s);
     if (!on) slash(ctx, s);
   },
+  // catálogo de ameaças (monitorzinho com terminal)
+  catalog(ctx, s = 12) {
+    if (svgIcon(ctx, 'catalog', s)) return;
+    rrect(ctx, -s, -s * 0.8, s * 2, s * 1.4, 3);
+    fillOutline(ctx, '#ffffff', 2.5);
+  },
   lock(ctx, s = 16) {
     if (svgIcon(ctx, 'lock', s, 2.5)) return;
     ctx.beginPath();

@@ -30,7 +30,6 @@ export class TitleScene {
     const W = this.app.viewW;
     return {
       play: { x: W / 2 - 150, y: 352, w: 300, h: 88 },
-      auto: { x: W - 212, y: VIEW_H - 76, w: 60, h: 60 },
       music: { x: W - 144, y: VIEW_H - 76, w: 60, h: 60 },
       sfx: { x: W - 76, y: VIEW_H - 76, w: 60, h: 60 },
     };
@@ -117,15 +116,12 @@ export class TitleScene {
     const s = this.app.save;
     iconButton(ctx, L.music, s.music ? '#8a7dff' : '#7d8fa8', 'music', s.music);
     iconButton(ctx, L.sfx, s.sfx ? '#8a7dff' : '#7d8fa8', 'sfx', s.sfx);
-    const auto = s.autoRound !== false;
-    iconButton(ctx, L.auto, auto ? '#3fd16b' : '#7d8fa8', 'auto', auto);
   }
 
   pointerDown(x, y) {
     const L = this.layout();
     if (inRect(L.music, x, y)) this.app.toggleMusic();
     else if (inRect(L.sfx, x, y)) this.app.toggleSfx();
-    else if (inRect(L.auto, x, y)) this.app.toggleAuto();
     else if (inRect(L.play, x, y)) this.pressed = true;
   }
 

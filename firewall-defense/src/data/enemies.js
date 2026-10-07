@@ -12,16 +12,18 @@
 //  sprite   → imagem em assets/sprites (sem ela usa o desenho do kind)
 //  reward   → moedas ao estourar essa camada (padrão 1)
 //  spawn    → { type, every }: vai soltando esse vírus enquanto está vivo
+//  lore     → frase do catálogo de ameaças (scenes/CatalogScene.js)
 // ─────────────────────────────────────────────────────────────
 export const ENEMIES = {
-  v1: { name: 'Vírus', sprite: 'virus_red', hp: 1, speed: 70, radius: 13, color: '#ff4d5e', children: [] },
-  v2: { name: 'Vírus Azul', sprite: 'virus_blue', hp: 1, speed: 95, radius: 14, color: '#3d8bff', children: [['v1', 1]] },
-  v3: { name: 'Vírus Verde', sprite: 'virus_green', hp: 1, speed: 120, radius: 14, color: '#2fd27a', children: [['v2', 1]] },
-  v4: { name: 'Vírus Amarelo', sprite: 'virus_yellow', hp: 1, speed: 200, radius: 15, color: '#ffc62e', children: [['v3', 1]] },
-  v5: { name: 'Vírus Rosa', sprite: 'virus_pink', hp: 1, speed: 220, radius: 15, color: '#ff6fd0', children: [['v4', 1]] },
+  v1: { name: 'Vírus', lore: 'O malware mais básico da rede. Sozinho é inofensivo; em bando, derruba qualquer servidor.', sprite: 'virus_red', hp: 1, speed: 70, radius: 13, color: '#ff4d5e', children: [] },
+  v2: { name: 'Vírus Azul', lore: 'Versão atualizada: mais rápida, e esconde um Vírus vermelho dentro.', sprite: 'virus_blue', hp: 1, speed: 95, radius: 14, color: '#3d8bff', children: [['v1', 1]] },
+  v3: { name: 'Vírus Verde', lore: 'Código polimórfico: muda de cor pra fugir do antivírus. Carrega um Vírus Azul.', sprite: 'virus_green', hp: 1, speed: 120, radius: 14, color: '#2fd27a', children: [['v2', 1]] },
+  v4: { name: 'Vírus Amarelo', lore: 'Rápido como um exploit zero-day. Dentro dele vem um Vírus Verde.', sprite: 'virus_yellow', hp: 1, speed: 200, radius: 15, color: '#ffc62e', children: [['v3', 1]] },
+  v5: { name: 'Vírus Rosa', lore: 'O mais veloz da família. Cada camada estourada revela a anterior.', sprite: 'virus_pink', hp: 1, speed: 220, radius: 15, color: '#ff6fd0', children: [['v4', 1]] },
   worm: {
     name: 'Worm',
     desc: 'Rápido: vai soltando vírus pelo caminho enquanto está vivo',
+    lore: 'Se espalha sozinho pela rede, deixando cópias de si pelo caminho.',
     hp: 3,
     speed: 170,
     radius: 15,
@@ -34,6 +36,7 @@ export const ENEMIES = {
   trojan: {
     name: 'Trojan',
     desc: 'Blindado: os teclados do Hacker não furam',
+    lore: 'Disfarçado de programa legítimo e protegido por armadura: teclado não fura.',
     hp: 1,
     speed: 60,
     radius: 17,
@@ -46,6 +49,7 @@ export const ENEMIES = {
   locker: {
     name: 'Locker',
     desc: 'Mini-chefão acorrentado: solta 2 Trojans',
+    lore: 'Tranca tudo com correntes pesadas. Quando cai, liberta 2 Trojans.',
     hp: 90,
     speed: 35,
     radius: 26,
@@ -59,6 +63,7 @@ export const ENEMIES = {
   ransomware: {
     name: 'Ransomware',
     desc: 'Chefão: solta 4 Trojans quando destruído',
+    lore: 'Sequestra o servidor e pede resgate em bitcoin. O chefão final da rede.',
     hp: 340,
     speed: 30,
     radius: 38,

@@ -39,6 +39,7 @@ export class LevelSelectScene {
     const gy = 160;
     return {
       back: { x: 18, y: 16, w: 56, h: 56 },
+      catalog: { x: W - 74, y: 16, w: 56, h: 56 },
       tabs: SEASONS.map((_, s) => ({ x: tabs0 + s * (tabW + 12), y: 92, w: tabW, h: 52 })),
       tiles: Array.from({ length: MAPS_PER_SEASON }, (_, k) => ({
         x: gx + (k % cols) * (tw + gap),
@@ -104,6 +105,7 @@ export class LevelSelectScene {
     const L = this.layout();
     ribbon(ctx, W / 2, 46, 340, 'ESCOLHA O MAPA', '#ff9a2e', 28);
     iconButton(ctx, L.back, '#5fb4ff', 'back');
+    iconButton(ctx, L.catalog, '#3fd16b', 'catalog');
 
     SEASONS.forEach((season, s) => this.drawTab(ctx, L.tabs[s], season, s));
     L.tiles.forEach((tile, k) => this.drawTile(ctx, tile, this.season * MAPS_PER_SEASON + k));
@@ -191,6 +193,11 @@ export class LevelSelectScene {
     if (inRect(L.back, x, y)) {
       this.app.sound.play('click');
       this.app.goTitle();
+      return;
+    }
+    if (inRect(L.catalog, x, y)) {
+      this.app.sound.play('click');
+      this.app.goCatalog();
       return;
     }
     L.tabs.forEach((r, s) => {
