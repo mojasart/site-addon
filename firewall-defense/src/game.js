@@ -4,7 +4,7 @@ import { ROUNDS } from './data/rounds.js';
 import { PLAT_TIME, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
 import { worth } from './data/enemies.js';
 import { TOWERS, TARGET_MODES } from './data/towers.js';
-import { applyPerks, ROOT_MONEY } from './data/darknet.js';
+import { applyPerks, ROOT_MONEY, COFFEE } from './data/darknet.js';
 import { fitsTerrain } from './core/terrain.js';
 import { Tower } from './entities/Tower.js';
 import { Projectile } from './entities/Projectile.js';
@@ -150,6 +150,7 @@ export class Game {
     // abatidos (data/darknet.js)
     this.bankKills();
     this.coffeeGain = (this.app.coffeeEarned ?? 0) - coffeeBefore;
+    this.coffeeKills = Math.min(this.coffeeGain, this.stats.pops * COFFEE.perKill); // parte que veio dos abatidos
   }
 
   // Monstros abatidos viram cafés: soma no save os desta partida que ainda
