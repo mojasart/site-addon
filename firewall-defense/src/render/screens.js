@@ -1,6 +1,6 @@
 import { VIEW_H, GOLD } from '../config.js';
 import { rrect, fillOutline, text, button } from './canvas.js';
-import { drawTower, drawVirus, drawEnemy } from './sprites.js';
+import { drawTower, drawEnemy } from './sprites.js';
 import { ENEMIES } from '../data/enemies.js';
 
 // Botão grande das telas (menu, vitória, derrota). Usado pra desenhar e pro toque.
@@ -59,7 +59,7 @@ export function drawOverlay(ctx, game) {
       const a = t * 0.6 + (i / showcase.length) * Math.PI * 2;
       ctx.save();
       ctx.translate(cx + Math.cos(a) * 250, 150 + Math.sin(a) * 60);
-      drawVirus(ctx, 16, ENEMIES[type].color, t + i);
+      drawEnemy(ctx, { def: ENEMIES[type], r: 16, phase: t + i, angle: 0, slowTimer: 0, flash: 0 });
       ctx.restore();
     });
     text(ctx, 'FIREWALL', cx, 120, { size: 76, color: '#5fd8ff', strokeWidth: 12 });

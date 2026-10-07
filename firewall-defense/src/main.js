@@ -1,6 +1,7 @@
 import { Game } from './game.js';
 import { VIEW_H, MIN_VIEW_W, MAX_VIEW_W } from './config.js';
 import { clamp } from './util.js';
+import { loadImages } from './render/images.js';
 
 const stage = document.getElementById('stage'); // área útil da tela (fora do notch)
 const canvas = document.getElementById('game');
@@ -20,6 +21,7 @@ const view = { scale: 1, offX: 0, offY: 0, dpr: 1 };
 function resize() {
   const cssW = stage.clientWidth;
   const cssH = stage.clientHeight;
+  if (!cssW || !cssH) return; // aba escondida/sem tamanho: espera o próximo resize
   const viewW = clamp(Math.round((VIEW_H * cssW) / cssH), MIN_VIEW_W, MAX_VIEW_W);
   view.scale = Math.min(cssW / viewW, cssH / VIEW_H);
   view.offX = (cssW - viewW * view.scale) / 2;
@@ -112,4 +114,8 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-requestAnimationFrame(frame);
+// Espera as sprites (no máximo 3s; o que faltar usa o desenho antigo)
+Promise.race([loadImages(), new Promise((r) => setTimeout(r, 3000))]).then(() => {
+  last = performance.now();
+  requestAnimationFrame(frame);
+});

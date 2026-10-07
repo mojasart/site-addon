@@ -9,14 +9,15 @@
 //  armored  → blindado: varreduras comuns não furam (precisa fogo, laser...)
 //  boss     → chefão: não fica lento e mostra barra de vida
 //  kind     → qual desenho usar em render/sprites.js
+//  sprite   → imagem em assets/sprites (sem ela usa o desenho do kind)
 //  reward   → bits ganhos ao estourar essa camada (padrão 1)
 // ─────────────────────────────────────────────────────────────
 export const ENEMIES = {
-  v1: { name: 'Vírus', hp: 1, speed: 70, radius: 13, color: '#ff4d5e', children: [] },
-  v2: { name: 'Vírus Azul', hp: 1, speed: 95, radius: 14, color: '#3d8bff', children: [['v1', 1]] },
-  v3: { name: 'Vírus Verde', hp: 1, speed: 120, radius: 14, color: '#2fd27a', children: [['v2', 1]] },
-  v4: { name: 'Vírus Amarelo', hp: 1, speed: 200, radius: 15, color: '#ffd23f', children: [['v3', 1]] },
-  v5: { name: 'Vírus Rosa', hp: 1, speed: 220, radius: 15, color: '#ff6fd0', children: [['v4', 1]] },
+  v1: { name: 'Vírus', sprite: 'virus_red', hp: 1, speed: 70, radius: 13, color: '#ff4d5e', children: [] },
+  v2: { name: 'Vírus Azul', sprite: 'virus_blue', hp: 1, speed: 95, radius: 14, color: '#3d8bff', children: [['v1', 1]] },
+  v3: { name: 'Vírus Verde', sprite: 'virus_green', hp: 1, speed: 120, radius: 14, color: '#2fd27a', children: [['v2', 1]] },
+  v4: { name: 'Vírus Amarelo', sprite: 'virus_yellow', hp: 1, speed: 200, radius: 15, color: '#ffd23f', children: [['v3', 1]] },
+  v5: { name: 'Vírus Rosa', sprite: 'virus_pink', hp: 1, speed: 220, radius: 15, color: '#ff6fd0', children: [['v4', 1]] },
   worm: {
     name: 'Worm',
     desc: 'Se replica quando destruído',
@@ -25,6 +26,7 @@ export const ENEMIES = {
     radius: 15,
     color: '#7be04a',
     kind: 'worm',
+    sprite: 'worm',
     children: [['v3', 2]],
   },
   trojan: {
@@ -35,6 +37,7 @@ export const ENEMIES = {
     radius: 17,
     color: '#a9b6c8',
     kind: 'trojan',
+    sprite: 'trojan',
     armored: true,
     children: [['v4', 2]],
   },
@@ -46,6 +49,7 @@ export const ENEMIES = {
     radius: 38,
     color: '#7a3cc4',
     kind: 'boss',
+    sprite: 'ransomware',
     boss: true,
     reward: 50,
     children: [['trojan', 4]],

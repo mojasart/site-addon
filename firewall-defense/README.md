@@ -70,6 +70,7 @@ firewall-defense/
     ├── entities/            Tower, Enemy, Projectile, Packet
     ├── systems/             RoundManager (rodadas), Effects (POP, ondas, laser)
     └── render/              sprites, mapa (com cache), painel/HUD, telas
+assets/sprites/              PNGs das defesas, vírus, servidor, moeda e coração
 ```
 
 ## Como estender
@@ -77,7 +78,11 @@ firewall-defense/
 - **Nova defesa:** entrada em `src/data/towers.js` com um `attack` existente (`projectile`, `pulse`, `beam`, `trap`, `farm`), desenho em `TOWER_SPRITES` (`src/render/sprites.js`) e o id em `TOWER_ORDER`.
 - **Novo vírus:** entrada em `src/data/enemies.js` (diga quais `children` ele solta ao estourar) e, se quiser um desenho próprio, um `kind` novo em `drawEnemy`.
 - **Novo mapa:** troque os `points` em `src/data/map.js` (o primeiro trecho tem que entrar pela esquerda). A decoração da placa se ajusta sozinha; mude a `seed` pra sortear outra.
-- **Arte de verdade:** os sprites são desenhados com formas em `src/render/sprites.js`, centrados em (0,0). Dá pra trocar cada função por `ctx.drawImage(...)` sem mexer no resto.
+- **Sprites:** os PNGs ficam em `assets/sprites/` e são gerados com o Gemini por `tools/sprites/gen.py` (na raiz do repo).
+  A chave vai em `.env` (`GEMINI_API_KEY=...`, fora do git). Pra criar ou refazer uma sprite, edite o prompt em `ASSETS`
+  e rode `python tools/sprites/gen.py <nome> --force`; `tools/sprites/preview.py saida.png` monta uma folha pra conferir.
+  O código que desenha cada uma está em `src/render/sprites.js` (`IMAGE_TOWERS`, `drawEnemyImage`); se uma imagem faltar,
+  o jogo volta pro desenho antigo feito com formas.
 
 ## Próximos passos sugeridos
 

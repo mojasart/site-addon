@@ -1,14 +1,15 @@
 import { OUTLINE, GOLD } from '../config.js';
 import { rrect, circle, fillOutline, shadow, gloss, text } from './canvas.js';
 import { TAU } from '../util.js';
+import { getImage } from './images.js';
 
 /* ════════════════════════════════════════════════════════════
  *  SPRITES
- *  Tudo desenhado com formas, visto de cima, centrado em (0,0).
- *  O "look" vem de 3 coisas: contorno grosso escuro (OUTLINE), cores
- *  bem saturadas e um brilho branco no canto (gloss).
- *  Quando tiver arte de verdade, troque o conteúdo destas funções
- *  por ctx.drawImage(...) e o resto do jogo continua igual.
+ *  Tudo centrado em (0,0). Cada coisa tem duas versões:
+ *  - a sprite em PNG (assets/sprites, carregada por images.js), usada
+ *    sempre que a imagem existe;
+ *  - o desenho com formas (contorno grosso, cores saturadas e brilho),
+ *    que fica de reserva enquanto a imagem não carrega.
  * ════════════════════════════════════════════════════════════ */
 
 // ── Cache de sprites ───────────────────────────────────────
@@ -41,12 +42,93 @@ function blit(ctx, c, size) {
   ctx.drawImage(c, -size / 2, -size / 2, size, size);
 }
 
+// Desenha a sprite PNG `name` num quadrado de lado `size`, centrada em (dx,dy).
+// A imagem é reduzida uma vez só pro tamanho de tela (fica nítida e leve).
+// Devolve false se a imagem ainda não carregou.
+function sprite(ctx, name, size, dx = 0, dy = 0) {
+  const img = getImage(name);
+  if (!img) return false;
+  const c = cached(`img:${name}:${size}`, size, (g) => {
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(img, -size / 2, -size / 2, size, size);
+  });
+  ctx.drawImage(c, dx - size / 2, dy - size / 2, size, size);
+  return true;
+}
+
 // ════════════════════════ DEFESAS ════════════════════════
 // s: { angle, recoil, pulse, t, level }
 
 export function drawTower(ctx, type, s = {}) {
-  TOWER_SPRITES[type]?.(ctx, s);
+  const fromImage = getImage(`tower_${type}`) || getImage(`tower_${type}_base`);
+  (fromImage ? IMAGE_TOWERS : TOWER_SPRITES)[type]?.(ctx, s);
 }
+
+// Torreta que gira por cima da base. pivot = quanto o centro da imagem
+// fica à frente do eixo de rotação (a cúpula não é o meio da imagem).
+function imageTurret(ctx, s, name, size, pivot, recoil) {
+  ctx.save();
+  ctx.rotate(s.angle ?? -Math.PI / 2);
+  sprite(ctx, name, size, size * pivot - (s.recoil ?? 0) * recoil, 0);
+  ctx.restore();
+}
+
+function pulsed(ctx, s, k, draw) {
+  ctx.save();
+  const z = 1 + (s.pulse ?? 0) * k;
+  ctx.scale(z, z);
+  draw();
+  ctx.restore();
+}
+
+const IMAGE_TOWERS = {
+  antivirus(ctx, s) {
+    shadow(ctx, 3, 8, 26, 22);
+    sprite(ctx, 'tower_antivirus_base', 52);
+    imageTurret(ctx, s, 'tower_antivirus_turret', 50, 0.1, 5);
+  },
+
+  firewall(ctx, s) {
+    shadow(ctx, 3, 9, 28, 24);
+    pulsed(ctx, s, 0.1, () => sprite(ctx, 'tower_firewall', 58));
+  },
+
+  criptografia(ctx, s) {
+    const t = s.t ?? 0;
+    shadow(ctx, 3, 9, 26, 22);
+    pulsed(ctx, s, 0.1, () => {
+      sprite(ctx, 'tower_criptografia', 58);
+      for (let i = 0; i < 3; i++) {
+        const a = t * 1.5 + (i * TAU) / 3;
+        sparkle(ctx, Math.cos(a) * 25, Math.sin(a) * 25, 4);
+      }
+    });
+  },
+
+  scanner(ctx, s) {
+    shadow(ctx, 3, 8, 26, 22);
+    sprite(ctx, 'tower_scanner_base', 50);
+    imageTurret(ctx, s, 'tower_scanner_turret', 46, 0.06, 4);
+  },
+
+  honeypot(ctx, s) {
+    shadow(ctx, 2, 15, 17, 6);
+    pulsed(ctx, s, 0.15, () => sprite(ctx, 'tower_honeypot', 42));
+  },
+
+  minerador(ctx, s) {
+    shadow(ctx, 3, 9, 27, 23);
+    sprite(ctx, 'tower_minerador', 56);
+    if (s.pulse > 0) {
+      ctx.globalAlpha = s.pulse;
+      circle(ctx, 0, 0, 32);
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = GOLD;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  },
+};
 
 const TOWER_SPRITES = {
   antivirus(ctx, s) {
@@ -310,6 +392,10 @@ function sparkle(ctx, x, y, r) {
 
 export function drawEnemy(ctx, e) {
   const def = e.def;
+  if (getImage(def.sprite)) {
+    drawEnemyImage(ctx, e);
+    return;
+  }
   switch (def.kind) {
     case 'worm':
       drawWorm(ctx, e);
@@ -336,6 +422,73 @@ export function drawEnemy(ctx, e) {
     circle(ctx, 0, 0, e.r);
     ctx.fillStyle = 'rgba(255,255,255,0.55)';
     ctx.fill();
+  }
+}
+
+// Como cada sprite de inimigo é desenhada (medidas em múltiplos do raio):
+//   size → lado da imagem    foot → onde ficam os pés, em fração da imagem
+//   hop  → altura do pulo    side → personagem de perfil (vira pro lado que anda)
+const ENEMY_LOOK = {
+  virus: { size: 2.9, foot: 0.475, hop: 0.6 },
+  worm: { size: 4.4, foot: 0.34, hop: 0.35, side: true },
+  trojan: { size: 2.8, foot: 0.477, hop: 0.45, side: true },
+  boss: { size: 3.4, foot: 0.336, hop: 0, side: true },
+};
+
+// Versão com sprite PNG: os bichinhos andam pulando, achatam quando
+// encostam no chão e esticam no ar. O chefão só flutua.
+function drawEnemyImage(ctx, e) {
+  const { def, r } = e;
+  const look = ENEMY_LOOK[def.kind] ?? ENEMY_LOOK.virus;
+  const size = r * look.size;
+  const foot = size * look.foot; // pés no chão = corpo centrado no caminho
+
+  // ciclo do pulo: mais rápido pros vírus rápidos (e mais lento se estiver lento,
+  // porque o phase anda junto com a lentidão)
+  const rate = Math.min(3.2, Math.max(1.5, def.speed / 50));
+  const u = (e.phase * rate) % 1;
+  const air = Math.sin(u * Math.PI); // 0 no chão, 1 no topo
+  const land = Math.max(0, 1 - Math.min(u, 1 - u) / 0.15); // perto de encostar
+  let lift = air * r * look.hop;
+  let sx = 1 + 0.2 * land - 0.06 * air;
+  let sy = 1 - 0.2 * land + 0.1 * air;
+  if (look.hop === 0) {
+    lift = 4 + Math.sin(e.phase * 2) * 4; // flutuando
+    sx = sy = 1;
+  }
+
+  // vira pro lado que está andando (nos trechos verticais mantém o último lado)
+  const c = Math.cos(e.angle);
+  if (c > 0.2) e.facing = 1;
+  else if (c < -0.2) e.facing = -1;
+  const flip = look.side ? (e.facing ?? 1) : 1;
+
+  // sombra no chão: diminui quando o bicho sobe
+  ctx.globalAlpha = 1 - 0.4 * air;
+  shadow(ctx, 0, foot, r * (def.boss ? 1.3 : 0.85) * (1 - 0.3 * air), r * 0.3);
+  ctx.globalAlpha = 1;
+
+  ctx.save();
+  ctx.translate(0, foot - lift);
+  ctx.rotate(flip * -0.12 * air); // inclina pra frente no ar
+  ctx.scale(flip * sx, sy);
+  const dy = -foot; // a imagem é ancorada pelos pés
+  sprite(ctx, def.sprite, size, 0, dy);
+  if (e.flash > 0) {
+    // acerto: pisca mais claro
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.6;
+    sprite(ctx, def.sprite, size, 0, dy);
+  }
+  ctx.restore();
+
+  if (e.slowTimer > 0 && !def.boss) {
+    circle(ctx, 0, -lift, r + 5);
+    ctx.fillStyle = 'rgba(160,230,255,0.35)';
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#bff3ff';
+    ctx.stroke();
   }
 }
 
@@ -534,6 +687,10 @@ export function drawCoin(ctx, r = 14, spin = 0) {
   const sx = Math.max(0.25, Math.abs(Math.cos(spin * 2)));
   ctx.save();
   ctx.scale(sx, 1);
+  if (sprite(ctx, 'coin', r * 2.3)) {
+    ctx.restore();
+    return;
+  }
   hexagon(ctx, 0, 0, r);
   fillOutline(ctx, GOLD, 3);
   hexagon(ctx, 0, 0, r * 0.62);
@@ -544,6 +701,7 @@ export function drawCoin(ctx, r = 14, spin = 0) {
 }
 
 export function drawHeart(ctx, s = 14) {
+  if (sprite(ctx, 'heart', s * 2.5)) return;
   ctx.beginPath();
   ctx.moveTo(0, s * 0.95);
   ctx.bezierCurveTo(-s * 1.4, 0, -s * 0.9, -s * 1.15, 0, -s * 0.45);
@@ -559,6 +717,10 @@ export function drawServer(ctx, t, hurt) {
   ctx.save();
   ctx.translate(shake, 0);
   shadow(ctx, 5, 34, 44, 12);
+  if (sprite(ctx, hurt > 0 && getImage('server_hurt') ? 'server_hurt' : 'server', 100, 0, -8)) {
+    ctx.restore();
+    return;
+  }
   rrect(ctx, -42, -30, 84, 64, 12);
   fillOutline(ctx, '#3a4f86', 4);
   rrect(ctx, -32, -22, 64, 34, 7);
