@@ -4,38 +4,94 @@ import { strokePath, raisedPathBase } from './shared.js';
 
 // Tema PLACA-MÃE: placa verde, trilhas de cobre, resistores e LEDs.
 
+// Os detalhes são espalhados por uma grade: cada célula recebe no máximo
+// uma trilha (e as peças respeitam distância mínima entre si), pra não
+// amontoar tudo nos espaços livres maiores.
+const CELL_W = 150;
+const CELL_H = 135;
+const TRACE_GAP = 22; // distância mínima entre trilhas diferentes
+const PART_GAP = { resistor: 90, led: 70 }; // distância mínima entre peças do mesmo tipo
+
 export function layout(h) {
+  const cells = gridCells(h);
   const traces = [];
-  for (let i = 0; i < 60; i++) {
-    let x = h.rr(h.minX, h.maxX);
-    let y = h.rr(10, VIEW_H - 10);
-    const pts = [[x, y]];
-    let horizontal = h.rnd() < 0.5;
-    for (let k = 0; k < 3; k++) {
-      const len = h.rr(40, 130) * (h.rnd() < 0.5 ? -1 : 1);
-      if (horizontal) x += len;
-      else y += len;
-      pts.push([x, y]);
-      horizontal = !horizontal;
+  const tracePts = []; // pontos de todas as trilhas já aceitas (pra checar distância)
+
+  for (const c of cells) {
+    for (let tries = 0; tries < 25; tries++) {
+      let x = h.rr(c.x0 + 10, c.x1 - 10);
+      let y = h.rr(c.y0 + 10, c.y1 - 10);
+      const pts = [[x, y]];
+      let horizontal = h.rnd() < 0.5;
+      for (let k = 0; k < 3; k++) {
+        const len = h.rr(30, 85) * (h.rnd() < 0.5 ? -1 : 1);
+        if (horizontal) x += len;
+        else y += len;
+        pts.push([x, y]);
+        horizontal = !horizontal;
+      }
+      if (!segmentsFree(pts, h.free)) continue;
+      const samples = sample(pts);
+      if (samples.some(([sx, sy]) => tracePts.some(([tx, ty]) => Math.hypot(sx - tx, sy - ty) < TRACE_GAP))) continue;
+      traces.push(pts);
+      tracePts.push(...samples);
+      break;
     }
-    if (segmentsFree(pts, h.free)) traces.push(pts);
   }
 
-  for (let i = 0, n = 0; i < 300 && n < 10; i++) {
-    const x = h.rr(h.minX, h.maxX);
-    const y = h.rr(14, VIEW_H - 14);
-    if (!h.fits(x, y, 14)) continue;
-    h.add({ kind: 'resistor', x, y, rad: 14, block: 'circle', vertical: h.rnd() < 0.5 });
-    n++;
-  }
-  for (let i = 0, n = 0; i < 300 && n < 12; i++) {
-    const x = h.rr(h.minX, h.maxX);
-    const y = h.rr(10, VIEW_H - 10);
-    if (!h.fits(x, y, 7)) continue;
-    h.add({ kind: 'led', x, y, rad: 7, color: ['#ff4d5e', '#3dff9a', '#ffd23f', '#5fb4ff'][n % 4] });
-    n++;
-  }
+  placeSpread(h, cells, 'resistor', 10, (x, y) => ({ kind: 'resistor', x, y, rad: 14, block: 'circle', vertical: h.rnd() < 0.5 }), 14);
+  let led = 0;
+  placeSpread(h, cells, 'led', 12, (x, y) => ({ kind: 'led', x, y, rad: 7, color: ['#ff4d5e', '#3dff9a', '#ffd23f', '#5fb4ff'][led++ % 4] }), 7);
   return { traces };
+}
+
+// Células da grade em ordem embaralhada (com a semente do mapa)
+function gridCells(h) {
+  const cols = Math.max(1, Math.round((h.maxX - h.minX) / CELL_W));
+  const rows = Math.max(1, Math.round(VIEW_H / CELL_H));
+  const cw = (h.maxX - h.minX) / cols;
+  const ch = VIEW_H / rows;
+  const cells = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      cells.push({ x0: h.minX + c * cw, x1: h.minX + (c + 1) * cw, y0: r * ch, y1: (r + 1) * ch });
+    }
+  }
+  for (let i = cells.length - 1; i > 0; i--) {
+    const j = Math.floor(h.rnd() * (i + 1));
+    [cells[i], cells[j]] = [cells[j], cells[i]];
+  }
+  return cells;
+}
+
+// Uma peça por célula (dando a volta na grade), longe das outras do mesmo tipo
+function placeSpread(h, cells, kind, count, make, rad) {
+  const placed = [];
+  for (let i = 0; i < cells.length * 3 && placed.length < count; i++) {
+    const c = cells[i % cells.length];
+    for (let tries = 0; tries < 12; tries++) {
+      const x = h.rr(c.x0 + rad, c.x1 - rad);
+      const y = h.rr(Math.max(c.y0, 10) + rad, Math.min(c.y1, VIEW_H - 10) - rad);
+      if (!h.fits(x, y, rad)) continue;
+      if (placed.some((q) => Math.hypot(q.x - x, q.y - y) < PART_GAP[kind])) continue;
+      const part = make(x, y);
+      h.add(part);
+      placed.push(part);
+      break;
+    }
+  }
+}
+
+// Pontos a cada ~10px ao longo da trilha
+function sample(pts) {
+  const out = [];
+  for (let i = 1; i < pts.length; i++) {
+    const [ax, ay] = pts[i - 1];
+    const [bx, by] = pts[i];
+    const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) / 10));
+    for (let k = 0; k <= n; k++) out.push([ax + ((bx - ax) * k) / n, ay + ((by - ay) * k) / n]);
+  }
+  return out;
 }
 
 function segmentsFree(pts, free) {
