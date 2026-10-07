@@ -19,7 +19,7 @@ import { Hazards } from '../systems/Hazards.js';
 // também a espessura do tapete. Zona de vários quadrados vira um tapete só:
 // entre quadrados da mesma zona não tem borda, o brilho emenda e as listras
 // seguem uma grade fixa da tela, então a fita continua de um pro outro.
-const BAND = 7; // largura da fita listrada
+const BAND = 4; // largura da fita listrada
 const THICK = 3; // espessura do tapete (a beirada da frente)
 
 // Desenho em camadas, todas as zonas por camada (base → brilho → fita →
@@ -146,19 +146,19 @@ function glowColor(a) {
 
 // Listras pretas na diagonal sobre o amarelo, andando devagar (recortadas
 // pelas faixas: o path atual). Cada listra é a faixa onde x + y fica entre
-// c e c + 6, com c numa grade fixa da tela: quadrados vizinhos emendam
+// c e c + 4, com c numa grade fixa da tela: quadrados vizinhos emendam
 function stripes(ctx, r, t) {
   ctx.save();
   ctx.clip();
   ctx.fillStyle = OUTLINE;
-  const off = (t * 6) % 12;
+  const off = (t * 4) % 8;
   const top = r.y;
   const bot = r.y + r.h;
   ctx.beginPath();
-  for (let c = Math.floor((r.x + top) / 12) * 12 - 12 + off; c < r.x + r.w + bot; c += 12) {
+  for (let c = Math.floor((r.x + top) / 8) * 8 - 8 + off; c < r.x + r.w + bot; c += 8) {
     ctx.moveTo(c - bot, bot);
-    ctx.lineTo(c + 6 - bot, bot);
-    ctx.lineTo(c + 6 - top, top);
+    ctx.lineTo(c + 4 - bot, bot);
+    ctx.lineTo(c + 4 - top, top);
     ctx.lineTo(c - top, top);
   }
   ctx.fill();

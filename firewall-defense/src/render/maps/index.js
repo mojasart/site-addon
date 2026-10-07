@@ -103,20 +103,29 @@ export function renderThumb(map, w, h, ps) {
 // pegada (os quadrados por onde passa) até o topo subido PATH_DEPTH
 function cutPath(view) {
   const src = view.canvas;
+  // máscara: a pegada da rua somada com o topo subindo até PATH_DEPTH (os
+  // traços se SOMAM aqui; recortar traço por traço com destination-in
+  // pegaria só a parte comum e deixaria de fora o topo que sobe pro
+  // quadrado de cima, e aí o que está no chão ali apareceria por cima da rua)
+  const mask = document.createElement('canvas');
+  mask.width = src.width;
+  mask.height = src.height;
+  const m = mask.getContext('2d');
+  m.scale(src.width / view.mapW, src.height / VIEW_H);
+  m.translate(view.offsetX, 0);
+  for (let k = 0; k >= -PATH_DEPTH; k -= 1) {
+    m.save();
+    m.translate(0, k);
+    strokePath(m, view.path, TILE, '#000');
+    m.restore();
+  }
   const c = document.createElement('canvas');
   c.width = src.width;
   c.height = src.height;
   const g = c.getContext('2d');
   g.drawImage(src, 0, 0);
   g.globalCompositeOperation = 'destination-in';
-  g.scale(src.width / view.mapW, src.height / VIEW_H);
-  g.translate(view.offsetX, 0);
-  for (let k = 0; k >= -PATH_DEPTH; k -= 2) {
-    g.save();
-    g.translate(0, k);
-    strokePath(g, view.path, TILE, '#000');
-    g.restore();
-  }
+  g.drawImage(mask, 0, 0);
   return c;
 }
 
