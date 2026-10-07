@@ -1,0 +1,14 @@
+{
+  "name": "Firewall Defense",
+  "short_name": "Firewall",
+  "description": "Tower defense: proteja a rede contra vírus usando firewalls, antivírus e honeypots.",
+  "lang": "pt-BR",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#060a14",
+  "theme_color": "#060a14",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
