@@ -52,8 +52,9 @@ export const TOWERS = {
     canHitArmored: true,
     sound: 'fire',
     upgrades: [
-      { name: 'Chamas Intensas', desc: '+1 de dano por onda', cost: 280, apply: (s) => { s.damage += 1; } },
-      { name: 'Muralha de Fogo', desc: 'Mais alcance e ondas mais rápidas', cost: 500, apply: (s) => { s.range += 25; s.fireRate *= 0.6; } },
+      { name: 'Muralha de Fogo', desc: 'Mais alcance e ondas mais rápidas', cost: 280, apply: (s) => { s.range += 20; s.fireRate *= 0.8; } },
+      // queima: o vírus fica pegando fogo (burn de dano/s por burnTime s), mesmo fora do alcance
+      { name: 'Incêndio', desc: 'Vírus pegam fogo: 1 de dano/s por 3s', cost: 500, apply: (s) => { s.burn = 1; s.burnTime = 3; } },
     ],
   },
   pinguim: {

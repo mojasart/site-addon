@@ -38,6 +38,7 @@ export function drawEnemy(ctx, e) {
     ctx.strokeStyle = '#d8f8ff';
     ctx.stroke();
   }
+  if (e.burnTimer > 0) drawBurning(ctx, e, -e.r * 0.3);
   if (e.flash > 0) {
     circle(ctx, 0, -e.r * 0.3, e.r);
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
@@ -111,6 +112,37 @@ function drawSpriteEnemy(ctx, e) {
     ctx.strokeStyle = '#d8f8ff';
     ctx.stroke();
   }
+  if (e.burnTimer > 0) drawBurning(ctx, e, ground - lift - size * look.foot);
+}
+
+// Pegando fogo (Golem com Incêndio): chaminhas tremendo em cima do corpo.
+// Somem aos poucos no último meio segundo da queima
+function drawBurning(ctx, e, cy) {
+  const r = Math.min(e.r, 22); // no chefão as chamas não ficam gigantes
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, e.burnTimer * 2);
+  for (let i = 0; i < 3; i++) {
+    const x = (i - 1) * r * 0.55;
+    const flick = Math.sin(e.phase * 19 + i * 2.3) * 0.18;
+    const h = r * (i === 1 ? 0.95 : 0.65) * (1 + flick);
+    const w = r * (i === 1 ? 0.32 : 0.24);
+    const y = cy - e.r * 0.55 + Math.abs(i - 1) * r * 0.2;
+    flame(ctx, x, y, h, w);
+    fillOutline(ctx, '#ff7a1a', 1.5);
+    flame(ctx, x, y + w * 0.25, h * 0.5, w * 0.5);
+    ctx.fillStyle = '#ffd23f';
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function flame(ctx, x, y, h, w) {
+  ctx.beginPath();
+  ctx.moveTo(x, y - h);
+  ctx.bezierCurveTo(x + w * 0.7, y - h * 0.45, x + w * 1.1, y - h * 0.05, x + w * 0.75, y + w * 0.45);
+  ctx.quadraticCurveTo(x, y + w * 1.05, x - w * 0.75, y + w * 0.45);
+  ctx.bezierCurveTo(x - w * 1.1, y - h * 0.05, x - w * 0.7, y - h * 0.45, x, y - h);
+  ctx.closePath();
 }
 
 // Vírus que anda pulando (todos menos worm e chefão)

@@ -145,6 +145,7 @@ export class Tower {
         for (const e of targets.slice(0, s.maxTargets)) {
           if (s.slow) e.slow(s.slow, s.slowTime);
           if (s.vulnerable) e.weaken(s.slowTime);
+          if (s.burn) e.ignite(s.burn, s.burnTime, this); // antes do dano: os filhos já nascem pegando fogo
           if (s.damage) e.takeDamage(s.damage, game, this.opts());
         }
         game.fx.ring(this.x, this.y, s.range, s.effect);

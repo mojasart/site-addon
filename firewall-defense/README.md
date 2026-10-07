@@ -38,7 +38,7 @@ python3 -m http.server 8080
 | Defesa | Custo | O que faz | Upgrades |
 | --- | --- | --- | --- |
 | **Hacker** | $200 | Arremessa teclados (1 vírus por teclado) | Dedos Rápidos · Exploit Triplo |
-| **Golem Firewall** | $350 | Onda de fogo em volta, queima blindados | Chamas Intensas · Muralha de Fogo |
+| **Golem Firewall** | $350 | Onda de fogo em volta, queima blindados | Muralha de Fogo (mais alcance e ondas mais rápidas) · Incêndio (vírus pegam fogo: 1 de dano/s por 3 s, mesmo fora do alcance) |
 | **Penguin Linux** | $300 | Suporte: não dá dano, congela os vírus em volta (lentidão) | Criptografia AES · Era do Gelo (mais alcance e congelados ficam vulneráveis: levam dano dobrado) |
 | **Robô NMAP** | $450 | Laser de longo alcance: tiro lento, dano alto, fura blindagem | Alta Precisão (+3 de dano) · Varredura Contínua (40% mais rápido) |
 | **Minerador** | $650 | Minera bitcoins que vão direto pro saldo | GPU Extra · Fazenda de Mineração (+$120 a cada rodada nova) |
