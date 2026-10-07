@@ -86,10 +86,11 @@ export function drawPanel(ctx, game) {
 
 function drawShop(ctx, game, L) {
   const P = L.panel;
-  text(ctx, game.placing ? TOWERS[game.placing].name : 'DEFESAS', P.x + P.w / 2 + 2, 22, { size: game.placing ? 19 : 24 });
+  const shown = game.placing ?? game.inspect; // posicionando ou só olhando os atributos
+  text(ctx, shown ? TOWERS[shown].name : 'DEFESAS', P.x + P.w / 2 + 2, 22, { size: shown ? 19 : 24 });
   for (const tile of L.tiles) {
     const def = TOWERS[tile.type];
-    const placing = game.placing === tile.type;
+    const placing = shown === tile.type;
     const affordable = game.money >= def.cost;
     button(ctx, tile, placing ? '#ffcf4a' : '#5fb4ff', { radius: 14, depth: 5 });
     ctx.save();

@@ -6,7 +6,8 @@ import { rrect, fillOutline, text } from './canvas.js';
 /* ════════════════════════════════════════════════════════════
  *  ABA DE INFORMAÇÕES DA DEFESA
  *  Aparece na borda direita do mapa quando o jogador escolhe uma defesa
- *  na loja (antes de comprar) ou toca numa já colocada: o nome e os
+ *  na loja (antes de comprar, mesmo sem dinheiro: aí o custo fica
+ *  vermelho) ou toca numa já colocada: o nome e os
  *  números do nível atual. A alça do lado recolhe e abre a aba (fica
  *  salvo em save.infoOpen). Abrir, fechar, aparecer e sumir são animados:
  *  a aba desliza pela borda direita do mapa.
@@ -26,6 +27,8 @@ function subject(game) {
   const tw = game.selectedTower;
   if (tw) return { type: tw.type, level: tw.level, stats: tw.stats, placed: true };
   if (game.placing) return { type: game.placing, level: 0, stats: statsAt(game.placing, 0), placed: false };
+  // tocada na loja sem dinheiro pra comprar: só os atributos
+  if (game.inspect) return { type: game.inspect, level: 0, stats: statsAt(game.inspect, 0), placed: false };
   return null;
 }
 
@@ -104,7 +107,8 @@ function drawCard(ctx, L, game) {
     ctx.fillStyle = 'rgba(255,255,255,0.06)';
     ctx.fill();
     text(ctx, k, x, y, { size: 12, align: 'left', color: '#bcd0f5' });
-    text(ctx, v, x + w, y, { size: 13, align: 'right', color: k === 'BLINDADOS' && v === 'não fura' ? '#ff9aa5' : GOLD });
+    const red = (k === 'BLINDADOS' && v === 'não fura') || (k === 'CUSTO' && game.money < def.cost); // custo em vermelho: falta dinheiro
+    text(ctx, v, x + w, y, { size: 13, align: 'right', color: red ? '#ff9aa5' : GOLD });
     y += ROW_H;
   }
 }
