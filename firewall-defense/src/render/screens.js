@@ -1,11 +1,11 @@
 import { VIEW_H, GOLD } from '../config.js';
-import { rrect, fillOutline, text } from './canvas.js';
+import { rrect, fillOutline, text, setFont } from './canvas.js';
 import { bigButton, iconButton, stars, ribbon, starTier } from './widgets.js';
 import { drawEnemy } from './viruses.js';
 import { drawCharacter } from './characters.js';
 import { ENEMIES } from '../data/enemies.js';
 import { easeOutBack, clamp } from '../util.js';
-import { ICONS } from './sprites.js';
+import { ICONS, drawHeart } from './sprites.js';
 
 // Posições dos botões das telas de pausa/vitória/derrota (desenho e toque)
 export function overlayLayout(game) {
@@ -90,18 +90,20 @@ export function drawOverlay(ctx, game) {
       drawEnemy(ctx, { type: 'v1', def: ENEMIES.v1, r: 15, phase: t, face: 1, slowTimer: 0, flash: 0 });
       ctx.restore();
     }
-    const survived = Math.floor(Math.min(game.platTime, 180));
-    const lines = plat
-      ? [`Chefão derrotado em ${game.map.name}!`, `Vidas restantes: ${game.lives}/${game.map.lives}`]
-      : won
-        ? [`${game.map.name} protegida!`, `Vidas restantes: ${game.lives}/${game.map.lives}`]
-        : game.platinum
-          ? [game.bossCalled ? 'O chefão invadiu o servidor.' : `Os vírus venceram em ${Math.floor(survived / 60)}:${String(survived % 60).padStart(2, '0')}.`, 'Tente outras defesas ou upgrades!']
-          : [`Os vírus venceram na rodada ${game.rounds.current}.`, 'Tente outras defesas ou upgrades!'];
-    text(ctx, lines[0], cx, 262, { size: 24 });
-    text(ctx, lines[1], cx, 296, { size: 18, color: '#d8e6ff' });
-    text(ctx, `Vírus estourados: ${game.stats.pops}`, cx, 330, { size: 18, color: GOLD });
-    if (won && game.coffeeGain > 0) drawCoffeeGain(ctx, cx, 364, game.coffeeGain, game.overlayTime);
+    if (won) {
+      // vidas que sobraram (coraçãozinho + número), ameaças contidas e os cafés novos
+      drawLives(ctx, cx, 266, game.lives);
+      text(ctx, `Ameaças contidas: ${game.stats.pops}`, cx, 310, { size: 19, color: GOLD });
+      if (game.coffeeGain > 0) drawCoffeeGain(ctx, cx, 350, game.coffeeGain, game.overlayTime);
+    } else {
+      const survived = Math.floor(Math.min(game.platTime, 180));
+      const lines = game.platinum
+        ? [game.bossCalled ? 'O chefão invadiu o servidor.' : `Os vírus venceram em ${Math.floor(survived / 60)}:${String(survived % 60).padStart(2, '0')}.`, 'Tente outras defesas ou upgrades!']
+        : [`Os vírus venceram na rodada ${game.rounds.current}.`, 'Tente outras defesas ou upgrades!'];
+      text(ctx, lines[0], cx, 262, { size: 24 });
+      text(ctx, lines[1], cx, 296, { size: 18, color: '#d8e6ff' });
+      text(ctx, `Ameaças contidas: ${game.stats.pops}`, cx, 330, { size: 18, color: GOLD });
+    }
     if (won) {
       // a galera comemorando dos lados das estrelas
       for (const [type, x, face] of [['hacker', c.x + 72, 1], ['pinguim', c.x + c.w - 72, -1]]) {
@@ -128,12 +130,27 @@ function drawCoffeeGain(ctx, x, y, n, time) {
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(k, k);
-  rrect(ctx, -80, -17, 160, 34, 17);
-  fillOutline(ctx, '#5a3a1e', 3.5);
+  iconAndNumber(ctx, (g) => ICONS.coffee(g, 10), `+${n}`, 26, '#ffe0b0');
+  ctx.restore();
+}
+
+// Vidas que sobraram: o coraçãozinho do HUD com o número do lado
+function drawLives(ctx, x, y, lives) {
   ctx.save();
-  ctx.translate(-54, -1);
-  ICONS.coffee(ctx, 8);
+  ctx.translate(x, y);
+  iconAndNumber(ctx, (g) => drawHeart(g, 13), `${lives}`, 30, '#ffffff');
   ctx.restore();
-  text(ctx, `+${n} ${n === 1 ? 'CAFÉ' : 'CAFÉS'}`, 12, 1, { size: 19, color: '#ffe0b0' });
+}
+
+// Ícone + número, os dois juntos centralizados na origem
+function iconAndNumber(ctx, icon, str, size, color) {
+  const ICON_W = 32;
+  const GAP = 8;
+  setFont(ctx, size);
+  const w = ICON_W + GAP + ctx.measureText(str).width;
+  ctx.save();
+  ctx.translate(-w / 2 + ICON_W / 2, 0);
+  icon(ctx);
   ctx.restore();
+  text(ctx, str, -w / 2 + ICON_W + GAP, 2, { size, color, align: 'left' });
 }
