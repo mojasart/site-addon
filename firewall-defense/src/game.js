@@ -132,7 +132,8 @@ export class Game {
     this.drag = null;
     if (won) {
       const L = this.map.lives;
-      this.stars = this.lives >= L ? 3 : this.lives >= L * 0.5 ? 2 : 1;
+      // 3 estrelas com 90% das vidas ou mais, 2 com pelo menos metade, 1 com menos
+      this.stars = this.lives >= L * 0.9 ? 3 : this.lives >= L * 0.5 ? 2 : 1;
       const coffeeBefore = this.app.coffeeEarned ?? 0;
       if (this.platinum) {
         this.stars = 3; // vencer a platina já vale as 3 (em platina)
