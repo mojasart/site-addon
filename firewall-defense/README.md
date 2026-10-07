@@ -102,7 +102,11 @@ firewall-defense/
 - **Nova defesa:** entrada em `src/data/towers.js` (escolha um `attack`), desenho em `CHARACTERS` (`src/render/characters.js`) e o id em `TOWER_ORDER`. Use `terrain: 'water'` pra defesas de água.
 - **Novo vírus:** entrada em `src/data/enemies.js` (diga quais `children` ele solta) e, se quiser visual próprio, um `kind` novo em `src/render/viruses.js`.
 - **Novo mapa:** objeto em `src/data/maps.js` com `points` (caminho), `zones` (água/terra) e um `theme`. Pra um visual novo, crie um arquivo em `src/render/maps/` com `layout`, `paint` e `animate`.
-- **Arte de verdade:** cada personagem/vírus é uma função de desenho centrada em (0,0). Dá pra trocar por `ctx.drawImage(...)` de um spritesheet sem mexer no resto.
+- **Sprites:** os PNGs ficam em `assets/sprites/` (defensores, inimigos, pontos de instalação, servidor, moeda, coração)
+  e são gerados com o Gemini por `tools/sprites/gen.py` (na raiz do repo). A chave vai em `.env` (`GEMINI_API_KEY=...`, fora do git).
+  Pra criar ou refazer uma sprite, edite o prompt em `ASSETS` e rode `python tools/sprites/gen.py <nome> --force`;
+  `python tools/sprites/preview.py saida.png` monta uma folha pra conferir. Quem desenha cada uma: `render/defenders.js`,
+  `render/enemies.js` (inimigos andando aos pulinhos) e `render/level.js`. Sem a imagem, o jogo usa o desenho provisório.
 
 ## Próximos passos sugeridos
 
