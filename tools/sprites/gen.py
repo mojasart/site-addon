@@ -157,7 +157,7 @@ ASSETS = {
                          'framing and style. Change only: he raises both fists in the air celebrating with a big happy '
                          'open-mouth smile, and the monitor glows brighter with the Bitcoin symbol and a couple of small '
                          'golden Bitcoin coins popping out of the screen. Do not add anything else. ', 'minerador'),
-    # Scanner (gerado em outra sessão; aqui só serve de referência pras idades)
+    # Robô NMAP (gerado em outra sessão; aqui só serve de referência pras idades)
     'scanner': ('magenta', 'Full body, chibi proportions, three-quarter view facing and looking to the RIGHT, standing on '
                 'two feet. A cute round blue cartoon robot with a big red camera eye, one cartoon eye, a small white '
                 'satellite dish on its head, chunky arms and legs. '),

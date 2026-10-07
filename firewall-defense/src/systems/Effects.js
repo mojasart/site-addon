@@ -105,7 +105,7 @@ export class Effects {
 
     ctx.lineCap = 'round';
     for (const b of this.beams) {
-      // laser do Robô Scanner
+      // laser do Robô NMAP
       ctx.globalAlpha = b.life / b.max;
       ctx.strokeStyle = '#ff3b5c';
       ctx.lineWidth = 8;

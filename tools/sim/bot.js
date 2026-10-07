@@ -106,7 +106,7 @@ export function playMap(mapIndex, profileName, seed) {
       if (profile.eco && miners < 1 && game.towers.length >= 2) type = 'minerador';
       else if (profile.eco && miners < 2 && game.towers.length >= 8) type = 'minerador';
       else type = pickWeighted(profile.w);
-      // blindados chegando: garante quem fura blindagem (Golem ou Scanner)
+      // blindados chegando: garante quem fura blindagem (Golem ou Robô NMAP)
       if (needPierce) type = rnd() < 0.5 ? 'firewall' : 'scanner';
       const def = TOWERS[type];
       if (def.cost > game.money) return;
