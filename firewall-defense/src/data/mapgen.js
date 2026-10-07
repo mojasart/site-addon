@@ -108,7 +108,9 @@ function tryGenerate(spec, rnd) {
   const [bx, by] = main.nodes[main.nodes.length - 1];
   taken.add(tileKey(nodeCol(bx), nodeRow(by) - 1));
   for (const c of cells.slice(0, spec.islands ?? 0)) zones.push(island(c, rnd, taken));
-  for (const c of cells.slice(0, spec.hazards ?? 0)) hazards.push(hazardRect(c));
+  // zonas elétricas: cada uma nasce num quadrado e cresce (sorteado por
+  // último, pra não mudar o resto do mapa)
+  hazards.push(...hazardZones(cells.slice(0, spec.hazards ?? 0), rnd, taken));
   return { routes, zones, hazards, entries: routesNodes.length, loop: main.crossed };
 }
 
@@ -335,7 +337,35 @@ function island([cx, cy], rnd, taken) {
   return { terrain: 'land', shape: 'rect', ...tileRect(c0 + dc, r0 + dr, w, h), r: 14 };
 }
 
-// Zona eletrificada: o quadrado livre da célula
-function hazardRect([cx, cy]) {
-  return tileRect(nodeCol(cx) + 1, nodeRow(cy) + 1);
+// Zonas eletrificadas: cada uma começa no quadrado livre da célula e tem
+// GROW_CHANCE de ganhar +1 quadrado vizinho livre; se ganhar, tenta de
+// novo (e de novo...) até falhar ou não ter mais vizinho livre. Cada
+// quadrado vira um retângulo { x, y, w, h, group }: os do mesmo grupo
+// disparam juntos e aparecem como um tapete só (data/maps.js, edges).
+const GROW_CHANCE = 0.5;
+const MAX_HAZARD_TILES = 12; // trava de segurança (chance de chegar aqui: 1 em 2048)
+function hazardZones(cells, rnd, taken) {
+  const used = new Set();
+  const seeds = cells.map(([cx, cy]) => [nodeCol(cx) + 1, nodeRow(cy) + 1]);
+  for (const [c, r] of seeds) used.add(tileKey(c, r));
+  const out = [];
+  seeds.forEach((seed, group) => {
+    const tiles = [seed];
+    while (tiles.length < MAX_HAZARD_TILES && rnd() < GROW_CHANCE) {
+      const cands = [];
+      for (const [c, r] of tiles) {
+        for (const [dc, dr] of DIRS) {
+          const k = tileKey(c + dc, r + dr);
+          if (!tileInGrid(c + dc, r + dr) || taken.has(k) || used.has(k)) continue;
+          if (!cands.some(([x, y]) => tileKey(x, y) === k)) cands.push([c + dc, r + dr]);
+        }
+      }
+      if (!cands.length) break;
+      const next = cands[Math.floor(rnd() * cands.length)];
+      used.add(tileKey(...next));
+      tiles.push(next);
+    }
+    for (const [c, r] of tiles) out.push({ ...tileRect(c, r), group });
+  });
+  return out;
 }

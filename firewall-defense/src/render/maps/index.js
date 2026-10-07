@@ -4,7 +4,7 @@ import { PathSet } from '../../core/Path.js';
 import { terrainAt } from '../../core/terrain.js';
 import { TILE, COLS, ROWS, tileCenter, tileOf, tileKey, pathTiles } from '../../core/grid.js';
 import { drawServer } from '../sprites.js';
-import { strokePath } from './shared.js';
+import { strokePath, PATH_DEPTH } from './shared.js';
 import * as motherboard from './motherboard.js';
 import * as datacenter from './datacenter.js';
 import * as ocean from './ocean.js';
@@ -99,8 +99,8 @@ export function renderThumb(map, w, h, ps) {
   return c;
 }
 
-// Recorta da imagem do mapa a área do caminho: a pegada dele, exatamente
-// os quadrados por onde passa (traço de TILE de largura)
+// Recorta da imagem do mapa a área do caminho: a silhueta inteira, da
+// pegada (os quadrados por onde passa) até o topo subido PATH_DEPTH
 function cutPath(view) {
   const src = view.canvas;
   const c = document.createElement('canvas');
@@ -111,7 +111,12 @@ function cutPath(view) {
   g.globalCompositeOperation = 'destination-in';
   g.scale(src.width / view.mapW, src.height / VIEW_H);
   g.translate(view.offsetX, 0);
-  strokePath(g, view.path, TILE, '#000');
+  for (let k = 0; k >= -PATH_DEPTH; k -= 2) {
+    g.save();
+    g.translate(0, k);
+    strokePath(g, view.path, TILE, '#000');
+    g.restore();
+  }
   return c;
 }
 

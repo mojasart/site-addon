@@ -6,9 +6,12 @@ import { sparkle } from './characters.js';
 
 // Quadrados com pilha de bitcoin no chão (core/coinTiles.js). Com um
 // Minerador sendo posicionado (highlight), as bordas piscam pra mostrar
-// onde ele minera.
-export function drawCoinTiles(ctx, tiles, t, highlight = false) {
+// onde ele minera. Com uma defesa em cima, a pilha some inteira (moedas e a
+// marca do quadrado). O jogo desenha isto antes da rua elevada: com uma
+// rua logo abaixo, o topo dela tapa a parte de baixo da pilha.
+export function drawCoinTiles(ctx, tiles, t, highlight = false, towers = []) {
   for (const tile of tiles) {
+    if (towers.some((tw) => Math.abs(tw.x - tile.x) < TILE / 2 && Math.abs(tw.y - tile.y) < TILE / 2)) continue;
     const s = TILE - 6;
     ctx.save();
     ctx.translate(tile.x, tile.y);
@@ -37,12 +40,10 @@ const RY = 3.6; // achatamento da perspectiva
 const THICK = 2.7; // espessura de cada moeda
 // [x, y do chão, quantas moedas]; as de 1 moeda são as soltas no chão
 const PILE = [
-  [-6, -3, 7],
-  [9, -1, 5],
-  [-12, 9, 4],
-  [4, 11, 2],
-  [16, 13, 1],
-  [-2, 19, 1],
+  [-5, -1, 5],
+  [9, 2, 3],
+  [-10, 10, 2],
+  [6, 13, 1],
 ].sort((a, b) => a[1] - b[1]);
 
 function drawPile(ctx, t) {
@@ -52,7 +53,7 @@ function drawPile(ctx, t) {
   for (const [x, y, n] of PILE) drawStack(ctx, x, y, n);
   // brilho passando de vez em quando no topo do montinho mais alto
   const p = t % 2.4;
-  if (p < 0.5) sparkle(ctx, -2, -3 - 6 * THICK - 4, 5 * Math.sin((p / 0.5) * Math.PI), '#fff6c8');
+  if (p < 0.5) sparkle(ctx, -5, -1 - 4 * THICK - 4, 5 * Math.sin((p / 0.5) * Math.PI), '#fff6c8');
 }
 
 function drawStack(ctx, x, y, n) {

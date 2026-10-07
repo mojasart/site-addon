@@ -105,18 +105,19 @@ const PAD = TILE; // a plataforma ocupa o quadrado inteiro
 const PAD_DEPTH = 8; // parede da plataforma (igual à da rua)
 const SERVER_IMG = 54; // tamanho da sprite: o cubo (234 de 256px) fica com ~49px
 
-// Plataforma do servidor: o quadrado inteiro, com topo azul (borda clara e
-// faixa ciano, como uma doca) e parede escura embaixo. Fica vermelha ao apanhar.
+// Plataforma do servidor, como a rua elevada: o pé ocupa o quadrado inteiro
+// e o topo fica PAD_DEPTH acima (invade um pouco o quadrado de cima), com a
+// parede escura embaixo. Topo azul com borda ciano (uma doca); fica vermelho
+// ao apanhar.
 function drawServerPad(ctx, hurt) {
   const h = PAD / 2;
-  const top = PAD - PAD_DEPTH;
-  // parede (a peça inteira com contorno; o topo cobre a parte de cima)
-  rrect(ctx, -h, -h, PAD, PAD, 9);
+  // silhueta inteira (pé + topo subido) com contorno
+  rrect(ctx, -h, -h - PAD_DEPTH, PAD, PAD + PAD_DEPTH, 9);
   fillOutline(ctx, '#2a3866', 3);
   // topo
-  rrect(ctx, -h, -h, PAD, top, 9);
+  rrect(ctx, -h, -h - PAD_DEPTH, PAD, PAD, 9);
   fillOutline(ctx, hurt > 0 ? '#a8455a' : '#4f6aa8', 3);
-  rrect(ctx, -h + 5, -h + 5, PAD - 10, top - 10, 6);
+  rrect(ctx, -h + 5, -h - PAD_DEPTH + 5, PAD - 10, PAD - 10, 6);
   ctx.lineWidth = 2;
   ctx.strokeStyle = hurt > 0 ? 'rgba(255,150,160,0.8)' : 'rgba(110,230,255,0.75)';
   ctx.stroke();

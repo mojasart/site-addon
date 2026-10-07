@@ -16,101 +16,150 @@ import { Hazards } from '../systems/Hazards.js';
 // sempre, e dos lados e embaixo só onde o vizinho é chão; onde é o caminho
 // elevado ela fica escondida, porque o caminho está por cima do chão
 // (z.edges vem de data/maps.js). Com a borda de baixo à mostra, aparece
-// também a espessura do tapete.
+// também a espessura do tapete. Zona de vários quadrados vira um tapete só:
+// entre quadrados da mesma zona não tem borda, o brilho emenda e as listras
+// seguem uma grade fixa da tela, então a fita continua de um pro outro.
 const BAND = 7; // largura da fita listrada
 const THICK = 3; // espessura do tapete (a beirada da frente)
 
+// Desenho em camadas, todas as zonas por camada (base → brilho → fita →
+// raio/choque): assim um quadrado nunca pinta por cima do vizinho da mesma
+// zona. Onde o vizinho é da mesma zona, base, brilho e fita avançam meio
+// pixel sobre ele, pra não sobrar fio de emenda.
 export function drawHazards(ctx, hazards, t) {
-  for (const z of hazards.zones) {
-    const warn = Hazards.warning(z);
-    const blink = warn > 0 && Math.sin(t * 40) > 0;
-    const e = z.edges ?? { top: true, left: true, right: true, bottom: true };
-    const x0 = z.x;
-    const y0 = z.y;
-    const x1 = z.x + z.w;
-    const y1 = z.y + z.h - (e.bottom ? THICK : 0); // topo do tapete (a espessura fica embaixo)
-    ctx.save();
-
-    // espessura da frente (só com chão embaixo)
-    if (e.bottom) {
+  if (!hazards.zones.length) return;
+  const tiles = hazards.zones.map((z) => tileShape(z, t));
+  ctx.save();
+  for (const k of tiles) {
+    // espessura da frente (só com chão embaixo) e a borracha escura
+    if (k.e.bottom) {
       ctx.fillStyle = '#0f1424';
-      ctx.fillRect(x0, y1, z.w, THICK);
+      ctx.fillRect(k.x0, k.y1, k.z.w, THICK);
     }
-    // superfície de borracha escura com brilho azul fraquinho
     ctx.fillStyle = '#26304c';
-    ctx.fillRect(x0, y0, z.w, y1 - y0);
-    const inner = {
-      x: x0 + (e.left ? BAND : 0),
-      y: y0 + BAND,
-      w: z.w - (e.left ? BAND : 0) - (e.right ? BAND : 0),
-      h: y1 - y0 - BAND - (e.bottom ? BAND : 0),
-    };
-    ctx.fillStyle = `rgba(90,220,255,${0.1 + 0.05 * Math.sin(t * 2.5) + warn * 0.15})`;
-    ctx.fillRect(inner.x + 3, inner.y + 3, inner.w - 6, inner.h - 6);
-
-    // fita listrada nas bordas à mostra (pisca no aviso)
-    const bands = [];
-    if (e.top) bands.push([x0, y0, z.w, BAND]);
-    if (e.left) bands.push([x0, y0, BAND, y1 - y0]);
-    if (e.right) bands.push([x1 - BAND, y0, BAND, y1 - y0]);
-    if (e.bottom) bands.push([x0, y1 - BAND, z.w, BAND]);
+    fillBleed(ctx, k.e, { x: k.x0, y: k.y0, w: k.z.w, h: k.y1 - k.y0 });
+  }
+  for (const k of tiles) {
+    // brilho azul fraquinho, com margem só nas bordas de fora
+    const m = (side) => (k.e[side] ? 3 : 0);
+    const r = k.inner;
+    ctx.fillStyle = glowColor(0.1 + 0.05 * Math.sin(t * 2.5) + k.warn * 0.15);
+    fillBleed(ctx, k.e, { x: r.x + m('left'), y: r.y + m('top'), w: r.w - m('left') - m('right'), h: r.h - m('top') - m('bottom') });
+  }
+  // fita listrada: as faixas de todas as zonas viram uma forma só, pintada
+  // e listrada de uma vez (assim não sobra fio na emenda entre quadrados)
+  const b = (k, side) => (k.e[side] ? 0 : 0.5);
+  for (const blinking of [false, true]) {
     ctx.beginPath();
-    for (const [bx, by, bw, bh] of bands) ctx.rect(bx, by, bw, bh);
-    ctx.fillStyle = blink ? '#fff59a' : '#f2c21b';
-    ctx.fill();
-    stripes(ctx, { x: x0, y: y0, w: z.w, h: y1 - y0 }, t);
-
-    // raio no meio
-    ctx.globalAlpha = 0.45 + warn * 0.55;
-    bolt(ctx, inner.x + inner.w / 2, inner.y + inner.h / 2, Math.min(inner.w, inner.h) * 0.3, blink ? '#fff59a' : GOLD);
-    ctx.globalAlpha = 1;
-
-    // faíscas no aviso e clarão + raios na descarga
-    if (warn > 0) arcs(ctx, inner, t, 1 + Math.floor(warn * 2), 0.5 + warn * 0.4);
-    if (z.flash > 0) {
-      ctx.fillStyle = `rgba(160,245,255,${0.55 * z.flash})`;
-      ctx.fillRect(x0, y0, z.w, y1 - y0);
-      arcs(ctx, inner, t, 4, z.flash);
+    for (const k of tiles) {
+      if (k.blink !== blinking) continue;
+      const { e, x0, y0, x1, y1 } = k;
+      if (e.top) ctx.rect(x0 - b(k, 'left'), y0, k.z.w + b(k, 'left') + b(k, 'right'), BAND);
+      if (e.left) ctx.rect(x0, y0 - b(k, 'top'), BAND, y1 - y0 + b(k, 'top') + b(k, 'bottom'));
+      if (e.right) ctx.rect(x1 - BAND, y0 - b(k, 'top'), BAND, y1 - y0 + b(k, 'top') + b(k, 'bottom'));
+      if (e.bottom) ctx.rect(x0 - b(k, 'left'), y1 - BAND, k.z.w + b(k, 'left') + b(k, 'right'), BAND);
     }
-
-    // contorno só nas bordas à mostra (as outras encostam no caminho)
-    ctx.beginPath();
+    ctx.fillStyle = blinking ? '#fff59a' : '#f2c21b'; // pisca no aviso
+    ctx.fill();
+    stripes(ctx, bounds(tiles), t);
+  }
+  // contorno só nas bordas à mostra (as outras encostam no caminho ou na mesma zona)
+  ctx.beginPath();
+  for (const k of tiles) {
+    const { e, x0, y0, x1, y1 } = k;
     if (e.top) {
-      ctx.moveTo(x0, y0 + 1);
-      ctx.lineTo(x1, y0 + 1);
+      ctx.moveTo(x0 - b(k, 'left'), y0 + 1);
+      ctx.lineTo(x1 + b(k, 'right'), y0 + 1);
     }
     if (e.left) {
-      ctx.moveTo(x0 + 1, y0);
-      ctx.lineTo(x0 + 1, y1 + (e.bottom ? THICK : 0));
+      ctx.moveTo(x0 + 1, y0 - b(k, 'top'));
+      ctx.lineTo(x0 + 1, y1 + (e.bottom ? THICK : b(k, 'bottom')));
     }
     if (e.right) {
-      ctx.moveTo(x1 - 1, y0);
-      ctx.lineTo(x1 - 1, y1 + (e.bottom ? THICK : 0));
+      ctx.moveTo(x1 - 1, y0 - b(k, 'top'));
+      ctx.lineTo(x1 - 1, y1 + (e.bottom ? THICK : b(k, 'bottom')));
     }
     if (e.bottom) {
-      ctx.moveTo(x0, y1 + THICK - 1);
-      ctx.lineTo(x1, y1 + THICK - 1);
+      ctx.moveTo(x0 - b(k, 'left'), y1 + THICK - 1);
+      ctx.lineTo(x1 + b(k, 'right'), y1 + THICK - 1);
     }
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = OUTLINE;
-    ctx.stroke();
-    ctx.restore();
   }
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = OUTLINE;
+  ctx.stroke();
+  for (const k of tiles) {
+    // raio no meio, faíscas no aviso e clarão + raios na descarga
+    const r = k.inner;
+    ctx.globalAlpha = 0.45 + k.warn * 0.55;
+    bolt(ctx, r.x + r.w / 2, r.y + r.h / 2, Math.min(r.w, r.h) * 0.3, k.blink ? '#fff59a' : GOLD);
+    ctx.globalAlpha = 1;
+    if (k.warn > 0) arcs(ctx, r, t, 1 + Math.floor(k.warn * 2), 0.5 + k.warn * 0.4);
+    if (k.z.flash > 0) {
+      ctx.fillStyle = `rgba(160,245,255,${0.55 * k.z.flash})`;
+      ctx.fillRect(k.x0, k.y0, k.z.w, k.y1 - k.y0);
+      arcs(ctx, r, t, 4, k.z.flash);
+    }
+  }
+  ctx.restore();
+}
+
+// Medidas de um quadrado de zona: bordas à mostra, topo do tapete (a
+// espessura fica embaixo) e a área de dentro das fitas (brilho e raio)
+function tileShape(z, t) {
+  const e = z.edges ?? { top: true, left: true, right: true, bottom: true };
+  const warn = Hazards.warning(z);
+  const x0 = z.x;
+  const y0 = z.y;
+  const x1 = z.x + z.w;
+  const y1 = z.y + z.h - (e.bottom ? THICK : 0);
+  const inner = {
+    x: x0 + (e.left ? BAND : 0),
+    y: y0 + (e.top ? BAND : 0),
+    w: z.w - (e.left ? BAND : 0) - (e.right ? BAND : 0),
+    h: y1 - y0 - (e.top ? BAND : 0) - (e.bottom ? BAND : 0),
+  };
+  return { z, e, warn, blink: warn > 0 && Math.sin(t * 40) > 0, x0, y0, x1, y1, inner };
+}
+
+// Retângulo que cobre todas as zonas (as listras são desenhadas nele e
+// recortadas pelas faixas)
+function bounds(tiles) {
+  const xs = tiles.flatMap((k) => [k.x0, k.x1]);
+  const ys = tiles.flatMap((k) => [k.y0, k.y1]);
+  const x = Math.min(...xs) - 1;
+  const y = Math.min(...ys) - 1;
+  return { x, y, w: Math.max(...xs) - x + 2, h: Math.max(...ys) - y + 2 };
+}
+
+// Retângulo que avança meio pixel sobre os vizinhos sem borda à mostra
+function fillBleed(ctx, e, r) {
+  const b = (side) => (e[side] ? 0 : 0.5);
+  ctx.fillRect(r.x - b('left'), r.y - b('top'), r.w + b('left') + b('right'), r.h + b('top') + b('bottom'));
+}
+
+// Azul do brilho já misturado com a borracha (opaco: quadrados vizinhos não
+// somam transparência na emenda)
+function glowColor(a) {
+  const mix = (base, glow) => Math.round(base + (glow - base) * a);
+  return `rgb(${mix(38, 90)},${mix(48, 220)},${mix(76, 255)})`;
 }
 
 // Listras pretas na diagonal sobre o amarelo, andando devagar (recortadas
-// pelas faixas: o path atual)
+// pelas faixas: o path atual). Cada listra é a faixa onde x + y fica entre
+// c e c + 6, com c numa grade fixa da tela: quadrados vizinhos emendam
 function stripes(ctx, r, t) {
   ctx.save();
   ctx.clip();
   ctx.fillStyle = OUTLINE;
   const off = (t * 6) % 12;
+  const top = r.y;
+  const bot = r.y + r.h;
   ctx.beginPath();
-  for (let x = r.x - r.h - 12 + off; x < r.x + r.w; x += 12) {
-    ctx.moveTo(x, r.y + r.h);
-    ctx.lineTo(x + 6, r.y + r.h);
-    ctx.lineTo(x + 6 + r.h, r.y);
-    ctx.lineTo(x + r.h, r.y);
+  for (let c = Math.floor((r.x + top) / 12) * 12 - 12 + off; c < r.x + r.w + bot; c += 12) {
+    ctx.moveTo(c - bot, bot);
+    ctx.lineTo(c + 6 - bot, bot);
+    ctx.lineTo(c + 6 - top, top);
+    ctx.lineTo(c - top, top);
   }
   ctx.fill();
   ctx.restore();
