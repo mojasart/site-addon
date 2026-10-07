@@ -161,7 +161,7 @@ function towerInfo(tw) {
       return { sub: `Minera ${s.packetsPerRound} bitcoins de $${s.packetValue} por rodada${s.roundBonus ? ` e mais $${s.roundBonus} quando ela começa` : ''}` };
     default:
       if (s.slow) return { sub: `Suporte: deixa os vírus lentos${s.vulnerable ? ' e eles levam dano dobrado' : ''}` };
-      if (s.burn) return { sub: `Vírus pegam fogo: ${s.burn} de dano/s por ${s.burnTime}s` };
+      if (s.burn) return { sub: `Vírus pegam fogo: ${String(s.burn).replace('.', ',')} de dano/s por até ${s.burnTime}s (não acumula)` };
       return { sub: tw.hitsArmored ? 'Fura blindagem dos Trojans' : 'Não fura blindagem (Trojans)' };
   }
 }

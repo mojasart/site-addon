@@ -128,10 +128,13 @@ export class Enemy {
     this.vulnTimer = Math.max(this.vulnTimer, time);
   }
 
-  // Incêndio: pega fogo por `time` s (outra onda renova o tempo)
+  // Incêndio: pega fogo por `time` s. Não acumula: enquanto estiver
+  // queimando, outra onda não renova o tempo nem soma dano (no máximo
+  // `time` s seguidos); só pega fogo de novo depois de apagar
   ignite(dps, time, source) {
-    this.burnDps = Math.max(this.burnTimer > 0 ? this.burnDps : 0, dps);
-    this.burnTimer = Math.max(this.burnTimer, time);
+    if (this.burnTimer > 0) return;
+    this.burnDps = dps;
+    this.burnTimer = time;
     this.burnSource = source;
   }
 

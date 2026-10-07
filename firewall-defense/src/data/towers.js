@@ -53,8 +53,9 @@ export const TOWERS = {
     sound: 'fire',
     upgrades: [
       { name: 'Muralha de Fogo', desc: 'Mais alcance e ondas mais rápidas', cost: 280, apply: (s) => { s.range += 20; s.fireRate *= 0.8; } },
-      // queima: o vírus fica pegando fogo (burn de dano/s por burnTime s), mesmo fora do alcance
-      { name: 'Incêndio', desc: 'Vírus pegam fogo: 1 de dano/s por 3s', cost: 500, apply: (s) => { s.burn = 1; s.burnTime = 3; } },
+      // queima: o vírus fica pegando fogo (burn de dano/s por burnTime s), mesmo fora do alcance;
+      // não acumula (ver Enemy.ignite)
+      { name: 'Incêndio', desc: 'Vírus pegam fogo: 0,33 de dano/s por até 3s', cost: 500, apply: (s) => { s.burn = 0.33; s.burnTime = 3; } },
     ],
   },
   pinguim: {
@@ -129,9 +130,16 @@ export const TOWERS = {
 
 export const TOWER_ORDER = ['hacker', 'firewall', 'pinguim', 'scanner', 'minerador', 'honeypot'];
 
+// Modos de mira (botão ALVO no painel da defesa). Empate: o mais perto da base.
+//   first  → o mais adiantado no caminho      last  → o mais atrasado
+//   strong → o que dá mais dano se chegar (vidas que tira: o DANO do catálogo)
+//   hp     → o de maior vida MÁXIMA (não a atual: chefão machucado continua alvo)
+//   fast   → o mais rápido agora              close → o mais perto da defesa
 export const TARGET_MODES = [
   { id: 'first', label: 'PRIMEIRO' },
   { id: 'last', label: 'ÚLTIMO' },
   { id: 'strong', label: 'MAIS FORTE' },
+  { id: 'hp', label: 'MAIS VIDA' },
+  { id: 'fast', label: 'MAIS RÁPIDO' },
   { id: 'close', label: 'MAIS PERTO' },
 ];
