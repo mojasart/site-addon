@@ -39,7 +39,7 @@ python3 -m http.server 8080
   depois de acabar com a 1). Isso dá um **bônus** de até 15% do dinheiro que os vírus da próxima rodada
   valem, que vai diminuindo conforme os vírus da rodada atual morrem (com 1 sobrando, é só $1).
 - Cada camada de vírus estourada dá $1, e cada rodada completa dá um bônus.
-- Ao vencer você ganha de 1 a 3 estrelas (3 = não perdeu nenhuma vida), e o próximo mapa é liberado.
+- Ao vencer você ganha de 1 a 3 estrelas (3 = terminou com 90% das vidas ou mais; 2 = pelo menos metade), e o próximo mapa é liberado.
   As estrelas do mapa ficam de **bronze** (1), **prata** (2) ou **ouro** (3).
 
 ### Modo platina
@@ -99,7 +99,9 @@ Os cafés vêm do melhor resultado de cada mapa (`src/data/darknet.js`), então 
 | 3 estrelas | 2 (quem já tinha 1 ganha só mais 1) |
 | Platina | +2 |
 
-A tela de vitória mostra os cafés novos (*+1 CAFÉ*). O save guarda só os cafés gastos (`coffeeSpent`); o saldo é o que ganhou menos o que gastou.
+Além disso, **cada monstro abatido vale café**: 0,25 café a cada 1000 abatidos, ou seja 0,25 / 1000 = **0,00025 por monstro** (cada camada estourada conta, em qualquer partida, até nas derrotas). O total de abatidos fica no save (`kills`) e é somado no fim da partida ou ao sair dela.
+
+A tela de vitória mostra os cafés novos da partida (ex.: *+2,1*: 2 das estrelas e 0,1 dos abatidos). O save guarda os cafés gastos (`coffeeSpent`); o saldo é o que ganhou menos o que gastou, com até 2 casas.
 
 ## Seasons e mapas
 

@@ -110,7 +110,8 @@ function coinFace(ctx, x, y) {
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(1, RY / RX);
-  const drawn = drawImage(ctx, 'icon_coin', RX * 2.3);
+  // a face chapada (a moeda 3D já tem espessura, que achatada ficaria errada)
+  const drawn = drawImage(ctx, 'icon_coin_flat', RX * 2.3) || drawImage(ctx, 'icon_coin', RX * 2.3);
   ctx.restore();
   if (drawn) return;
   ellipse(ctx, x, y, RX, RY);

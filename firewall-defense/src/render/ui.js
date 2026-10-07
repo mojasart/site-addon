@@ -45,7 +45,7 @@ export function drawHud(ctx, game) {
   ctx.translate(30, 72);
   const bump = 1 + game.coinBump * 0.25;
   ctx.scale(bump, bump);
-  drawCoin(ctx, 14);
+  drawCoin(ctx, 16.5); // do tamanho do coração de cima
   ctx.restore();
   text(ctx, `$${game.money}`, 54, 73, { size: 28 + game.coinBump * 4, color: GOLD, align: 'left' });
 
