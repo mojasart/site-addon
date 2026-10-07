@@ -1,9 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <defs>
-    <linearGradient id="w" gradientUnits="userSpaceOnUse" x1="0" y1="8" x2="0" y2="56"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dbe3f2"/></linearGradient>
-    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6c08c"/><stop offset="1" stop-color="#b8692e"/></linearGradient>
-    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fe3ff"/><stop offset="1" stop-color="#1fa3ef"/></linearGradient>
-  </defs>
-  <path d="M32.0 7.0 L39.6 23.5 L57.7 25.7 L44.4 38.0 L47.9 55.8 L32.0 47.0 L16.1 55.8 L19.6 38.0 L6.3 25.7 L24.4 23.5 Z" stroke="#1b2340" stroke-width="8" fill="#1b2340"/>
-  <path d="M32.0 7.0 L39.6 23.5 L57.7 25.7 L44.4 38.0 L47.9 55.8 L32.0 47.0 L16.1 55.8 L19.6 38.0 L6.3 25.7 L24.4 23.5 Z" stroke="url(#gold)" stroke-width="3" fill="url(#gold)"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M32.00 7.50 L38.76 24.20 L56.73 25.47 L42.94 37.05 L47.28 54.53 L32.00 45.00 L16.72 54.53 L21.06 37.05 L7.27 25.47 L25.24 24.20 Z" stroke="#1b2340" stroke-width="7" fill="#1b2340"/>
+  <path d="M32 33.5 L32.00 7.50 L25.24 24.20 Z" fill="#f8cca2" stroke="#f8cca2" stroke-width="0.6"/>
+  <path d="M32 33.5 L32.00 7.50 L38.76 24.20 Z" fill="#edbd92" stroke="#edbd92" stroke-width="0.6"/>
+  <path d="M32 33.5 L56.73 25.47 L38.76 24.20 Z" fill="#c98d5e" stroke="#c98d5e" stroke-width="0.6"/>
+  <path d="M32 33.5 L56.73 25.47 L42.94 37.05 Z" fill="#bb794a" stroke="#bb794a" stroke-width="0.6"/>
+  <path d="M32 33.5 L47.28 54.53 L42.94 37.05 Z" fill="#ab6332" stroke="#ab6332" stroke-width="0.6"/>
+  <path d="M32 33.5 L47.28 54.53 L32.00 45.00 Z" fill="#ad6735" stroke="#ad6735" stroke-width="0.6"/>
+  <path d="M32 33.5 L16.72 54.53 L32.00 45.00 Z" fill="#c7895a" stroke="#c7895a" stroke-width="0.6"/>
+  <path d="M32 33.5 L16.72 54.53 L21.06 37.05 Z" fill="#d69e71" stroke="#d69e71" stroke-width="0.6"/>
+  <path d="M32 33.5 L7.27 25.47 L21.06 37.05 Z" fill="#f6caa0" stroke="#f6caa0" stroke-width="0.6"/>
+  <path d="M32 33.5 L7.27 25.47 L25.24 24.20 Z" fill="#fdd4ab" stroke="#fdd4ab" stroke-width="0.6"/>
+  <ellipse cx="25" cy="21" rx="4.2" ry="2.2" transform="rotate(-35 25 21)" fill="#ffffff" fill-opacity="0.55"/>
+  <circle cx="29.5" cy="17.5" r="1.4" fill="#ffffff" fill-opacity="0.55"/>
 </svg>

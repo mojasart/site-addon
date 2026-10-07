@@ -1,9 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <defs>
-    <linearGradient id="w" gradientUnits="userSpaceOnUse" x1="0" y1="8" x2="0" y2="56"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dbe3f2"/></linearGradient>
-    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe680"/><stop offset="1" stop-color="#f5b52e"/></linearGradient>
-    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fe3ff"/><stop offset="1" stop-color="#1fa3ef"/></linearGradient>
-  </defs>
-  <path d="M32.0 7.0 L39.6 23.5 L57.7 25.7 L44.4 38.0 L47.9 55.8 L32.0 47.0 L16.1 55.8 L19.6 38.0 L6.3 25.7 L24.4 23.5 Z" stroke="#1b2340" stroke-width="8" fill="#1b2340"/>
-  <path d="M32.0 7.0 L39.6 23.5 L57.7 25.7 L44.4 38.0 L47.9 55.8 L32.0 47.0 L16.1 55.8 L19.6 38.0 L6.3 25.7 L24.4 23.5 Z" stroke="#2c3866" stroke-width="3" fill="#2c3866"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M32.00 7.50 L38.76 24.20 L56.73 25.47 L42.94 37.05 L47.28 54.53 L32.00 45.00 L16.72 54.53 L21.06 37.05 L7.27 25.47 L25.24 24.20 Z" stroke="#1b2340" stroke-width="7" fill="#1b2340"/>
+  <path d="M32 33.5 L32.00 7.50 L25.24 24.20 Z" fill="#26305a" stroke="#26305a" stroke-width="0.6"/>
+  <path d="M32 33.5 L32.00 7.50 L38.76 24.20 Z" fill="#29335f" stroke="#29335f" stroke-width="0.6"/>
+  <path d="M32 33.5 L56.73 25.47 L38.76 24.20 Z" fill="#34406f" stroke="#34406f" stroke-width="0.6"/>
+  <path d="M32 33.5 L56.73 25.47 L42.94 37.05 Z" fill="#384475" stroke="#384475" stroke-width="0.6"/>
+  <path d="M32 33.5 L47.28 54.53 L42.94 37.05 Z" fill="#3d4a7c" stroke="#3d4a7c" stroke-width="0.6"/>
+  <path d="M32 33.5 L47.28 54.53 L32.00 45.00 Z" fill="#3c497b" stroke="#3c497b" stroke-width="0.6"/>
+  <path d="M32 33.5 L16.72 54.53 L32.00 45.00 Z" fill="#354070" stroke="#354070" stroke-width="0.6"/>
+  <path d="M32 33.5 L16.72 54.53 L21.06 37.05 Z" fill="#303b69" stroke="#303b69" stroke-width="0.6"/>
+  <path d="M32 33.5 L7.27 25.47 L21.06 37.05 Z" fill="#26305b" stroke="#26305b" stroke-width="0.6"/>
+  <path d="M32 33.5 L7.27 25.47 L25.24 24.20 Z" fill="#242e57" stroke="#242e57" stroke-width="0.6"/>
 </svg>
