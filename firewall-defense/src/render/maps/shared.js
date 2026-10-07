@@ -59,16 +59,18 @@ export function raisedPathBase(g, path, { depth, side, sideDark, outline, shadow
   g.strokeStyle = 'rgba(10,15,30,0.35)';
   g.lineWidth = 2;
   g.beginPath();
-  const pts = path.points;
-  for (let i = 1; i < pts.length; i++) {
-    const a = pts[i - 1];
-    const b = pts[i];
-    if (Math.abs(a.y - b.y) > 1) continue;
-    const y = a.y + w / 2;
-    const [x0, x1] = a.x < b.x ? [a.x, b.x] : [b.x, a.x];
-    for (let x = x0 + w / 2 + 14; x < x1 - w / 2 - 4; x += 28) {
-      g.moveTo(x, y + 4);
-      g.lineTo(x, y + depth);
+  for (const line of lines(path)) {
+    const pts = line.points;
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1];
+      const b = pts[i];
+      if (Math.abs(a.y - b.y) > 1) continue;
+      const y = a.y + w / 2;
+      const [x0, x1] = a.x < b.x ? [a.x, b.x] : [b.x, a.x];
+      for (let x = x0 + w / 2 + 14; x < x1 - w / 2 - 4; x += 28) {
+        g.moveTo(x, y + 4);
+        g.lineTo(x, y + depth);
+      }
     }
   }
   g.stroke();
@@ -87,11 +89,17 @@ function mix(a, b, t) {
   return `rgb(${ch(16)},${ch(8)},${ch(0)})`;
 }
 
-// Desenha o traçado do caminho (cada tema chama com suas cores)
+// Linhas a desenhar: todas as rotas do mapa (sem repetir o trecho comum)
+// ou uma rota só, se vier um Path simples
+export function lines(path) {
+  return path.lines ?? [path];
+}
+
+// Desenha o traçado do caminho (cada tema chama com suas cores). Todas as
+// rotas entram no mesmo traço, então os encontros (Y, loop) ficam limpos.
 export function strokePath(g, path, width, style, dash) {
-  const pts = path.points;
   g.beginPath();
-  pts.forEach((p, i) => (i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y)));
+  for (const line of lines(path)) line.points.forEach((p, i) => (i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y)));
   g.lineJoin = 'round';
   g.lineCap = 'butt';
   g.lineWidth = width;

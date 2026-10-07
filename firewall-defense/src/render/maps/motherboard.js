@@ -1,6 +1,6 @@
 import { VIEW_H, OUTLINE, GOLD } from '../../config.js';
 import { rrect, circle, fillOutline } from '../canvas.js';
-import { strokePath, raisedPathBase } from './shared.js';
+import { strokePath, raisedPathBase, lines } from './shared.js';
 
 // Tema PLACA-MÃE: placa verde, trilhas de cobre, resistores e LEDs.
 
@@ -155,8 +155,8 @@ export function paint(g, { path, decor, W, ox }) {
   g.lineJoin = 'round';
   g.strokeStyle = '#9db0c9';
   g.lineWidth = 4;
-  for (let d = 30; d < path.length - 40; d += 64) {
-    const p = path.pointAt(d);
+  for (const line of lines(path)) for (let d = 30; d < line.length - 40; d += 64) {
+    const p = line.pointAt(d);
     g.save();
     g.translate(p.x, p.y);
     g.rotate(p.angle);

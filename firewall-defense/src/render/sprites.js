@@ -104,11 +104,14 @@ export function drawServer(ctx, t, hurt) {
   const shake = hurt > 0 ? Math.sin(t * 80) * 2 : 0;
   ctx.save();
   ctx.translate(shake, 0);
-  shadow(ctx, 5, 34, 44, 12);
-  if (drawImage(ctx, hurt > 0 && hasImage('server_hurt') ? 'server_hurt' : 'server', 96, 0, -10)) {
+  if (hasImage('server')) {
+    // sombra embaixo da caixa (a caixa fica ~6px à esquerda do meio da imagem)
+    shadow(ctx, -6, 34, 40, 10);
+    drawImage(ctx, hurt > 0 && hasImage('server_hurt') ? 'server_hurt' : 'server', 96, 0, -10);
     ctx.restore();
     return;
   }
+  shadow(ctx, 5, 34, 44, 12);
   rrect(ctx, -42, -30, 84, 64, 12);
   fillOutline(ctx, '#3a4f86', 4);
   rrect(ctx, -32, -22, 64, 34, 7);
@@ -267,6 +270,12 @@ export const ICONS = {
     if (on) {
       for (const r of [s * 0.5, s * 0.9]) stroked(ctx, () => ctx.arc(s * 0.15, 0, r, -0.8, 0.8), 2.5);
     } else slash(ctx, s);
+  },
+  // turno automático (seta circular em volta de um play); `on` = ligado
+  auto(ctx, s = 12, on = true) {
+    if (svgIcon(ctx, on ? 'auto' : 'auto_off', s)) return;
+    ICONS.restart(ctx, s);
+    if (!on) slash(ctx, s);
   },
   lock(ctx, s = 16) {
     if (svgIcon(ctx, 'lock', s, 2.5)) return;

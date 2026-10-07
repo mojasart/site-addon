@@ -21,8 +21,7 @@ export class Tower {
     this.spawnAnim = 1; // "pulinho" ao ser colocado
     this.stunned = 0; // atordoada por zona eletrificada (segundos)
     this.targetMode = this.def.defaultTarget ?? 'first';
-    this.capacity = this.def.capacity ?? 0;
-    this.trapHits = new Set();
+    this.hp = this.maxHp = this.def.hp ?? 0; // vida da isca (Honeypot)
     this.dropped = 0;
     this.dropTimer = 0;
     this.anim = rand(0, 10);
@@ -60,6 +59,17 @@ export class Tower {
     if (Math.abs(x - this.x) > 4) this.face = x < this.x ? -1 : 1;
   }
 
+  // Isca (Honeypot) apanhando de um vírus parado nela
+  bite(amount, game) {
+    if (this.dead) return;
+    this.hp -= amount;
+    this.pulse = Math.max(this.pulse, 0.35);
+    if (this.hp > 0) return;
+    this.dead = true;
+    game.fx.burst(this.x, this.y, '#f5a524', 20, 170, 0.55, 5, true);
+    game.sound.play('pop');
+  }
+
   stun(time) {
     this.stunned = Math.max(this.stunned, time);
   }
@@ -89,10 +99,12 @@ export class Tower {
         // o projétil sai da mão (14px acima da base)
         const handY = this.y - 14;
         const t = Math.hypot(target.x - this.x, target.y - handY) / s.projectileSpeed;
-        const p = game.path.pointAt(target.dist + target.speed * t);
+        const p = target.route.pointAt(target.dist + target.speed * t);
         const angle = Math.atan2(p.y - handY, p.x - this.x);
         const shots = s.multishot ?? 1;
-        for (let i = 0; i < shots; i++) game.spawnProjectile(this, angle + (i - (shots - 1) / 2) * 0.22);
+        // tiros teleguiados: no triplo, cada teclado vai num alvo diferente (se houver)
+        const targets = shots > 1 ? game.findTargets(this, shots) : [target];
+        for (let i = 0; i < shots; i++) game.spawnProjectile(this, angle + (i - (shots - 1) / 2) * 0.22, targets[i] ?? target);
         this.lookAt(p.x);
         this.fire();
         break;
@@ -112,7 +124,7 @@ export class Tower {
         const targets = game.enemiesInRange(this.x, this.y, s.range);
         if (targets.length === 0) break;
         // vira o corpo pro inimigo mais adiantado que está acertando
-        this.lookAt(targets.reduce((a, b) => (b.dist > a.dist ? b : a)).x);
+        this.lookAt(targets.reduce((a, b) => (b.remaining < a.remaining ? b : a)).x);
         for (const e of targets.slice(0, s.maxTargets)) {
           if (s.slow) e.slow(s.slow, s.slowTime);
           if (s.vulnerable) e.weaken(s.slowTime);
@@ -123,22 +135,9 @@ export class Tower {
         this.fire();
         break;
       }
-      case 'trap': {
-        for (const e of game.enemies) {
-          if (e.dead || this.trapHits.has(e)) continue;
-          if (Math.hypot(e.x - this.x, e.y - this.y) < e.r + this.r) {
-            this.trapHits.add(e);
-            e.takeDamage(s.damage, game, this.opts());
-            this.pulse = 1;
-            if (--this.capacity <= 0) {
-              this.dead = true;
-              game.fx.burst(this.x, this.y, '#f5a524', 18, 160, 0.5);
-              break;
-            }
-          }
-        }
+      case 'decoy':
+        // a isca não ataca: quem faz tudo são os vírus mordendo (bite)
         break;
-      }
       case 'farm': {
         if (!game.rounds.active || this.dropped >= s.packetsPerRound) break;
         this.dropTimer -= dt;

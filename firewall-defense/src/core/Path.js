@@ -1,6 +1,6 @@
 import { clamp, distToSegment } from '../util.js';
 
-// Caminho por onde os vírus andam: uma linha com vários pontos.
+// Uma rota: linha com vários pontos por onde os vírus andam.
 // A posição de cada inimigo é só "quantos pixels já andou" (dist).
 export class Path {
   constructor(points, width) {
@@ -35,4 +35,57 @@ export class Path {
     }
     return best;
   }
+}
+
+// Todas as rotas de um mapa (uma por entrada de vírus). As rotas terminam
+// todas na base; num "Y" elas dividem o mesmo trecho final.
+export class PathSet {
+  constructor(routes, width) {
+    this.routes = routes.map((pts) => new Path(pts, width));
+    this.width = width;
+    // Linhas pra DESENHAR: a 1ª rota inteira e, das outras, só o galho até
+    // onde entram numa rota já desenhada (o trecho comum sai uma vez só,
+    // senão tracejados e sombras ficam duplicados no tronco do "Y").
+    const drawn = [];
+    this.lines = routes.map((pts) => {
+      let cut = pts.length - 1;
+      for (let j = 0; j < pts.length; j++) {
+        if (drawn.some((d) => sameTail(pts, j, d))) {
+          cut = j;
+          break;
+        }
+      }
+      drawn.push(pts);
+      return new Path(pts.slice(0, cut + 1), width);
+    });
+  }
+
+  // compatibilidade: quem só precisa de uma rota usa a primeira
+  get points() {
+    return this.routes[0].points;
+  }
+
+  get end() {
+    const p = this.routes[0].points;
+    return p[p.length - 1];
+  }
+
+  distanceTo(x, y) {
+    let best = Infinity;
+    for (const r of this.routes) best = Math.min(best, r.distanceTo(x, y));
+    return best;
+  }
+}
+
+// pts[j..] é igual ao final de `other`?
+function sameTail(pts, j, other) {
+  const n = pts.length - j;
+  if (n < 2 || n > other.length) return false;
+  const off = other.length - n;
+  for (let k = 0; k < n; k++) {
+    const a = pts[j + k];
+    const b = other[off + k];
+    if (a[0] !== b[0] || a[1] !== b[1]) return false;
+  }
+  return true;
 }

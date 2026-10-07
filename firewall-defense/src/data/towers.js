@@ -5,7 +5,8 @@
 //    projectile → arremessa projéteis no alvo (teclados do Hacker)
 //    pulse      → onda que atinge todo mundo no alcance (fogo, gelo)
 //    beam       → laser instantâneo de longo alcance
-//    trap       → fica EM CIMA do caminho e estoura quem passar (onPath)
+//    decoy      → isca EM CIMA do caminho (onPath): não dá dano; os vírus
+//                 param pra atacar até a vida (hp) dela acabar
 //    farm       → minera bitcoins durante as rodadas
 //
 //  upgrades: 2 níveis, cada um com custo e uma função que altera os status
@@ -107,14 +108,12 @@ export const TOWERS = {
   },
   honeypot: {
     name: 'Honeypot',
-    desc: 'Armadilha no caminho: estoura 6 vírus e some',
+    desc: 'Isca no caminho: os vírus param pra atacar até ela quebrar',
     cost: 80,
     radius: 15,
-    attack: 'trap',
+    attack: 'decoy',
     onPath: true,
-    capacity: 6,
-    damage: 1,
-    canHitArmored: true,
+    hp: 40, // cada vírus parado tira ~1 por segundo (chefões bem mais)
     upgrades: [],
   },
 };

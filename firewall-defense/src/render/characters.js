@@ -20,9 +20,11 @@ import { drawImage, hasImage } from './images.js';
 export function drawCharacter(ctx, type, s = {}) {
   const t = s.t ?? 0;
   const own = OWN_SHADOW.has(type);
-  // sombra colada nos pés (as sprites pisam em y≈14; o desenho antigo em y≈15)
+  // sombra colada nos pés (as sprites pisam em y≈14; o desenho antigo em y≈15).
+  // Nas sprites os pés nem sempre ficam no meio da imagem: a sombra vai
+  // embaixo deles (feet) e acompanha o lado pra onde o personagem olha
   if (!own) {
-    if (hasImage(type)) shadow(ctx, 0, 12, 14, 4.5);
+    if (hasImage(type)) shadow(ctx, (s.face ?? 1) * spriteFeetX(type, s.attack ?? 0), 12, 14, 4.5);
     else shadow(ctx, 0, 15, 17, 5.5);
   }
   const pop = 1 + Math.sin((s.spawn ?? 0) * Math.PI) * 0.28;
@@ -44,6 +46,27 @@ export function drawCharacter(ctx, type, s = {}) {
  *  (alpha = sin(p·π)); os desvios de fase (i / n) espalham as partículas.
  *  Tudo bem transparente pra não poluir o mapa. */
 const AMBIENT = {
+  // Minerador: moedinhas de bitcoin subindo devagar e sumindo
+  minerador: {
+    front(ctx, t) {
+      for (let i = 0; i < 3; i++) {
+        const p = (t * 0.35 + i / 3) % 1;
+        // saem do lado da frente (onde a picareta bate), sem passar no rosto
+        const x = 25 + Math.sin(i * 2.1 + p * 4) * 5;
+        const y = 4 - p * 46;
+        ctx.globalAlpha = Math.sin(p * Math.PI) * 0.8;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(Math.max(0.3, Math.abs(Math.cos(t * 3 + i * 2))), 1); // girando
+        if (!drawImage(ctx, 'icon_coin', 10)) {
+          circle(ctx, 0, 0, 4);
+          fillOutline(ctx, GOLD, 1.5);
+        }
+        ctx.restore();
+      }
+      ctx.globalAlpha = 1;
+    },
+  },
   // Hacker: aura verde pulsando atrás + pontinhos verdes subindo
   hacker: {
     back(ctx, t) {
@@ -106,24 +129,38 @@ const AMBIENT = {
 // Sprites olhando pra direita, pés em y=14.
 //   size → lado da imagem    foot → onde ficam os pés, em fração da imagem
 //   dx   → acerto horizontal pros pés das poses ficarem no mesmo lugar
+//   feet → centro dos pés em x (fração da imagem, medido): onde vai a sombra
 // (medidos em cada PNG; as poses do mesmo personagem têm que ficar do mesmo
 // tamanho — a do golem atacando é maior porque os punhos erguidos "encolhem" a imagem)
 const SPRITE_META = {
-  hacker: { size: 62, foot: 0.477 },
-  pinguim: { size: 62, foot: 0.477 },
-  pinguim_open: { size: 62, foot: 0.477 },
-  firewall: { size: 64, foot: 0.473 },
-  firewall_attack: { size: 75, foot: 0.434, dx: -1.7 },
-  minerador: { size: 62, foot: 0.477 },
-  minerador_attack: { size: 62, foot: 0.477, dx: 6 }, // ele se inclina: alinha pelo capacete
+  hacker: { size: 62, foot: 0.477, feet: -0.096 },
+  pinguim: { size: 62, foot: 0.477, feet: 0.029 },
+  pinguim_open: { size: 62, foot: 0.477, feet: 0.029 },
+  firewall: { size: 64, foot: 0.473, feet: -0.076 },
+  firewall_attack: { size: 75, foot: 0.434, dx: -1.7, feet: 0.018 },
+  minerador: { size: 62, foot: 0.477, feet: 0.102 },
+  minerador_attack: { size: 62, foot: 0.477, dx: 6, feet: -0.031 }, // ele se inclina: alinha pelo capacete
+  scanner: { size: 62, foot: 0.477, feet: -0.002 },
 };
+
+// Pose que está sendo mostrada (a de ataque logo depois de atacar)
+function poseOf(type, a) {
+  const pose = ATTACK_POSE[type];
+  return pose && a > 0.2 && hasImage(pose) ? pose : type;
+}
+
+// x do centro dos pés da pose atual (pra sombra)
+function spriteFeetX(type, a) {
+  const m = SPRITE_META[poseOf(type, a)];
+  return m ? m.size * (m.feet ?? 0) + (m.dx ?? 0) : 0;
+}
 // Pose usada logo depois de atacar (sem ela, o personagem dá um bote pra frente)
 const ATTACK_POSE = { pinguim: 'pinguim_open', firewall: 'firewall_attack', minerador: 'minerador_attack' };
 
 function drawSpriteCharacter(ctx, type, a, t) {
   const pose = ATTACK_POSE[type];
-  const posing = pose && a > 0.2 && hasImage(pose);
-  const name = posing ? pose : type;
+  const name = poseOf(type, a);
+  const posing = name !== type;
   const { size, foot, dx = 0 } = SPRITE_META[name] ?? { size: 62, foot: 0.477 };
   ctx.save();
   ctx.translate(posing ? 0 : a * 4, 14);

@@ -1,6 +1,6 @@
 import { VIEW_H, MAP_W } from '../../config.js';
 import { seeded } from '../../util.js';
-import { Path } from '../../core/Path.js';
+import { PathSet } from '../../core/Path.js';
 import { terrainAt } from '../../core/terrain.js';
 import { drawServer } from '../sprites.js';
 import * as motherboard from './motherboard.js';
@@ -13,9 +13,25 @@ const THEMES = { motherboard, datacenter, ocean };
 let fontEpoch = 0;
 export const bumpFontEpoch = () => fontEpoch++;
 
+// O servidor fica centrado no fim do caminho, venha ele de cima, de baixo
+// ou dos lados: o caminho entra na caixa pelo lado certo e termina embaixo
+// dela. (A caixa da sprite fica 6px à esquerda e 10px acima do ponto de
+// desenho, por isso o acerto.)
 export function serverPos(path) {
-  const end = path.points[path.points.length - 1];
-  return { x: end.x, y: end.y + 30 };
+  const end = path.end;
+  return { x: end.x + 6, y: end.y + 10 };
+}
+
+// Onde os vírus nascem numa rota: o primeiro ponto já dentro da tela
+// (com uma folguinha), venham da esquerda, de cima ou de baixo
+function spawnDistOf(route, offsetX) {
+  let d = 0;
+  while (d < route.length) {
+    const p = route.pointAt(d);
+    if (p.x >= -offsetX - 30 && p.y >= -30 && p.y <= VIEW_H + 30) break;
+    d += 2;
+  }
+  return d;
 }
 
 // Tudo que o jogo precisa saber de um mapa numa certa largura de tela:
@@ -25,11 +41,11 @@ export class MapView {
     this.map = map;
     this.mapW = mapW;
     this.offsetX = Math.max(0, (mapW - MAP_W) / 2); // centraliza o mapa
-    this.path = new Path(map.points, map.pathWidth);
+    this.path = new PathSet(map.routes, map.pathWidth);
     this.server = serverPos(this.path);
-    // vírus nascem logo antes da borda esquerda visível
-    this.spawnDist = 0;
-    while (this.spawnDist < this.path.length && this.path.pointAt(this.spawnDist).x < -this.offsetX - 30) this.spawnDist += 2;
+    // vírus nascem logo antes da borda visível (uma distância por rota)
+    this.spawnDists = this.path.routes.map((r) => spawnDistOf(r, this.offsetX));
+    this.spawnDist = this.spawnDists[0];
     this.decor = layoutDecor(map, this.path, -this.offsetX + 8, mapW - this.offsetX - 8);
     this.canvas = null;
     this.key = '';

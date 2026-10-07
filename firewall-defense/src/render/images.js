@@ -47,6 +47,8 @@ const ICON_NAMES = [
   'star',
   'star_empty',
   'coin',
+  'auto',
+  'auto_off',
 ];
 
 const images = new Map();
