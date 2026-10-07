@@ -61,7 +61,7 @@ Os vírus funcionam como os balões do Bloons: cada camada estourada revela a de
 | Mapa | Dificuldade | Rodadas | Zona especial |
 | --- | --- | --- | --- |
 | **Placa-Mãe** | Fácil | 15 | — |
-| **Data Center** | Médio | 20 | Piscinas de refrigeração (água) |
+| **Data Center** | Médio | 20 | Zonas eletrificadas: a cada 8 s dão choque e atordoam por 2,5 s as defesas em cima delas |
 | **Cabo Submarino** | Difícil | 25 | Mar aberto com ilhas (pouca terra) |
 
 ## Estrutura

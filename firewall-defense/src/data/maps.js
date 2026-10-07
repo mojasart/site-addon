@@ -36,7 +36,7 @@ export const MAPS = [
     id: 'data-center',
     name: 'Data Center',
     difficulty: 'MÉDIO',
-    desc: 'Piscinas de refrigeração no meio do caminho',
+    desc: 'Zonas eletrificadas travam as defesas!',
     theme: 'datacenter',
     rounds: 20,
     money: 650,
@@ -44,9 +44,13 @@ export const MAPS = [
     seed: 3,
     pathWidth: 54,
     terrain: 'land',
-    zones: [
-      { terrain: 'water', shape: 'rect', x: 255, y: 175, w: 125, h: 225, r: 30 },
-      { terrain: 'water', shape: 'rect', x: 470, y: 325, w: 92, h: 92, r: 26 },
+    zones: [],
+    // zonas eletrificadas: a cada `period` s dão um choque que atordoa
+    // as defesas em cima delas (offset desencontra as descargas)
+    hazards: [
+      { x: 118, y: 163, w: 60, h: 85, period: 8, offset: 0 },
+      { x: 245, y: 320, w: 120, h: 100, period: 8, offset: 2.7 },
+      { x: 460, y: 315, w: 105, h: 95, period: 8, offset: 5.3 },
     ],
     points: [
       [-420, 130], [210, 130], [210, 280], [90, 280], [90, 460],

@@ -7,7 +7,7 @@
 const midi = (m) => 440 * 2 ** ((m - 69) / 12);
 
 // Intervalo mínimo entre repetições do mesmo som (evita barulheira em massa)
-const MIN_GAP = { pop: 0.035, throw: 0.06, laser: 0.07, fire: 0.12, frost: 0.18, coin: 0.05, block: 0.12 };
+const MIN_GAP = { pop: 0.035, throw: 0.06, laser: 0.07, fire: 0.12, frost: 0.18, coin: 0.05, block: 0.12, zap: 0.3 };
 
 const SFX = {
   pop(s) {
@@ -33,6 +33,12 @@ const SFX = {
   frost(s) {
     s.tone({ type: 'sine', freq: 1800, to: 2500, dur: 0.18, vol: 0.06 });
     s.tone({ type: 'sine', freq: 2700, to: 3200, dur: 0.14, vol: 0.04, at: 0.05 });
+  },
+  zap(s) {
+    // estalo elétrico: chiado agudo + zumbido descendo
+    s.noise({ dur: 0.22, vol: 0.12, filter: 'highpass', freq: 2500 });
+    s.tone({ type: 'sawtooth', freq: 220, to: 70, dur: 0.25, vol: 0.06 });
+    s.tone({ type: 'square', freq: 1400, to: 600, dur: 0.08, vol: 0.03, at: 0.03 });
   },
   block(s) {
     s.tone({ type: 'square', freq: 1900, to: 1500, dur: 0.035, vol: 0.04 });

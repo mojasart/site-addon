@@ -19,6 +19,7 @@ export class Tower {
     this.attack = 0; // animação de ataque (1 → 0)
     this.pulse = 0;
     this.spawnAnim = 1; // "pulinho" ao ser colocado
+    this.stunned = 0; // atordoada por zona eletrificada (segundos)
     this.targetMode = this.def.defaultTarget ?? 'first';
     this.capacity = this.def.capacity ?? 0;
     this.trapHits = new Set();
@@ -59,6 +60,10 @@ export class Tower {
     if (Math.abs(x - this.x) > 4) this.face = x < this.x ? -1 : 1;
   }
 
+  stun(time) {
+    this.stunned = Math.max(this.stunned, time);
+  }
+
   opts() {
     return { armored: this.hitsArmored, source: this };
   }
@@ -70,6 +75,10 @@ export class Tower {
     this.attack = Math.max(0, this.attack - dt * 4);
     this.pulse = Math.max(0, this.pulse - dt * 4);
     this.spawnAnim = Math.max(0, this.spawnAnim - dt * 3);
+    if (this.stunned > 0) {
+      this.stunned = Math.max(0, this.stunned - dt);
+      return;
+    }
 
     switch (s.attack) {
       case 'projectile': {

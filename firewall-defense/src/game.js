@@ -9,6 +9,7 @@ import { Projectile } from './entities/Projectile.js';
 import { Packet } from './entities/Packet.js';
 import { RoundManager } from './systems/RoundManager.js';
 import { Effects } from './systems/Effects.js';
+import { Hazards } from './systems/Hazards.js';
 import { MapView, blocksTower } from './render/maps/index.js';
 import { layout, drawHud, drawPanel, drawRange } from './render/ui.js';
 import { inRect } from './render/widgets.js';
@@ -16,6 +17,7 @@ import { drawBanner, drawOverlay, overlayLayout } from './render/screens.js';
 import { drawCharacter, drawPips } from './render/characters.js';
 import { drawEnemy } from './render/viruses.js';
 import { drawProjectile, drawCoin, drawServer } from './render/sprites.js';
+import { drawHazards, drawStunned, drawHazardWarning } from './render/hazards.js';
 import { rrect, fillOutline, circle, text } from './render/canvas.js';
 import { rand } from './util.js';
 
@@ -58,6 +60,7 @@ export class Game {
     this.packets = [];
     this.rounds = new RoundManager(ROUNDS.slice(0, this.map.rounds));
     this.fx = new Effects();
+    this.hazards = new Hazards(this.map.hazards);
     this.speed = 1;
     this.nextIn = null; // contagem pra próxima rodada começar sozinha (null = espera o jogador)
     this.callCooldown = 0;
@@ -148,6 +151,7 @@ export class Game {
     this.flushSpawns();
     for (const e of this.enemies) if (!e.dead) e.update(dt, this);
     for (const p of this.packets) p.update(dt, this);
+    this.hazards.update(dt, this);
     this.fx.update(dt);
 
     this.enemies = this.enemies.filter((e) => !e.dead);
@@ -499,6 +503,7 @@ export class Game {
     this.view.draw(ctx, this.app.pixelScale);
     ctx.translate(this.offsetX, 0);
     this.view.animate(ctx, t);
+    drawHazards(ctx, this.hazards, t);
 
     ctx.save();
     ctx.translate(this.server.x, this.server.y);
@@ -557,6 +562,7 @@ export class Game {
       ctx.translate(g.x, g.y);
       drawCharacter(ctx, this.placing, { t, face: 1 });
       ctx.restore();
+      if (!def.onPath && this.hazards.at(g.x, g.y)) drawHazardWarning(ctx, g.x, g.y);
     }
     ctx.restore();
 
@@ -584,6 +590,7 @@ export class Game {
     ctx.translate(tw.x, tw.y);
     drawCharacter(ctx, tw.type, { t: tw.anim, face: tw.face, attack: tw.attack, pulse: tw.pulse, spawn: tw.spawnAnim });
     drawPips(ctx, tw.level, tw.r);
+    if (tw.stunned > 0) drawStunned(ctx, this.anim);
     ctx.restore();
   }
 }
