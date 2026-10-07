@@ -132,7 +132,7 @@ const AMBIENT = {
       ctx.globalAlpha = 1;
     },
   },
-  // Pinguim: floquinhos de gelo caindo devagar em volta
+  // Penguin Linux: floquinhos de gelo caindo devagar em volta
   pinguim: {
     front(ctx, t) {
       for (let i = 0; i < 4; i++) {
@@ -360,7 +360,7 @@ const CHARACTERS = {
     });
   },
 
-  // Pinguim de cachecol que congela tudo
+  // Penguin Linux de cachecol que congela tudo
   pinguim(ctx, s, t, a) {
     const raise = a > 0.2 ? 1 : 0;
     ellipse(ctx, -6, 13.5, 6, 3.2);

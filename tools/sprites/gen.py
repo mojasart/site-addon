@@ -98,7 +98,7 @@ ASSETS = {
                'style, but replace the green dart in his hand with a small chunky cartoon computer keyboard (dark grey '
                'with light keys and a few glowing green keys) held up in the same hand, ready to throw. '
                'Do not change anything else. ', 'hacker_dart'),
-    # Pinguim: parado (braços pra baixo) e congelando (braços abertos, editado a partir do parado)
+    # Penguin Linux: parado (braços pra baixo) e congelando (braços abertos, editado a partir do parado)
     'pinguim': ('magenta', 'Full body, chibi proportions (big head, round chubby body), three-quarter view facing and '
                 'looking to the RIGHT, standing on two orange feet. A cute cartoon baby penguin with a dark navy blue '
                 'body, white belly and face, small orange beak, rosy cheeks, big friendly eyes, wearing a cozy bright '

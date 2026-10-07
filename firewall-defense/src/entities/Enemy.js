@@ -15,7 +15,7 @@ export class Enemy {
     this.face = 1;
     this.slowTimer = 0;
     this.slowMul = 1;
-    this.vulnTimer = 0; // vulnerável (Pinguim com Era do Gelo): leva dano dobrado
+    this.vulnTimer = 0; // vulnerável (Penguin Linux com Era do Gelo): leva dano dobrado
     this.flash = 0;
     this.phase = rand(0, 10); // relógio da animação
     this.dead = false;

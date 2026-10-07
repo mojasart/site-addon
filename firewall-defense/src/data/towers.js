@@ -57,7 +57,7 @@ export const TOWERS = {
     ],
   },
   pinguim: {
-    name: 'Pinguim',
+    name: 'Penguin Linux',
     desc: 'Suporte: não dá dano, congela os vírus em volta e deixa lentos',
     lore: 'O mascote do código aberto. Congela as ameaças com um abraço gelado.',
     cost: 300,
