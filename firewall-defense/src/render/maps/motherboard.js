@@ -1,6 +1,6 @@
-import { VIEW_H, OUTLINE, GOLD } from '../../config.js';
+import { VIEW_H, OUTLINE, GOLD, TILE } from '../../config.js';
 import { rrect, circle, fillOutline } from '../canvas.js';
-import { strokePath, raisedPathBase, lines } from './shared.js';
+import { strokePath, raisedPathBase, lines, tileSeams } from './shared.js';
 
 // Tema PLACA-MÃE: placa verde, trilhas de cobre, resistores e LEDs.
 
@@ -39,7 +39,16 @@ export function layout(h) {
     }
   }
 
-  placeSpread(h, cells, 'resistor', 10, (x, y) => ({ kind: 'resistor', x, y, rad: 14, block: 'circle', vertical: h.rnd() < 0.5 }), 14);
+  // resistores bloqueiam a construção: cada um ocupa um quadrado da grade
+  // (no centro), sem dois vizinhos
+  const res = [];
+  for (const [c, r] of h.freeTiles()) {
+    if (res.length >= 8) break;
+    if (res.some(([rc, rr]) => Math.abs(rc - c) <= 1 && Math.abs(rr - r) <= 1)) continue;
+    const { x, y } = h.tileCenter(c, r);
+    h.add({ kind: 'resistor', x, y, rad: 14, tile: [c, r], vertical: h.rnd() < 0.5 });
+    res.push([c, r]);
+  }
   let led = 0;
   placeSpread(h, cells, 'led', 12, (x, y) => ({ kind: 'led', x, y, rad: 7, color: ['#ff4d5e', '#3dff9a', '#ffd23f', '#5fb4ff'][led++ % 4] }), 7);
   return { traces };
@@ -110,11 +119,13 @@ export function paint(g, { path, decor, W, ox }) {
   g.strokeStyle = 'rgba(255,255,255,0.06)';
   g.lineWidth = 1;
   g.beginPath();
-  for (let x = 0; x <= W; x += 30) {
+  // linhas a cada meio quadrado, alinhadas à grade do mapa
+  const step = TILE / 2;
+  for (let x = (ox % step) - step; x <= W; x += step) {
     g.moveTo(x + 0.5, 0);
     g.lineTo(x + 0.5, VIEW_H);
   }
-  for (let y = 0; y <= VIEW_H; y += 30) {
+  for (let y = 0; y <= VIEW_H; y += step) {
     g.moveTo(0, y + 0.5);
     g.lineTo(W, y + 0.5);
   }
@@ -150,7 +161,8 @@ export function paint(g, { path, decor, W, ox }) {
   raisedPathBase(g, path, { depth: 14, side: '#9aa9c0', sideDark: '#5d6b85', outline: OUTLINE, shadow: 'rgba(0,30,10,0.3)' });
   strokePath(g, path, path.width + 8, OUTLINE);
   strokePath(g, path, path.width, '#7f92ad');
-  strokePath(g, path, path.width - 8, '#c8d4e4', [30, 4]);
+  strokePath(g, path, path.width - 8, '#c8d4e4');
+  tileSeams(g, path, path.width - 8, '#9fb0c8', 3); // uma placa por quadrado da grade
   // setinhas do sentido dos vírus: escuras, com um brilho claro embaixo
   // (parecem gravadas no piso) pra destacar no cinza claro
   g.lineCap = 'round';

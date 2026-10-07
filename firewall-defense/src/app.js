@@ -134,6 +134,13 @@ export class App {
     this.game?.autoChanged();
   }
 
+  // Aba de informações da defesa (no jogo): aberta ou recolhida
+  toggleInfo() {
+    this.save.infoOpen = this.save.infoOpen === false;
+    writeSave(this.save);
+    this.sound.play('click');
+  }
+
   toggleSfx() {
     this.sound.setSfx(!this.save.sfx);
     writeSave(this.save);

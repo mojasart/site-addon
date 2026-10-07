@@ -1,8 +1,10 @@
 // ─────────────────────────────────────────────────────────────
 //  GERADOR DE MAPAS
 //
-//  Os caminhos andam numa grade de 6×4 pontos (GX × GY). Entre duas
-//  linhas da grade sobra ~120px: dá pra construir dos dois lados.
+//  Os caminhos andam numa rede de 6×4 pontos (GX × GY) que caem no centro
+//  de quadrados da grade do mapa (core/grid.js): colunas 2, 4 … 12 e linhas
+//  2, 4, 6, 8. Entre dois trechos paralelos sobra sempre 1 quadrado livre
+//  (lugar pra uma defesa). Ilhas e zonas também são quadrados.
 //  Tudo sai de uma semente (spec.seed), então o mapa é sempre igual.
 //
 //  spec = {
@@ -16,9 +18,14 @@
 //  Devolve { routes, zones, hazards } (routes = listas de pontos [x, y]).
 // ─────────────────────────────────────────────────────────────
 import { seeded } from '../util.js';
+import { VIEW_H } from '../config.js';
+import { tileCenter, tileRect, tileKey, inGrid as tileInGrid } from '../core/grid.js';
 
-export const GX = [70, 196, 322, 448, 574, 700];
-export const GY = [120, 235, 350, 465];
+// ponto (x, y) da rede → quadrado da grade
+const nodeCol = (x) => 2 + 2 * x;
+const nodeRow = (y) => 2 + 2 * y;
+export const GX = [0, 1, 2, 3, 4, 5].map((x) => tileCenter(nodeCol(x), 0).x);
+export const GY = [0, 1, 2, 3].map((y) => tileCenter(0, nodeRow(y)).y);
 const NX = GX.length;
 const NY = GY.length;
 const OFF_LEFT = -420; // as entradas da esquerda começam fora da tela
@@ -95,7 +102,11 @@ function tryGenerate(spec, rnd) {
   const hazards = [];
   const cells = cellsNextToPath(routesNodes);
   shuffle(cells);
-  for (const c of cells.slice(0, spec.islands ?? 0)) zones.push(island(c, rnd));
+  // quadrados que ilha não pode ocupar: caminho e servidor (fim da rota + o de cima)
+  const taken = nodeTiles(routesNodes);
+  const [bx, by] = main.nodes[main.nodes.length - 1];
+  taken.add(tileKey(nodeCol(bx), nodeRow(by) - 1));
+  for (const c of cells.slice(0, spec.islands ?? 0)) zones.push(island(c, rnd, taken));
   for (const c of cells.slice(0, spec.hazards ?? 0)) hazards.push(hazardRect(c));
   return { routes, zones, hazards, entries: routesNodes.length, loop: main.crossed };
 }
@@ -238,7 +249,7 @@ function toPoints(nodes) {
   const first = nodes[0];
   const side = sideOf(first);
   const [fx, fy] = pts[0];
-  const lead = side === 'left' ? [OFF_LEFT, fy] : side === 'top' ? [fx, -OFF_V] : [fx, 540 + OFF_V];
+  const lead = side === 'left' ? [OFF_LEFT, fy] : side === 'top' ? [fx, -OFF_V] : [fx, VIEW_H + OFF_V];
   // mantém todos os pontos da grade (mesmo os retos): assim o trecho comum
   // de rotas diferentes sai idêntico e o desenho do "Y" não duplica
   return [lead, ...pts];
@@ -266,17 +277,64 @@ function cellsNextToPath(routesNodes) {
   return cells;
 }
 
-// Ilha de terra ocupando a célula toda (o píer passa por cima das bordas)
-function island([cx, cy], rnd) {
-  const pad = 21 + Math.round(rnd() * 3); // encosta na borda do píer (meia largura = 25)
-  const x = GX[cx] + pad;
-  const y = GY[cy] + pad;
-  return { terrain: 'land', shape: 'rect', x, y, w: GX[cx + 1] - pad - x, h: GY[cy + 1] - pad - y, r: 18 };
+// Quadrados por onde passam as rotas (pontos da rede, o quadrado entre dois
+// pontos vizinhos e o trecho de entrada até a borda)
+function nodeTiles(routesNodes) {
+  const set = new Set();
+  const mark = (c, r) => tileInGrid(c, r) && set.add(tileKey(c, r));
+  for (const nodes of routesNodes) {
+    const [fx, fy] = nodes[0];
+    const side = sideOf(nodes[0]);
+    if (side === 'left') for (let c = 0; c < nodeCol(fx); c++) mark(c, nodeRow(fy));
+    else if (side === 'top') for (let r = 0; r < nodeRow(fy); r++) mark(nodeCol(fx), r);
+    else for (let r = nodeRow(fy) + 1; r < 99 && tileInGrid(0, r); r++) mark(nodeCol(fx), r);
+    for (let i = 0; i < nodes.length; i++) {
+      const [x, y] = nodes[i];
+      mark(nodeCol(x), nodeRow(y));
+      if (i) {
+        const [px, py] = nodes[i - 1];
+        mark(nodeCol(x) + (px - x), nodeRow(y) + (py - y));
+      }
+    }
+  }
+  return set;
 }
 
+// Ilha de terra: o quadrado livre da célula, às vezes esticado pra um
+// bloco de 2 quadrados (ou 2×2) se os vizinhos estiverem livres. A borda
+// encosta no píer (o caminho ocupa o quadrado inteiro).
+function island([cx, cy], rnd, taken) {
+  const c0 = nodeCol(cx) + 1;
+  const r0 = nodeRow(cy) + 1;
+  const shapes = [
+    [0, 0, 2, 2], [-1, 0, 2, 2], [0, -1, 2, 2], [-1, -1, 2, 2],
+    [0, 0, 2, 1], [-1, 0, 2, 1], [0, 0, 1, 2], [0, -1, 1, 2],
+  ];
+  for (let i = shapes.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [shapes[i], shapes[j]] = [shapes[j], shapes[i]];
+  }
+  // prefere blocos de 2 (os 2×2 são raros: só onde sobra espaço)
+  shapes.sort((a, b) => a[2] * a[3] - b[2] * b[3] === 0 ? 0 : (a[2] * a[3] === 2 ? -1 : b[2] * b[3] === 2 ? 1 : 0));
+  let pick = [0, 0, 1, 1];
+  for (const [dc, dr, w, h] of shapes) {
+    let ok = true;
+    for (let i = 0; i < w && ok; i++) for (let j = 0; j < h && ok; j++) {
+      const c = c0 + dc + i;
+      const r = r0 + dr + j;
+      if (!tileInGrid(c, r) || taken.has(tileKey(c, r))) ok = false;
+    }
+    if (ok) {
+      pick = [dc, dr, w, h];
+      break;
+    }
+  }
+  const [dc, dr, w, h] = pick;
+  for (let i = 0; i < w; i++) for (let j = 0; j < h; j++) taken.add(tileKey(c0 + dc + i, r0 + dr + j));
+  return { terrain: 'land', shape: 'rect', ...tileRect(c0 + dc, r0 + dr, w, h), r: 14 };
+}
+
+// Zona eletrificada: o quadrado livre da célula
 function hazardRect([cx, cy]) {
-  const pad = 27 + 6;
-  const x0 = GX[cx] + pad;
-  const y0 = GY[cy] + pad;
-  return { x: x0, y: y0, w: GX[cx + 1] - pad - x0, h: GY[cy + 1] - pad - y0 };
+  return tileRect(nodeCol(cx) + 1, nodeRow(cy) + 1);
 }
