@@ -5,56 +5,115 @@ import { Hazards } from '../systems/Hazards.js';
 
 /* ════════════════════════════════════════════════════════════
  *  ZONAS ELETRIFICADAS
- *  drawHazards(ctx, hazards, t) → placas no chão (coords do mapa)
+ *  drawHazards(ctx, hazards, t) → tapetes no chão (coords do mapa)
  *  drawStunned(ctx, t)          → raios + estrelinhas numa defesa
  *                                 atordoada (origem no centro da base)
  *  Parado fica discreto; pisca antes da descarga e clareia no choque.
  * ════════════════════════════════════════════════════════════ */
 
+// A zona é um TAPETE deitado no chão, ocupando o quadrado inteiro, na mesma
+// perspectiva do mapa: a borda listrada (fita de perigo) aparece em cima
+// sempre, e dos lados e embaixo só onde o vizinho é chão; onde é o caminho
+// elevado ela fica escondida, porque o caminho está por cima do chão
+// (z.edges vem de data/maps.js). Com a borda de baixo à mostra, aparece
+// também a espessura do tapete.
+const BAND = 7; // largura da fita listrada
+const THICK = 3; // espessura do tapete (a beirada da frente)
+
 export function drawHazards(ctx, hazards, t) {
   for (const z of hazards.zones) {
     const warn = Hazards.warning(z);
     const blink = warn > 0 && Math.sin(t * 40) > 0;
+    const e = z.edges ?? { top: true, left: true, right: true, bottom: true };
+    const x0 = z.x;
+    const y0 = z.y;
+    const x1 = z.x + z.w;
+    const y1 = z.y + z.h - (e.bottom ? THICK : 0); // topo do tapete (a espessura fica embaixo)
     ctx.save();
 
-    // placa escura com brilho azul fraquinho
-    rrect(ctx, z.x, z.y, z.w, z.h, 10);
-    ctx.fillStyle = 'rgba(30,38,60,0.78)';
-    ctx.fill();
-    rrect(ctx, z.x + 6, z.y + 6, z.w - 12, z.h - 12, 7);
-    ctx.fillStyle = `rgba(90,220,255,${0.08 + 0.05 * Math.sin(t * 2.5) + warn * 0.15})`;
-    ctx.fill();
+    // espessura da frente (só com chão embaixo)
+    if (e.bottom) {
+      ctx.fillStyle = '#0f1424';
+      ctx.fillRect(x0, y1, z.w, THICK);
+    }
+    // superfície de borracha escura com brilho azul fraquinho
+    ctx.fillStyle = '#26304c';
+    ctx.fillRect(x0, y0, z.w, y1 - y0);
+    const inner = {
+      x: x0 + (e.left ? BAND : 0),
+      y: y0 + BAND,
+      w: z.w - (e.left ? BAND : 0) - (e.right ? BAND : 0),
+      h: y1 - y0 - BAND - (e.bottom ? BAND : 0),
+    };
+    ctx.fillStyle = `rgba(90,220,255,${0.1 + 0.05 * Math.sin(t * 2.5) + warn * 0.15})`;
+    ctx.fillRect(inner.x + 3, inner.y + 3, inner.w - 6, inner.h - 6);
 
-    // borda listrada amarela e preta (pisca no aviso)
-    rrect(ctx, z.x, z.y, z.w, z.h, 10);
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = blink ? '#fff59a' : '#f2c21b';
-    ctx.stroke();
-    ctx.setLineDash([9, 9]);
-    ctx.lineDashOffset = -t * 6;
-    ctx.strokeStyle = OUTLINE;
-    ctx.stroke();
-    ctx.setLineDash([]);
-    rrect(ctx, z.x - 3, z.y - 3, z.w + 6, z.h + 6, 12);
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = OUTLINE;
-    ctx.stroke();
+    // fita listrada nas bordas à mostra (pisca no aviso)
+    const bands = [];
+    if (e.top) bands.push([x0, y0, z.w, BAND]);
+    if (e.left) bands.push([x0, y0, BAND, y1 - y0]);
+    if (e.right) bands.push([x1 - BAND, y0, BAND, y1 - y0]);
+    if (e.bottom) bands.push([x0, y1 - BAND, z.w, BAND]);
+    ctx.beginPath();
+    for (const [bx, by, bw, bh] of bands) ctx.rect(bx, by, bw, bh);
+    ctx.fillStyle = blink ? '#fff59a' : '#f2c21b';
+    ctx.fill();
+    stripes(ctx, { x: x0, y: y0, w: z.w, h: y1 - y0 }, t);
 
     // raio no meio
     ctx.globalAlpha = 0.45 + warn * 0.55;
-    bolt(ctx, z.x + z.w / 2, z.y + z.h / 2, Math.min(z.w, z.h) * 0.22, blink ? '#fff59a' : GOLD);
+    bolt(ctx, inner.x + inner.w / 2, inner.y + inner.h / 2, Math.min(inner.w, inner.h) * 0.3, blink ? '#fff59a' : GOLD);
     ctx.globalAlpha = 1;
 
     // faíscas no aviso e clarão + raios na descarga
-    if (warn > 0) arcs(ctx, z, t, 1 + Math.floor(warn * 2), 0.5 + warn * 0.4);
+    if (warn > 0) arcs(ctx, inner, t, 1 + Math.floor(warn * 2), 0.5 + warn * 0.4);
     if (z.flash > 0) {
-      rrect(ctx, z.x, z.y, z.w, z.h, 10);
       ctx.fillStyle = `rgba(160,245,255,${0.55 * z.flash})`;
-      ctx.fill();
-      arcs(ctx, z, t, 4, z.flash);
+      ctx.fillRect(x0, y0, z.w, y1 - y0);
+      arcs(ctx, inner, t, 4, z.flash);
     }
+
+    // contorno só nas bordas à mostra (as outras encostam no caminho)
+    ctx.beginPath();
+    if (e.top) {
+      ctx.moveTo(x0, y0 + 1);
+      ctx.lineTo(x1, y0 + 1);
+    }
+    if (e.left) {
+      ctx.moveTo(x0 + 1, y0);
+      ctx.lineTo(x0 + 1, y1 + (e.bottom ? THICK : 0));
+    }
+    if (e.right) {
+      ctx.moveTo(x1 - 1, y0);
+      ctx.lineTo(x1 - 1, y1 + (e.bottom ? THICK : 0));
+    }
+    if (e.bottom) {
+      ctx.moveTo(x0, y1 + THICK - 1);
+      ctx.lineTo(x1, y1 + THICK - 1);
+    }
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = OUTLINE;
+    ctx.stroke();
     ctx.restore();
   }
+}
+
+// Listras pretas na diagonal sobre o amarelo, andando devagar (recortadas
+// pelas faixas: o path atual)
+function stripes(ctx, r, t) {
+  ctx.save();
+  ctx.clip();
+  ctx.fillStyle = OUTLINE;
+  const off = (t * 6) % 12;
+  ctx.beginPath();
+  for (let x = r.x - r.h - 12 + off; x < r.x + r.w; x += 12) {
+    ctx.moveTo(x, r.y + r.h);
+    ctx.lineTo(x + 6, r.y + r.h);
+    ctx.lineTo(x + 6 + r.h, r.y);
+    ctx.lineTo(x + r.h, r.y);
+  }
+  ctx.fill();
+  ctx.restore();
 }
 
 export function drawStunned(ctx, t) {

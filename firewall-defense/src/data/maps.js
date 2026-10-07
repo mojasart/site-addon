@@ -29,6 +29,7 @@
 import { generateMap } from './mapgen.js';
 import { PRESSURE, SPEED } from './tuning.js';
 import { TILE } from '../config.js';
+import { pathTiles, tileOf, tileKey } from '../core/grid.js';
 
 export const SEASONS = [
   { id: 'placa-mae', name: 'Placa-Mãe', theme: 'motherboard', color: '#3fd16b', terrain: 'land', rounds: [12, 18] },
@@ -110,7 +111,16 @@ function buildMaps() {
         islands: season.theme === 'ocean' ? Math.round(lerp(14, 10, ks)) : 0,
         hazards: season.theme === 'datacenter' ? Math.round(lerp(2, 5, ks)) : 0,
       });
-      const hazards = gen.hazards.map((h, i, all) => ({ ...h, period: 8, offset: (i * 8) / all.length }));
+      // zonas elétricas: quais bordas do "tapete" aparecem (render/hazards.js).
+      // A de cima sempre; as outras só se o vizinho não for o caminho
+      // elevado (que fica por cima do chão e tapa a borda)
+      const raised = pathTiles(gen.routes);
+      const hazards = gen.hazards.map((h, i, all) => {
+        const [c, r] = tileOf(h.x + 1, h.y + 1);
+        const floor = (dc, dr) => !raised.has(tileKey(c + dc, r + dr));
+        const edges = { top: true, left: floor(-1, 0), right: floor(1, 0), bottom: floor(0, 1) };
+        return { ...h, period: 8, offset: (i * 8) / all.length, edges };
+      });
       maps.push({
         id: `${season.id}-${k + 1}`,
         season: s,
