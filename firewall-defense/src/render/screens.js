@@ -107,11 +107,6 @@ export function drawOverlay(ctx, game) {
       // vidas que sobraram e cafés novos lado a lado; ameaças contidas embaixo
       drawResults(ctx, cx, 270, game.lives, game.coffeeGain, game.overlayTime);
       text(ctx, `Ameaças contidas: ${game.stats.pops}`, cx, 318, { size: 19, color: GOLD });
-      // de onde vieram os cafés: recorde de estrelas do mapa + monstros abatidos
-      const fromMap = game.coffeeGain - game.coffeeKills;
-      if (fromMap >= 0.01 && game.coffeeKills >= 0.01 && game.overlayTime > 1.6) {
-        text(ctx, `cafés: ${formatCoffee(fromMap)} das estrelas + ${formatCoffee(game.coffeeKills)} dos abatidos`, cx, 348, { size: 14, color: '#ffe0b0' });
-      }
     } else {
       const survived = Math.floor(Math.min(game.platTime, 180));
       const lines = game.platinum
