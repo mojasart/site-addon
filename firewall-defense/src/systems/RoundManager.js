@@ -1,13 +1,15 @@
 import { Enemy } from '../entities/Enemy.js';
 
-// Controla as rodadas: o jogador aperta "iniciar", os vírus entram
-// conforme a lista de data/rounds.js e a rodada acaba quando o mapa limpa.
+// Controla as rodadas: os vírus entram conforme a lista de data/rounds.js.
+// Dá pra chamar a próxima rodada com outra ainda rolando (as filas se somam);
+// cada rodada acaba quando tudo dela já entrou e morreu (filhos contam junto).
 export class RoundManager {
   constructor(rounds) {
     this.rounds = rounds;
-    this.index = 0; // rodada atual (0 = primeira)
-    this.active = false;
-    this.queue = [];
+    this.started = 0; // quantas rodadas já começaram
+    this.done = 0; // quantas já terminaram
+    this.queue = []; // { type, t, round } em ordem de entrada
+    this.pending = []; // por rodada: quantos vírus ainda vão entrar
     this.time = 0;
   }
 
@@ -16,18 +18,31 @@ export class RoundManager {
   }
 
   get finished() {
-    return this.index >= this.rounds.length;
+    return this.done >= this.rounds.length;
+  }
+
+  get active() {
+    return this.started > this.done;
+  }
+
+  get canStart() {
+    return this.started < this.rounds.length;
+  }
+
+  // rodada mostrada no HUD (a mais recente que começou)
+  get current() {
+    return Math.max(1, Math.min(this.started, this.total));
   }
 
   start() {
-    if (this.active || this.finished) return false;
-    this.queue = [];
-    for (const g of this.rounds[this.index]) {
-      for (let i = 0; i < g.count; i++) this.queue.push({ type: g.type, t: (g.at ?? 0) + i * g.gap });
+    if (!this.canStart) return false;
+    const round = this.started++;
+    let n = 0;
+    for (const g of this.rounds[round]) {
+      for (let i = 0; i < g.count; i++, n++) this.queue.push({ type: g.type, t: this.time + (g.at ?? 0) + i * g.gap, round });
     }
+    this.pending[round] = n;
     this.queue.sort((a, b) => a.t - b.t);
-    this.time = 0;
-    this.active = true;
     return true;
   }
 
@@ -35,14 +50,20 @@ export class RoundManager {
     if (!this.active) return;
     this.time += dt;
     while (this.queue.length && this.queue[0].t <= this.time) {
-      const enemy = new Enemy(this.queue.shift().type, game.spawnDist);
+      const q = this.queue.shift();
+      const enemy = new Enemy(q.type, game.spawnDist);
+      enemy.round = q.round;
       enemy.place(game.path);
       game.spawnEnemy(enemy);
+      this.pending[q.round]--;
     }
-    if (this.queue.length === 0 && game.enemies.length === 0 && game.newEnemies.length === 0) {
-      this.active = false;
-      this.index++;
-      game.onRoundEnd();
+    // as rodadas terminam em ordem: a mais antiga aberta acaba primeiro
+    while (this.active) {
+      const r = this.done;
+      const alive = (e) => !e.dead && e.round === r;
+      if (this.pending[r] > 0 || game.enemies.some(alive) || game.newEnemies.some(alive)) break;
+      this.done++;
+      game.onRoundEnd(this.done);
     }
   }
 }

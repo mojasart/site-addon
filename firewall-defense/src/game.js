@@ -60,6 +60,7 @@ export class Game {
     this.fx = new Effects();
     this.speed = 1;
     this.nextIn = null; // contagem pra próxima rodada começar sozinha (null = espera o jogador)
+    this.callCooldown = 0;
     this.placing = null; // tipo de defesa sendo posicionada
     this.selectedTower = null;
     this.banner = null;
@@ -137,6 +138,7 @@ export class Game {
   }
 
   step(dt) {
+    this.callCooldown = Math.max(0, this.callCooldown - dt);
     if (this.nextIn != null && (this.nextIn -= dt) <= 0) this.startRound();
     this.rounds.update(dt, this);
     this.flushSpawns();
@@ -174,8 +176,7 @@ export class Game {
     buzz(40);
   }
 
-  onRoundEnd() {
-    const n = this.rounds.index;
+  onRoundEnd(n) {
     const bonus = 100 + n;
     this.money += bonus;
     this.coinBump = 1;
@@ -185,24 +186,28 @@ export class Game {
     }
     this.sound.play('roundEnd');
     this.showBanner(`RODADA ${n} COMPLETA!`, 1.6, '#3dff9a', 36, `+$${bonus}`);
-    this.nextIn = NEXT_ROUND_DELAY;
+    // mapa limpo: a próxima começa sozinha daqui a pouco
+    if (!this.rounds.active) this.nextIn = NEXT_ROUND_DELAY;
   }
 
-  // Bônus por chamar a próxima rodada antes da contagem acabar:
-  // parte do dinheiro que ela vale, maior quanto mais cedo
+  // Bônus por chamar a próxima rodada com outra ainda rolando:
+  // uma parte do dinheiro que os vírus dela valem
   earlyBonus() {
-    if (this.nextIn == null || this.rounds.finished) return 0;
-    const value = this.rounds.rounds[this.rounds.index].reduce((sum, g) => sum + g.count * worth(g.type), 0);
-    return Math.round(value * EARLY_BONUS * (this.nextIn / NEXT_ROUND_DELAY));
+    if (!this.rounds.active || !this.rounds.canStart) return 0;
+    const value = this.rounds.rounds[this.rounds.started].reduce((sum, g) => sum + g.count * worth(g.type), 0);
+    return Math.round(value * EARLY_BONUS);
   }
 
+  // Botão de rodada: começa a próxima (mesmo com outra rolando)
   playPressed() {
-    if (this.rounds.active) {
-      this.speed = (this.speed % MAX_SPEED) + 1;
-      this.sound.play('click');
-      return;
-    }
+    if (this.callCooldown > 0 || !this.rounds.canStart) return;
+    this.callCooldown = 0.6; // evita chamar duas sem querer num toque duplo
     this.startRound();
+  }
+
+  speedPressed() {
+    this.speed = (this.speed % MAX_SPEED) + 1;
+    this.sound.play('click');
   }
 
   startRound() {
@@ -218,7 +223,7 @@ export class Game {
       this.money += bonus;
       this.coinBump = 1;
     }
-    this.showBanner(`RODADA ${this.rounds.index + 1}`, 1.1, '#ffffff', 46, bonus > 0 ? `Chamou antes: +$${bonus}` : null);
+    this.showBanner(`RODADA ${this.rounds.started}`, 1.1, '#ffffff', 46, bonus > 0 ? `Chamou antes: +$${bonus}` : null);
     this.sound.play('round');
   }
 
@@ -388,6 +393,7 @@ export class Game {
 
   panelTap(sx, sy, L) {
     if (inRect(L.play, sx, sy)) return this.playPressed();
+    if (inRect(L.speed, sx, sy)) return this.speedPressed();
 
     const tw = this.selectedTower;
     if (tw) {

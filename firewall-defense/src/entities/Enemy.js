@@ -99,6 +99,7 @@ export class Enemy {
         child.slowTimer = this.slowTimer;
         child.slowMul = this.slowMul;
         child.vulnTimer = this.vulnTimer;
+        child.round = this.round;
         child.place(game.path);
         game.spawnEnemy(child);
         opts.hitSet?.add(child); // o mesmo tiro não acerta os filhos

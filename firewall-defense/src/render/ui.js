@@ -17,7 +17,8 @@ export function layout(game) {
       const alone = i === TOWER_ORDER.length - 1 && i % 2 === 0;
       return { type, x: px + 10 + (alone ? 45 : (i % 2) * 90), y: 44 + Math.floor(i / 2) * 116, w: 80, h: 108 };
     }),
-    play: { x: px + 10, y: VIEW_H - 76, w: W - 20, h: 68 },
+    play: { x: px + 10, y: VIEW_H - 76, w: 108, h: 68 }, // próxima rodada
+    speed: { x: px + 124, y: VIEW_H - 76, w: W - 134, h: 68 }, // 1x → 2x → 3x
     pause: { x: game.mapW - 58, y: 10, w: 48, h: 48 },
     close: { x: px + W - 48, y: 6, w: 40, h: 40 },
     upgrades: [0, 1].map((i) => ({ x: px + 10, y: 64 + i * 98, w: W - 20, h: 90 })),
@@ -49,7 +50,7 @@ export function drawHud(ctx, game) {
   text(ctx, `$${game.money}`, 54, 73, { size: 28 + game.coinBump * 4, color: GOLD, align: 'left' });
 
   const r = game.rounds;
-  const shown = Math.min(r.index + 1, r.total);
+  const shown = r.current;
   text(ctx, 'RODADA', L.pause.x - 14, 20, { size: 14, align: 'right', color: '#e3f6ff' });
   text(ctx, `${shown}/${r.total}`, L.pause.x - 14, 45, { size: 28, align: 'right' });
   iconButton(ctx, L.pause, '#5fb4ff', 'pause');
@@ -72,6 +73,7 @@ export function drawPanel(ctx, game) {
   if (game.selectedTower) drawTowerInfo(ctx, game, L);
   else drawShop(ctx, game, L);
   drawPlayButton(ctx, game, L.play);
+  drawSpeedButton(ctx, game, L.speed);
 }
 
 function drawShop(ctx, game, L) {
@@ -158,30 +160,39 @@ function drawUpgrade(ctx, game, tw, up, i, r) {
   else text(ctx, 'BLOQUEADO', r.x + r.w / 2, r.y + r.h - 20, { size: 14, color: '#d8e6ff' });
 }
 
+// Botão da próxima rodada: INICIAR (primeira), contagem (mapa limpo) ou
+// chamar já com outra rolando, mostrando o bônus que ganha
 function drawPlayButton(ctx, game, r) {
-  const active = game.rounds.active;
+  const can = game.rounds.canStart && game.state === 'playing';
+  const bonus = game.earlyBonus();
+  const cx = r.x + r.w / 2;
   ctx.save();
-  if (!active && game.state === 'playing') {
+  if (can && !game.rounds.active) {
     const k = 1 + Math.sin(game.anim * 5) * 0.03;
-    ctx.translate(r.x + r.w / 2, r.y + r.h / 2);
+    ctx.translate(cx, r.y + r.h / 2);
     ctx.scale(k, k);
-    ctx.translate(-(r.x + r.w / 2), -(r.y + r.h / 2));
+    ctx.translate(-cx, -(r.y + r.h / 2));
   }
-  const face = !active ? '#3fd16b' : game.speed > 1 ? '#ff9a2e' : '#5fb4ff';
-  button(ctx, r, face, { radius: 16, depth: 6 });
-  const cy = r.y + (r.h - 6) / 2;
+  button(ctx, r, can ? '#3fd16b' : '#7d8aa8', { radius: 16, depth: 6 });
   ctx.save();
-  ctx.translate(r.x + 36, cy);
-  if (!active) ICONS.play(ctx, 14);
-  else ICONS.ff(ctx, 11);
+  ctx.translate(cx, r.y + 20);
+  ICONS.play(ctx, 10);
   ctx.restore();
-  if (active) text(ctx, `${game.speed}x`, r.x + r.w / 2 + 24, cy + 1, { size: 28 });
-  else if (game.nextIn != null) {
-    // contagem pra próxima rodada + bônus de chamar antes
-    text(ctx, 'INICIAR', r.x + r.w / 2 + 20, cy - 9, { size: 21 });
-    text(ctx, `${Math.ceil(game.nextIn)}s  +$${game.earlyBonus()}`, r.x + r.w / 2 + 20, cy + 15, { size: 15, color: GOLD });
-  } else text(ctx, 'INICIAR', r.x + r.w / 2 + 20, cy + 1, { size: 24 });
+  let label = 'INICIAR';
+  if (!can) label = 'ÚLTIMA';
+  else if (game.nextIn != null) label = `${Math.ceil(game.nextIn)}s`;
+  else if (bonus > 0) label = `+$${bonus}`;
+  text(ctx, label, cx, r.y + 44, { size: 18, color: bonus > 0 && can ? GOLD : '#ffffff' });
   ctx.restore();
+}
+
+function drawSpeedButton(ctx, game, r) {
+  button(ctx, r, game.speed > 1 ? '#ff9a2e' : '#5fb4ff', { radius: 16, depth: 6 });
+  ctx.save();
+  ctx.translate(r.x + r.w / 2, r.y + 20);
+  ICONS.ff(ctx, 9);
+  ctx.restore();
+  text(ctx, `${game.speed}x`, r.x + r.w / 2, r.y + 44, { size: 20 });
 }
 
 export function wrapText(ctx, str, x, y, maxW, size, color, maxLines = 2, stroke = null) {

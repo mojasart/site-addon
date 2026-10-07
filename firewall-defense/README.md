@@ -27,9 +27,10 @@ python3 -m http.server 8080
 - Toque numa defesa colocada para ver **upgrades**, trocar o **alvo** ou **vender** (devolve 70%).
   O que você comprou **antes de a rodada começar** volta pelo preço cheio (pra mudar de lugar se errou).
 - Todo upgrade também aumenta **um pouco o alcance**.
-- **INICIAR** começa a primeira rodada; durante a rodada o mesmo botão acelera (1x → 2x → 3x).
-- Quando o mapa limpa, a próxima rodada começa **sozinha em 10 s**. Chamar antes dá um **bônus**
-  de até 15% do dinheiro que a próxima rodada vale (quanto mais cedo, maior).
+- **INICIAR** começa a primeira rodada; o botão do lado acelera (1x → 2x → 3x).
+- Quando o mapa limpa, a próxima rodada começa **sozinha em 10 s**.
+- Dá pra **chamar a próxima rodada com outra ainda rolando**: isso dá um **bônus** de 15% do
+  dinheiro que os vírus da próxima rodada valem (o valor aparece no botão).
 - Cada camada de vírus estourada dá $1, e cada rodada completa dá um bônus.
 - Ao vencer você ganha de 1 a 3 estrelas (3 = não perdeu nenhuma vida), e o próximo mapa é liberado.
 

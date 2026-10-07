@@ -86,7 +86,7 @@ export function drawOverlay(ctx, game) {
     }
     const lines = won
       ? [`${game.map.name} protegida!`, `Vidas restantes: ${game.lives}/${game.map.lives}`]
-      : [`Os vírus venceram na rodada ${game.rounds.index + 1}.`, 'Tente outras defesas ou upgrades!'];
+      : [`Os vírus venceram na rodada ${game.rounds.current}.`, 'Tente outras defesas ou upgrades!'];
     text(ctx, lines[0], cx, 262, { size: 24 });
     text(ctx, lines[1], cx, 296, { size: 18, color: '#d8e6ff' });
     text(ctx, `Vírus estourados: ${game.stats.pops}`, cx, 330, { size: 18, color: GOLD });
