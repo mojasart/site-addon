@@ -350,7 +350,7 @@ export class DarkNetScene {
     ctx.textAlign = 'left';
     let status = null;
     const extra = st === 'owned' ? this.app.perkRollbackSet(n.id).length - 1 : 0;
-    if (extra > 0) status = [`> rollback leva junto ${extra} upgrade${extra > 1 ? 's' : ''}`, '#ffc62e'];
+    if (extra > 0) status = [`> vender leva junto ${extra} upgrade${extra > 1 ? 's' : ''}`, '#ffc62e'];
     else if (st === 'owned') status = ['> instalado. ativo em todas as fases', GREEN];
     else if (st === 'open' && !can) status = [`> faltam ${formatCoffee(n.cost - this.app.coffee)} café(s)`, '#ffc62e'];
     else if (st === 'open') status = ['> pronto pra instalar', PURPLE];
@@ -360,11 +360,11 @@ export class DarkNetScene {
     }
 
     // botão: o custo em cafés (verde quando dá pra comprar); comprado vira
-    // rollback, que desfaz e devolve os cafés
+    // vender, que desfaz e devolve os cafés
     const B = L.buy;
     const cy = B.y + (B.h - 5) / 2 + 1;
     button(ctx, B, st === 'owned' ? '#e0703a' : can ? '#3fd16b' : '#5d5675', { radius: 14, depth: 5 });
-    if (st === 'owned') coffeeLabel(ctx, `+${this.app.perkRefund(n.id)}`, B.x + B.w / 2, cy, 22, '#ffffff', 'ROLLBACK');
+    if (st === 'owned') coffeeLabel(ctx, `+${this.app.perkRefund(n.id)}`, B.x + B.w / 2, cy, 22, '#ffffff', 'VENDER');
     else coffeeLabel(ctx, `${n.cost}`, B.x + B.w / 2, cy, 22, '#ffffff');
     ctx.restore();
   }
