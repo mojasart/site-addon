@@ -84,6 +84,7 @@ export class Game {
     this.nextIn = null; // contagem pra próxima rodada começar sozinha (null = espera o jogador)
     this.callCooldown = 0;
     this.placing = null; // tipo de defesa sendo posicionada
+    this.inspect = null; // defesa da loja só sendo olhada (sem dinheiro pra comprar): mostra os atributos
     this.selectedTower = null;
     this.banner = null;
     this.hurt = 0;
@@ -126,6 +127,7 @@ export class Game {
     this.endDelay = won ? 1.6 : 0.9;
     this.overlayTime = 0;
     this.placing = null;
+    this.inspect = null;
     this.selectedTower = null;
     this.drag = null;
     if (won) {
@@ -532,6 +534,7 @@ export class Game {
       this.drag = { type: this.placing, x: sx, y: sy, moved: false, fromMap: true };
       return;
     }
+    this.inspect = null; // tocar no mapa fecha a defesa que estava só sendo olhada
     const tw = this.towerAt(mx, sy);
     if (tw) this.sound.play('click');
     this.selectedTower = tw;
@@ -591,8 +594,13 @@ export class Game {
       if (!toggleOff && this.money < def.cost) {
         this.fx.text(tile.x + tile.w / 2 - this.offsetX, tile.y + 30, 'Sem dinheiro!', '#ff7a8a', 16);
         this.sound.play('error');
+        // mesmo sem dinheiro dá pra ver os atributos na aba de informações
+        // (tocar de novo na mesma defesa fecha)
+        this.inspect = this.inspect === tile.type ? null : tile.type;
+        this.placing = null;
         return;
       }
+      this.inspect = null;
       this.placing = tile.type;
       this.drag = { type: tile.type, x: sx, y: sy, moved: false, fromMap: false, toggleOff };
       this.sound.play('click');
