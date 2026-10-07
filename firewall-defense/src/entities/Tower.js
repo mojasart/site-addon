@@ -3,7 +3,8 @@ import { SELL_RATE } from '../config.js';
 import { rand } from '../util.js';
 
 export class Tower {
-  constructor(type, x, y) {
+  // fresh: comprada antes de a rodada começar → vende pelo preço cheio
+  constructor(type, x, y, fresh = false) {
     this.type = type;
     this.def = TOWERS[type];
     this.x = x;
@@ -11,6 +12,7 @@ export class Tower {
     this.r = this.def.radius;
     this.level = 0;
     this.spent = this.def.cost;
+    this.fresh = fresh;
     this.stats = { ...this.def }; // cópia: upgrades mexem aqui, não no original
     this.cooldown = 0.2;
     this.face = 1; // 1 = olhando pra direita, -1 = esquerda
@@ -33,7 +35,7 @@ export class Tower {
   }
 
   get sellValue() {
-    return Math.floor(this.spent * SELL_RATE);
+    return this.fresh ? this.spent : Math.floor(this.spent * SELL_RATE);
   }
 
   get hitsArmored() {
@@ -49,6 +51,7 @@ export class Tower {
   }
 
   onRoundStart() {
+    this.fresh = false;
     this.dropped = 0;
     this.dropTimer = rand(1, 2.5);
   }
@@ -94,6 +97,16 @@ export class Tower {
         this.fire();
         break;
       }
+      case 'beam': {
+        if (this.cooldown > 0) break;
+        const target = game.findTarget(this);
+        if (!target) break;
+        this.lookAt(target.x);
+        game.fx.beam(this.x + this.face * 4, this.y - 26, target.x, target.y);
+        target.takeDamage(s.damage, game, this.opts());
+        this.fire();
+        break;
+      }
       case 'pulse': {
         if (this.cooldown > 0) break;
         const targets = game.enemiesInRange(this.x, this.y, s.range);
@@ -102,7 +115,7 @@ export class Tower {
         this.lookAt(targets.reduce((a, b) => (b.dist > a.dist ? b : a)).x);
         for (const e of targets.slice(0, s.maxTargets)) {
           if (s.slow) e.slow(s.slow, s.slowTime);
-          if (s.vulnerable) e.weaken(s.vulnerable, s.slowTime);
+          if (s.vulnerable) e.weaken(s.slowTime);
           if (s.damage) e.takeDamage(s.damage, game, this.opts());
         }
         game.fx.ring(this.x, this.y, s.range, s.effect);

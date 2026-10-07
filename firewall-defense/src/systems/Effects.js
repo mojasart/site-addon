@@ -16,6 +16,7 @@ export class Effects {
     this.particles = [];
     this.pops = [];
     this.rings = [];
+    this.beams = [];
     this.texts = [];
     this.confetti = [];
   }
@@ -37,6 +38,10 @@ export class Effects {
 
   ring(x, y, radius, kind) {
     this.rings.push({ x, y, radius, life: 0.3, max: 0.3, ...RING_COLORS[kind] });
+  }
+
+  beam(x1, y1, x2, y2) {
+    this.beams.push({ x1, y1, x2, y2, life: 0.12, max: 0.12 });
   }
 
   blocked(x, y) {
@@ -65,7 +70,7 @@ export class Effects {
       p.y += p.vy * dt;
       p.vx *= 0.93;
     }
-    for (const list of [this.pops, this.rings]) for (const e of list) e.life -= dt;
+    for (const list of [this.pops, this.rings, this.beams]) for (const e of list) e.life -= dt;
     for (const t of this.texts) {
       t.life -= dt;
       t.y -= 34 * dt;
@@ -79,6 +84,7 @@ export class Effects {
     this.particles = this.particles.filter((p) => p.life > 0);
     this.pops = this.pops.filter((p) => p.life > 0);
     this.rings = this.rings.filter((r) => r.life > 0);
+    this.beams = this.beams.filter((b) => b.life > 0);
     this.texts = this.texts.filter((t) => t.life > 0);
     this.confetti = this.confetti.filter((c) => c.life > 0);
   }
@@ -98,6 +104,20 @@ export class Effects {
     ctx.globalAlpha = 1;
 
     ctx.lineCap = 'round';
+    for (const b of this.beams) {
+      // laser do Robô Scanner
+      ctx.globalAlpha = b.life / b.max;
+      ctx.strokeStyle = '#ff3b5c';
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.moveTo(b.x1, b.y1);
+      ctx.lineTo(b.x2, b.y2);
+      ctx.stroke();
+      ctx.strokeStyle = '#ffe1e6';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
     for (const p of this.particles) {
       ctx.globalAlpha = Math.max(0, p.life / p.max);
       ctx.fillStyle = p.color;

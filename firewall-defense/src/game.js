@@ -1,6 +1,7 @@
-import { VIEW_H, PANEL_W, MAX_SPEED } from './config.js';
+import { VIEW_H, PANEL_W, MAX_SPEED, NEXT_ROUND_DELAY, EARLY_BONUS } from './config.js';
 import { MAPS } from './data/maps.js';
 import { ROUNDS } from './data/rounds.js';
+import { worth } from './data/enemies.js';
 import { TOWERS, TARGET_MODES } from './data/towers.js';
 import { fitsTerrain } from './core/terrain.js';
 import { Tower } from './entities/Tower.js';
@@ -17,7 +18,7 @@ import { drawCharacter, drawPips } from './render/characters.js';
 import { drawEnemy } from './render/viruses.js';
 import { drawProjectile, drawCoin, drawServer } from './render/sprites.js';
 import { drawHazards, drawStunned, drawHazardWarning } from './render/hazards.js';
-import { rrect, fillOutline } from './render/canvas.js';
+import { rrect, fillOutline, circle, text } from './render/canvas.js';
 import { rand } from './util.js';
 
 const TOUCH_LIFT = 46; // ao arrastar com o dedo, a defesa aparece acima dele
@@ -61,6 +62,8 @@ export class Game {
     this.fx = new Effects();
     this.hazards = new Hazards(this.map.hazards);
     this.speed = 1;
+    this.nextIn = null; // contagem pra próxima rodada começar sozinha (null = espera o jogador)
+    this.callCooldown = 0;
     this.placing = null; // tipo de defesa sendo posicionada
     this.selectedTower = null;
     this.banner = null;
@@ -138,6 +141,8 @@ export class Game {
   }
 
   step(dt) {
+    this.callCooldown = Math.max(0, this.callCooldown - dt);
+    if (this.nextIn != null && (this.nextIn -= dt) <= 0) this.startRound();
     this.rounds.update(dt, this);
     this.flushSpawns();
     for (const t of this.towers) t.update(dt, this);
@@ -175,8 +180,7 @@ export class Game {
     buzz(40);
   }
 
-  onRoundEnd() {
-    const n = this.rounds.index;
+  onRoundEnd(n) {
     const bonus = 100 + n;
     this.money += bonus;
     this.coinBump = 1;
@@ -186,19 +190,56 @@ export class Game {
     }
     this.sound.play('roundEnd');
     this.showBanner(`RODADA ${n} COMPLETA!`, 1.6, '#3dff9a', 36, `+$${bonus}`);
+    // mapa limpo: a próxima começa sozinha daqui a pouco
+    if (!this.rounds.active) this.nextIn = NEXT_ROUND_DELAY;
   }
 
+  // Bônus por chamar a próxima rodada com outra ainda rolando:
+  // uma parte do dinheiro que os vírus dela valem
+  earlyBonus() {
+    if (!this.rounds.active || !this.canCall()) return 0;
+    const value = this.rounds.rounds[this.rounds.started].reduce((sum, g) => sum + g.count * worth(g.type), 0);
+    return Math.round(value * EARLY_BONUS);
+  }
+
+  // Dá pra chamar a próxima com no máximo 1 rodada rolando
+  // (a 3 só depois de acabar com os vírus da 1)
+  canCall() {
+    return this.rounds.canStart && this.rounds.started - this.rounds.done < 2;
+  }
+
+  // Botão de rodada: começa a próxima (mesmo com outra rolando)
   playPressed() {
-    if (this.rounds.active) {
-      this.speed = (this.speed % MAX_SPEED) + 1;
-      this.sound.play('click');
+    if (this.callCooldown > 0 || !this.rounds.canStart) return;
+    if (!this.canCall()) {
+      this.fx.text(this.mapW / 2 - this.offsetX, VIEW_H / 2, `Acabe com a rodada ${this.rounds.done + 1} primeiro!`, '#ff7a8a', 22);
+      this.sound.play('error');
       return;
     }
-    if (this.rounds.start()) {
-      for (const t of this.towers) t.onRoundStart();
-      this.showBanner(`RODADA ${this.rounds.index + 1}`, 1.1);
-      this.sound.play('round');
+    this.callCooldown = 0.6; // evita chamar duas sem querer num toque duplo
+    this.startRound();
+  }
+
+  speedPressed() {
+    this.speed = (this.speed % MAX_SPEED) + 1;
+    this.sound.play('click');
+  }
+
+  startRound() {
+    const bonus = this.earlyBonus();
+    if (!this.rounds.start()) return;
+    this.nextIn = null;
+    for (const t of this.towers) {
+      t.onRoundStart();
+      // Minerador nível 2: um bitcoin a mais em toda rodada nova
+      if (t.stats.roundBonus) this.spawnPacket(t.x, t.y - 10, t.stats.roundBonus);
     }
+    if (bonus > 0) {
+      this.money += bonus;
+      this.coinBump = 1;
+    }
+    this.showBanner(`RODADA ${this.rounds.started}`, 1.1, '#ffffff', 46, bonus > 0 ? `Chamou antes: +$${bonus}` : null);
+    this.sound.play('round');
   }
 
   coinTarget() {
@@ -278,7 +319,7 @@ export class Game {
     const def = TOWERS[type];
     if (this.money < def.cost || !this.canPlace(type, x, y)) return false;
     this.money -= def.cost;
-    const tower = new Tower(type, x, y);
+    const tower = new Tower(type, x, y, !this.rounds.active);
     if (this.rounds.active) tower.onRoundStart();
     this.towers.push(tower);
     this.fx.burst(x, y, '#ffffff', 14, 160, 0.35, 5, true);
@@ -367,6 +408,7 @@ export class Game {
 
   panelTap(sx, sy, L) {
     if (inRect(L.play, sx, sy)) return this.playPressed();
+    if (inRect(L.speed, sx, sy)) return this.speedPressed();
 
     const tw = this.selectedTower;
     if (tw) {
@@ -576,24 +618,11 @@ function drawBossBar(ctx, e) {
   }
 }
 
-// Escudinho rachado em cima do vírus: está vulnerável (Pinguim com Era do Gelo)
+// Selinho "x2" em cima do vírus: está vulnerável e leva dano dobrado (Era do Gelo)
 function drawVulnerable(ctx, e, t) {
-  ctx.save();
-  ctx.translate(e.x - e.r * 0.8, e.y - e.r - (e.def.boss ? 30 : 16) + Math.sin(t * 6) * 1.5);
-  ctx.beginPath();
-  ctx.moveTo(0, -8);
-  ctx.lineTo(7, -5);
-  ctx.quadraticCurveTo(7, 4, 0, 8);
-  ctx.quadraticCurveTo(-7, 4, -7, -5);
-  ctx.closePath();
-  fillOutline(ctx, '#8fe3ff', 2.5);
-  ctx.beginPath();
-  ctx.moveTo(1, -7);
-  ctx.lineTo(-2, -1);
-  ctx.lineTo(2, 1);
-  ctx.lineTo(-1, 7);
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = '#ffffff';
-  ctx.stroke();
-  ctx.restore();
+  const x = e.x - e.r * 0.8;
+  const y = e.y - e.r - (e.def.boss ? 30 : 18) + Math.sin(t * 6) * 1.5;
+  circle(ctx, x, y, 10);
+  fillOutline(ctx, '#3ec5ff', 2.5);
+  text(ctx, 'x2', x, y + 1, { size: 12 });
 }

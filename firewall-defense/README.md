@@ -25,7 +25,11 @@ python3 -m http.server 8080
 - As defesas não vão no caminho, na água nem em cima dos componentes (chips, racks, coqueiros...).
 - O **Honeypot** só vai **em cima do caminho**.
 - Toque numa defesa colocada para ver **upgrades**, trocar o **alvo** ou **vender** (devolve 70%).
-- **INICIAR** começa a rodada; durante a rodada o mesmo botão acelera (1x → 2x → 3x).
+  O que você comprou **antes de a rodada começar** volta pelo preço cheio (pra mudar de lugar se errou).
+- **INICIAR** começa a primeira rodada; o botão do lado acelera (1x → 2x → 3x).
+- Quando o mapa limpa, a próxima rodada começa **sozinha em 10 s**.
+- Dá pra **chamar a próxima rodada com outra ainda rolando** (no máximo 2 ao mesmo tempo: a 3 só
+  depois de acabar com a 1). Isso dá um **bônus** de 15% do dinheiro que os vírus da próxima rodada valem.
 - Cada camada de vírus estourada dá $1, e cada rodada completa dá um bônus.
 - Ao vencer você ganha de 1 a 3 estrelas (3 = não perdeu nenhuma vida), e o próximo mapa é liberado.
 
@@ -35,8 +39,9 @@ python3 -m http.server 8080
 | --- | --- | --- | --- |
 | **Hacker** | $200 | Arremessa teclados (atravessa 2 vírus) | Dedos Rápidos · Exploit Triplo |
 | **Golem Firewall** | $350 | Onda de fogo em volta, queima blindados | Chamas Intensas · Muralha de Fogo |
-| **Pinguim** | $300 | Congela os vírus em volta (lentidão) | Criptografia AES · Era do Gelo (mais alcance e congelados ficam vulneráveis: +1 de dano em cada acerto) |
-| **Minerador** | $650 | Minera bitcoins que vão direto pro saldo | GPU Extra · Fazenda de Mineração |
+| **Pinguim** | $300 | Suporte: não dá dano, congela os vírus em volta (lentidão) | Criptografia AES · Era do Gelo (mais alcance e congelados ficam vulneráveis: levam dano dobrado) |
+| **Robô Scanner** | $450 | Laser de longo alcance: tiro lento, dano alto, fura blindagem | Alta Precisão (+3 de dano) · Varredura Contínua (40% mais rápido) |
+| **Minerador** | $650 | Minera bitcoins que vão direto pro saldo | GPU Extra · Fazenda de Mineração (+$120 a cada rodada nova) |
 | **Honeypot** | $80 | *Só no caminho.* Estoura 6 vírus e some | — |
 
 ## Ameaças
@@ -46,7 +51,7 @@ Os vírus funcionam como os balões do Bloons: cada camada estourada revela a de
 | Ameaça | Detalhe |
 | --- | --- |
 | **Vírus** vermelho → azul → verde → amarelo → rosa | Cada cor é uma camada a mais e é mais rápida |
-| **Worm** | Se replica: solta 2 vírus verdes |
+| **Worm** | Rápido: vai soltando vírus azuis pelo caminho enquanto está vivo |
 | **Trojan** | Blindado: os teclados do Hacker não furam |
 | **Locker** | Mini-chefão acorrentado (rodadas 15+). Solta 2 Trojans |
 | **Ransomware** | Chefão dirigível (rodadas 20 e 25). Solta 4 Trojans |
@@ -112,8 +117,10 @@ firewall-defense/
 
 ## Próximos passos sugeridos
 
+- [ ] **Spyware**: vírus invisível, que só uma defesa específica consegue enxergar
+- [ ] **Adware**
 - [ ] Caminhos de upgrade em 2 trilhas (como o Bloons 6) e mais níveis
 - [ ] Heróis que sobem de nível durante a partida
 - [ ] Modos de dificuldade por mapa
-- [ ] Sprites pras defesas que ainda usam desenho com formas (Minerador e Honeypot)
+- [ ] Sprites pras defesas que ainda usam desenho com formas (Honeypot)
 - [ ] Empacotar como app Android/iOS com [Capacitor](https://capacitorjs.com/) (`npx cap add android`)
