@@ -2,8 +2,9 @@ import { VIEW_H, MAP_W } from '../../config.js';
 import { seeded } from '../../util.js';
 import { PathSet } from '../../core/Path.js';
 import { terrainAt } from '../../core/terrain.js';
-import { COLS, ROWS, tileCenter, tileOf, tileKey, pathTiles } from '../../core/grid.js';
+import { TILE, COLS, ROWS, tileCenter, tileOf, tileKey, pathTiles } from '../../core/grid.js';
 import { drawServer } from '../sprites.js';
+import { strokePath } from './shared.js';
 import * as motherboard from './motherboard.js';
 import * as datacenter from './datacenter.js';
 import * as ocean from './ocean.js';
@@ -14,13 +15,10 @@ const THEMES = { motherboard, datacenter, ocean };
 let fontEpoch = 0;
 export const bumpFontEpoch = () => fontEpoch++;
 
-// O servidor fica centrado no fim do caminho, venha ele de cima, de baixo
-// ou dos lados: o caminho entra na caixa pelo lado certo e termina embaixo
-// dela. (A caixa da sprite fica 6px à esquerda e 10px acima do ponto de
-// desenho, por isso o acerto.)
+// O servidor ocupa o quadrado do fim do caminho (o desenho centraliza a
+// caixa no ponto: ver drawServer)
 export function serverPos(path) {
-  const end = path.end;
-  return { x: end.x + 6, y: end.y + 10 };
+  return { x: path.end.x, y: path.end.y };
 }
 
 // Onde os vírus nascem numa rota: o primeiro ponto já dentro da tela
@@ -61,9 +59,20 @@ export class MapView {
     const key = `${ps.toFixed(3)}:${fontEpoch}`;
     if (key !== this.key) {
       this.canvas = paint(this, this.mapW, this.offsetX, ps);
+      this.pathCanvas = null;
       this.key = key;
     }
     ctx.drawImage(this.canvas, 0, 0, this.mapW, VIEW_H);
+  }
+
+  // Só o caminho (topo + parede), recortado da imagem do mapa. O jogo desenha
+  // as coisas do chão (zonas elétricas, pilhas de bitcoin) por cima do mapa e
+  // depois isto por cima delas: o caminho é elevado e cobre o chão à frente,
+  // então elas ficam na perspectiva certa. (Coords de tela, como draw.)
+  drawPath(ctx) {
+    if (!this.canvas) return;
+    if (!this.pathCanvas) this.pathCanvas = cutPath(this);
+    ctx.drawImage(this.pathCanvas, 0, 0, this.mapW, VIEW_H);
   }
 
   // Animações leves por cima do mapa (brilho na água etc.), em coords do mapa
@@ -90,6 +99,22 @@ export function renderThumb(map, w, h, ps) {
   return c;
 }
 
+// Recorta da imagem do mapa a área do caminho: a pegada dele, exatamente
+// os quadrados por onde passa (traço de TILE de largura)
+function cutPath(view) {
+  const src = view.canvas;
+  const c = document.createElement('canvas');
+  c.width = src.width;
+  c.height = src.height;
+  const g = c.getContext('2d');
+  g.drawImage(src, 0, 0);
+  g.globalCompositeOperation = 'destination-in';
+  g.scale(src.width / view.mapW, src.height / VIEW_H);
+  g.translate(view.offsetX, 0);
+  strokePath(g, view.path, TILE, '#000');
+  return c;
+}
+
 function paint(view, W, ox, ps) {
   const c = document.createElement('canvas');
   c.width = Math.ceil(W * ps);
@@ -106,10 +131,10 @@ function paint(view, W, ox, ps) {
   return c;
 }
 
-// Quadrados do servidor: o do fim do caminho e o de cima (a caixa é alta)
+// Quadrado do servidor: o do fim do caminho
 function serverTiles(path) {
   const [c, r] = tileOf(path.end.x, path.end.y);
-  return new Set([tileKey(c, r), tileKey(c, r - 1)]);
+  return new Set([tileKey(c, r)]);
 }
 
 // Sorteia a decoração (sempre igual, pela semente do mapa). Peças que

@@ -1,6 +1,6 @@
 import { VIEW_H, OUTLINE } from '../../config.js';
 import { circle, ellipse, rrect, fillOutline, shadow, gloss } from '../canvas.js';
-import { strokePath, raisedPathBase, waterSparkles, drawSparkles, lines } from './shared.js';
+import { strokePath, drawRaisedPath, waterSparkles, drawSparkles, lines } from './shared.js';
 
 // Tema CABO SUBMARINO: mar aberto, ilhas de areia com coqueiros,
 // pedras na água e o caminho como um píer de madeira.
@@ -83,21 +83,17 @@ export function paint(g, { map, path, decor, W, ox }) {
   }
 
   // píer de madeira elevado (3/4), com estacas na frente da lateral
-  raisedPathBase(g, path, { depth: 12, side: '#9a6533', sideDark: '#5e3b1c', outline: OUTLINE, shadow: 'rgba(0,40,80,0.25)' });
-  g.fillStyle = '#5a3a1e';
-  for (const line of lines(path)) for (let d = 20; d < line.length; d += 46) {
-    const p = line.pointAt(d);
-    const nx = -Math.sin(p.angle);
-    const ny = Math.cos(p.angle);
-    for (const s of [-1, 1]) {
-      circle(g, p.x + nx * s * (path.width / 2 + 2), p.y + ny * s * (path.width / 2 + 2) + 4, 5);
-      fillOutline(g, '#6b4423', 2.5);
-    }
-  }
-  strokePath(g, path, path.width + 8, OUTLINE);
-  strokePath(g, path, path.width, '#7a4b22');
-  strokePath(g, path, path.width - 6, '#c98b4f', [10, 3]);
-  strokePath(g, path, 2, 'rgba(90,58,30,0.5)', [2, 18]);
+  drawRaisedPath(g, path, {
+    side: '#7c5129',
+    rim: '#7a4b22',
+    inner: '#c98b4f',
+    rimW: 4,
+    outline: OUTLINE,
+    top: (l, w) => {
+      strokePath(l, path, w, '#7a4b22', [2, 10]); // vão entre as tábuas
+      strokePath(l, path, 2, 'rgba(90,58,30,0.5)', [2, 18]);
+    },
+  });
 
   for (const p of decor.parts) if (p.kind === 'palm') drawPalm(g, p);
   g.restore();

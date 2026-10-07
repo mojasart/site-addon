@@ -1,4 +1,4 @@
-import { OUTLINE, GOLD } from '../config.js';
+import { OUTLINE, GOLD, TILE } from '../config.js';
 import { rrect, circle, ellipse, fillOutline, shadow, gloss } from './canvas.js';
 import { TAU } from '../util.js';
 import { drawImage, hasImage } from './images.js';
@@ -100,18 +100,45 @@ export function drawHeart(ctx, s = 14) {
 }
 
 // O servidor que estamos protegendo (fim do caminho)
+const SERVER_SCALE = 0.6; // desenho antigo (sem sprite): escala pra caber no quadrado
+const PAD = TILE; // a plataforma ocupa o quadrado inteiro
+const PAD_DEPTH = 8; // parede da plataforma (igual à da rua)
+const SERVER_IMG = 54; // tamanho da sprite: o cubo (234 de 256px) fica com ~49px
+
+// Plataforma do servidor: o quadrado inteiro, com topo azul (borda clara e
+// faixa ciano, como uma doca) e parede escura embaixo. Fica vermelha ao apanhar.
+function drawServerPad(ctx, hurt) {
+  const h = PAD / 2;
+  const top = PAD - PAD_DEPTH;
+  // parede (a peça inteira com contorno; o topo cobre a parte de cima)
+  rrect(ctx, -h, -h, PAD, PAD, 9);
+  fillOutline(ctx, '#2a3866', 3);
+  // topo
+  rrect(ctx, -h, -h, PAD, top, 9);
+  fillOutline(ctx, hurt > 0 ? '#a8455a' : '#4f6aa8', 3);
+  rrect(ctx, -h + 5, -h + 5, PAD - 10, top - 10, 6);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = hurt > 0 ? 'rgba(255,150,160,0.8)' : 'rgba(110,230,255,0.75)';
+  ctx.stroke();
+}
+
+// O servidor ocupa 1 quadrado da grade: (0, 0) é o centro do quadrado.
+// Embaixo, uma plataforma do tamanho exato do quadrado (topo + parede, como
+// a rua elevada); em cima, o cubo do servidor, apoiado no topo dela.
 export function drawServer(ctx, t, hurt) {
   const shake = hurt > 0 ? Math.sin(t * 80) * 2 : 0;
+  drawServerPad(ctx, hurt);
   ctx.save();
   ctx.translate(shake, 0);
   if (hasImage('server')) {
-    // sombra embaixo da caixa (a caixa fica ~6px à esquerda do meio da imagem)
-    shadow(ctx, -6, 34, 40, 10);
-    drawImage(ctx, hurt > 0 && hasImage('server_hurt') ? 'server_hurt' : 'server', 96, 0, -10);
+    // a base do cubo fica a 122/256 do meio da imagem: apoia no topo da plataforma
+    const S = SERVER_IMG;
+    const bottom = (122 / 256) * S;
+    drawImage(ctx, hurt > 0 && hasImage('server_hurt') ? 'server_hurt' : 'server', S, 0, PAD / 2 - PAD_DEPTH - 6 - bottom);
     ctx.restore();
     return;
   }
-  shadow(ctx, 5, 34, 44, 12);
+  ctx.scale(SERVER_SCALE, SERVER_SCALE);
   rrect(ctx, -42, -30, 84, 64, 12);
   fillOutline(ctx, '#3a4f86', 4);
   rrect(ctx, -32, -22, 64, 34, 7);
