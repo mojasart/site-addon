@@ -1,6 +1,7 @@
 import { TOWERS } from '../data/towers.js';
 import { SELL_RATE } from '../config.js';
 import { rand } from '../util.js';
+import { laserOrigin } from '../render/characters.js';
 
 export class Tower {
   // fresh: comprada antes de a rodada começar → vende pelo preço cheio
@@ -158,8 +159,11 @@ export class Tower {
         const target = game.findTarget(this);
         if (!target) break;
         this.lookAt(target.x);
-        const x0 = this.x + this.face * 4;
-        const y0 = this.y - 26;
+        // o laser sai do olho vermelho, do lado pra onde ele está olhando
+        // (0,8: o meio do bote que ele dá enquanto o raio aparece)
+        const eye = laserOrigin(this.type, this.level, 0.8);
+        const x0 = this.x + this.face * eye.x;
+        const y0 = this.y + eye.y;
         // Feixe Perfurante: o laser segue reto e acerta quem está atrás do alvo
         const hits = [target, ...this.behind(game, target, x0, y0, (s.pierce ?? 1) - 1)];
         const last = hits[hits.length - 1];
