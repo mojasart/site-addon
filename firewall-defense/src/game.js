@@ -132,7 +132,8 @@ export class Game {
     this.drag = null;
     if (won) {
       const L = this.map.lives;
-      this.stars = this.lives >= L ? 3 : this.lives >= L * 0.5 ? 2 : 1;
+      // 3 estrelas com 90% das vidas ou mais, 2 com pelo menos metade, 1 com menos
+      this.stars = this.lives >= L * 0.9 ? 3 : this.lives >= L * 0.5 ? 2 : 1;
       const coffeeBefore = this.app.coffeeEarned ?? 0;
       if (this.platinum) {
         this.stars = 3; // vencer a platina já vale as 3 (em platina)
@@ -553,6 +554,7 @@ export class Game {
     }
     if (this.endDelay > 0) return;
     if (inRect(L.maps, sx, sy)) this.app.goMaps();
+    else if (L.retry && inRect(L.retry, sx, sy)) this.app.startMap(this.mapIndex, 'normal'); // tentar as 3 estrelas
     else if (inRect(L.next, sx, sy)) {
       // venceu: vai pro próximo mapa (normal); perdeu: tenta de novo no mesmo modo
       if (this.state === 'won' && this.nextMap) this.app.startMap(this.mapIndex + 1);

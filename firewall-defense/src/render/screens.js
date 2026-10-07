@@ -18,11 +18,23 @@ export function overlayLayout(game) {
     L.music = { x: cx - 105, y: 400, w: 60, h: 60 };
     L.sfx = { x: cx - 30, y: 400, w: 60, h: 60 };
     L.auto = { x: cx + 45, y: 400, w: 60, h: 60 };
+  } else if (retryOffered(game)) {
+    // venceu com 2 estrelas ou menos: MAPAS · DE NOVO · PRÓXIMO
+    L.maps = { x: cx - 255, y: 392, w: 160, h: 72 };
+    L.retry = { x: cx - 80, y: 392, w: 160, h: 72 };
+    L.next = { x: cx + 95, y: 392, w: 160, h: 72 };
   } else if (game.state === 'won' || game.state === 'lost') {
     L.maps = { x: cx - 230, y: 392, w: 210, h: 72 };
     L.next = { x: cx + 20, y: 392, w: 210, h: 72 };
   }
   return L;
+}
+
+// Venceu sem as 3 estrelas (e tem próximo mapa): oferece jogar de novo pra
+// tentar as 3. No último mapa o botão da direita já é "DE NOVO"; a platina
+// vencida sempre vale 3
+function retryOffered(game) {
+  return game.state === 'won' && !game.platinum && game.stars < 3 && !!game.nextMap;
 }
 
 export function drawBanner(ctx, game) {
@@ -114,9 +126,11 @@ export function drawOverlay(ctx, game) {
       }
     }
     if (game.endDelay <= 0) {
-      bigButton(ctx, L.maps, '#5fb4ff', 'MAPAS', { icon: 'map', size: 24 });
+      const size = L.retry ? 21 : 24; // com 3 botões, a letra encolhe um pouco
+      bigButton(ctx, L.maps, '#5fb4ff', 'MAPAS', { icon: 'map', size });
+      if (L.retry) bigButton(ctx, L.retry, '#ff9a2e', 'DE NOVO', { icon: 'restart', size });
       const label = won ? (game.nextMap ? 'PRÓXIMO' : 'DE NOVO') : 'DE NOVO';
-      bigButton(ctx, L.next, '#3fd16b', label, { icon: won && game.nextMap ? 'play' : 'restart', size: 24 });
+      bigButton(ctx, L.next, '#3fd16b', label, { icon: won && game.nextMap ? 'play' : 'restart', size });
     }
   }
   ctx.restore();
