@@ -11,7 +11,7 @@
 //  { c, r, x, y } — coluna, linha e o centro em pixels, nas coordenadas do
 //  mapa. São sorteadas pela
 //  semente do mapa (sempre os mesmos), só onde dá pra colocar o Minerador,
-//  fora da linha de cima (HUD) e espalhados (longe um do outro).
+//  fora das zonas elétricas e da linha de cima (HUD), e espalhados.
 // ─────────────────────────────────────────────────────────────
 import { seeded } from '../util.js';
 import { TILE, COLS, ROWS, tileCenter, tileOf } from './grid.js';
@@ -29,7 +29,10 @@ export function pickCoinTiles(game) {
   for (let c = 0; c < COLS; c++) {
     for (let r = 1; r < ROWS; r++) { // a linha de cima fica embaixo do HUD
       const { x, y } = tileCenter(c, r);
-      if (game.canPlace('minerador', x, y)) free.push({ c, r, x, y });
+      if (!game.canPlace('minerador', x, y)) continue;
+      // nunca numa zona elétrica (o Minerador levaria choque)
+      if (map.hazards?.some((h) => x >= h.x && x < h.x + h.w && y >= h.y && y < h.y + h.h)) continue;
+      free.push({ c, r, x, y });
     }
   }
   // embaralha (sempre igual pra cada mapa) e pega os primeiros espalhados
