@@ -46,7 +46,7 @@ export const TOWERS = {
     range: 80,
     attack: 'pulse',
     effect: 'fire',
-    fireRate: 1.3,
+    fireRate: 1.8, // segundos entre uma onda e outra (golem é lento: bate forte, mas devagar)
     damage: 1,
     maxTargets: 10,
     canHitArmored: true,
