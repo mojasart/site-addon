@@ -413,7 +413,9 @@ export function sparkle(ctx, x, y, r, color = '#ffffff') {
 // Estrelinhas douradas embaixo da defesa: uma por upgrade comprado
 export function drawPips(ctx, level, r) {
   for (let i = 0; i < level; i++) {
-    star(ctx, (i - (level - 1) / 2) * 15, r + 10, 7);
+    const x = (i - (level - 1) / 2) * 15;
+    if (drawImage(ctx, 'icon_star', 7 * 2.4, x, r + 10)) continue;
+    star(ctx, x, r + 10, 7);
     fillOutline(ctx, GOLD, 2);
   }
 }

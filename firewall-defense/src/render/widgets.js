@@ -1,6 +1,7 @@
 import { OUTLINE, GOLD } from '../config.js';
 import { rrect, fillOutline, text, button } from './canvas.js';
 import { ICONS } from './sprites.js';
+import { drawImage } from './images.js';
 import { star } from './characters.js';
 
 export const inRect = (r, x, y) => !!r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
@@ -35,8 +36,10 @@ export function stars(ctx, cx, y, n, size = 16, gap = 36, pop = null) {
     ctx.save();
     ctx.translate(cx + (i - 1) * gap, y - (i === 1 ? size * 0.4 : 0));
     ctx.scale(i < n ? k : 1, i < n ? k : 1);
-    star(ctx, 0, 0, size);
-    fillOutline(ctx, i < n ? GOLD : 'rgba(20,30,60,0.55)', 3);
+    if (!drawImage(ctx, i < n ? 'icon_star' : 'icon_star_empty', size * 2.4)) {
+      star(ctx, 0, 0, size);
+      fillOutline(ctx, i < n ? GOLD : 'rgba(20,30,60,0.55)', 3);
+    }
     ctx.restore();
   }
 }
