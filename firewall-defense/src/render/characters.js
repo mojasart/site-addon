@@ -75,7 +75,7 @@ const AMBIENT = {
       ctx.globalAlpha = 1;
     },
   },
-  // Scanner: ondas de rádio saindo da parabólica (arcos abrindo e sumindo)
+  // Robô NMAP: ondas de rádio saindo da parabólica (arcos abrindo e sumindo)
   scanner: {
     front(ctx, t, sprite) {
       const [x, y] = DISH[sprite] ?? DISH.scanner;
@@ -190,7 +190,7 @@ const SPRITE_META = {
 
 // Tela do computador do Minerador adulto (de onde saem as moedas)
 const MONITOR = [15, -28];
-// Parabólica do Scanner em cada idade (de onde saem as ondas de rádio)
+// Parabólica do Robô NMAP em cada idade (de onde saem as ondas de rádio)
 const DISH = { scanner: [-11, -32], scanner_teen: [-14, -26], scanner_kid: [-7, -21] };
 
 // Idade de cada nível de upgrade (0 → criança, 1 → adolescente, 2 → adulto)
