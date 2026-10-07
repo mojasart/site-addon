@@ -12,6 +12,7 @@ const NAMES = [
   'pinguim_open',
   'firewall',
   'firewall_attack',
+  'scanner',
   'minerador',
   'minerador_attack',
   'virus_red',

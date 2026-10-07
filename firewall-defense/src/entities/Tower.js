@@ -1,5 +1,5 @@
 import { TOWERS } from '../data/towers.js';
-import { SELL_RATE, UPGRADE_RANGE } from '../config.js';
+import { SELL_RATE } from '../config.js';
 import { rand } from '../util.js';
 
 export class Tower {
@@ -44,7 +44,6 @@ export class Tower {
   upgrade() {
     const up = this.nextUpgrade;
     up.apply(this.stats);
-    if (this.stats.range > 0 && Number.isFinite(this.stats.range)) this.stats.range += UPGRADE_RANGE;
     this.spent += up.cost;
     this.level++;
     this.spawnAnim = 1;
@@ -86,6 +85,16 @@ export class Tower {
         const shots = s.multishot ?? 1;
         for (let i = 0; i < shots; i++) game.spawnProjectile(this, angle + (i - (shots - 1) / 2) * 0.22);
         this.lookAt(p.x);
+        this.fire();
+        break;
+      }
+      case 'beam': {
+        if (this.cooldown > 0) break;
+        const target = game.findTarget(this);
+        if (!target) break;
+        this.lookAt(target.x);
+        game.fx.beam(this.x + this.face * 4, this.y - 26, target.x, target.y);
+        target.takeDamage(s.damage, game, this.opts());
         this.fire();
         break;
       }

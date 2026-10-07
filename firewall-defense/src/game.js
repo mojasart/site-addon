@@ -193,14 +193,25 @@ export class Game {
   // Bônus por chamar a próxima rodada com outra ainda rolando:
   // uma parte do dinheiro que os vírus dela valem
   earlyBonus() {
-    if (!this.rounds.active || !this.rounds.canStart) return 0;
+    if (!this.rounds.active || !this.canCall()) return 0;
     const value = this.rounds.rounds[this.rounds.started].reduce((sum, g) => sum + g.count * worth(g.type), 0);
     return Math.round(value * EARLY_BONUS);
+  }
+
+  // Dá pra chamar a próxima com no máximo 1 rodada rolando
+  // (a 3 só depois de acabar com os vírus da 1)
+  canCall() {
+    return this.rounds.canStart && this.rounds.started - this.rounds.done < 2;
   }
 
   // Botão de rodada: começa a próxima (mesmo com outra rolando)
   playPressed() {
     if (this.callCooldown > 0 || !this.rounds.canStart) return;
+    if (!this.canCall()) {
+      this.fx.text(this.mapW / 2 - this.offsetX, VIEW_H / 2, `Acabe com a rodada ${this.rounds.done + 1} primeiro!`, '#ff7a8a', 22);
+      this.sound.play('error');
+      return;
+    }
     this.callCooldown = 0.6; // evita chamar duas sem querer num toque duplo
     this.startRound();
   }

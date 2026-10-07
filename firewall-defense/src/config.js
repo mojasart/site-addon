@@ -15,7 +15,6 @@ export const SELL_RATE = 0.7; // vender devolve 70% do que foi gasto
 export const MAX_SPEED = 3; // botão de acelerar: 1x → 2x → 3x
 export const NEXT_ROUND_DELAY = 10; // segundos até a próxima rodada começar sozinha
 export const EARLY_BONUS = 0.15; // chamar com outra rodada rolando: 15% do valor da próxima
-export const UPGRADE_RANGE = 12; // todo upgrade aumenta um pouco o alcance
 
 export const FONT = '"Lilita One", "Arial Rounded MT Bold", "Arial Black", system-ui, sans-serif';
 

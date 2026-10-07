@@ -303,6 +303,49 @@ const CHARACTERS = {
     }
   },
 
+  // Robô com olho-câmera que solta laser
+  scanner(ctx, s, t, a) {
+    limb(ctx, -6, 2, -6, 11, 5, '#8a96aa');
+    limb(ctx, 6, 2, 6, 11, 5, '#8a96aa');
+    ellipse(ctx, -6.5, 13.5, 6, 3.2);
+    fillOutline(ctx, '#5a6886', 2.5);
+    ellipse(ctx, 7, 13.5, 6, 3.2);
+    fillOutline(ctx, '#5a6886', 2.5);
+    limb(ctx, -12, -6, -16, 2, 5, '#a9b6c8');
+    circle(ctx, -16, 3, 3.6);
+    fillOutline(ctx, '#8a96aa', 2.5);
+    rrect(ctx, -13, -14, 26, 19, 6);
+    fillOutline(ctx, '#c9d3e0');
+    rrect(ctx, -7, -9, 14, 8, 3);
+    ctx.fillStyle = '#8ea0bc';
+    ctx.fill();
+    circle(ctx, -3, -5, 1.8);
+    ctx.fillStyle = Math.sin(t * 6) > 0 ? '#3dff9a' : '#1d5a3c';
+    ctx.fill();
+    circle(ctx, 3, -5, 1.8);
+    ctx.fillStyle = GOLD;
+    ctx.fill();
+    rrect(ctx, -3, -18, 6, 5, 2);
+    fillOutline(ctx, '#8a96aa', 2);
+    limb(ctx, -6, -42, -9, -50, 2.5, '#8a96aa');
+    circle(ctx, -9, -51, 3);
+    fillOutline(ctx, Math.sin(t * 4) > 0 ? '#ff4d5e' : '#7a1a2a', 2);
+    rrect(ctx, -15, -42, 30, 25, 9);
+    fillOutline(ctx, '#e6ecf5');
+    gloss(ctx, -8, -37, 6, 3);
+    circle(ctx, 4, -29.5, 9);
+    fillOutline(ctx, '#2b3346');
+    circle(ctx, 4, -29.5, 6);
+    ctx.fillStyle = a > 0.5 ? '#ffffff' : '#ff3b5c';
+    ctx.fill();
+    circle(ctx, 6, -31.5, 1.8);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    limb(ctx, 12, -6, 17, 2, 5, '#a9b6c8');
+    circle(ctx, 17, 3, 3.6);
+    fillOutline(ctx, '#8a96aa', 2.5);
+  },
+
   // Minerador barbudo de picareta
   minerador(ctx, s, t, a) {
     legs(ctx, '#2f5fb3', '#5a3a1e');

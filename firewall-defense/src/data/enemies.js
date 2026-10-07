@@ -11,6 +11,7 @@
 //  kind     → qual desenho usar em render/viruses.js
 //  sprite   → imagem em assets/sprites (sem ela usa o desenho do kind)
 //  reward   → moedas ao estourar essa camada (padrão 1)
+//  spawn    → { type, every }: vai soltando esse vírus enquanto está vivo
 // ─────────────────────────────────────────────────────────────
 export const ENEMIES = {
   v1: { name: 'Vírus', sprite: 'virus_red', hp: 1, speed: 70, radius: 13, color: '#ff4d5e', children: [] },
@@ -20,14 +21,15 @@ export const ENEMIES = {
   v5: { name: 'Vírus Rosa', sprite: 'virus_pink', hp: 1, speed: 220, radius: 15, color: '#ff6fd0', children: [['v4', 1]] },
   worm: {
     name: 'Worm',
-    desc: 'Se replica quando destruído',
-    hp: 1,
-    speed: 130,
+    desc: 'Rápido: vai soltando vírus pelo caminho enquanto está vivo',
+    hp: 3,
+    speed: 170,
     radius: 15,
     color: '#7be04a',
     kind: 'worm',
     sprite: 'worm',
-    children: [['v3', 2]],
+    spawn: { type: 'v2', every: 1.4 },
+    children: [],
   },
   trojan: {
     name: 'Trojan',
@@ -44,7 +46,7 @@ export const ENEMIES = {
   locker: {
     name: 'Locker',
     desc: 'Mini-chefão acorrentado: solta 2 Trojans',
-    hp: 80,
+    hp: 90,
     speed: 35,
     radius: 26,
     color: '#a35cf0',
@@ -57,7 +59,7 @@ export const ENEMIES = {
   ransomware: {
     name: 'Ransomware',
     desc: 'Chefão: solta 4 Trojans quando destruído',
-    hp: 300,
+    hp: 340,
     speed: 30,
     radius: 38,
     color: '#7a3cc4',

@@ -52,6 +52,15 @@ export class Enemy {
       return;
     }
     this.place(game.path);
+    // Worm: vai soltando vírus pelo caminho enquanto está vivo
+    const sp = this.def.spawn;
+    if (sp && (this.spawnTimer = (this.spawnTimer ?? sp.every) - dt) <= 0) {
+      this.spawnTimer = sp.every;
+      const child = new Enemy(sp.type, Math.max(0, this.dist - 16));
+      child.round = this.round;
+      child.place(game.path);
+      game.spawnEnemy(child);
+    }
   }
 
   slow(mul, time) {

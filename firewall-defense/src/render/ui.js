@@ -106,7 +106,7 @@ function drawTowerInfo(ctx, game, L) {
   const tw = game.selectedTower;
   const def = tw.def;
   text(ctx, def.name, P.x + 14, 24, { size: def.name.length > 11 ? 17 : 21, align: 'left' });
-  if (def.attack !== 'farm') text(ctx, `Estourou ${tw.pops}`, P.x + 14, 50, { size: 13, align: 'left', color: '#bcd0f5' });
+  if (def.attack !== 'farm' && def.damage !== 0) text(ctx, `Estourou ${tw.pops}`, P.x + 14, 50, { size: 13, align: 'left', color: '#bcd0f5' });
   iconButton(ctx, L.close, '#ff5a5a', 'close');
 
   if (def.upgrades.length) def.upgrades.forEach((up, i) => drawUpgrade(ctx, game, tw, up, i, L.upgrades[i]));
@@ -142,7 +142,7 @@ function towerInfo(tw) {
     case 'farm':
       return { sub: `Minera ${s.packetsPerRound} bitcoins de $${s.packetValue} por rodada${s.roundBonus ? ` e mais $${s.roundBonus} quando ela começa` : ''}` };
     default:
-      if (s.vulnerable) return { sub: 'Congelados levam dano dobrado' };
+      if (s.slow) return { sub: `Suporte: deixa os vírus lentos${s.vulnerable ? ' e eles levam dano dobrado' : ''}` };
       return { sub: tw.hitsArmored ? 'Fura blindagem dos Trojans' : 'Não fura blindagem (Trojans)' };
   }
 }
@@ -163,7 +163,7 @@ function drawUpgrade(ctx, game, tw, up, i, r) {
 // Botão da próxima rodada: INICIAR (primeira), contagem (mapa limpo) ou
 // chamar já com outra rolando, mostrando o bônus que ganha
 function drawPlayButton(ctx, game, r) {
-  const can = game.rounds.canStart && game.state === 'playing';
+  const can = game.canCall() && game.state === 'playing';
   const bonus = game.earlyBonus();
   const cx = r.x + r.w / 2;
   ctx.save();
@@ -179,7 +179,8 @@ function drawPlayButton(ctx, game, r) {
   ICONS.play(ctx, 10);
   ctx.restore();
   let label = 'INICIAR';
-  if (!can) label = 'ÚLTIMA';
+  if (!game.rounds.canStart) label = 'ÚLTIMA';
+  else if (!can) label = 'ESPERE';
   else if (game.nextIn != null) label = `${Math.ceil(game.nextIn)}s`;
   else if (bonus > 0) label = `+$${bonus}`;
   text(ctx, label, cx, r.y + 44, { size: 18, color: bonus > 0 && can ? GOLD : '#ffffff' });
