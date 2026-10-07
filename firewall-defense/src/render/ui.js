@@ -50,9 +50,17 @@ export function drawHud(ctx, game) {
   text(ctx, `$${game.money}`, 54, 73, { size: 28 + game.coinBump * 4, color: GOLD, align: 'left' });
 
   const r = game.rounds;
-  const shown = r.current;
-  text(ctx, 'RODADA', L.pause.x - 14, 20, { size: 14, align: 'right', color: '#e3f6ff' });
-  text(ctx, `${shown}/${r.total}`, L.pause.x - 14, 45, { size: 28, align: 'right' });
+  if (game.platinum) {
+    // platina: relógio até o chefão (pisca vermelho no fim)
+    const left = Math.ceil(game.platLeft);
+    const clock = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+    const hurry = !game.bossCalled && left <= 10 && Math.sin(t * 10) > 0;
+    text(ctx, 'PLATINA', L.pause.x - 14, 20, { size: 14, align: 'right', color: '#bdeeff' });
+    text(ctx, game.bossCalled ? 'CHEFÃO' : clock, L.pause.x - 14, 45, { size: 28, align: 'right', color: game.bossCalled || hurry ? '#ff7a8a' : '#ffffff' });
+  } else {
+    text(ctx, 'RODADA', L.pause.x - 14, 20, { size: 14, align: 'right', color: '#e3f6ff' });
+    text(ctx, `${r.current}/${r.total}`, L.pause.x - 14, 45, { size: 28, align: 'right' });
+  }
   iconButton(ctx, L.pause, '#5fb4ff', 'pause');
 }
 
@@ -92,10 +100,20 @@ function drawShop(ctx, game, L) {
     ctx.scale(0.8, 0.8);
     drawCharacter(ctx, tile.type, { t: game.anim + tile.x * 0.01, face: 1, level: 0 });
     ctx.restore();
-    if (!affordable) {
+    const blocked = game.blocked === tile.type;
+    if (!affordable || blocked) {
       rrect(ctx, tile.x, tile.y, tile.w, tile.h - 5, 14);
-      ctx.fillStyle = 'rgba(20,28,60,0.55)';
+      ctx.fillStyle = blocked ? 'rgba(20,28,60,0.75)' : 'rgba(20,28,60,0.55)';
       ctx.fill();
+    }
+    if (blocked) {
+      // aliado bloqueado no modo platina
+      ctx.save();
+      ctx.translate(tile.x + tile.w / 2, tile.y + 44);
+      ICONS.lock(ctx, 14);
+      ctx.restore();
+      text(ctx, 'BLOQUEADO', tile.x + tile.w / 2, tile.y + tile.h - 16, { size: 13, color: '#ff7a8a' });
+      continue;
     }
     text(ctx, `$${def.cost}`, tile.x + tile.w / 2, tile.y + tile.h - 16, { size: 18, color: affordable ? GOLD : '#ff7a8a' });
   }
@@ -180,7 +198,8 @@ function drawPlayButton(ctx, game, r) {
   ICONS.play(ctx, 10);
   ctx.restore();
   let label = 'INICIAR';
-  if (!game.rounds.canStart) label = 'ÚLTIMA';
+  if (game.platinum && game.rounds.started > 0) label = 'AUTO';
+  else if (!game.rounds.canStart) label = 'ÚLTIMA';
   else if (!can) label = 'ESPERE';
   else if (game.nextIn != null) label = `${Math.ceil(game.nextIn)}s`;
   else if (bonus > 0) label = `+$${bonus}`;

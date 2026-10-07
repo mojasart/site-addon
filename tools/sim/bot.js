@@ -22,7 +22,7 @@ export const PROFILES = {
 
 const SPEED_LIMIT = 2400; // segundos de jogo (só pra não travar)
 
-export function playMap(mapIndex, profileName, seed) {
+export function playMap(mapIndex, profileName, seed, mode = 'normal') {
   const profile = PROFILES[profileName];
   const rnd = seeded(seed * 9973 + mapIndex * 31 + 7);
   const app = {
@@ -32,7 +32,7 @@ export function playMap(mapIndex, profileName, seed) {
     pixelScale: 1,
     recordStars() {},
   };
-  const game = new Game(app, mapIndex);
+  const game = new Game(app, mapIndex, mode);
   const samples = pathSamples(game);
   const spots = candidateSpots(game);
   const cover = new Map(); // `${x},${y},${range}` → amostras cobertas
@@ -49,7 +49,8 @@ export function playMap(mapIndex, profileName, seed) {
   };
 
   const pickWeighted = (weights) => {
-    const entries = Object.entries(weights).filter(([, w]) => w > 0);
+    // no modo platina, o aliado bloqueado fica de fora
+    const entries = Object.entries(weights).filter(([k, w]) => w > 0 && k !== game.blocked);
     let total = entries.reduce((a, [, w]) => a + w, 0);
     let r = rnd() * total;
     for (const [k, w] of entries) if ((r -= w) <= 0) return k;
@@ -82,6 +83,8 @@ export function playMap(mapIndex, profileName, seed) {
   const ARMORED = new Set(['trojan', 'locker', 'ransomware']);
   function armorSoon() {
     const r = game.rounds;
+    // platina: o chefão (blindado) vem no fim do tempo; se prepara no último minuto
+    if (game.platinum && game.platLeft < 60) return true;
     for (let k = r.started; k < Math.min(r.total, r.started + 3); k++) if (r.rounds[k].some((g) => ARMORED.has(g.type))) return true;
     return false;
   }
@@ -107,7 +110,8 @@ export function playMap(mapIndex, profileName, seed) {
       else if (profile.eco && miners < 2 && game.towers.length >= 8) type = 'minerador';
       else type = pickWeighted(profile.w);
       // blindados chegando: garante quem fura blindagem (Golem ou Robô NMAP)
-      if (needPierce) type = rnd() < 0.5 ? 'firewall' : 'scanner';
+      if (needPierce) type = game.blocked === 'firewall' ? 'scanner' : game.blocked === 'scanner' ? 'firewall' : rnd() < 0.5 ? 'firewall' : 'scanner';
+      if (type === game.blocked) type = pickWeighted(profile.w);
       const def = TOWERS[type];
       if (def.cost > game.money) return;
       const spot = bestSpot(type);
@@ -132,6 +136,9 @@ export function playMap(mapIndex, profileName, seed) {
     won: game.state === 'won',
     round: game.rounds.done,
     total: game.rounds.total,
+    time: game.platTime,
+    boss: game.bossCalled,
+    waves: game.rounds.started,
     lives: game.lives,
     towers: game.towers.length,
   };

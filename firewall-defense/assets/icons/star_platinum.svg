@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <defs>
+    <linearGradient id="w" gradientUnits="userSpaceOnUse" x1="0" y1="8" x2="0" y2="56"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dbe3f2"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#7fd6f5"/></linearGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fe3ff"/><stop offset="1" stop-color="#1fa3ef"/></linearGradient>
+  </defs>
+  <path d="M32.0 7.0 L39.6 23.5 L57.7 25.7 L44.4 38.0 L47.9 55.8 L32.0 47.0 L16.1 55.8 L19.6 38.0 L6.3 25.7 L24.4 23.5 Z" stroke="#1b2340" stroke-width="8" fill="#1b2340"/>
+  <path d="M32.0 7.0 L39.6 23.5 L57.7 25.7 L44.4 38.0 L47.9 55.8 L32.0 47.0 L16.1 55.8 L19.6 38.0 L6.3 25.7 L24.4 23.5 Z" stroke="url(#gold)" stroke-width="3" fill="url(#gold)"/>
+  <path d="M24.4 23.5 L32.0 7.0 L34.5 18.5 Z" fill="#ffffff" opacity="0.9"/>
+  <path d="M50 6 L52 11 L57 13 L52 15 L50 20 L48 15 L43 13 L48 11 Z" stroke="#1b2340" stroke-width="2.5" fill="#ffffff"/>
+</svg>

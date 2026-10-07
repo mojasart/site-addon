@@ -3,15 +3,29 @@ import { MAPS, SEASONS, MAPS_PER_SEASON } from '../data/maps.js';
 import { ENEMIES } from '../data/enemies.js';
 import { renderThumb } from '../render/maps/index.js';
 import { rrect, fillOutline, text, button } from '../render/canvas.js';
-import { iconButton, inRect, stars, ribbon } from '../render/widgets.js';
+import { iconButton, inRect, stars, ribbon, bigButton, starTier } from '../render/widgets.js';
 import { drawVirusIcon } from '../render/viruses.js';
 import { ICONS } from '../render/sprites.js';
+import { drawImage } from '../render/images.js';
+import { BOT_WIN } from '../data/botStats.js';
 
 const DIFF_COLOR = { 'FÁCIL': '#3fd16b', 'MÉDIO': '#ff9a2e', 'DIFÍCIL': '#ff5a6a', 'EXTREMO': '#b65cff' };
+// Dificuldade pela % de partidas de bots que venceram o mapa (data/botStats.js)
+const TIERS = [
+  { min: 90, name: 'FÁCIL', color: '#3fd16b' },
+  { min: 65, name: 'MÉDIO', color: '#ffd23f' },
+  { min: 45, name: 'HARD', color: '#ff9a2e' },
+  { min: 25, name: 'MUITO DIFÍCIL', color: '#ff4d5e' },
+  { min: 0, name: 'INSANO', color: '#9b1626' },
+];
+const tierOf = (rate) => TIERS.find((t) => rate >= t.min);
 
 // Seleção de mapas por season: abas no topo (Placa-Mãe, Data Center,
 // Cabo Submarino) e uma grade 5×3 com os 15 mapas da season escolhida.
 // Os mapas abrem em sequência: vencer um libera o próximo.
+// Tocar num mapa abre a escolha NORMAL / PLATINA; a platina só libera com
+// 3 estrelas (antes disso aparece trancada). Platina vencida: estrelas azul-gelo e a gema do lado.
+// (O aliado bloqueado só aparece dentro da partida.)
 export class LevelSelectScene {
   constructor(app) {
     this.app = app;
@@ -20,6 +34,7 @@ export class LevelSelectScene {
     this.thumbKey = '';
     this.pressed = -1;
     this.wiggle = { i: -1, t: 0 };
+    this.pick = -1; // mapa com a janela de escolha do modo aberta
     // abre na season do mapa mais avançado já liberado
     let last = 0;
     for (let i = 0; i < MAPS.length; i++) if (app.isUnlocked(i)) last = i;
@@ -37,7 +52,15 @@ export class LevelSelectScene {
     const th = 112;
     const gx = (W - gw) / 2;
     const gy = 160;
+    const card = { x: W / 2 - 240, y: 110, w: 480, h: 330 };
     return {
+      modal: {
+        card,
+        close: { x: card.x + card.w - 54, y: card.y + 14, w: 42, h: 42 },
+        normal: { x: card.x + 40, y: card.y + 84, w: card.w - 80, h: 70 },
+        platinum: { x: card.x + 40, y: card.y + 172, w: card.w - 80, h: 70 },
+        locked: { x: card.x + 24, y: card.y + 162, w: card.w - 48, h: card.h - 176 }, // cobre a platina
+      },
       back: { x: 18, y: 16, w: 56, h: 56 },
       catalog: { x: W - 74, y: 16, w: 56, h: 56 },
       tabs: SEASONS.map((_, s) => ({ x: tabs0 + s * (tabW + 12), y: 92, w: tabW, h: 52 })),
@@ -109,6 +132,90 @@ export class LevelSelectScene {
 
     SEASONS.forEach((season, s) => this.drawTab(ctx, L.tabs[s], season, s));
     L.tiles.forEach((tile, k) => this.drawTile(ctx, tile, this.season * MAPS_PER_SEASON + k));
+    if (this.pick >= 0) this.drawModePicker(ctx, L.modal, this.pick);
+  }
+
+  // Card de mapa com a platina vencida: prata azulado metálico, com faixas
+  // de reflexo e um brilho passando devagar (o rrect do card já está no path)
+  platinumCard(ctx, c, i) {
+    const g = ctx.createLinearGradient(c.x, c.y, c.x + c.w, c.y + c.h);
+    g.addColorStop(0, '#e9f2fb');
+    g.addColorStop(0.3, '#a9bdd4');
+    g.addColorStop(0.5, '#dbe7f4');
+    g.addColorStop(0.72, '#8ea6c2');
+    g.addColorStop(1, '#c7d6e6');
+    fillOutline(ctx, g, 3);
+    ctx.save();
+    rrect(ctx, c.x, c.y, c.w, c.h, 16);
+    ctx.clip();
+    const k = ((this.t * 0.35 + i * 0.13) % 1.6) - 0.3; // vai de -0.3 a 1.3 do card
+    const bx = c.x + k * c.w;
+    // faixa de brilho inclinada (gradiente na diagonal)
+    const sheen = ctx.createLinearGradient(bx - 34, c.y + c.h * 0.7, bx + 34, c.y + c.h * 0.3);
+    sheen.addColorStop(0, 'rgba(255,255,255,0)');
+    sheen.addColorStop(0.5, 'rgba(255,255,255,0.55)');
+    sheen.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = sheen;
+    ctx.fillRect(c.x, c.y, c.w, c.h);
+    ctx.restore();
+    // filete claro por dentro (borda polida)
+    rrect(ctx, c.x + 4, c.y + 4, c.w - 8, c.h - 8, 13);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.stroke();
+  }
+
+  // Janela "NORMAL ou PLATINA" (mapa com 3 estrelas)
+  drawModePicker(ctx, M, i) {
+    const W = this.app.viewW;
+    const map = MAPS[i];
+    ctx.fillStyle = 'rgba(10,18,40,0.7)';
+    ctx.fillRect(0, 0, W, VIEW_H);
+    const c = M.card;
+    rrect(ctx, c.x, c.y + 10, c.w, c.h, 28);
+    ctx.fillStyle = 'rgba(10,16,40,0.55)';
+    ctx.fill();
+    rrect(ctx, c.x, c.y, c.w, c.h, 28);
+    fillOutline(ctx, '#34497f', 5);
+    ribbon(ctx, W / 2, c.y + 4, 240, `MAPA ${map.season + 1}-${map.number}`, '#ff9a2e', 24);
+    iconButton(ctx, M.close, '#ff5a5a', 'close');
+
+    bigButton(ctx, M.normal, '#3fd16b', 'NORMAL', { icon: 'play', size: 26 });
+    bigButton(ctx, M.platinum, '#5fb4e8', 'PLATINA', { size: 26 });
+    const p = M.platinum;
+    ctx.save();
+    ctx.translate(p.x + 40, p.y + (p.h - 6) / 2);
+    drawImage(ctx, 'icon_gem', 38);
+    ctx.restore();
+    if (this.app.hasPlatinum(map.id)) text(ctx, '✔', p.x + 64, p.y + 18, { size: 18, color: '#ffffff' });
+    // dificuldade de cada modo: bolinha + nome
+    for (const [r, mode] of [[M.normal, 'normal'], [M.platinum, 'platinum']]) {
+      const rate = BOT_WIN[mode][i];
+      if (rate == null) continue;
+      const tier = tierOf(rate);
+      const cy = r.y + (r.h - 6) / 2;
+      diffDot(ctx, r.x + r.w - 26, cy, tier.color, 9);
+      text(ctx, tier.name, r.x + r.w - 42, cy + 1, { size: 13, align: 'right' });
+    }
+
+    text(ctx, 'Ondas sem parar por 3:00, depois vem o chefão', W / 2, c.y + 272, { size: 16, color: '#d8e6ff' });
+    text(ctx, 'Um aliado fica bloqueado', W / 2, c.y + 298, { size: 15, color: '#ff9aa5' });
+
+    // sem as 3 estrelas: a parte da platina fica trancada
+    if (!this.app.platinumOpen(i)) {
+      const lk = M.locked;
+      rrect(ctx, lk.x, lk.y, lk.w, lk.h, 18);
+      ctx.fillStyle = 'rgba(15,22,48,0.92)';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+      ctx.stroke();
+      ctx.save();
+      ctx.translate(W / 2, lk.y + lk.h / 2 - 14);
+      ICONS.lock(ctx, 20);
+      ctx.restore();
+      text(ctx, 'Consiga 3 estrelas pra liberar', W / 2, lk.y + lk.h / 2 + 30, { size: 17, color: '#d8e6ff' });
+    }
   }
 
   drawTab(ctx, r, season, s) {
@@ -136,6 +243,7 @@ export class LevelSelectScene {
     const map = MAPS[i];
     const unlocked = this.app.isUnlocked(i);
     const got = this.app.save.stars[map.id] ?? 0;
+    const plat = this.app.hasPlatinum(map.id);
     const cx = c.x + c.w / 2;
     ctx.save();
     let dx = 0;
@@ -149,7 +257,8 @@ export class LevelSelectScene {
     ctx.fillStyle = 'rgba(10,16,40,0.5)';
     ctx.fill();
     rrect(ctx, c.x, c.y, c.w, c.h, 16);
-    fillOutline(ctx, '#34497f', 3);
+    if (plat) this.platinumCard(ctx, c, i);
+    else fillOutline(ctx, '#34497f', 3);
 
     // miniatura do mapa
     const tw = c.w - 12;
@@ -169,13 +278,21 @@ export class LevelSelectScene {
     rrect(ctx, c.x + 10, c.y + 10, 40, 22, 11);
     fillOutline(ctx, 'rgba(20,28,60,0.85)', 2);
     text(ctx, label, c.x + 30, c.y + 21, { size: 14 });
-    rrect(ctx, c.x + c.w - 16, c.y + 12, 8, 8, 4);
-    ctx.fillStyle = DIFF_COLOR[map.difficulty];
-    ctx.fill();
 
-    // estrelas embaixo
-    stars(ctx, cx, c.y + c.h - 18, got, 9, 22);
-
+    // estrelas embaixo (bronze, prata, ouro ou platina)
+    const sy = c.y + c.h - 18;
+    // bolinha de dificuldade à direita das estrelas (espelhando a gema da platina):
+    // pela % de bots que venceram; sem dados, a dificuldade do mapa
+    const rate = BOT_WIN.normal[i];
+    diffDot(ctx, cx + 58, sy - 2, rate != null ? tierOf(rate).color : DIFF_COLOR[map.difficulty], 7);
+    stars(ctx, cx, sy, got, 9, 22, null, starTier(got, plat));
+    // gema da platina: só aparece depois de vencer a platina desse mapa
+    if (plat) {
+      ctx.save();
+      ctx.translate(cx - 58, sy - 2);
+      drawImage(ctx, 'icon_gem', 24);
+      ctx.restore();
+    }
     if (!unlocked) {
       rrect(ctx, c.x, c.y, c.w, c.h, 16);
       ctx.fillStyle = 'rgba(15,22,48,0.72)';
@@ -190,6 +307,20 @@ export class LevelSelectScene {
 
   pointerDown(x, y) {
     const L = this.layout();
+    if (this.pick >= 0) {
+      const M = L.modal;
+      const i = this.pick;
+      if (inRect(M.normal, x, y)) this.launch(i, 'normal');
+      else if (inRect(M.platinum, x, y)) {
+        if (this.app.platinumOpen(i)) this.launch(i, 'platinum');
+        else this.app.sound.play('error');
+      }
+      else if (inRect(M.close, x, y) || !inRect(M.card, x, y)) {
+        this.pick = -1;
+        this.app.sound.play('click');
+      }
+      return;
+    }
     if (inRect(L.back, x, y)) {
       this.app.sound.play('click');
       this.app.goTitle();
@@ -223,12 +354,34 @@ export class LevelSelectScene {
     const tile = this.layout().tiles[i - this.season * MAPS_PER_SEASON];
     if (!tile || !inRect(tile, x, y)) return;
     this.app.sound.play('click');
-    this.app.startMap(i);
+    // sempre pergunta o modo (sem 3 estrelas, a platina aparece trancada)
+    this.pick = i;
+  }
+
+  launch(i, mode) {
+    this.pick = -1;
+    this.app.sound.play('click');
+    this.app.startMap(i, mode);
   }
 
   key(k) {
+    if (this.pick >= 0) {
+      if (k === 'Escape') this.pick = -1;
+      return;
+    }
     if (k === 'Escape') this.app.goTitle();
     if (k === 'ArrowRight') this.season = Math.min(SEASONS.length - 1, this.season + 1);
     if (k === 'ArrowLeft') this.season = Math.max(0, this.season - 1);
   }
+}
+
+// Bolinha de dificuldade (com contorno e brilhinho)
+function diffDot(ctx, x, y, color, r = 6) {
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  fillOutline(ctx, color, 2);
+  ctx.beginPath();
+  ctx.arc(x - r * 0.3, y - r * 0.35, r * 0.3, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fill();
 }

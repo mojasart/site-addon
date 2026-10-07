@@ -27,11 +27,25 @@ python3 -m http.server 8080
 - Toque numa defesa colocada para ver **upgrades**, trocar o **alvo** ou **vender** (devolve 70%).
   O que você comprou **antes de a rodada começar** volta pelo preço cheio (pra mudar de lugar se errou).
 - **INICIAR** começa a primeira rodada; o botão do lado acelera (1x → 2x → 3x).
-- Quando o mapa limpa, a próxima rodada começa **sozinha em 10 s**.
+- Com o **turno automático** ligado (menu de pausa), a próxima rodada começa sozinha quando o mapa limpa.
 - Dá pra **chamar a próxima rodada com outra ainda rolando** (no máximo 2 ao mesmo tempo: a 3 só
-  depois de acabar com a 1). Isso dá um **bônus** de 15% do dinheiro que os vírus da próxima rodada valem.
+  depois de acabar com a 1). Isso dá um **bônus** de até 15% do dinheiro que os vírus da próxima rodada
+  valem, que vai diminuindo conforme os vírus da rodada atual morrem (com 1 sobrando, é só $1).
 - Cada camada de vírus estourada dá $1, e cada rodada completa dá um bônus.
 - Ao vencer você ganha de 1 a 3 estrelas (3 = não perdeu nenhuma vida), e o próximo mapa é liberado.
+  As estrelas do mapa ficam de **bronze** (1), **prata** (2) ou **ouro** (3).
+
+### Modo platina
+
+Tocar num mapa abre a escolha **NORMAL** / **PLATINA** (`src/data/platinum.js`); a platina só libera com **3 estrelas** (antes disso aparece trancada):
+
+- As ondas vêm **uma atrás da outra**, sem esperar o mapa limpar, por **3 minutos** (o relógio fica no HUD).
+  O bônus de cada onda vem quando ela começa.
+- Aos 3:00 vem o **chefão** (Locker nos mapas 1–5 da season, Ransomware nos 6–10 e Ransomware com
+  Lockers nos 11–15). Derrotou, ganhou a platina: as estrelas do mapa ficam **azul-gelo**, ganham
+  um diamante do lado e o card da fase vira **prata azulado metálico**.
+- Cada mapa tem um **aliado bloqueado** (sorteado pelo mapa, sempre o mesmo). Ele só aparece dentro
+  da partida: no aviso do começo e trancado no painel.
 
 ## Defesas
 
@@ -81,11 +95,24 @@ Os caminhos são **gerados** (`src/data/mapgen.js`) numa grade, a partir da seme
 A quantidade de vírus de cada mapa foi calibrada com **bots jogando todos os mapas** (`tools/sim/`, na raiz do repo). São 5 estilos de jogador (equilibrado, dano, economia, laser e aleatório), e a taxa de vitória cai de ~95% no 1-1 pra ~25% no 3-15.
 
 ```bash
-node tools/sim/run.js            # taxa de vitória dos bots em cada mapa
-node tools/sim/calibrate.js      # recalibra a pressão de cada mapa (grava src/data/tuning.js)
+node tools/sim/run.js                       # taxa de vitória dos bots em cada mapa
+node tools/sim/calibrate.js                 # recalibra a pressão de cada mapa (grava src/data/tuning.js)
+node tools/sim/run.js --platinum            # o mesmo, no modo platina
+node tools/sim/calibrate-platinum.js        # recalibra a platina (grava src/data/platinumTuning.js)
 ```
 
-Mexeu em defesas, rodadas ou mapas? Rode `calibrate.js` de novo e confira com `run.js`.
+O modo platina tem a própria curva: de ~60% no 1-1 a ~15% no 3-15.
+
+O card de cada fase tem uma **bolinha de dificuldade** pela % de partidas de bots que venceram:
+🟢 fácil (90–100%) · 🟡 médio (65–90%) · 🟠 hard (45–65%) · 🔴 muito difícil (25–45%) · insano (0–25%,
+vermelho escuro). A janela de modo mostra a do normal e a da platina. Os números ficam em
+`src/data/botStats.js` e são regerados com:
+
+```bash
+node tools/sim/run.js --seeds 10 --save              # modo normal
+node tools/sim/run.js --platinum --seeds 10 --save   # modo platina
+```
+Mexeu em defesas, rodadas ou mapas? Rode os calibradores de novo e confira com `run.js`.
 
 ## Estrutura
 
@@ -99,15 +126,18 @@ firewall-defense/
     ├── main.js              canvas, escala da tela, input touch, loop
     ├── app.js               troca de telas (título → mapas → jogo), save, som
     ├── game.js              a partida: regras, toque, desenho geral
-    ├── save.js              estrelas e configurações no localStorage
+    ├── save.js              estrelas, platinas e configurações no localStorage
     ├── config.js            tela, regras globais, fonte, cores base
     ├── data/                ← BALANCEAMENTO E CONTEÚDO FICAM AQUI
     │   ├── towers.js        defesas, custos, upgrades
     │   ├── enemies.js       vírus, camadas, chefões
     │   ├── rounds.js        as 25 rodadas
+    │   ├── platinum.js      modo platina (ondas sem parar, chefão, aliado bloqueado)
     │   ├── maps.js          seasons e os 45 mapas (dificuldade de cada um)
     │   ├── mapgen.js        gerador de caminhos (loop, Y, várias entradas)
-    │   └── tuning.js        pressão de cada mapa, calibrada com bots
+    │   ├── tuning.js        pressão de cada mapa, calibrada com bots
+    │   ├── platinumTuning.js dificuldade da platina de cada mapa, calibrada com bots
+    │   └── botStats.js      % de vitória dos bots em cada mapa (bolinha de dificuldade)
     ├── audio/Sound.js       efeitos e música (sintetizados, sem arquivos)
     ├── core/                caminho e terreno
     ├── entities/            Tower, Enemy, Projectile, Packet

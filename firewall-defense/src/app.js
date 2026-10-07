@@ -63,8 +63,24 @@ export class App {
     return true;
   }
 
-  startMap(i) {
-    this.go(() => new Game(this, i));
+  // mode: 'normal' ou 'platinum' (libera com 3 estrelas)
+  startMap(i, mode = 'normal') {
+    this.go(() => new Game(this, i, mode));
+  }
+
+  hasPlatinum(mapId) {
+    return !!this.save.platinum?.[mapId];
+  }
+
+  // Modo platina liberado nesse mapa? (precisa das 3 estrelas)
+  platinumOpen(i) {
+    return this.debug || (this.save.stars[MAPS[i].id] ?? 0) >= 3;
+  }
+
+  recordPlatinum(mapId) {
+    if (this.hasPlatinum(mapId)) return;
+    this.save.platinum = { ...this.save.platinum, [mapId]: true };
+    writeSave(this.save);
   }
 
   isUnlocked(i) {

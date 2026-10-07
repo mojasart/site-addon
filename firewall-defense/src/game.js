@@ -1,6 +1,7 @@
 import { VIEW_H, PANEL_W, MAX_SPEED, NEXT_ROUND_DELAY, EARLY_BONUS } from './config.js';
 import { MAPS } from './data/maps.js';
 import { ROUNDS } from './data/rounds.js';
+import { PLAT_TIME, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
 import { worth } from './data/enemies.js';
 import { TOWERS, TARGET_MODES } from './data/towers.js';
 import { fitsTerrain } from './core/terrain.js';
@@ -26,12 +27,15 @@ const TOUCH_LIFT = 46; // ao arrastar com o dedo, a defesa aparece acima dele
 const BASE_HIT = 40; // raio da hitbox do servidor
 
 // A partida em si (uma fase). Criada pelo App ao escolher um mapa.
+// mode: 'normal' ou 'platinum' (ondas sem parar até o chefão; data/platinum.js)
 export class Game {
-  constructor(app, mapIndex) {
+  constructor(app, mapIndex, mode = 'normal') {
     this.app = app;
     this.sound = app.sound;
     this.mapIndex = mapIndex;
     this.map = MAPS[mapIndex];
+    this.mode = mode;
+    this.platinum = mode === 'platinum';
     this.anim = 0;
     this.pointer = { x: -1, y: -1, down: false, type: 'touch' };
     this.drag = null;
@@ -60,11 +64,13 @@ export class Game {
     this.newEnemies = [];
     this.projectiles = [];
     this.packets = [];
-    this.rounds = new RoundManager(ROUNDS.slice(0, this.map.rounds), {
-      count: this.map.pressure,
+    // platina: as ondas ganham a dificuldade calibrada do modo (k)
+    const k = this.platinum ? platinumScale(this.mapIndex) : 1;
+    this.rounds = new RoundManager(this.platinum ? platinumRounds(this.map) : ROUNDS.slice(0, this.map.rounds), {
+      count: this.map.pressure * k,
       gap: this.map.gapMul,
       speed: this.map.speedMul,
-      hp: this.map.pressure, // chefões e worms acompanham a pressão
+      hp: this.map.pressure * k, // chefões e worms acompanham a pressão
     });
     this.fx = new Effects();
     this.hazards = new Hazards(this.map.hazards);
@@ -83,6 +89,15 @@ export class Game {
     this.stars = 0;
     this.stats = { pops: 0 };
     this.state = 'playing'; // playing | paused | won | lost
+    // platina: relógio das ondas, se o chefão já veio e o aliado bloqueado
+    this.platTime = 0;
+    this.bossCalled = false;
+    this.waveGap = null;
+    this.blocked = this.platinum ? blockedAlly(this.map) : null;
+    if (this.platinum) {
+      this.showBanner('MODO PLATINA', 3, '#bdeeff', 46, `${TOWERS[this.blocked].name} bloqueado · chefão em 3:00`);
+      return;
+    }
     // mapa com novidade (várias entradas, loop, zonas...) avisa no começo
     const special = this.map.entries > 1 || this.map.loop || this.map.hazards?.length;
     this.showBanner(this.map.name, 2.6, '#ffffff', 46, special ? this.map.desc : 'Arraste as defesas pro mapa!');
@@ -111,6 +126,10 @@ export class Game {
     if (won) {
       const L = this.map.lives;
       this.stars = this.lives >= L ? 3 : this.lives >= L * 0.5 ? 2 : 1;
+      if (this.platinum) {
+        this.stars = 3; // vencer a platina já vale as 3 (em platina)
+        this.app.recordPlatinum?.(this.map.id);
+      }
       this.app.recordStars(this.map.id, this.stars);
       this.fx.celebrate(this.viewW, VIEW_H);
       this.sound.play('win');
@@ -154,6 +173,7 @@ export class Game {
   step(dt) {
     this.callCooldown = Math.max(0, this.callCooldown - dt);
     if (this.nextIn != null && (this.nextIn -= dt) <= 0) this.startRound();
+    if (this.platinum && this.rounds.started > 0) this.platinumStep(dt);
     this.rounds.update(dt, this);
     this.flushSpawns();
     for (const t of this.towers) t.update(dt, this);
@@ -208,7 +228,44 @@ export class Game {
     buzz(40);
   }
 
+  // Platina: a próxima onda começa assim que a anterior termina de entrar;
+  // no fim do tempo (ou das ondas) vem o chefão
+  platinumStep(dt) {
+    if (this.bossCalled) return;
+    const r = this.rounds;
+    this.platTime += dt;
+    if (this.platTime >= PLAT_TIME || !r.canStart) {
+      this.callBoss();
+      return;
+    }
+    if (r.pending[r.started - 1] > 0) return; // a última onda ainda está entrando
+    this.waveGap = (this.waveGap ?? WAVE_GAP) - dt;
+    if (this.waveGap <= 0) {
+      this.waveGap = null;
+      this.startRound();
+    }
+  }
+
+  callBoss() {
+    this.bossCalled = true;
+    this.rounds.finishWith(platinumBoss(this.map), BOSS_HP * Math.sqrt(this.map.pressure) * platinumScale(this.mapIndex));
+    this.rounds.start();
+    this.shake(8);
+    this.showBanner('CHEFÃO!', 2, '#ff5a6a', 56, 'Derrote ele pra ganhar a platina');
+    this.sound.play('round');
+  }
+
+  // Segundos que faltam pro chefão (modo platina)
+  get platLeft() {
+    return Math.max(0, PLAT_TIME - this.platTime);
+  }
+
   onRoundEnd(n) {
+    if (this.platinum) {
+      // platina: o bônus da onda já veio quando ela começou (elas se acumulam)
+      if (this.rounds.finished) this.end(true);
+      return;
+    }
     const bonus = 100 + n;
     this.money += bonus;
     this.coinBump = 1;
@@ -236,7 +293,7 @@ export class Game {
   // uma parte do dinheiro que os vírus dela valem, proporcional ao que
   // ainda falta da rodada atual (com 1 vírus sobrando, é só $1)
   earlyBonus() {
-    if (!this.rounds.active || !this.canCall()) return 0;
+    if (this.platinum || !this.rounds.active || !this.canCall()) return 0;
     const roundValue = (r) => this.rounds.rounds[r].reduce((sum, g) => sum + g.count * worth(g.type), 0);
     const cur = this.rounds.done;
     const alive = (e) => !e.dead && e.round === cur;
@@ -250,12 +307,14 @@ export class Game {
   // Dá pra chamar a próxima com no máximo 1 rodada rolando
   // (a 3 só depois de acabar com os vírus da 1)
   canCall() {
+    if (this.platinum) return this.rounds.started === 0; // depois da 1ª, elas vêm sozinhas
     return this.rounds.canStart && this.rounds.started - this.rounds.done < 2;
   }
 
   // Botão de rodada: começa a próxima (mesmo com outra rolando)
   playPressed() {
     if (this.callCooldown > 0 || !this.rounds.canStart) return;
+    if (this.platinum && this.rounds.started > 0) return;
     if (!this.canCall()) {
       this.fx.text(this.mapW / 2 - this.offsetX, VIEW_H / 2, `Acabe com a rodada ${this.rounds.done + 1} primeiro!`, '#ff7a8a', 22);
       this.sound.play('error');
@@ -284,7 +343,17 @@ export class Game {
       this.money += bonus;
       this.coinBump = 1;
     }
-    this.showBanner(`RODADA ${this.rounds.started}`, 1.1, '#ffffff', 46, bonus > 0 ? `Chamou antes: +$${bonus}` : null);
+    if (this.platinum) {
+      // a partir da 2ª onda, o bônus de rodada vem no começo de cada uma
+      const wave = this.rounds.started;
+      const pay = wave > 1 ? 100 + wave - 1 : 0;
+      if (pay) {
+        this.money += pay;
+        this.coinBump = 1;
+      }
+      this.showBanner(`ONDA ${wave}`, 0.9, '#bdeeff', 36, pay ? `+$${pay}` : null);
+    }
+    else this.showBanner(`RODADA ${this.rounds.started}`, 1.1, '#ffffff', 46, bonus > 0 ? `Chamou antes: +$${bonus}` : null);
     this.sound.play('round');
   }
 
@@ -440,7 +509,7 @@ export class Game {
     const L = overlayLayout(this);
     if (this.state === 'paused') {
       if (inRect(L.resume, sx, sy)) this.resume();
-      else if (inRect(L.restart, sx, sy)) this.app.startMap(this.mapIndex);
+      else if (inRect(L.restart, sx, sy)) this.app.startMap(this.mapIndex, this.mode);
       else if (inRect(L.maps, sx, sy)) this.app.goMaps();
       else if (inRect(L.music, sx, sy)) this.app.toggleMusic();
       else if (inRect(L.sfx, sx, sy)) this.app.toggleSfx();
@@ -450,8 +519,9 @@ export class Game {
     if (this.endDelay > 0) return;
     if (inRect(L.maps, sx, sy)) this.app.goMaps();
     else if (inRect(L.next, sx, sy)) {
-      const next = this.state === 'won' && this.nextMap ? this.mapIndex + 1 : this.mapIndex;
-      this.app.startMap(next);
+      // venceu: vai pro próximo mapa (normal); perdeu: tenta de novo no mesmo modo
+      if (this.state === 'won' && this.nextMap) this.app.startMap(this.mapIndex + 1);
+      else this.app.startMap(this.mapIndex, this.state === 'won' ? 'normal' : this.mode);
     }
   }
 
@@ -480,6 +550,11 @@ export class Game {
     for (const tile of L.tiles) {
       if (!inRect(tile, sx, sy)) continue;
       const def = TOWERS[tile.type];
+      if (tile.type === this.blocked) {
+        this.fx.text(tile.x + tile.w / 2 - this.offsetX, tile.y + 30, 'Bloqueado!', '#ff7a8a', 16);
+        this.sound.play('error');
+        return;
+      }
       const toggleOff = this.placing === tile.type;
       if (!toggleOff && this.money < def.cost) {
         this.fx.text(tile.x + tile.w / 2 - this.offsetX, tile.y + 30, 'Sem dinheiro!', '#ff7a8a', 16);

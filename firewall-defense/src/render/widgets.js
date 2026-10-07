@@ -28,17 +28,26 @@ export function iconButton(ctx, r, face, icon, arg) {
   ctx.restore();
 }
 
-// Fileira de estrelas (cheias até n), com "pulo" opcional por estrela
-export function stars(ctx, cx, y, n, size = 16, gap = 36, pop = null) {
+// Cor das estrelas pelo resultado: 1 bronze, 2 prata, 3 ouro, platina vencida
+export function starTier(n, platinum = false) {
+  if (platinum) return 'platinum';
+  return ['bronze', 'bronze', 'silver', 'gold'][n] ?? 'gold';
+}
+const STAR_ICON = { bronze: 'icon_star_bronze', silver: 'icon_star_silver', gold: 'icon_star', platinum: 'icon_star_platinum' };
+const STAR_COLOR = { bronze: '#d98b4a', silver: '#d6dde8', gold: GOLD, platinum: '#bdeeff' };
+
+// Fileira de estrelas (cheias até n), com "pulo" opcional por estrela.
+// tier: cor das cheias (padrão: pela quantidade, ver starTier)
+export function stars(ctx, cx, y, n, size = 16, gap = 36, pop = null, tier = starTier(n)) {
   for (let i = 0; i < 3; i++) {
     const k = pop ? pop(i) : 1;
     if (k <= 0 && i < n) continue;
     ctx.save();
     ctx.translate(cx + (i - 1) * gap, y - (i === 1 ? size * 0.4 : 0));
     ctx.scale(i < n ? k : 1, i < n ? k : 1);
-    if (!drawImage(ctx, i < n ? 'icon_star' : 'icon_star_empty', size * 2.4)) {
+    if (!drawImage(ctx, i < n ? STAR_ICON[tier] : 'icon_star_empty', size * 2.4)) {
       star(ctx, 0, 0, size);
-      fillOutline(ctx, i < n ? GOLD : 'rgba(20,30,60,0.55)', 3);
+      fillOutline(ctx, i < n ? STAR_COLOR[tier] : 'rgba(20,30,60,0.55)', 3);
     }
     ctx.restore();
   }
