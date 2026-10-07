@@ -83,7 +83,7 @@ export class TitleScene {
       ['hacker', W * 0.13, 430, 2.5, 1],
       ['firewall', W * 0.87, 420, 2.3, -1],
       ['pinguim', W * 0.74, 470, 1.8, -1],
-      ['roteador', W * 0.26, 482, 1.6, 1],
+      ['minerador', W * 0.26, 482, 1.6, 1],
     ];
     for (const [type, x, y, s, face] of cast) {
       ctx.save();

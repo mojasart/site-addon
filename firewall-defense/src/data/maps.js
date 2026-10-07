@@ -8,8 +8,8 @@
 //  theme   → visual (render/maps/*.js)
 //  rounds  → até qual rodada de data/rounds.js vai
 //  terrain → terreno padrão ('land' ou 'water')
-//  zones   → áreas com outro terreno. Torres de água (Pescador) só vão
-//            na água; as outras só na terra.
+//  zones   → áreas com outro terreno. As defesas só vão na terra
+//            (o Honeypot vai em cima do caminho).
 //            shape 'rect' (x, y, w, h, r) ou 'ellipse' (x, y, rx, ry)
 //  seed    → sorteio da decoração (muda pra decorar diferente)
 // ─────────────────────────────────────────────────────────────
@@ -36,7 +36,7 @@ export const MAPS = [
     id: 'data-center',
     name: 'Data Center',
     difficulty: 'MÉDIO',
-    desc: 'Piscinas de refrigeração: chame o Pescador!',
+    desc: 'Piscinas de refrigeração no meio do caminho',
     theme: 'datacenter',
     rounds: 20,
     money: 650,

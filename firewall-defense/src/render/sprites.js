@@ -1,16 +1,12 @@
 import { OUTLINE, GOLD } from '../config.js';
-import { rrect, circle, ellipse, fillOutline, shadow, gloss, text } from './canvas.js';
-import { bomb } from './characters.js';
+import { rrect, circle, ellipse, fillOutline, shadow, gloss } from './canvas.js';
 import { TAU } from '../util.js';
 import { drawImage, hasImage } from './images.js';
 
 // ── Projéteis ───────────────────────────────────────────────
 export function drawProjectile(ctx, p, t) {
   ctx.save();
-  if (p.kind === 'bomb') {
-    ctx.rotate(p.spin);
-    bomb(ctx, 0, 0, t);
-  } else if (p.kind === 'keyboard') {
+  if (p.kind === 'keyboard') {
     // tecladinho girando no ar (o Hacker arremessa)
     ctx.rotate(p.spin * 0.8);
     rrect(ctx, -10, -5.5, 20, 11, 3);
@@ -21,13 +17,6 @@ export function drawProjectile(ctx, p, t) {
         ctx.fillRect(-7.5 + k * 4, -3 + row * 3.5, 3, 2.4);
       }
     }
-  } else if (p.kind === 'packet') {
-    ctx.rotate(p.angle);
-    rrect(ctx, -6, -5, 12, 10, 3);
-    fillOutline(ctx, '#7df9ff', 2.5);
-    ctx.fillStyle = '#1e2740';
-    ctx.fillRect(-3, -2, 6, 1.6);
-    ctx.fillRect(-3, 1, 4, 1.6);
   } else {
     ctx.rotate(p.angle);
     rrect(ctx, -8, -2, 13, 4, 2);
@@ -49,6 +38,7 @@ export function drawProjectile(ctx, p, t) {
 }
 
 // ── Ícones do HUD ───────────────────────────────────────────
+// Moeda de bitcoin: disco laranja com o ₿ inclinado. spin achata no eixo x (girando).
 export function drawCoin(ctx, r = 14, spin = 0) {
   const sx = Math.max(0.25, Math.abs(Math.cos(spin * 2)));
   ctx.save();
@@ -58,13 +48,44 @@ export function drawCoin(ctx, r = 14, spin = 0) {
     return;
   }
   circle(ctx, 0, 0, r);
-  fillOutline(ctx, GOLD, 3);
-  circle(ctx, 0, 0, r * 0.68);
-  ctx.fillStyle = '#ffe58a';
+  fillOutline(ctx, '#e8850f', 3);
+  circle(ctx, 0, 0, r * 0.76);
+  ctx.fillStyle = '#f9a13a';
   ctx.fill();
-  gloss(ctx, -r * 0.35, -r * 0.45, r * 0.3, r * 0.16);
+  ctx.rotate(0.24);
+  bitcoinMark(ctx, r);
   ctx.restore();
-  if (sx > 0.5) text(ctx, '$', 0, 1, { size: Math.round(r * 1.05), color: '#c48a00', stroke: null });
+  gloss(ctx, -r * 0.38 * sx, -r * 0.5, r * 0.26 * sx, r * 0.14);
+}
+
+// ₿ feito com traços (não depende da fonte ter o símbolo)
+function bitcoinMark(ctx, r) {
+  const x0 = -r * 0.26;
+  const h = r * 0.5;
+  ctx.beginPath();
+  ctx.moveTo(x0, -h);
+  ctx.lineTo(x0, h);
+  ctx.moveTo(x0, -h);
+  ctx.lineTo(r * 0.06, -h);
+  ctx.arc(r * 0.06, -h / 2, h / 2, -Math.PI / 2, Math.PI / 2);
+  ctx.lineTo(x0, 0);
+  ctx.lineTo(r * 0.1, 0);
+  ctx.arc(r * 0.1, h / 2, h / 2, -Math.PI / 2, Math.PI / 2);
+  ctx.lineTo(x0, h);
+  for (const tx of [-r * 0.1, r * 0.1]) {
+    ctx.moveTo(tx, -h - r * 0.2);
+    ctx.lineTo(tx, -h);
+    ctx.moveTo(tx, h);
+    ctx.lineTo(tx, h + r * 0.2);
+  }
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = r * 0.22 + 2.4;
+  ctx.strokeStyle = '#b35a00';
+  ctx.stroke();
+  ctx.lineWidth = r * 0.22;
+  ctx.strokeStyle = '#fff8ea';
+  ctx.stroke();
 }
 
 export function drawHeart(ctx, s = 14) {
@@ -262,17 +283,6 @@ export const ICONS = {
     circle(ctx, 0, s * 0.2, s * 0.17);
     ctx.fillStyle = OUTLINE;
     ctx.fill();
-  },
-  drop(ctx, s = 7) {
-    if (svgIcon(ctx, 'drop', s, 3.3)) return;
-    ctx.beginPath();
-    ctx.moveTo(0, -s * 1.3);
-    ctx.quadraticCurveTo(s * 1.05, -s * 0.1, s * 0.8, s * 0.4);
-    ctx.arc(0, s * 0.35, s * 0.8, 0, Math.PI);
-    ctx.quadraticCurveTo(-s * 1.05, -s * 0.1, 0, -s * 1.3);
-    ctx.closePath();
-    fillOutline(ctx, '#3dc0ff', 2.5);
-    gloss(ctx, -s * 0.3, s * 0.1, s * 0.2, s * 0.3, 0);
   },
 };
 

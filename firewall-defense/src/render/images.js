@@ -41,7 +41,6 @@ const ICON_NAMES = [
   'sfx',
   'sfx_off',
   'lock',
-  'drop',
   'star',
   'star_empty',
 ];

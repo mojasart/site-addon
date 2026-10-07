@@ -118,7 +118,7 @@ ASSETS = {
                         'roaring open mouth and the head flames burning bigger and brighter. '
                         'Do not add anything else. ', 'firewall'),
     # ── HUD ──────────────────────────────────────────────
-    'coin': ('magenta', 'A shiny golden hexagonal crypto coin with a dollar sign "$" in the middle, front view. '),
+    'coin': ('magenta', 'A shiny orange round Bitcoin coin with a big white tilted bitcoin symbol "₿" in the middle, front view. '),
     'heart': ('magenta', 'A glossy red cartoon heart icon for lives, front view. '),
     # ── Servidor (o que estamos protegendo) ──────────────
     'server': ('magenta', 'Front view. A cute friendly server computer character: a chunky blue rack server box '

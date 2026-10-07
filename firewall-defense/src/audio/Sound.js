@@ -7,7 +7,7 @@
 const midi = (m) => 440 * 2 ** ((m - 69) / 12);
 
 // Intervalo mínimo entre repetições do mesmo som (evita barulheira em massa)
-const MIN_GAP = { pop: 0.035, throw: 0.06, spray: 0.09, laser: 0.07, fire: 0.12, frost: 0.18, coin: 0.05, block: 0.12, boom: 0.08, hook: 0.1 };
+const MIN_GAP = { pop: 0.035, throw: 0.06, fire: 0.12, frost: 0.18, coin: 0.05, block: 0.12 };
 
 const SFX = {
   pop(s) {
@@ -23,13 +23,6 @@ const SFX = {
     s.tone({ type: 'triangle', freq: 650, to: 1150, dur: 0.06, vol: 0.07 });
     s.noise({ dur: 0.05, vol: 0.05, filter: 'highpass', freq: 3500 });
   },
-  spray(s) {
-    s.tone({ type: 'square', freq: 980, to: 620, dur: 0.05, vol: 0.04 });
-    s.tone({ type: 'square', freq: 1240, to: 760, dur: 0.05, vol: 0.03, at: 0.04 });
-  },
-  laser(s) {
-    s.tone({ type: 'sawtooth', freq: 1700, to: 180, dur: 0.15, vol: 0.06 });
-  },
   fire(s) {
     s.noise({ dur: 0.32, vol: 0.22, filter: 'lowpass', freq: 1100, to: 260 });
     s.tone({ type: 'sine', freq: 140, to: 70, dur: 0.2, vol: 0.18 });
@@ -37,14 +30,6 @@ const SFX = {
   frost(s) {
     s.tone({ type: 'sine', freq: 1800, to: 2500, dur: 0.18, vol: 0.06 });
     s.tone({ type: 'sine', freq: 2700, to: 3200, dur: 0.14, vol: 0.04, at: 0.05 });
-  },
-  boom(s) {
-    s.noise({ dur: 0.42, vol: 0.32, filter: 'lowpass', freq: 900, to: 80 });
-    s.tone({ type: 'sine', freq: 160, to: 45, dur: 0.32, vol: 0.32 });
-  },
-  hook(s) {
-    s.noise({ dur: 0.16, vol: 0.12, filter: 'bandpass', freq: 1500, to: 450, q: 2 });
-    s.tone({ type: 'sine', freq: 380, to: 160, dur: 0.12, vol: 0.18, at: 0.13 });
   },
   block(s) {
     s.tone({ type: 'square', freq: 1900, to: 1500, dur: 0.035, vol: 0.04 });

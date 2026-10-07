@@ -22,8 +22,8 @@ python3 -m http.server 8080
 ## Como jogar
 
 - **Arraste** uma defesa do painel até o mapa (ou toque nela e depois no mapa).
-- Defesas de terra não vão no caminho, na água nem em cima dos componentes (chips, racks, coqueiros...).
-- O **Pescador** só vai na **água**. O **Honeypot** só vai **em cima do caminho**.
+- As defesas não vão no caminho, na água nem em cima dos componentes (chips, racks, coqueiros...).
+- O **Honeypot** só vai **em cima do caminho**.
 - Toque numa defesa colocada para ver **upgrades**, trocar o **alvo** ou **vender** (devolve 70%).
 - **INICIAR** começa a rodada; durante a rodada o mesmo botão acelera (1x → 2x → 3x).
 - Cada camada de vírus estourada dá $1, e cada rodada completa dá um bônus.
@@ -33,15 +33,10 @@ python3 -m http.server 8080
 
 | Defesa | Custo | O que faz | Upgrades |
 | --- | --- | --- | --- |
-| **Hacker** | $200 | Arremessa dardos (atravessa 2 vírus) | Dedos Rápidos · Exploit Triplo |
-| **Roteador** | $320 | Espalha 8 pacotes pra todos os lados | Wi-Fi 6 · Rede Mesh |
+| **Hacker** | $200 | Arremessa teclados (atravessa 2 vírus) | Dedos Rápidos · Exploit Triplo |
 | **Golem Firewall** | $350 | Onda de fogo em volta, queima blindados | Chamas Intensas · Muralha de Fogo |
-| **Pinguim** | $300 | Congela os vírus em volta (lentidão) | Criptografia AES · Era do Gelo |
-| **Engenheiro** | $500 | Bombas lógicas com dano em área | Bomba Maior · Fragmentação |
-| **Robô Scanner** | $380 | Laser que alcança o mapa todo | Alta Precisão · Varredura Contínua |
-| **Pescador** | $400 | *Só na água.* Fisga vírus e puxa pra trás | Anzol Duplo · Rede de Pesca |
-| **Sysadmin** | $650 | Acelera as defesas por perto | Café Duplo · Acesso Root (furam blindagem) |
-| **Minerador** | $650 | Minera moedas que vão direto pro saldo | GPU Extra · Fazenda de Mineração |
+| **Pinguim** | $300 | Congela os vírus em volta (lentidão) | Criptografia AES · Era do Gelo (mais alcance e congelados ficam vulneráveis: +1 de dano em cada acerto) |
+| **Minerador** | $650 | Minera bitcoins que vão direto pro saldo | GPU Extra · Fazenda de Mineração |
 | **Honeypot** | $80 | *Só no caminho.* Estoura 6 vírus e some | — |
 
 ## Ameaças
@@ -52,7 +47,7 @@ Os vírus funcionam como os balões do Bloons: cada camada estourada revela a de
 | --- | --- |
 | **Vírus** vermelho → azul → verde → amarelo → rosa | Cada cor é uma camada a mais e é mais rápida |
 | **Worm** | Se replica: solta 2 vírus verdes |
-| **Trojan** | Blindado: dardos e pacotes não furam |
+| **Trojan** | Blindado: os teclados do Hacker não furam |
 | **Locker** | Mini-chefão acorrentado (rodadas 15+). Solta 2 Trojans |
 | **Ransomware** | Chefão dirigível (rodadas 20 e 25). Solta 4 Trojans |
 
@@ -101,7 +96,7 @@ firewall-defense/
 
 ## Como estender
 
-- **Nova defesa:** entrada em `src/data/towers.js` (escolha um `attack`), desenho em `CHARACTERS` (`src/render/characters.js`) e o id em `TOWER_ORDER`. Use `terrain: 'water'` pra defesas de água.
+- **Nova defesa:** entrada em `src/data/towers.js` (escolha um `attack`), desenho em `CHARACTERS` (`src/render/characters.js`) e o id em `TOWER_ORDER`. 
 - **Novo vírus:** entrada em `src/data/enemies.js` (diga quais `children` ele solta) e, se quiser visual próprio, um `kind` novo em `src/render/viruses.js`.
 - **Novo mapa:** objeto em `src/data/maps.js` com `points` (caminho), `zones` (água/terra) e um `theme`. Pra um visual novo, crie um arquivo em `src/render/maps/` com `layout`, `paint` e `animate`.
 - **Sprites (PNG):** ficam em `assets/sprites/` e são geradas com o Gemini por `tools/sprites/gen.py` (na raiz do repo).
@@ -119,7 +114,6 @@ firewall-defense/
 
 - [ ] Caminhos de upgrade em 2 trilhas (como o Bloons 6) e mais níveis
 - [ ] Heróis que sobem de nível durante a partida
-- [ ] Vírus camuflado (Rootkit) que só o Scanner enxerga
 - [ ] Modos de dificuldade por mapa
-- [ ] Sprites pras defesas que ainda usam desenho com formas (Roteador, Engenheiro, Scanner...)
+- [ ] Sprites pras defesas que ainda usam desenho com formas (Minerador e Honeypot)
 - [ ] Empacotar como app Android/iOS com [Capacitor](https://capacitorjs.com/) (`npx cap add android`)

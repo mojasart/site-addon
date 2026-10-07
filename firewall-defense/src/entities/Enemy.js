@@ -14,6 +14,8 @@ export class Enemy {
     this.face = 1;
     this.slowTimer = 0;
     this.slowMul = 1;
+    this.vulnTimer = 0; // vulnerável (Pinguim com Era do Gelo): leva dano a mais
+    this.vulnBonus = 0;
     this.flash = 0;
     this.phase = rand(0, 10); // relógio da animação
     this.dead = false;
@@ -39,6 +41,7 @@ export class Enemy {
 
   update(dt, game) {
     this.slowTimer = Math.max(0, this.slowTimer - dt);
+    this.vulnTimer = Math.max(0, this.vulnTimer - dt);
     this.flash = Math.max(0, this.flash - dt);
     this.phase += dt * (this.slowTimer > 0 ? this.slowMul : 1);
     // vira aos poucos pro lado em que anda (o desenho "gira" na curva)
@@ -58,14 +61,14 @@ export class Enemy {
     this.slowTimer = Math.max(this.slowTimer, time);
   }
 
-  // Pescador: puxa o vírus de volta no caminho
-  pullBack(px, game) {
-    if (this.def.boss) return;
-    this.dist = Math.max(game.spawnDist + 20, this.dist - px);
-    this.place(game.path);
+  // Era do Gelo: enquanto durar, cada acerto tira `bonus` a mais (vale pro chefão também)
+  weaken(bonus, time) {
+    this.vulnBonus = Math.max(this.vulnTimer > 0 ? this.vulnBonus : 0, bonus);
+    this.vulnTimer = Math.max(this.vulnTimer, time);
   }
 
-  // opts: { armored (fura blindagem?), source (torre que atacou), hitSet }
+  // opts: { armored (fura blindagem?), source (torre que atacou), hitSet,
+  //         overflow (dano que sobrou da camada de cima: não ganha bônus de novo) }
   takeDamage(amount, game, opts = {}) {
     if (this.dead || amount <= 0) return;
     if (this.def.armored && !opts.armored) {
@@ -73,6 +76,7 @@ export class Enemy {
       game.sound.play('block');
       return;
     }
+    if (this.vulnTimer > 0 && !opts.overflow) amount += this.vulnBonus;
     this.flash = 0.08;
     this.hp -= amount;
     if (this.hp <= 0) this.pop(game, -this.hp, opts);
@@ -96,11 +100,13 @@ export class Enemy {
         const child = new Enemy(type, Math.max(0, this.dist - i * 12));
         child.slowTimer = this.slowTimer;
         child.slowMul = this.slowMul;
+        child.vulnTimer = this.vulnTimer;
+        child.vulnBonus = this.vulnBonus;
         child.place(game.path);
         game.spawnEnemy(child);
         opts.hitSet?.add(child); // o mesmo tiro não acerta os filhos
         // dano que sobrou passa pra camada de baixo (como no Bloons)
-        if (overflow > 0) child.takeDamage(overflow, game, opts);
+        if (overflow > 0) child.takeDamage(overflow, game, { ...opts, overflow: true });
       }
     }
   }
