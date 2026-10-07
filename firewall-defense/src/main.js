@@ -2,6 +2,7 @@ import { Game } from './game.js';
 import { VIEW_H, MIN_VIEW_W, MAX_VIEW_W } from './config.js';
 import { clamp } from './util.js';
 
+const stage = document.getElementById('stage'); // área útil da tela (fora do notch)
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
@@ -14,8 +15,8 @@ window.game = game; // acesso pelo console do navegador pra testar coisas
 const view = { scale: 1, offX: 0, offY: 0, dpr: 1 };
 
 function resize() {
-  const cssW = window.innerWidth;
-  const cssH = window.innerHeight;
+  const cssW = stage.clientWidth;
+  const cssH = stage.clientHeight;
   game.viewW = clamp(Math.round((VIEW_H * cssW) / cssH), MIN_VIEW_W, MAX_VIEW_W);
   view.scale = Math.min(cssW / game.viewW, cssH / VIEW_H);
   view.offX = (cssW - game.viewW * view.scale) / 2;
@@ -74,9 +75,13 @@ function requestFullscreenOnMobile() {
   const el = document.documentElement;
   const req = el.requestFullscreen || el.webkitRequestFullscreen;
   if (!req) return;
-  Promise.resolve(req.call(el))
-    .then(() => screen.orientation?.lock?.('landscape'))
-    .catch(() => {});
+  try {
+    Promise.resolve(req.call(el))
+      .then(() => screen.orientation?.lock?.('landscape'))
+      .catch(() => {});
+  } catch {
+    // dentro de iframe/webview a tela cheia pode ser bloqueada: segue sem ela
+  }
 }
 
 // ── Loop principal ────────────────────────────────────────────
