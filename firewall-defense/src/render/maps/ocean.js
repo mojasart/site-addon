@@ -1,6 +1,6 @@
 import { VIEW_H, OUTLINE } from '../../config.js';
 import { circle, ellipse, fillOutline, shadow, gloss } from '../canvas.js';
-import { strokePath, waterSparkles, drawSparkles } from './shared.js';
+import { strokePath, raisedPathBase, waterSparkles, drawSparkles } from './shared.js';
 
 // Tema CABO SUBMARINO: mar aberto, ilhas de areia com coqueiros,
 // pedras na água e o caminho como um píer de madeira.
@@ -82,7 +82,8 @@ export function paint(g, { map, path, decor, W, ox }) {
     else if (p.kind === 'bush') drawBush(g, p);
   }
 
-  // píer de madeira com estacas
+  // píer de madeira elevado (3/4), com estacas na frente da lateral
+  raisedPathBase(g, path, { depth: 12, side: '#9a6533', sideDark: '#5e3b1c', outline: OUTLINE, shadow: 'rgba(0,40,80,0.25)' });
   g.fillStyle = '#5a3a1e';
   for (let d = 20; d < path.length; d += 46) {
     const p = path.pointAt(d);

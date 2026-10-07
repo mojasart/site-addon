@@ -20,12 +20,12 @@
 export const TOWERS = {
   hacker: {
     name: 'Hacker',
-    desc: 'Arremessa dardos de código nos vírus',
+    desc: 'Arremessa teclados nos vírus',
     cost: 200,
     radius: 18,
     range: 115,
     attack: 'projectile',
-    projectile: 'dart',
+    projectile: 'keyboard',
     fireRate: 0.95,
     damage: 1,
     pierce: 2,
@@ -35,7 +35,7 @@ export const TOWERS = {
     sound: 'throw',
     upgrades: [
       { name: 'Dedos Rápidos', desc: 'Arremessa 40% mais rápido', cost: 150, apply: (s) => { s.fireRate *= 0.6; } },
-      { name: 'Exploit Triplo', desc: 'Joga 3 dardos de uma vez', cost: 300, apply: (s) => { s.multishot = 3; } },
+      { name: 'Exploit Triplo', desc: 'Joga 3 teclados de uma vez', cost: 300, apply: (s) => { s.multishot = 3; } },
     ],
   },
   roteador: {

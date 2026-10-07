@@ -31,6 +31,62 @@ export function drawSparkles(ctx, list, t) {
   ctx.globalAlpha = 1;
 }
 
+// Base de um caminho ELEVADO em perspectiva 3/4 (mesmo ângulo do servidor):
+// sombra no chão + parede lateral aparecendo embaixo do traçado. O tema
+// desenha o topo depois, no lugar de sempre (onde os inimigos andam).
+//   depth → altura da parede     side/sideDark → cor da parede (topo → base)
+export function raisedPathBase(g, path, { depth, side, sideDark, outline, shadow = 'rgba(10,20,40,0.28)' }) {
+  const w = path.width;
+  g.save();
+  g.translate(6, depth + 6);
+  strokePath(g, path, w + 12, shadow);
+  g.restore();
+  // contorno da peça inteira (parede + topo)
+  for (let k = depth; k >= 0; k -= 2) {
+    g.save();
+    g.translate(0, k);
+    strokePath(g, path, w + 8, outline);
+    g.restore();
+  }
+  // parede: escurece de cima pra baixo
+  for (let k = depth; k >= 1; k--) {
+    g.save();
+    g.translate(0, k);
+    strokePath(g, path, w, mix(side, sideDark, k / depth));
+    g.restore();
+  }
+  // emendas verticais nas paredes dos trechos horizontais (lê como painéis)
+  g.strokeStyle = 'rgba(10,15,30,0.35)';
+  g.lineWidth = 2;
+  g.beginPath();
+  const pts = path.points;
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1];
+    const b = pts[i];
+    if (Math.abs(a.y - b.y) > 1) continue;
+    const y = a.y + w / 2;
+    const [x0, x1] = a.x < b.x ? [a.x, b.x] : [b.x, a.x];
+    for (let x = x0 + w / 2 + 14; x < x1 - w / 2 - 4; x += 28) {
+      g.moveTo(x, y + 4);
+      g.lineTo(x, y + depth);
+    }
+  }
+  g.stroke();
+  // filete escuro onde a parede encontra o topo
+  g.save();
+  g.translate(0, 2);
+  strokePath(g, path, w + 8, outline);
+  g.restore();
+}
+
+// Mistura duas cores #rrggbb (t=0 → a, t=1 → b)
+function mix(a, b, t) {
+  const pa = parseInt(a.slice(1), 16);
+  const pb = parseInt(b.slice(1), 16);
+  const ch = (s) => Math.round(((pa >> s) & 255) * (1 - t) + ((pb >> s) & 255) * t);
+  return `rgb(${ch(16)},${ch(8)},${ch(0)})`;
+}
+
 // Desenha o traçado do caminho (cada tema chama com suas cores)
 export function strokePath(g, path, width, style, dash) {
   const pts = path.points;

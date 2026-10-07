@@ -1,6 +1,7 @@
 import { OUTLINE, GOLD } from '../config.js';
 import { rrect, circle, ellipse, fillOutline, gloss, cachedSprite, blit, text } from './canvas.js';
 import { TAU, shade } from '../util.js';
+import { drawImage, hasImage } from './images.js';
 
 /* ════════════════════════════════════════════════════════════
  *  VÍRUS
@@ -8,10 +9,17 @@ import { TAU, shade } from '../util.js';
  *  brilho e cara de malvadinho. Andam dando pulinhos e olham pra
  *  onde estão indo. O desenho de cada tipo é feito uma vez só e
  *  guardado em cache, porque podem aparecer dezenas ao mesmo tempo.
+ *
+ *  Quando a sprite PNG do inimigo existe (def.sprite, assets/sprites),
+ *  ela é usada no lugar do desenho com formas (drawSpriteEnemy).
  * ════════════════════════════════════════════════════════════ */
 
 export function drawEnemy(ctx, e) {
   const def = e.def;
+  if (hasImage(def.sprite)) {
+    drawSpriteEnemy(ctx, e);
+    return;
+  }
   switch (def.kind) {
     case 'worm':
       drawWorm(ctx, e);
@@ -34,6 +42,74 @@ export function drawEnemy(ctx, e) {
     circle(ctx, 0, -e.r * 0.3, e.r);
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
     ctx.fill();
+  }
+}
+
+// Como cada sprite é desenhada (medidas em múltiplos do raio):
+//   size → lado da imagem    foot → onde ficam os pés, em fração da imagem
+//   hop  → altura do pulo (0 = flutua)
+const SPRITE_LOOK = {
+  worm: { size: 4.4, foot: 0.34, hop: 0.22 },
+  trojan: { size: 2.8, foot: 0.477, hop: 0.3 },
+  locker: { size: 2.9, foot: 0.477, hop: 0.22 },
+  boss: { size: 3.4, foot: 0.336, hop: 0 },
+};
+const VIRUS_LOOK = { size: 2.9, foot: 0.477, hop: 0.42 };
+
+// Inimigo com sprite: anda dando pulinhos suaves (sobe e desce em curva,
+// sem tranco no chão), balança de leve e vira aos poucos pro lado em que
+// anda (e.turn vai de -1 a 1). O chefão só flutua.
+function drawSpriteEnemy(ctx, e) {
+  const { def, r } = e;
+  const look = SPRITE_LOOK[def.kind] ?? VIRUS_LOOK;
+  const size = r * look.size;
+  const ground = r * 0.9; // onde ficam os pés (igual aos desenhos com formas)
+
+  // ritmo do pulo: mais rápido pros vírus rápidos (e mais lento se estiver
+  // lento, porque o phase anda junto com a lentidão)
+  const rate = Math.min(2.6, Math.max(1.3, def.speed / 60));
+  const wave = Math.cos(e.phase * rate * TAU);
+  const air = (1 - wave) / 2; // 0 no chão, 1 no topo (suave nas duas pontas)
+  const low = (1 + wave) / 2; // perto do chão
+  let lift = air * r * look.hop;
+  let sx = 1 + 0.07 * low - 0.03 * air;
+  let sy = 1 - 0.07 * low + 0.05 * air;
+  let lean = Math.sin(e.phase * rate * TAU) * 0.07;
+  if (look.hop === 0) {
+    lift = 8 + Math.sin(e.phase * 2) * 4; // flutuando
+    sx = sy = 1;
+    lean = 0;
+  }
+  // virada: o desenho "afina" no meio do giro em vez de trocar de lado de uma vez
+  const turn = e.turn ?? e.face;
+  const flip = Math.sign(turn || 1) * Math.max(0.12, Math.abs(turn));
+
+  // sombra no chão: diminui quando sobe
+  ctx.fillStyle = `rgba(10,20,30,${0.25 * (1 - 0.4 * air)})`;
+  ellipse(ctx, 0, ground, r * (def.boss ? 1.3 : 0.85) * (1 - 0.3 * air), r * 0.28);
+  ctx.fill();
+
+  ctx.save();
+  ctx.translate(0, ground - lift);
+  ctx.rotate(Math.sign(turn || 1) * lean); // balança pra frente e pra trás
+  ctx.scale(flip * sx, sy); // escala ancorada nos pés
+  const dy = -size * look.foot;
+  drawImage(ctx, def.sprite, size, 0, dy);
+  if (e.flash > 0) {
+    // acerto: pisca mais claro
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.6;
+    drawImage(ctx, def.sprite, size, 0, dy);
+  }
+  ctx.restore();
+
+  if (e.slowTimer > 0 && !def.boss) {
+    circle(ctx, 0, ground - lift - size * look.foot, r + 4);
+    ctx.fillStyle = 'rgba(170,235,255,0.38)';
+    ctx.fill();
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = '#d8f8ff';
+    ctx.stroke();
   }
 }
 
@@ -318,5 +394,6 @@ function bossBody(g, L, W, color) {
 
 // Vírus parado (decoração de menus)
 export function drawVirusIcon(ctx, type, def, r) {
+  if (drawImage(ctx, def.sprite, r * 3)) return;
   blit(ctx, enemySprite(type, def, r), r * 3.4);
 }
