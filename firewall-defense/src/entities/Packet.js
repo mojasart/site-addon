@@ -1,64 +1,52 @@
-import { HUD_H, HUD_BITS_POS, PACKET_LIFETIME } from '../config.js';
+import { PACKET_LIFETIME } from '../config.js';
 import { rand } from '../util.js';
 
-// Pacote de bits: o recurso do jogo (o "sol" do Plants vs Zombies).
-// Cai da rede de tempos em tempos ou é gerado pelos Mineradores.
+// Pacote de bits gerado pelo Minerador (a "banana" do Bloons).
+// Pula pra perto do minerador e fica esperando um toque.
 export class Packet {
-  constructor({ x, y, targetY, value, vx = 0, vy = 0, gravity = 0 }) {
+  constructor(x, y, value) {
+    const a = rand(0, Math.PI * 2);
+    const d = rand(28, 55);
     this.x = x;
     this.y = y;
-    this.targetY = targetY;
+    this.fromX = x;
+    this.fromY = y;
+    this.toX = x + Math.cos(a) * d;
+    this.toY = y + Math.sin(a) * d;
     this.value = value;
-    this.vx = vx;
-    this.vy = vy;
-    this.gravity = gravity;
+    this.t = 0; // progresso do pulo (0..1)
     this.life = PACKET_LIFETIME;
-    this.state = 'falling'; // falling → resting → collected
+    this.state = 'jumping'; // jumping → resting → collected
+    this.target = null; // pra onde voa quando coletado (contador de bits)
     this.spin = rand(0, 6);
     this.dead = false;
   }
 
-  static fromSky(x, targetY, value) {
-    return new Packet({ x, y: HUD_H - 20, targetY, value, vy: 45 });
-  }
-
-  static fromProducer(x, y, value) {
-    return new Packet({ x, y: y - 20, targetY: y + 14, value, vx: rand(-35, 35), vy: -170, gravity: 520 });
-  }
-
   update(dt) {
     this.spin += dt;
-
     if (this.state === 'collected') {
-      // voa até o contador de bits no HUD
-      const k = Math.min(1, dt * 7);
-      this.x += (HUD_BITS_POS.x - this.x) * k;
-      this.y += (HUD_BITS_POS.y - this.y) * k;
-      if (Math.hypot(HUD_BITS_POS.x - this.x, HUD_BITS_POS.y - this.y) < 8) this.dead = true;
+      const k = Math.min(1, dt * 8);
+      this.x += (this.target.x - this.x) * k;
+      this.y += (this.target.y - this.y) * k;
+      if (Math.hypot(this.target.x - this.x, this.target.y - this.y) < 10) this.dead = true;
       return;
     }
-
-    if (this.state === 'falling') {
-      this.vy += this.gravity * dt;
-      this.x += this.vx * dt;
-      this.y += this.vy * dt;
-      if (this.vy > 0 && this.y >= this.targetY) {
-        this.y = this.targetY;
-        this.state = 'resting';
-      }
-    } else {
-      this.life -= dt;
-      if (this.life <= 0) this.dead = true;
+    if (this.state === 'jumping') {
+      this.t = Math.min(1, this.t + dt * 2.2);
+      this.x = this.fromX + (this.toX - this.fromX) * this.t;
+      this.y = this.fromY + (this.toY - this.fromY) * this.t - Math.sin(this.t * Math.PI) * 40;
+      if (this.t >= 1) this.state = 'resting';
+      return;
     }
+    this.life -= dt;
+    if (this.life <= 0) this.dead = true;
   }
 
-  // Área de toque generosa: dedo é maior que cursor
   hit(x, y) {
-    return this.state !== 'collected' && Math.hypot(x - this.x, y - this.y) < 36;
+    return this.state !== 'collected' && Math.hypot(x - this.x, y - this.y) < 34;
   }
 
-  // Pisca quando está pra sumir
   get visible() {
-    return this.state === 'collected' || this.life > 2 || Math.sin(this.life * 20) > 0;
+    return this.state !== 'resting' || this.life > 3 || Math.sin(this.life * 18) > 0;
   }
 }

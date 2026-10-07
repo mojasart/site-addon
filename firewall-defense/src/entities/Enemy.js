@@ -1,63 +1,90 @@
-import { ENEMIES } from '../data/enemies.js';
-import { SPAWN_X, rowY } from '../config.js';
+import { ENEMIES, threat } from '../data/enemies.js';
 import { rand } from '../util.js';
 
 export class Enemy {
-  constructor(type, row) {
+  constructor(type, dist) {
     this.type = type;
     this.def = ENEMIES[type];
-    this.row = row;
-    this.x = SPAWN_X + rand(0, 40);
-    this.y = rowY(row);
-    this.hp = this.maxHp = this.def.hp;
-    this.armor = this.maxArmor = this.def.armor || 0;
-    this.halfW = 20; // metade da largura da "caixa de colisão"
-    this.dead = false;
-    this.eating = false;
+    this.dist = dist; // quanto já andou no caminho
+    this.hp = this.def.hp;
+    this.r = this.def.radius;
+    this.x = -999;
+    this.y = -999;
+    this.angle = 0;
     this.slowTimer = 0;
+    this.slowMul = 1;
     this.flash = 0;
     this.phase = rand(0, 10); // relógio da animação
+    this.dead = false;
   }
 
-  get slowed() {
-    return this.slowTimer > 0;
+  get speed() {
+    return this.def.speed * (this.slowTimer > 0 ? this.slowMul : 1);
+  }
+
+  // vidas que tira se escapar: o que sobrou dessa camada + todos os filhos
+  get threat() {
+    return this.hp + threat(this.type) - this.def.hp;
+  }
+
+  place(path) {
+    const p = path.pointAt(this.dist);
+    this.x = p.x;
+    this.y = p.y;
+    this.angle = p.angle;
   }
 
   update(dt, game) {
-    const mul = this.slowed ? 0.5 : 1;
-    this.phase += dt * mul;
-    this.flash = Math.max(0, this.flash - dt);
     this.slowTimer = Math.max(0, this.slowTimer - dt);
-
-    const target = game.defenderBlocking(this);
-    this.eating = !!target;
-    if (target) target.takeDamage(this.def.dps * mul * dt);
-    else this.x -= this.def.speed * mul * dt;
-  }
-
-  takeDamage(amount, game) {
-    if (this.dead) return;
-    this.flash = 0.08;
-    if (this.armor > 0) {
-      const absorbed = Math.min(this.armor, amount);
-      this.armor -= absorbed;
-      amount -= absorbed;
-      if (this.armor <= 0) game.fx.burst(this.x, this.y - 20, this.def.armorColor, 14, 160, 0.6);
+    this.flash = Math.max(0, this.flash - dt);
+    this.phase += dt * (this.slowTimer > 0 ? this.slowMul : 1);
+    this.dist += this.speed * dt;
+    if (this.dist >= game.path.length) {
+      this.dead = true;
+      game.leak(this);
+      return;
     }
+    this.place(game.path);
+  }
+
+  slow(mul, time) {
+    if (this.def.boss) return; // chefão não fica lento
+    this.slowMul = Math.min(this.slowTimer > 0 ? this.slowMul : 1, mul);
+    this.slowTimer = Math.max(this.slowTimer, time);
+  }
+
+  // opts: { armored (fura blindagem?), source (torre que atacou), hitSet }
+  takeDamage(amount, game, opts = {}) {
+    if (this.dead || amount <= 0) return;
+    if (this.def.armored && !opts.armored) {
+      game.fx.blocked(this.x, this.y - this.r);
+      return;
+    }
+    this.flash = 0.08;
     this.hp -= amount;
-    if (this.hp <= 0) this.kill(game);
+    if (this.hp <= 0) this.pop(game, -this.hp, opts);
   }
 
-  slow(duration) {
-    this.slowTimer = Math.max(this.slowTimer, duration);
-  }
-
-  kill(game) {
-    if (this.dead) return;
+  pop(game, overflow, opts) {
     this.dead = true;
-    this.hp = 0;
-    this.armor = 0;
-    game.stats.kills++;
-    game.fx.burst(this.x, this.y, this.def.color, 20, 180, 0.7);
+    game.money += this.def.reward ?? 1;
+    game.stats.pops++;
+    if (opts.source) opts.source.pops++;
+    game.fx.pop(this.x, this.y, this.def.color, this.r);
+
+    // solta os filhos um pouquinho atrás no caminho
+    let i = 0;
+    for (const [type, n] of this.def.children) {
+      for (let k = 0; k < n; k++, i++) {
+        const child = new Enemy(type, Math.max(0, this.dist - i * 12));
+        child.slowTimer = this.slowTimer;
+        child.slowMul = this.slowMul;
+        child.place(game.path);
+        game.spawnEnemy(child);
+        opts.hitSet?.add(child); // o mesmo tiro não acerta os filhos
+        // dano que sobrou passa pra camada de baixo (como no Bloons)
+        if (overflow > 0) child.takeDamage(overflow, game, opts);
+      }
+    }
   }
 }
