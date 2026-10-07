@@ -1,21 +1,20 @@
 import { VIEW_H, OUTLINE } from '../config.js';
-import { rrect, text } from './canvas.js';
+import { drawImage } from './images.js';
 
 /* ════════════════════════════════════════════════════════════
  *  ENTRADAS DE VÍRUS
  *  Cada rota ganha, na borda da tela por onde os vírus entram:
  *   - um portal vermelho (rasgo na borda) que pulsa e dá um clarão
  *     toda vez que sai um vírus por ali (game.spawnFlash[k]);
- *   - uma plaquinha "ENTRADA" (numerada quando há mais de uma) e
- *     setinhas correndo pelo começo do caminho: só antes da 1ª onda,
- *     depois somem (o portal fica pra lembrar de onde vêm).
+ *   - um sinal de perigo pulsando do lado da entrada e setinhas
+ *     correndo pelo começo do caminho: só antes da 1ª onda, depois
+ *     somem (o portal fica pra lembrar de onde vêm).
  *  Tudo em coordenadas do mapa (o jogo já fez translate(offsetX)).
  * ════════════════════════════════════════════════════════════ */
 
 export function drawSpawns(ctx, game, t) {
   const routes = game.path.routes;
-  const many = routes.length > 1;
-  // aviso (placa + setinhas) só antes da 1ª onda; some num fade rápido
+  // aviso (sinal de perigo + setinhas) só antes da 1ª onda; some num fade rápido
   const hint = game.rounds.started === 0 ? 1 : Math.max(0, 1 - (game.anim - (game.firstRoundAt ?? 0)) * 2.5);
   routes.forEach((route, k) => {
     const e = entryOf(game, route, k);
@@ -26,7 +25,7 @@ export function drawSpawns(ctx, game, t) {
     ctx.save();
     ctx.globalAlpha = hint;
     chevrons(ctx, route, game.view.spawnDists[k], t);
-    label(ctx, e, many ? `ENTRADA ${k + 1}` : 'ENTRADA', t);
+    danger(ctx, e, t + k * 0.4);
     ctx.restore();
   });
 }
@@ -72,42 +71,51 @@ function portal(ctx, e, t, flash) {
   ctx.restore();
 }
 
-function label(ctx, e, str, t) {
-  const w = str.length * 7.6 + 30;
+// Sinal de perigo pulsando do lado da entrada (assets/icons/danger.svg),
+// com um brilho vermelho atrás batendo junto
+function danger(ctx, e, t) {
   let x;
   let y;
   if (e.side === 'left') {
-    x = e.x + 10;
-    // perto do topo a placa iria pra trás da HUD (vidas/dinheiro): vai embaixo
-    y = e.y - 50 < 100 ? e.y + 32 : e.y - 50;
+    x = e.x + 30;
+    // perto do topo o sinal iria pra trás da HUD (vidas/dinheiro): vai embaixo
+    y = e.y - 50 < 100 ? e.y + 50 : e.y - 50;
   } else if (e.side === 'top') {
-    x = e.x + 34;
-    y = e.y + 12;
+    x = e.x + 50;
+    y = e.y + 30;
   } else {
-    x = e.x + 34;
-    y = e.y - 36;
+    x = e.x + 50;
+    y = e.y - 30;
   }
-  const bob = Math.sin(t * 3) * 2;
+  const beat = 0.5 + Math.sin(t * 6) * 0.5; // 0 → 1, umas 1 vez por segundo
   ctx.save();
-  rrect(ctx, x, y + bob, w, 24, 12);
-  ctx.fillStyle = '#e8344e';
-  ctx.fill();
-  ctx.lineWidth = 2.5;
-  ctx.strokeStyle = OUTLINE;
-  ctx.stroke();
-  // triângulo de alerta
-  const ax = x + 13;
-  const ay = y + 12 + bob;
+  ctx.translate(x, y);
+  const glow = ctx.createRadialGradient(0, 2, 4, 0, 2, 30 + beat * 8);
+  glow.addColorStop(0, `rgba(255,60,90,${0.35 + beat * 0.35})`);
+  glow.addColorStop(1, 'rgba(255,60,90,0)');
+  ctx.fillStyle = glow;
   ctx.beginPath();
-  ctx.moveTo(ax, ay - 6);
-  ctx.lineTo(ax + 6, ay + 5);
-  ctx.lineTo(ax - 6, ay + 5);
-  ctx.closePath();
-  ctx.fillStyle = '#fff59a';
+  ctx.arc(0, 2, 30 + beat * 8, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = OUTLINE;
-  ctx.fillRect(ax - 0.8, ay - 2.5, 1.6, 4);
-  text(ctx, str, x + 22 + (w - 26) / 2, ay + 1, { size: 12 });
+  const s = 1 + beat * 0.14;
+  ctx.scale(s, s);
+  if (!drawImage(ctx, 'icon_danger', 40)) {
+    // sem o SVG: triângulo com "!" desenhado na mão
+    ctx.beginPath();
+    ctx.moveTo(0, -16);
+    ctx.lineTo(17, 13);
+    ctx.lineTo(-17, 13);
+    ctx.closePath();
+    ctx.lineJoin = 'round';
+    ctx.fillStyle = '#ffd23f';
+    ctx.fill();
+    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = OUTLINE;
+    ctx.stroke();
+    ctx.fillStyle = OUTLINE;
+    ctx.fillRect(-1.8, -7, 3.6, 10);
+    ctx.fillRect(-1.8, 6, 3.6, 3.6);
+  }
   ctx.restore();
 }
 
