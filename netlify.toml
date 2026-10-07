@@ -1,3 +1,0 @@
-# Este repositório não publica nada na Netlify: pula todo build.
-[build]
-  ignore = "exit 0"
