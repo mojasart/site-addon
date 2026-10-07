@@ -7,20 +7,31 @@ export class RoundManager {
   // mod: dificuldade do mapa { count, gap, speed, hp } (multiplicadores)
   constructor(rounds, mod = {}) {
     this.mod = { count: mod.count ?? 1, gap: mod.gap ?? 1, speed: mod.speed ?? 1, hp: mod.hp ?? 1 };
-    this.rounds = rounds.map((r) =>
-      r.map((g) => ({
-        ...g,
-        count: Math.max(1, Math.round(g.count * this.mod.count)),
-        gap: g.gap * this.mod.gap,
-        at: (g.at ?? 0) * this.mod.gap,
-      })),
-    );
+    this.rounds = rounds.map((r) => this.scale(r));
     this.started = 0; // quantas rodadas já começaram
     this.done = 0; // quantas já terminaram
     this.queue = []; // { type, t, round } em ordem de entrada
     this.pending = []; // por rodada: quantos vírus ainda vão entrar
     this.time = 0;
     this.spawned = 0; // contador pra alternar as entradas (rotas)
+  }
+
+  // Aplica a dificuldade do mapa numa rodada (count: false mantém a
+  // quantidade, pros chefões não se multiplicarem)
+  scale(round, { count = true } = {}) {
+    return round.map((g) => ({
+      ...g,
+      count: count ? Math.max(1, Math.round(g.count * this.mod.count)) : g.count,
+      gap: g.gap * this.mod.gap,
+      at: (g.at ?? 0) * this.mod.gap,
+    }));
+  }
+
+  // Modo platina: troca as rodadas que ainda não começaram pelo chefão
+  // (hp: multiplicador de vida só dele, no lugar do da pressão do mapa)
+  finishWith(round, hp = this.mod.hp) {
+    this.rounds.length = this.started;
+    this.rounds.push(this.scale(round, { count: false }).map((g) => ({ ...g, hp })));
   }
 
   get total() {
@@ -49,7 +60,7 @@ export class RoundManager {
     const round = this.started++;
     let n = 0;
     for (const g of this.rounds[round]) {
-      for (let i = 0; i < g.count; i++, n++) this.queue.push({ type: g.type, t: this.time + (g.at ?? 0) + i * g.gap, round });
+      for (let i = 0; i < g.count; i++, n++) this.queue.push({ type: g.type, t: this.time + (g.at ?? 0) + i * g.gap, round, hp: g.hp });
     }
     this.pending[round] = n;
     this.queue.sort((a, b) => a.t - b.t);
@@ -67,7 +78,7 @@ export class RoundManager {
       if (game.spawnFlash) game.spawnFlash[k] = 1;
       enemy.round = q.round;
       enemy.speedMul = this.mod.speed;
-      enemy.scaleHp(this.mod.hp);
+      enemy.scaleHp(q.hp ?? this.mod.hp);
       enemy.place();
       game.spawnEnemy(enemy);
       this.pending[q.round]--;

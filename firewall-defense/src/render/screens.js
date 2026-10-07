@@ -1,6 +1,6 @@
 import { VIEW_H, GOLD } from '../config.js';
 import { rrect, fillOutline, text } from './canvas.js';
-import { bigButton, iconButton, stars, ribbon } from './widgets.js';
+import { bigButton, iconButton, stars, ribbon, starTier } from './widgets.js';
 import { drawEnemy } from './viruses.js';
 import { drawCharacter } from './characters.js';
 import { ENEMIES } from '../data/enemies.js';
@@ -77,9 +77,11 @@ export function drawOverlay(ctx, game) {
     text(ctx, game.autoRound ? 'TURNO AUTOMÁTICO: LIGADO' : 'TURNO AUTOMÁTICO: DESLIGADO', game.viewW / 2, 478, { size: 13, color: '#d8e6ff' });
   } else {
     const won = game.state === 'won';
-    ribbon(ctx, cx, c.y + 46, won ? 280 : 360, won ? 'VITÓRIA!' : 'SERVIDOR INVADIDO', won ? '#3fd16b' : '#ff5a6a', 30);
+    const plat = won && game.platinum;
+    ribbon(ctx, cx, c.y + 46, won ? 280 : 360, plat ? 'PLATINA!' : won ? 'VITÓRIA!' : 'SERVIDOR INVADIDO', plat ? '#5fb4e8' : won ? '#3fd16b' : '#ff5a6a', 30);
     if (won) {
-      stars(ctx, cx, 175, game.stars, 30, 78, (i) => easeOutBack(clamp((game.overlayTime - 0.4 - i * 0.35) * 3, 0, 1)));
+      const pop = (i) => easeOutBack(clamp((game.overlayTime - 0.4 - i * 0.35) * 3, 0, 1));
+      stars(ctx, cx, 175, game.stars, 30, 78, pop, starTier(game.stars, plat));
     } else {
       ctx.save();
       ctx.translate(cx, 180);
@@ -87,9 +89,14 @@ export function drawOverlay(ctx, game) {
       drawEnemy(ctx, { type: 'v1', def: ENEMIES.v1, r: 15, phase: t, face: 1, slowTimer: 0, flash: 0 });
       ctx.restore();
     }
-    const lines = won
-      ? [`${game.map.name} protegida!`, `Vidas restantes: ${game.lives}/${game.map.lives}`]
-      : [`Os vírus venceram na rodada ${game.rounds.current}.`, 'Tente outras defesas ou upgrades!'];
+    const survived = Math.floor(Math.min(game.platTime, 180));
+    const lines = plat
+      ? [`Chefão derrotado em ${game.map.name}!`, `Vidas restantes: ${game.lives}/${game.map.lives}`]
+      : won
+        ? [`${game.map.name} protegida!`, `Vidas restantes: ${game.lives}/${game.map.lives}`]
+        : game.platinum
+          ? [game.bossCalled ? 'O chefão invadiu o servidor.' : `Os vírus venceram em ${Math.floor(survived / 60)}:${String(survived % 60).padStart(2, '0')}.`, 'Tente outras defesas ou upgrades!']
+          : [`Os vírus venceram na rodada ${game.rounds.current}.`, 'Tente outras defesas ou upgrades!'];
     text(ctx, lines[0], cx, 262, { size: 24 });
     text(ctx, lines[1], cx, 296, { size: 18, color: '#d8e6ff' });
     text(ctx, `Vírus estourados: ${game.stats.pops}`, cx, 330, { size: 18, color: GOLD });
