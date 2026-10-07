@@ -26,11 +26,11 @@ export function statRows(s, { armor = false } = {}) {
   if (s.attack === 'farm') {
     rows.push(['RENDA', `${s.packetsPerRound} × $${s.packetValue} por rodada`]);
     if (s.roundBonus) rows.push(['BÔNUS', `+$${s.roundBonus} por rodada`]);
-    return rows;
+    return [...rows, ...luckRows(s)];
   }
   if (s.attack === 'decoy') {
     rows.push(['VIDA', `${s.hp}`], ['DURAÇÃO', `${s.duration}s sozinha`], ['DANO', '0 (só distrai)']);
-    return rows;
+    return [...rows, ...luckRows(s)];
   }
   if (s.effect === 'frost') {
     rows.push(['LENTIDÃO', `-${Math.round((1 - s.slow) * 100)}% por ${num(s.slowTime)}s`]);
@@ -42,5 +42,18 @@ export function statRows(s, { armor = false } = {}) {
   }
   rows.push(['ALCANCE', `${s.range}`], ['RECARGA', `${num(s.fireRate)}s`]);
   if (armor) rows.push(['BLINDADOS', s.canHitArmored ? 'fura' : 'não fura']);
+  return [...rows, ...luckRows(s)];
+}
+
+// Bônus de sorte da Dark Net (data/darknet.js)
+function luckRows(s) {
+  const pct = (p) => `${Math.round(p * 100)}%`;
+  const rows = [];
+  if (s.critChance) rows.push(['CRÍTICO', `${pct(s.critChance)} de dano 2×`]);
+  if (s.knockChance) rows.push(['EMPURRÃO', `${pct(s.knockChance)} de chance`]);
+  if (s.freezeChance) rows.push(['CONGELAR', `${pct(s.freezeChance)} por 1s`]);
+  if (s.pierceChance) rows.push(['ATRAVESSAR', `${pct(s.pierceChance)} de +1 vírus`]);
+  if (s.doubleChance) rows.push(['BITCOIN 2×', `${pct(s.doubleChance)} de chance`]);
+  if (s.reviveChance) rows.push(['VOLTAR', `${pct(s.reviveChance)} com meia vida`]);
   return rows;
 }

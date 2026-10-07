@@ -1,6 +1,6 @@
 import { TOWERS } from '../data/towers.js';
 import { SELL_RATE } from '../config.js';
-import { rand } from '../util.js';
+import { rand, chance } from '../util.js';
 import { laserOrigin } from '../render/characters.js';
 
 export class Tower {
@@ -61,8 +61,16 @@ export class Tower {
   finishMining(game) {
     const s = this.stats;
     if (s.attack !== 'farm' || !game.canMine(this)) return;
-    for (; this.dropped < s.packetsPerRound; this.dropped++) game.spawnPacket(this.x, this.y - 10, s.packetValue);
+    for (; this.dropped < s.packetsPerRound; this.dropped++) this.mine(game);
     this.attack = 1;
+  }
+
+  // Solta um bitcoin; com Overclock (Dark Net) às vezes vem dobrado
+  mine(game) {
+    const s = this.stats;
+    const lucky = chance(s.doubleChance);
+    game.spawnPacket(this.x, this.y - 10, s.packetValue * (lucky ? 2 : 1));
+    if (lucky) game.fx.text(this.x, this.y - 44, 'x2!', '#ffd84a', 16);
   }
 
   lookAt(x) {
@@ -90,6 +98,14 @@ export class Tower {
     if (this.dead) return;
     this.hp -= amount;
     if (this.hp > 0) return;
+    // Mel Turbinado (Dark Net): às vezes volta com metade da vida
+    if (chance(this.stats.reviveChance)) {
+      this.hp = this.maxHp / 2;
+      this.spawnAnim = 1;
+      game.fx.text(this.x, this.y - 30, 'VOLTOU!', '#ffd84a', 16);
+      game.fx.burst(this.x, this.y, '#f5a524', 12, 120, 0.45, 4, true);
+      return;
+    }
     this.dead = true;
     game.fx.burst(this.x, this.y, '#f5a524', 20, 170, 0.55, 5, true);
     game.sound.play('pop');
@@ -165,7 +181,10 @@ export class Tower {
         const x0 = this.x + this.face * eye.x;
         const y0 = this.y + eye.y;
         // Feixe Perfurante: o laser segue reto e acerta quem está atrás do alvo
-        const hits = [target, ...this.behind(game, target, x0, y0, (s.pierce ?? 1) - 1)];
+        // Lente Calibrada (Dark Net): às vezes atravessa mais um
+        const lucky = chance(s.pierceChance);
+        const hits = [target, ...this.behind(game, target, x0, y0, (s.pierce ?? 1) - 1 + (lucky ? 1 : 0))];
+        if (lucky && hits.length > (s.pierce ?? 1)) game.fx.text(target.x, target.y - target.r - 6, 'ATRAVESSOU!', '#ff8a8a', 14);
         const last = hits[hits.length - 1];
         game.fx.beam(x0, y0, last.x, last.y);
         for (const e of hits) e.takeDamage(s.damage, game, this.opts());
@@ -182,6 +201,10 @@ export class Tower {
           if (s.slow) e.slow(s.slow, s.slowTime);
           if (s.vulnerable) e.weaken(s.slowTime);
           if (s.burn) e.ignite(s.burn, s.burnTime, this); // antes do dano: os filhos já nascem pegando fogo
+          // bônus de sorte da Dark Net: empurrão (Golem) e congelamento (Penguin),
+          // antes do dano: os filhos nascem já empurrados/congelados
+          if (chance(s.knockChance) && e.knockBack(28)) game.fx.text(e.x, e.y - e.r - 6, 'EMPURRÃO!', '#ffb36b', 14);
+          if (chance(s.freezeChance) && e.freeze(1)) game.fx.text(e.x, e.y - e.r - 6, 'CONGELOU!', '#9fe6ff', 14);
           if (s.damage) e.takeDamage(s.damage, game, this.opts());
         }
         game.fx.ring(this.x, this.y, s.range, s.effect);
@@ -196,7 +219,7 @@ export class Tower {
         if (!game.rounds.active || this.dropped >= s.packetsPerRound || !game.canMine(this)) break;
         this.dropTimer -= dt;
         if (this.dropTimer <= 0) {
-          game.spawnPacket(this.x, this.y - 10, s.packetValue);
+          this.mine(game);
           this.dropped++;
           this.dropTimer = s.packetInterval;
           this.attack = 1;

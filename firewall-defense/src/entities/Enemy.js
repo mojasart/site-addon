@@ -14,6 +14,7 @@ export class Enemy {
     this.angle = 0;
     this.face = 1;
     this.slowTimer = 0;
+    this.freezeTimer = 0; // congelado (Kernel Gelado, Dark Net): parado
     this.slowMul = 1;
     this.vulnTimer = 0; // vulnerável (Penguin Linux com Era do Gelo): leva dano dobrado
     this.burnTimer = 0; // pegando fogo (Golem com Incêndio): perde burnDps de vida por segundo
@@ -34,6 +35,7 @@ export class Enemy {
   }
 
   get speed() {
+    if (this.freezeTimer > 0) return 0;
     return this.def.speed * this.speedMul * (this.slowTimer > 0 ? this.slowMul : 1);
   }
 
@@ -66,6 +68,7 @@ export class Enemy {
 
   update(dt, game) {
     this.slowTimer = Math.max(0, this.slowTimer - dt);
+    this.freezeTimer = Math.max(0, this.freezeTimer - dt);
     this.vulnTimer = Math.max(0, this.vulnTimer - dt);
     this.flash = Math.max(0, this.flash - dt);
     this.phase += dt * (this.slowTimer > 0 ? this.slowMul : 1);
@@ -115,6 +118,21 @@ export class Enemy {
   get biteDps() {
     if (this.def.boss) return 8;
     return this.def.hp > 1 ? 2 : 1;
+  }
+
+  // Congela parado por `time` s (chefão não congela). true se pegou
+  freeze(time) {
+    if (this.def.boss) return false;
+    this.freezeTimer = Math.max(this.freezeTimer, time);
+    return true;
+  }
+
+  // Empurra `d` px pra trás no caminho (chefão não sai do lugar). true se pegou
+  knockBack(d) {
+    if (this.def.boss || this.dist <= 0) return false;
+    this.dist = Math.max(0, this.dist - d);
+    this.place();
+    return true;
   }
 
   slow(mul, time) {
@@ -171,6 +189,7 @@ export class Enemy {
       for (let k = 0; k < n; k++, i++) {
         const child = new Enemy(type, Math.max(0, this.dist - i * 12), this.route);
         child.slowTimer = this.slowTimer;
+        child.freezeTimer = this.freezeTimer;
         child.slowMul = this.slowMul;
         child.vulnTimer = this.vulnTimer;
         child.burnTimer = this.burnTimer;

@@ -27,7 +27,8 @@ Lista do que falta fazer no jogo. Marque com `[x]` quando terminar.
 
 - [x] **Árvore de upgrades, fase 1**: nó central (Acesso Root) + 1 ramo por defesa
   (`TREE` em `src/data/darknet.js`, tela em `src/scenes/DarkNetScene.js`)
-- [ ] **Árvore, fase 2**: próximos nós saindo de cada ramo (os "?" na tela). Basta adicionar em
+- [ ] **Árvore, fase 2**: próximos nós saindo de cada ramo (os "?" na tela). Seguir o estilo RNG
+  ("X tem Y% de chance de Z"; campos `*Chance` lidos em `entities/Tower.js`, `Projectile.js`, `Enemy.js`). Basta adicionar em
   `TREE` com `parent: '<id do ramo>'` e posicionar o nó em `DarkNetScene.layout()`
 
 ## Balanceamento

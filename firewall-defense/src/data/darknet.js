@@ -32,23 +32,26 @@ export function formatCoffee(v) {
 // permanente, comprado uma vez com cafés (save.darknet[id] = true).
 //   parent → nó que precisa ter antes      tower → defesa que o bônus afeta
 //   apply(stats) → mexe nos status da defesa (por cima dos upgrades da fase)
+// Os bônus são de sorte (RNG): "X tem Y% de chance de Z". Os campos de
+// chance (critChance, knockChance...) são lidos em entities/Tower.js,
+// Projectile.js e Enemy.js.
 // As próximas fases da árvore saem de cada ramo (parent: 'hacker' etc.).
 export const ROOT_MONEY = 75; // Acesso Root: dinheiro a mais no começo de cada fase
 
 export const TREE = [
   { id: 'root', name: 'Acesso Root', desc: `Toda fase começa com +$${ROOT_MONEY}`, cost: 3, parent: null },
-  { id: 'hacker', tower: 'hacker', name: 'Teclado Mecânico', desc: 'Hacker ataca 10% mais rápido', cost: 5, parent: 'root',
-    apply: (s) => { s.fireRate *= 0.9; } },
-  { id: 'firewall', tower: 'firewall', name: 'Tijolo Refratário', desc: 'Golem Firewall com +15% de alcance', cost: 5, parent: 'root',
-    apply: (s) => { s.range = Math.round(s.range * 1.15); } },
-  { id: 'pinguim', tower: 'pinguim', name: 'Kernel Gelado', desc: 'Lentidão do Penguin Linux dura +0,5s', cost: 5, parent: 'root',
-    apply: (s) => { s.slowTime += 0.5; } },
-  { id: 'scanner', tower: 'scanner', name: 'Lente Calibrada', desc: 'Robô NMAP com +1 de dano', cost: 5, parent: 'root',
-    apply: (s) => { s.damage += 1; } },
-  { id: 'minerador', tower: 'minerador', name: 'Overclock', desc: 'Cada bitcoin minerado vale +$5', cost: 5, parent: 'root',
-    apply: (s) => { s.packetValue += 5; } },
-  { id: 'honeypot', tower: 'honeypot', name: 'Mel Turbinado', desc: 'Honeypot com +50% de vida', cost: 5, parent: 'root',
-    apply: (s) => { s.hp = Math.round(s.hp * 1.5); } },
+  { id: 'hacker', tower: 'hacker', name: 'Tecla Crítica', desc: 'Cada teclado tem 15% de chance de dar dano dobrado', cost: 5, parent: 'root',
+    apply: (s) => { s.critChance = 0.15; } },
+  { id: 'firewall', tower: 'firewall', name: 'Tremor de Terra', desc: 'Cada vírus atingido pela onda tem 15% de chance de ser empurrado pra trás', cost: 5, parent: 'root',
+    apply: (s) => { s.knockChance = 0.15; } },
+  { id: 'pinguim', tower: 'pinguim', name: 'Kernel Gelado', desc: 'Cada vírus atingido pela onda tem 10% de chance de congelar por 1s', cost: 5, parent: 'root',
+    apply: (s) => { s.freezeChance = 0.1; } },
+  { id: 'scanner', tower: 'scanner', name: 'Lente Calibrada', desc: 'O laser tem 25% de chance de atravessar e acertar mais 1 vírus', cost: 5, parent: 'root',
+    apply: (s) => { s.pierceChance = 0.25; } },
+  { id: 'minerador', tower: 'minerador', name: 'Overclock', desc: 'Cada bitcoin minerado tem 20% de chance de vir dobrado', cost: 5, parent: 'root',
+    apply: (s) => { s.doubleChance = 0.2; } },
+  { id: 'honeypot', tower: 'honeypot', name: 'Mel Turbinado', desc: 'Quando quebra, o Honeypot tem 30% de chance de voltar com metade da vida', cost: 5, parent: 'root',
+    apply: (s) => { s.reviveChance = 0.3; } },
 ];
 
 export const NODE = Object.fromEntries(TREE.map((n) => [n.id, n]));

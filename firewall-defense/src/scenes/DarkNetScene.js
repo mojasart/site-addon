@@ -351,7 +351,7 @@ export class DarkNetScene {
     let status = null;
     const extra = st === 'owned' ? this.app.perkRollbackSet(n.id).length - 1 : 0;
     if (extra > 0) status = [`> vender leva junto ${extra} upgrade${extra > 1 ? 's' : ''}`, '#ffc62e'];
-    else if (st === 'owned') status = ['> instalado. ativo em todas as fases', GREEN];
+    else if (st === 'owned') status = ['> instalado', GREEN];
     else if (st === 'open' && !can) status = [`> faltam ${formatCoffee(n.cost - this.app.coffee)} café(s)`, '#ffc62e'];
     else if (st === 'open') status = ['> pronto pra instalar', PURPLE];
     if (status) {
