@@ -26,6 +26,11 @@ import { drawEncrypted, ENCRYPT_FILTER } from './render/ransom.js';
 import { drawSpawns } from './render/spawns.js';
 import { drawDuck } from './render/duck.js';
 import { drawAds, adClose, adSpot, adScale, adSize, ADS, CRYPT_AD, CLOSE_SPOTS } from './render/ads.js';
+
+// Enxurrada de anúncios (clicou no anúncio em vez do X): dura `time` s até o
+// game over, com no máximo `max` anúncios; o intervalo entre eles começa
+// em `gap` e encurta (×accel) até `minGap`
+const STORM = { time: 4, max: 45, gap: 0.35, accel: 0.88, minGap: 0.05 };
 import { pickCoinTiles, coinTileAt, COIN_SEASONS } from './core/coinTiles.js';
 import { drawCoinTiles, drawNoMine } from './render/coinTiles.js';
 import { rrect, fillOutline, circle, text, setFont } from './render/canvas.js';
@@ -188,6 +193,7 @@ export class Game {
     this.anim += dt;
     if (this.state !== 'playing') this.overlayTime += dt;
     if (this.state === 'paused') return;
+    if (this.adStorm && this.state === 'playing') this.updateAdStorm(dt);
     this.endDelay = Math.max(0, this.endDelay - dt);
     this.hurt = Math.max(0, this.hurt - dt);
     this.duckHop = Math.max(0, this.duckHop - dt * 2.5);
@@ -657,26 +663,59 @@ export class Game {
   }
 
   // Toque num anúncio (o de cima primeiro): o X fecha (o do criptografado
-  // ainda foge pra outra borda enquanto tiver `dodges`); no resto, o toque morre ali
+  // ainda foge pra outra borda enquanto tiver `dodges`); no resto do anúncio
+  // (corpo ou botão) abre a enxurrada de anúncios (startAdStorm)
   adTap(sx, sy) {
     for (let i = this.ads.length - 1; i >= 0; i--) {
       const ad = this.ads[i];
       if (ad.closing != null || sx < ad.x || sx > ad.x + ad.w || sy < ad.y || sy > ad.y + ad.h) continue;
-      if (inRect(adClose(ad), sx, sy)) {
-        if (ad.dodges > 0) {
-          ad.dodges--;
-          let to = Math.floor(Math.random() * (CLOSE_SPOTS.length - 1));
-          if (to >= ad.closeAt) to++; // sempre outra borda
-          ad.closeAt = to;
-          this.sound.play('error');
-        } else {
-          ad.closing = 0.18;
-          this.sound.play('click');
-        }
+      // clicou no anúncio (fora do X): a música trava e vem a enxurrada
+      if (!inRect(adClose(ad), sx, sy)) {
+        this.startAdStorm();
+        return true;
+      }
+      if (ad.dodges > 0) {
+        ad.dodges--;
+        let to = Math.floor(Math.random() * (CLOSE_SPOTS.length - 1));
+        if (to >= ad.closeAt) to++; // sempre outra borda
+        ad.closeAt = to;
+        this.sound.play('error');
+      } else {
+        ad.closing = 0.18;
+        this.sound.play('click');
       }
       return true;
     }
     return false;
+  }
+
+  // Caiu no anúncio: a música trava e os anúncios brotam cada vez mais
+  // rápido até cobrir a tela; aí é game over (updateAdStorm)
+  startAdStorm() {
+    if (this.adStorm || this.state !== 'playing') return;
+    this.adStorm = { t: 0, next: 0, n: 0 };
+    this.sound.crashMusic?.();
+    this.shake(6);
+  }
+
+  // Roda no tempo de verdade (não acelera com o 2x/3x)
+  updateAdStorm(dt) {
+    const st = this.adStorm;
+    st.t += dt;
+    st.next -= dt;
+    while (st.next <= 0 && st.n < STORM.max) {
+      const s0 = adScale(this.viewW);
+      const s = s0 * (0.45 + Math.random() * 0.55);
+      const { w, h } = adSize(s);
+      this.ads.push({ type: Math.floor(Math.random() * (ADS.length - 1)), s, s0, w, h, ...adSpot(this.viewW, w, h), t: 0, seed: Math.random() * 10, vx: 0, closeAt: 0, dodges: 0, snap: true });
+      if (st.n % 3 === 0) this.sound.play(st.n % 2 ? 'error' : 'star');
+      st.n++;
+      st.next += Math.max(STORM.minGap, STORM.gap * STORM.accel ** st.n);
+    }
+    if (st.t >= STORM.time) {
+      this.lossReason = 'adware';
+      this.end(false);
+    }
   }
 
   // Ransomware andou um quadrado: com defesa no alcance, sorteia a chance da

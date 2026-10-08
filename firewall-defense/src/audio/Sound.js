@@ -142,6 +142,21 @@ export class Sound {
     this.music?.setTheme(name);
   }
 
+  // Clicou no anúncio: a música gagueja, desaba e fica muda até a próxima
+  // troca de tela (setTheme volta ela)
+  crashMusic() {
+    if (!this.ctx || !this.music) return;
+    this.music.crashed = true;
+    const bus = this.musicBus;
+    for (let k = 0; k < 7; k++) {
+      const f = 330 * 0.88 ** k;
+      this.tone({ type: 'sawtooth', freq: f, dur: 0.07, vol: 0.09, at: k * 0.075, bus });
+      this.tone({ type: 'square', freq: f * 1.5, dur: 0.06, vol: 0.04, at: k * 0.075, bus });
+    }
+    this.tone({ type: 'sawtooth', freq: 220, to: 28, dur: 1.2, vol: 0.12, at: 0.55, bus });
+    this.noise({ dur: 0.9, vol: 0.12, filter: 'bandpass', freq: 2500, to: 200, q: 2, at: 0.5, bus });
+  }
+
   play(name) {
     if (!this.ctx || !this.settings.sfx || this.ctx.state !== 'running') return;
     const now = this.ctx.currentTime;
@@ -273,6 +288,7 @@ class Music {
 
   // troca de tema: recomeça do início do loop novo
   setTheme(name) {
+    this.crashed = false; // trocou de tela: a música volta
     if (!THEMES[name] || name === this.theme) return;
     this.theme = name;
     this.step = 0;
@@ -285,7 +301,7 @@ class Music {
 
   schedule() {
     const ctx = this.s.ctx;
-    if (ctx.state !== 'running' || !this.s.settings.music) {
+    if (ctx.state !== 'running' || !this.s.settings.music || this.crashed) {
       this.next = ctx.currentTime + 0.1;
       return;
     }

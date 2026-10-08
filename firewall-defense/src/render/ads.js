@@ -18,6 +18,9 @@ import { easeOutBack } from '../util.js';
  *  até o jogador fechar, mesmo com o Adware morto (Game.updateAds).
  *  Coordenadas de tela (por cima do mapa e do painel). O desenho é feito
  *  nas medidas W × H e escalado por ad.s (adScale).
+ *  Clicar no anúncio (fora do X) abre a ENXURRADA (Game.startAdStorm): os
+ *  anúncios dela são "fotos" guardadas em cache (snap), porque podem ser
+ *  dezenas ao mesmo tempo e redesenhar texto em todos pesa no celular.
  * ════════════════════════════════════════════════════════════ */
 
 const W = 250; // medidas do desenho (antes da escala)
@@ -67,10 +70,31 @@ export function adClose(ad) {
 }
 
 export function drawAds(ctx, game) {
-  for (const ad of game.ads) drawAd(ctx, ad, game.anim);
+  for (const ad of game.ads) drawAd(ctx, ad, game.anim, game.app.pixelScale);
 }
 
-function drawAd(ctx, real, t) {
+// "Foto" de um anúncio (pros da enxurrada): desenhada uma vez por tipo, no
+// tamanho grande (ad.s0), e reduzida na hora de copiar. No máximo 1 por
+// tipo na memória (uma por tamanho seriam dezenas de imagens grandes)
+const snaps = new Map();
+function snapshot(ad, ps) {
+  const s0 = ad.s0 ?? ad.s;
+  const key = `${ad.type}:${s0.toFixed(2)}:${ps}`;
+  let c = snaps.get(key);
+  if (!c) {
+    c = document.createElement('canvas');
+    c.width = Math.ceil((W + 8) * s0 * ps);
+    c.height = Math.ceil((H + 12) * s0 * ps);
+    const g = c.getContext('2d');
+    g.scale(s0 * ps, s0 * ps);
+    g.translate(4, 2);
+    drawBody(g, ADS[ad.type], { seed: ad.seed, closeAt: 0, vx: 0 }, 0.4);
+    snaps.set(key, c);
+  }
+  return c;
+}
+
+function drawAd(ctx, real, t, ps = 1) {
   const def = ADS[real.type];
   const ad = { ...real, x: 0, y: 0 }; // desenha no lugar dele, já escalado
   ctx.save();
@@ -84,7 +108,13 @@ function drawAd(ctx, real, t) {
   ctx.translate(cx, cy);
   ctx.scale(0.6 + 0.4 * k, 0.6 + 0.4 * k);
   ctx.translate(-cx, -cy);
+  if (real.snap) ctx.drawImage(snapshot(real, ps), -4, -2, W + 8, H + 12);
+  else drawBody(ctx, def, ad, t);
+  ctx.restore();
+}
 
+// Janela do anúncio nas medidas do desenho (W × H, origem no canto)
+function drawBody(ctx, def, ad, t) {
   // sombra + janela (o criptografado é tela de terminal escura)
   rrect(ctx, 0, 6, W, H, 16);
   ctx.fillStyle = 'rgba(10,16,40,0.45)';
@@ -130,7 +160,6 @@ function drawAd(ctx, real, t) {
   // X por último (no criptografado ele pode estar em cima do botão)
   const [xx, xy] = CLOSE_SPOTS[ad.closeAt ?? 0];
   iconButton(ctx, { x: xx, y: xy, w: CLOSE, h: CLOSE }, '#ff5a5a', 'close');
-  ctx.restore();
 }
 
 // Texto embaralhado que muda sozinho (anúncio criptografado)
