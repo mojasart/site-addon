@@ -5,7 +5,6 @@ import { ENEMIES, worth, threat } from '../data/enemies.js';
 import { TOWERS, TOWER_ORDER } from '../data/towers.js';
 import { rrect, fillOutline, cachedSprite } from '../render/canvas.js';
 import { iconButton, inRect } from '../render/widgets.js';
-import { ICONS } from '../render/sprites.js';
 import { drawVirusIcon } from '../render/viruses.js';
 import { drawCharacter } from '../render/characters.js';
 import { AGES, statsAt, statRows } from '../data/towerInfo.js';
@@ -232,7 +231,7 @@ export class CatalogScene {
   }
 
   // Sprite da ameaça (imagem ou o desenho do jogo, pros que não têm imagem:
-  // Spyware, Adware...); se ainda não foi descoberta, silhueta preta + cadeado
+  // Spyware, Adware...); se ainda não foi descoberta, só a silhueta apagada
   drawIcon(ctx, type, size, seen) {
     const def = ENEMIES[type];
     if (seen) {
@@ -246,10 +245,6 @@ export class CatalogScene {
       g.fillRect(-size / 2, -size / 2, size, size);
     });
     ctx.drawImage(c, -size / 2, -size / 2, size, size);
-    ctx.save();
-    ctx.translate(size * 0.22, size * 0.2);
-    ICONS.lock(ctx, size * 0.28);
-    ctx.restore();
   }
 
   // Moldura do retrato com o "radar" girando; draw desenha o conteúdo no centro
