@@ -1,13 +1,17 @@
-import { VIEW_H, OUTLINE, GOLD } from '../config.js';
-import { rrect, fillOutline, text, button } from '../render/canvas.js';
-import { iconButton, inRect } from '../render/widgets.js';
+import { VIEW_H } from '../config.js';
+import { rrect, fillOutline } from '../render/canvas.js';
+import { inRect } from '../render/widgets.js';
 import { drawCharacter } from '../render/characters.js';
 import { drawDuck } from '../render/duck.js';
+import { easeOutBack } from '../util.js';
 
 /* ════════════════════════════════════════════════════════════
  *  NOME DO JOGADOR
- *  Depois do JOGAR (só enquanto não tem nome salvo): o Hacker pergunta
- *  "Olá, podemos te chamar de ___?". O campo é um <input> de verdade (abre
+ *  Depois do JOGAR (só enquanto não tem nome salvo): uma janelinha de
+ *  terminal hacker (fósforo verde, como a loja e o catálogo) abre por cima
+ *  da tela inicial, entrando com o pulinho dos anúncios do Adware, e o
+ *  Hacker pergunta "Olá, podemos te chamar de ___?". O X
+ *  fecha e volta pra tela inicial. O campo é um <input> de verdade (abre
  *  o teclado no celular) posicionado em cima da caixa desenhada no canvas.
  *  Só letras (com acento) e espaço, até MAX_NAME caracteres; o resto é
  *  apagado enquanto digita. O Hacker usa o nome pra falar (app.playerName).
@@ -20,9 +24,32 @@ export function cleanName(str) {
   return str.replace(/[^\p{L} ]/gu, '').replace(/ {2,}/g, ' ').replace(/^ +/, '').slice(0, MAX_NAME);
 }
 
+const BAR = 34; // barra de título da janela
+
+// Terminal (mesmas cores da loja e do catálogo)
+const MONO = '"Courier New", ui-monospace, Menlo, Consolas, monospace';
+const GREEN = '#3dff9a';
+const DIM = '#1f8a52';
+const SCREEN = '#03130a';
+const RED = '#ff5a6a';
+
+// Texto de terminal: fonte de máquina com brilho de fósforo
+function mono(ctx, str, x, y, size, color, align = 'left', bold = true) {
+  ctx.font = `${bold ? 'bold ' : ''}${size}px ${MONO}`;
+  ctx.textAlign = align;
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = color;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 6;
+  ctx.fillText(str, x, y);
+  ctx.shadowBlur = 0;
+}
+
 export class NameScene {
-  constructor(app) {
+  // behind: a tela que fica por baixo da janela (a inicial)
+  constructor(app, behind = null) {
     this.app = app;
+    this.behind = behind;
     this.t = 0;
     this.shake = 0;
     this.input = makeInput(app.save.playerName ?? '');
@@ -38,11 +65,13 @@ export class NameScene {
 
   layout() {
     const W = this.app.viewW;
-    const cx = W / 2 + 70;
+    const card = { x: W / 2 - 290, y: 115, w: 580, h: 300 };
+    const cx = card.x + 365; // centro da coluna da direita
     return {
-      back: { x: 18, y: 16, w: 56, h: 56 },
-      field: { x: cx - 190, y: 214, w: 380, h: 58 },
-      ok: { x: cx - 120, y: 330, w: 240, h: 66 },
+      card,
+      close: { x: card.x + card.w - 34, y: card.y + 5, w: 26, h: 24 },
+      field: { x: cx - 150, y: card.y + 108, w: 300, h: 50 },
+      ok: { x: cx - 120, y: card.y + 206, w: 240, h: 54 },
       cx,
     };
   }
@@ -54,48 +83,140 @@ export class NameScene {
   update(dt) {
     this.t += dt;
     this.shake = Math.max(0, this.shake - dt * 3);
+    this.behind?.update(dt);
   }
 
   render(ctx) {
     const W = this.app.viewW;
     const L = this.layout();
-    const bg = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-    bg.addColorStop(0, '#1d2c66');
-    bg.addColorStop(1, '#101a3d');
-    ctx.fillStyle = bg;
+    const c = L.card;
+    // a tela inicial por baixo, escurecida
+    if (this.behind) this.behind.render(ctx);
+    else {
+      ctx.fillStyle = '#101a3d';
+      ctx.fillRect(0, 0, W, VIEW_H);
+    }
+    ctx.fillStyle = `rgba(10,18,40,${0.6 * Math.min(1, this.t * 5)})`;
     ctx.fillRect(0, 0, W, VIEW_H);
 
-    // o Hacker criança à esquerda, falando, com o Pato de Borracha no pé
+    // a janela entra pulando, como os anúncios
+    const k = easeOutBack(Math.min(1, this.t / 0.25));
     ctx.save();
-    ctx.translate(L.cx - 330, 410 + Math.sin(this.t * 2.2) * 4);
-    ctx.scale(2.6, 2.6);
+    ctx.globalAlpha = Math.min(1, this.t * 6);
+    ctx.translate(c.x + c.w / 2, c.y + c.h / 2);
+    ctx.scale(0.6 + 0.4 * k, 0.6 + 0.4 * k);
+    ctx.translate(-(c.x + c.w / 2), -(c.y + c.h / 2));
+    this.drawWindow(ctx, L);
+    ctx.restore();
+
+    // o <input> só aparece com a janela parada no lugar
+    this.input.style.visibility = this.t >= 0.25 ? 'visible' : 'hidden';
+    this.placeInput(L.field);
+  }
+
+  drawWindow(ctx, L) {
+    const c = L.card;
+    // sombra + moldura escura com borda de fósforo
+    rrect(ctx, c.x, c.y + 6, c.w, c.h, 12);
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fill();
+    rrect(ctx, c.x - 4, c.y - 4, c.w + 8, c.h + 8, 14);
+    fillOutline(ctx, '#0a1f14', 4);
+    ctx.save();
+    rrect(ctx, c.x, c.y, c.w, c.h, 10);
+    ctx.clip();
+    ctx.fillStyle = SCREEN;
+    ctx.fillRect(c.x, c.y, c.w, c.h);
+    // barra de título com o "programa" e o [X]
+    ctx.fillStyle = '#0c3a22';
+    ctx.fillRect(c.x, c.y, c.w, BAR);
+    mono(ctx, 'C:\\FIREWALL\\NOVO_USUARIO.EXE', c.x + 14, c.y + BAR / 2 + 1, 15, GREEN);
+    const x = L.close;
+    ctx.strokeStyle = RED;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x.x + 1, x.y + 1, x.w - 2, x.h - 2);
+    mono(ctx, 'X', x.x + x.w / 2, x.y + x.h / 2 + 1, 17, RED, 'center');
+
+    // o Hacker criança à esquerda, num brilho verde, com o Pato de Borracha
+    const glow = ctx.createRadialGradient(c.x + 105, c.y + 190, 10, c.x + 105, c.y + 190, 110);
+    glow.addColorStop(0, 'rgba(61,255,154,0.16)');
+    glow.addColorStop(1, 'rgba(61,255,154,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(c.x, c.y + BAR, 220, c.h - BAR);
+    ctx.save();
+    ctx.translate(c.x + 100, c.y + 232 + Math.sin(this.t * 2.2) * 3);
+    ctx.scale(2.4, 2.4);
     drawCharacter(ctx, 'hacker', { t: this.t, face: 1, level: 0 });
     ctx.restore();
     ctx.save();
-    ctx.translate(L.cx - 266, 428);
-    drawDuck(ctx, 17, { t: this.t });
+    ctx.translate(c.x + 160, c.y + 258);
+    drawDuck(ctx, 15, { t: this.t });
     ctx.restore();
 
-    text(ctx, 'Olá, podemos te chamar de', L.cx, 168, { size: 30 });
-    // caixa do campo (o <input> fica em cima) + o "?" no fim
+    // a pergunta como saída de terminal
+    const lx = L.field.x;
+    mono(ctx, '> novo usuário detectado...', lx, c.y + 58, 12, DIM, 'left', false);
+    mono(ctx, '> Olá, podemos te chamar de', lx, c.y + 82, 18, GREEN);
+    // campo (o <input> fica em cima) + o "?" no fim; treme vermelho se vazio
     ctx.save();
     ctx.translate(Math.sin(this.shake * 40) * 6 * this.shake, 0);
-    rrect(ctx, L.field.x, L.field.y + 5, L.field.w, L.field.h, 16);
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.fill();
-    rrect(ctx, L.field.x, L.field.y, L.field.w, L.field.h, 16);
-    fillOutline(ctx, '#ffffff', 4);
+    ctx.fillStyle = 'rgba(61,255,154,0.06)';
+    ctx.fillRect(L.field.x, L.field.y, L.field.w, L.field.h);
+    ctx.strokeStyle = this.shake > 0 ? RED : GREEN;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = ctx.strokeStyle;
+    ctx.shadowBlur = 8;
+    ctx.strokeRect(L.field.x + 1, L.field.y + 1, L.field.w - 2, L.field.h - 2);
+    ctx.shadowBlur = 0;
     ctx.restore();
-    text(ctx, '?', L.field.x + L.field.w + 22, L.field.y + L.field.h / 2 + 2, { size: 38 });
+    mono(ctx, '?', L.field.x + L.field.w + 18, L.field.y + L.field.h / 2 + 1, 28, GREEN, 'center');
     const n = this.input.value.length;
-    text(ctx, `${n}/${MAX_NAME}`, L.cx, L.field.y + L.field.h + 22, { size: 13, color: '#bcd0f5', stroke: null });
+    mono(ctx, `${n}/${MAX_NAME}`, L.field.x + L.field.w, L.field.y + L.field.h + 14, 12, DIM, 'right', false);
 
+    // [ CONFIRMAR ]: cheio quando já tem nome, só o contorno quando vazio
+    const ok = L.ok;
     const ready = this.name.length > 0;
-    button(ctx, L.ok, ready ? '#3fd16b' : '#7d8aa8', { radius: 18, depth: 6 });
-    text(ctx, 'CONFIRMAR', L.ok.x + L.ok.w / 2, L.ok.y + (L.ok.h - 6) / 2 + 1, { size: 26 });
-    iconButton(ctx, L.back, '#5fb4ff', 'back');
+    if (ready) {
+      ctx.fillStyle = GREEN;
+      ctx.shadowColor = GREEN;
+      ctx.shadowBlur = 10;
+      ctx.fillRect(ok.x, ok.y, ok.w, ok.h);
+      ctx.shadowBlur = 0;
+    } else {
+      ctx.strokeStyle = DIM;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(ok.x + 1, ok.y + 1, ok.w - 2, ok.h - 2);
+    }
+    ctx.font = `bold 22px ${MONO}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = ready ? SCREEN : DIM;
+    ctx.fillText('[ CONFIRMAR ]', ok.x + ok.w / 2, ok.y + ok.h / 2 + 1);
 
-    this.placeInput(L.field);
+    // efeito CRT: linhas de varredura, faixa passando e vinheta
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    for (let y = c.y; y < c.y + c.h; y += 3) ctx.fillRect(c.x, y, c.w, 1);
+    const band = c.y + ((this.t * 60) % (c.h + 80)) - 40;
+    const bg = ctx.createLinearGradient(0, band - 40, 0, band + 40);
+    bg.addColorStop(0, 'rgba(61,255,154,0)');
+    bg.addColorStop(0.5, 'rgba(61,255,154,0.05)');
+    bg.addColorStop(1, 'rgba(61,255,154,0)');
+    ctx.fillStyle = bg;
+    ctx.fillRect(c.x, band - 40, c.w, 80);
+    const v = ctx.createRadialGradient(c.x + c.w / 2, c.y + c.h / 2, c.h * 0.4, c.x + c.w / 2, c.y + c.h / 2, c.w * 0.62);
+    v.addColorStop(0, 'rgba(0,0,0,0)');
+    v.addColorStop(1, 'rgba(0,0,0,0.5)');
+    ctx.fillStyle = v;
+    ctx.fillRect(c.x, c.y, c.w, c.h);
+    ctx.restore();
+    // borda de fósforo por cima de tudo
+    rrect(ctx, c.x, c.y, c.w, c.h, 10);
+    ctx.strokeStyle = GREEN;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = GREEN;
+    ctx.shadowBlur = 10;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
   }
 
   // Põe o <input> exatamente em cima da caixa desenhada (escala da tela)
@@ -111,7 +232,7 @@ export class NameScene {
     s.top = `${oy + (f.y + 4) * k}px`;
     s.width = `${(f.w - 28) * k}px`;
     s.height = `${(f.h - 8) * k}px`;
-    s.fontSize = `${26 * k}px`;
+    s.fontSize = `${22 * k}px`;
   }
 
   confirm() {
@@ -132,18 +253,24 @@ export class NameScene {
     go();
   }
 
+  // X da janela: fecha e a tela inicial volta na hora (sem transição)
+  close() {
+    this.app.sound.play('click');
+    this.leave(() => {
+      if (this.behind) this.app.scene = this.behind;
+      else this.app.goTitle();
+    });
+  }
+
   pointerDown(x, y) {
     const L = this.layout();
     if (inRect(L.ok, x, y)) return this.confirm();
-    if (inRect(L.back, x, y)) {
-      this.app.sound.play('click');
-      return this.leave(() => this.app.goTitle());
-    }
+    if (inRect(L.close, x, y)) return this.close();
     this.input.focus(); // tocou em qualquer lugar: volta pro campo (teclado)
   }
 
   key(k) {
-    if (k === 'Escape') this.leave(() => this.app.goTitle());
+    if (k === 'Escape') this.close();
   }
 }
 
@@ -163,10 +290,12 @@ function makeInput(value) {
     border: 'none',
     outline: 'none',
     background: 'transparent',
-    color: OUTLINE,
-    textAlign: 'center',
-    fontFamily: '"Lilita One", "Arial Rounded MT Bold", "Arial Black", sans-serif',
-    caretColor: GOLD,
+    color: GREEN,
+    textAlign: 'left',
+    fontFamily: MONO,
+    fontWeight: 'bold',
+    textShadow: `0 0 6px ${GREEN}`,
+    caretColor: GREEN,
     padding: '0',
   });
   document.body.appendChild(el);
