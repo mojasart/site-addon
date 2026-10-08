@@ -67,7 +67,7 @@ export function playTutorial(log = () => {}, { passive = false } = {}) {
       if (s.kind === 'say' && tut.t > 0.6) tap(g.mapW / 2, 300);
       else if (s.kind === 'do' && tut.t > 0.8 && (f % 30 === 0)) {
         const tg = s.target();
-        if (s.event[0] === 'place' && s.event[1] === 'honeypot' && g.placing === 'honeypot') r.honey = honeyInfo(g, tg);
+        if (s.event?.[0] === 'place' && s.event[1] === 'honeypot' && g.placing === 'honeypot') r.honey = honeyInfo(g, tg);
         tap(tg.x, tg.y);
       }
     }

@@ -11,6 +11,12 @@ import { wrapText } from './ui.js';
  *  ou em cima, do lado contrário do alvo, pra não tampar.
  * ════════════════════════════════════════════════════════════ */
 
+// Quem fala no tutorial: nome e tamanho do retrato
+const SPEAKERS = {
+  hacker: { name: 'FRAGUINHA', color: '#3dff9a', scale: 2.1 },
+  firewall: { name: 'GOLEM FIREWALL', color: '#ff8a3d', scale: 1.7, dy: -34 }, // (sprite mais baixa)
+};
+
 export function drawTutorial(ctx, game) {
   const tut = game.tutorial;
   if (!tut || tut.done || game.state !== 'playing') return;
@@ -45,18 +51,19 @@ export function drawTutorial(ctx, game) {
   ctx.stroke();
   ctx.globalAlpha = 1;
 
-  // retrato do Hacker falando (balança de leve)
+  // retrato de quem fala (o Hacker, ou who do passo), balançando de leve
+  const sp = SPEAKERS[s.who ?? 'hacker'];
   ctx.save();
   rrect(ctx, x + 12, y + 12, 94, 94, 14);
   ctx.fillStyle = '#0d1530';
   ctx.fill();
   ctx.clip();
-  ctx.translate(x + 59, y + 112 + Math.sin(t * 6) * 1.5);
-  ctx.scale(2.1, 2.1);
-  drawCharacter(ctx, 'hacker', { t, face: 1, level: 0, attack: s.kind === 'say' && Math.sin(t * 9) > 0.6 ? 1 : 0 });
+  ctx.translate(x + 59, y + 112 + (sp.dy ?? 0) + Math.sin(t * 6) * 1.5);
+  ctx.scale(sp.scale, sp.scale);
+  drawCharacter(ctx, s.who ?? 'hacker', { t, face: 1, level: 0, attack: s.kind === 'say' && Math.sin(t * 9) > 0.6 ? 1 : 0 });
   ctx.restore();
 
-  text(ctx, 'FRAGUINHA', x + 120, y + 22, { size: 15, align: 'left', color: '#3dff9a' });
+  text(ctx, sp.name, x + 120, y + 22, { size: 15, align: 'left', color: sp.color });
   const msg = typeof s.text === 'function' ? s.text() : s.text;
   const tw = w - 136;
   wrapText(ctx, msg, x + 120 + tw / 2, y + 50, tw, 15, '#ffffff', 3, OUTLINE);

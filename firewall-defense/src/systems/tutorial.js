@@ -13,7 +13,8 @@ import { Enemy } from '../entities/Enemy.js';
  *  caminho perto do Hacker, e a aula só começa quando eles estão chegando
  *  ali, pra fazer efeito na hora) e um
  *  consumível. Cada passo:
- *    say  → fala; o jogo fica parado e qualquer toque continua
+ *    say  → fala; o jogo fica parado e qualquer toque continua (who: quem
+ *           fala, se não for o Hacker)
  *    do   → fala + mãozinha; só os alvos do passo respondem ao toque e o
  *           passo acaba no evento (on('place', 'hacker'), on('round')...)
  *    wait → invisível, espera uma condição (ex.: 5 s de onda)
@@ -103,10 +104,16 @@ export class Tutorial {
         target: () => this.rect('tabs', 0), allow: (x, y, L) => inRect(L.tabs[0], x, y),
       },
       {
+        kind: 'do', freeze: true, until: () => this.g.placing === 'firewall',
+        text: 'Esse é o Golem Firewall. Eu acerto um vírus por vez, ele acerta vários de uma vez só. Toque nele.',
+        target: () => this.tile('firewall'), allow: (x, y, L) => inRect(this.tileRect(L, 'firewall'), x, y),
+      },
+      { kind: 'say', freeze: true, who: 'firewall', text: 'grmmm grmm mim gostar de regra ALL ALL' },
+      {
         kind: 'do', freeze: true, event: ['place', 'firewall'],
         text: () => (this.g.placing === 'firewall'
           ? 'Coloque o Golem perto do caminho: ele bate no chão e queima todo vírus em volta. Dano em área!'
-          : 'Esse é o Golem Firewall. Eu acerto um vírus por vez, ele acerta vários de uma vez só. Toque nele.'),
+          : 'Toque no Golem Firewall na loja.'),
         target: () => (this.g.placing === 'firewall' ? this.spotFor('firewall') : this.tile('firewall')),
         allow: (x, y, L) => inRect(this.tileRect(L, 'firewall'), x, y) || (this.g.placing === 'firewall' && x < L.panel.x),
       },
@@ -134,7 +141,8 @@ export class Tutorial {
     this.t += dt;
     this.spawnSwarm(dt);
     if (this.g.rounds.active && !this.frozen) this.roundT += dt;
-    if (this.step.kind === 'wait' && this.step.until()) this.next();
+    // wait (e do com until): passa quando a condição vale
+    if ((this.step.kind === 'wait' || this.step.kind === 'do') && this.step.until?.()) this.next();
   }
 
   next() {
@@ -153,7 +161,7 @@ export class Tutorial {
   // Evento do jogo (Game chama): fecha o passo "do" que estava esperando por ele
   on(name, arg) {
     const s = this.step;
-    if (this.done || s?.kind !== 'do') return;
+    if (this.done || s?.kind !== 'do' || !s.event) return;
     if (s.event[0] === name && (s.event[1] == null || s.event[1] === arg)) this.next();
   }
 
