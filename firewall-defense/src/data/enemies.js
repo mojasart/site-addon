@@ -76,7 +76,7 @@ export const ENEMIES = {
     // a cada quadrado que anda, com alguma defesa a até `range` quadrados,
     // tem `chance` de tremer e criptografar as defesas nesse alcance: elas
     // param até o jogador pagar `price` de resgate em cada uma
-    ransom: { range: 5, chance: 0.2, price: 50 },
+    ransom: { range: 5, chance: 0.12, price: 50 },
   },
 };
 
