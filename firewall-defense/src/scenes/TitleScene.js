@@ -100,11 +100,10 @@ export class TitleScene {
     bigButton(ctx, L.play, '#3fd16b', 'JOGAR', { icon: 'play', size: 40, depth: 8 });
     ctx.restore();
     const s = this.app.save;
-    // volume em degraus: a % aparece embaixo quando não está no máximo
+    // volume em degraus (roxo = com som, cinza = mudo)
     for (const [kind, key] of [['music', 'musicVol'], ['sfx', 'sfxVol']]) {
       const v = s[key];
       iconButton(ctx, L[kind], v > 0 ? '#8a7dff' : '#7d8fa8', kind, v > 0);
-      if (v < 1) text(ctx, `${Math.round(v * 100)}%`, L[kind].x + L[kind].w / 2, L[kind].y + L[kind].h + 10, { size: 13 });
     }
   }
 
