@@ -27,7 +27,7 @@ import { drawSpawns } from './render/spawns.js';
 import { pickCoinTiles, coinTileAt, COIN_SEASONS } from './core/coinTiles.js';
 import { drawCoinTiles, drawNoMine } from './render/coinTiles.js';
 import { rrect, fillOutline, circle, text } from './render/canvas.js';
-import { rand } from './util.js';
+import { rand, chance } from './util.js';
 
 const TOUCH_LIFT = 46; // ao arrastar com o dedo, a defesa aparece acima dele
 const BASE_HIT = 24; // raio da hitbox do servidor (ele ocupa 1 quadrado)
@@ -99,6 +99,8 @@ export class Game {
     this.overlayTime = 0;
     this.stars = 0;
     this.stats = { pops: 0 };
+    this.ransomOdds = null; // chance do Ransomware criptografar no próximo quadrado (null = ainda não veio)
+    this.ransomLocks = 0; // quantas vezes já criptografou nessa partida
     this.state = 'playing'; // playing | paused | won | lost
     // platina: relógio das ondas, se o chefão já veio e o aliado bloqueado
     this.platTime = 0;
@@ -532,6 +534,18 @@ export class Game {
     tower.upgrade();
     this.fx.burst(tower.x, tower.y - 10, '#ffd23f', 22, 190, 0.55, 5, true);
     this.sound.play('upgrade');
+  }
+
+  // Ransomware andou um quadrado: com defesa no alcance, sorteia a chance da
+  // partida (a 1ª é certa; depois cai pra odds[N] e sobe step por quadrado)
+  rollRansom(e) {
+    const rs = e.def.ransom;
+    this.ransomOdds ??= rs.odds[0];
+    if (this.ransomTargets(e).length && chance(this.ransomOdds)) {
+      this.ransomLocks++;
+      this.ransomOdds = rs.odds[Math.min(this.ransomLocks, rs.odds.length - 1)];
+      this.ransom(e);
+    } else this.ransomOdds = Math.min(1, this.ransomOdds + rs.step);
   }
 
   // Ransomware: defesas no alcance dele que ainda não estão criptografadas

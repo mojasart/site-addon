@@ -137,16 +137,14 @@ export class Enemy {
     }
   }
 
-  // Ransomware: a cada quadrado novo que anda, se tiver defesa no alcance,
-  // tem a chance de criptografar (game.ransom)
+  // Ransomware: a cada quadrado novo que anda, tenta criptografar (game.rollRansom)
   tryRansom(game) {
-    const rs = this.def.ransom;
-    if (!rs) return;
+    if (!this.def.ransom) return;
     const step = Math.floor(this.dist / TILE);
     if (this.ransomStep == null) this.ransomStep = step;
     if (step <= this.ransomStep) return;
     this.ransomStep = step;
-    if (game.ransomTargets(this).length && chance(rs.chance)) game.ransom(this);
+    game.rollRansom(this);
   }
 
   // quanto tira da isca por segundo (chefão morde forte)

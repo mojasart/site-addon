@@ -74,9 +74,12 @@ export const ENEMIES = {
     reward: 50,
     children: [['trojan', 4]],
     // a cada quadrado que anda, com alguma defesa a até `range` quadrados,
-    // tem `chance` de tremer e criptografar as defesas nesse alcance: elas
-    // param até o jogador pagar `price` de resgate em cada uma
-    ransom: { range: 3, chance: 0.15, price: 50 },
+    // pode tremer e criptografar as defesas nesse alcance: elas param até o
+    // jogador pagar `price` de resgate em cada uma. A chance vale pra partida
+    // toda (Game.rollRansom): começa em odds[0] (a 1ª é certa); depois de
+    // criptografar N vezes cai pra odds[N] (o último vale pras seguintes) e
+    // sobe `step` a cada quadrado que ele anda sem criptografar
+    ransom: { range: 3, odds: [1, 0.1, 0], step: 0.01, price: 50 },
   },
 };
 
