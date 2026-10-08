@@ -81,7 +81,7 @@ Os vírus funcionam como os balões do Bloons: cada camada estourada revela a de
 | **Worm** | Rápido: vai soltando vírus azuis pelo caminho enquanto está vivo |
 | **Trojan** | Blindado: os teclados do Hacker não furam |
 | **Locker** | Mini-chefão acorrentado (rodadas 15+). Solta 2 Trojans |
-| **Ransomware** | Chefão dirigível (rodadas 20 e 25). A cada quadrado que anda, com defesa a até 3 quadrados, tem 12% de chance de parar tremendo por 0,5s e criptografar as defesas nesse alcance: elas param até você tocar nelas e pagar $50 de resgate. Solta 4 Trojans |
+| **Ransomware** | Chefão dirigível (rodadas 20 e 25). A cada quadrado que anda, com defesa a até 3 quadrados, tem 15% de chance de parar tremendo por 0,5s e criptografar as defesas nesse alcance: elas param até você tocar nelas e pagar $50 de resgate. Solta 4 Trojans |
 
 ## Catálogo de ameaças
 
