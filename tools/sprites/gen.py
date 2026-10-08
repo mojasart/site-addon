@@ -131,6 +131,11 @@ ASSETS = {
     # ── HUD ──────────────────────────────────────────────
     'coin': ('magenta', 'A shiny orange round Bitcoin coin with a big white tilted bitcoin symbol "₿" in the middle, front view. '),
     'heart': ('magenta', 'A glossy red cartoon heart icon for lives, front view. '),
+    # ícone do botão da loja de consumíveis (tela de mapas)
+    'shop_cart': ('green', 'A chunky glossy cartoon shopping cart icon, three-quarter front view: a bright golden-yellow '
+                  'rounded metal basket with a thick dark navy outline, a red handle, two round black wheels, '
+                  'and a small pile of goodies sticking out of the basket: a white coffee cup with a brown top, '
+                  'a shiny gold coin and a little blue snowflake. Simple, bold, readable as a tiny app button icon. '),
     # Minerador com picareta (base das versões criança e adolescente)
     'minerador_pickaxe': ('magenta', 'Full body, chibi proportions (big head, small body), three-quarter view facing and looking '
                   'to the RIGHT, standing on two feet. A jolly cartoon crypto miner with a yellow hard hat with a '
@@ -243,7 +248,7 @@ ASSETS['minerador_kid_attack'] = ('magenta', AGE.format(age=KID, desc=(
     '(exactly one metal head, at the lower end, striking the ground; nothing on his shoulder).')), 'minerador_pickaxe_attack')
 
 # estas usam o visual "3D de jogo mobile"; o resto é desenho animado 2D
-LOOK_3D_ASSETS = {'server', 'server_hurt', 'coin', 'heart'}
+LOOK_3D_ASSETS = {'server', 'server_hurt', 'coin', 'heart', 'shop_cart'}
 
 
 def load_key():
