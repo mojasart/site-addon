@@ -317,6 +317,12 @@ export const ICONS = {
     rrect(ctx, -s * 0.8, -s * 0.6, s * 1.4, s * 1.4, 4);
     fillOutline(ctx, '#f3e6d4', 2.5);
   },
+  // configurações (engrenagem)
+  settings(ctx, s = 12) {
+    if (svgIcon(ctx, 'settings', s)) return;
+    circle(ctx, 0, 0, s * 0.85);
+    fillOutline(ctx, '#ffffff', 2.5);
+  },
   // Dark Net (cebola roxa, como a do Tor)
   darknet(ctx, s = 12) {
     if (svgIcon(ctx, 'darknet', s)) return;

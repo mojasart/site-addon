@@ -90,7 +90,8 @@ function drawShop(ctx, game, L) {
   for (const tile of L.tiles) {
     const def = TOWERS[tile.type];
     const placing = shown === tile.type;
-    const affordable = game.money >= def.cost;
+    const cost = game.costOf(tile.type);
+    const affordable = game.money >= cost;
     button(ctx, tile, placing ? '#ffcf4a' : '#2fc8ff', { radius: 14, depth: 5 });
     drawCyberScreen(ctx, tile, game.anim, placing, TOWER_ORDER.indexOf(tile.type));
     ctx.save();
@@ -116,7 +117,7 @@ function drawShop(ctx, game, L) {
       text(ctx, 'BLOQUEADO', tile.x + tile.w / 2, tile.y + tile.h - 16, { size: 13, color: '#ff7a8a' });
       continue;
     }
-    text(ctx, `$${def.cost}`, tile.x + tile.w / 2, tile.y + tile.h - 16, { size: 18, color: affordable ? GOLD : '#ff7a8a' });
+    text(ctx, `$${cost}`, tile.x + tile.w / 2, tile.y + tile.h - 16, { size: 18, color: affordable ? GOLD : '#ff7a8a' });
   }
 }
 
