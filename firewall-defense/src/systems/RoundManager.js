@@ -4,9 +4,11 @@ import { Enemy } from '../entities/Enemy.js';
 // Dá pra chamar a próxima rodada com outra ainda rolando (as filas se somam);
 // cada rodada acaba quando tudo dela já entrou e morreu (filhos contam junto).
 export class RoundManager {
-  // mod: dificuldade do mapa { count, gap, speed, hp } (multiplicadores)
+  // mod: dificuldade do mapa { count, gap, speed, hp } (multiplicadores);
+  // minCount: mínimo de vírus por grupo (a platina usa 0: com a dificuldade
+  // baixa os grupos pequenos somem, mas cada onda manda pelo menos 1)
   constructor(rounds, mod = {}) {
-    this.mod = { count: mod.count ?? 1, gap: mod.gap ?? 1, speed: mod.speed ?? 1, hp: mod.hp ?? 1 };
+    this.mod = { count: mod.count ?? 1, gap: mod.gap ?? 1, speed: mod.speed ?? 1, hp: mod.hp ?? 1, minCount: mod.minCount ?? 1 };
     this.rounds = rounds.map((r) => this.scale(r));
     this.started = 0; // quantas rodadas já começaram
     this.done = 0; // quantas já terminaram
@@ -19,12 +21,14 @@ export class RoundManager {
   // Aplica a dificuldade do mapa numa rodada (count: false mantém a
   // quantidade, pros chefões não se multiplicarem)
   scale(round, { count = true } = {}) {
-    return round.map((g) => ({
+    const out = round.map((g) => ({
       ...g,
-      count: count ? Math.max(1, Math.round(g.count * this.mod.count)) : g.count,
+      count: count ? Math.max(this.mod.minCount, Math.round(g.count * this.mod.count)) : g.count,
       gap: g.gap * this.mod.gap,
       at: (g.at ?? 0) * this.mod.gap,
     }));
+    if (out.length && out.every((g) => g.count === 0)) out[0].count = 1; // onda nunca vem vazia
+    return out;
   }
 
   // Modo platina: troca as rodadas que ainda não começaram pelo chefão

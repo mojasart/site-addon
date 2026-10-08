@@ -75,6 +75,7 @@ export class Game {
     const k = this.platinum ? platinumScale(this.mapIndex) : 1;
     this.rounds = new RoundManager(this.platinum ? platinumRounds(this.map) : ROUNDS.slice(0, this.map.rounds), {
       count: this.map.pressure * k,
+      minCount: this.platinum ? 0 : 1,
       gap: this.map.gapMul,
       speed: this.map.speedMul,
       hp: this.map.pressure * k, // chefões e worms acompanham a pressão

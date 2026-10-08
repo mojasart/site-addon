@@ -4,7 +4,6 @@ import { rrect, circle, fillOutline, text, setFont, button } from './canvas.js';
 import { drawCharacter } from './characters.js';
 import { drawCoin, drawHeart, ICONS } from './sprites.js';
 import { iconButton } from './widgets.js';
-import { seeded } from '../util.js';
 
 // Posições da interface do jogo (pra desenhar E pra detectar toques).
 // Coordenadas de tela; o painel fica colado na direita.
@@ -122,43 +121,15 @@ function drawShop(ctx, game, L) {
 }
 
 // ── Fundo cyber dos cards da loja ───────────────────────────
-// Uma "telinha" dentro da moldura neon do botão: grade fina, trilhas de
-// circuito (cada card com o seu desenho) com dados correndo devagar e um
-// brilho no chão embaixo do boneco. Dourada quando é a defesa escolhida.
+// Uma "telinha" escura dentro da moldura neon do botão, no estilo da Dark
+// Net: fundo liso e umas poucas colunas de código caindo bem apagadas.
+// Dourada quando é a defesa escolhida.
 const CYBER = {
-  idle: { top: '#0c1a3c', bottom: '#060d22', line: '95,200,255', glow: '47,200,255' },
-  pick: { top: '#2a1d05', bottom: '#140d02', line: '255,207,74', glow: '255,207,74' },
+  idle: { top: '#0b1430', bottom: '#05070f', rain: '95,200,255' },
+  pick: { top: '#2a1d05', bottom: '#0f0a02', rain: '255,207,74' },
 };
-const traceCache = new Map(); // desenho das trilhas de cada card (fixo)
-
-function cardTraces(seed, w, h) {
-  const key = `${seed},${w},${h}`;
-  if (traceCache.has(key)) return traceCache.get(key);
-  const rnd = seeded(seed * 7919 + 13);
-  const step = 8;
-  const traces = [];
-  for (let i = 0; i < 5; i++) {
-    // sai de uma borda e anda em ângulos retos (com uma diagonal de 45° às vezes)
-    let x = Math.round((rnd() * (w - 16) + 8) / step) * step;
-    let y = rnd() < 0.5 ? 0 : h;
-    const dirY = y === 0 ? 1 : -1;
-    const pts = [[x, y]];
-    for (let k = 0; k < 3; k++) {
-      y += dirY * step * (1 + Math.floor(rnd() * 3));
-      pts.push([x, y]);
-      const dx = (rnd() < 0.5 ? -1 : 1) * step * (1 + Math.floor(rnd() * 2));
-      if (rnd() < 0.4) {
-        x += dx;
-        y += dirY * Math.abs(dx);
-      } else x += dx;
-      x = Math.max(6, Math.min(w - 6, x));
-      pts.push([x, y]);
-    }
-    traces.push(pts);
-  }
-  traceCache.set(key, traces);
-  return traces;
-}
+const RAIN_CHARS = '01<>/{}#$';
+const RAIN_COLS = 4;
 
 function drawCyberScreen(ctx, tile, t, picked, seed) {
   const c = picked ? CYBER.pick : CYBER.idle;
@@ -174,61 +145,21 @@ function drawCyberScreen(ctx, tile, t, picked, seed) {
   ctx.fillStyle = bg;
   ctx.fill();
   ctx.clip();
-  // grade
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = `rgba(${c.line},0.07)`;
-  ctx.beginPath();
-  for (let gx = x + 8; gx < x + w; gx += 8) {
-    ctx.moveTo(gx + 0.5, y);
-    ctx.lineTo(gx + 0.5, y + h);
+  // chuva de código: cada coluna com a sua velocidade, só um rastro curto
+  ctx.font = `9px "Courier New", ui-monospace, monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (let i = 0; i < RAIN_COLS; i++) {
+    const speed = 14 + ((i * 7 + seed * 5) % 4) * 4;
+    const head = ((t * speed + i * 41 + seed * 23) % (h + 40)) - 20;
+    const cx = x + ((i + 0.5) * w) / RAIN_COLS;
+    for (let k = 0; k < 4; k++) {
+      const cy = y + head - k * 10;
+      if (cy < y - 6 || cy > y + h + 6) continue;
+      ctx.fillStyle = `rgba(${c.rain},${(0.22 * (1 - k / 4)).toFixed(3)})`;
+      ctx.fillText(RAIN_CHARS[(i * 3 + k + seed + Math.floor(t * 3)) % RAIN_CHARS.length], cx, cy);
+    }
   }
-  for (let gy = y + 8; gy < y + h; gy += 8) {
-    ctx.moveTo(x, gy + 0.5);
-    ctx.lineTo(x + w, gy + 0.5);
-  }
-  ctx.stroke();
-  // trilhas de circuito com a ponta (pad) e um dado correndo em cada uma
-  const traces = cardTraces(seed, w, h);
-  ctx.lineWidth = 1.5;
-  ctx.lineJoin = 'round';
-  ctx.strokeStyle = `rgba(${c.line},0.28)`;
-  for (const pts of traces) {
-    ctx.beginPath();
-    pts.forEach(([px, py], i) => (i ? ctx.lineTo(x + px, y + py) : ctx.moveTo(x + px, y + py)));
-    ctx.stroke();
-    const [ex, ey] = pts[pts.length - 1];
-    ctx.beginPath();
-    ctx.arc(x + ex, y + ey, 2, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(${c.line},0.45)`;
-    ctx.fill();
-  }
-  traces.forEach((pts, i) => {
-    const segs = pts.slice(1).map((p, k) => Math.hypot(p[0] - pts[k][0], p[1] - pts[k][1]));
-    const len = segs.reduce((a, b) => a + b, 0);
-    let d = ((t * 22 + i * 37 + seed * 11) % (len + 40)) - 20; // passa e some um pouco antes de voltar
-    if (d < 0 || d > len) return;
-    let k = 0;
-    while (d > segs[k]) d -= segs[k++];
-    const [ax, ay] = pts[k];
-    const [bx, by] = pts[k + 1];
-    const f = d / segs[k];
-    ctx.beginPath();
-    ctx.arc(x + ax + (bx - ax) * f, y + ay + (by - ay) * f, 1.8, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(${c.line},0.9)`;
-    ctx.fill();
-  });
-  // brilho no chão embaixo do boneco
-  const fy = y + 60;
-  const glow = ctx.createRadialGradient(x + w / 2, fy, 2, x + w / 2, fy, 30);
-  glow.addColorStop(0, `rgba(${c.glow},0.35)`);
-  glow.addColorStop(1, `rgba(${c.glow},0)`);
-  ctx.fillStyle = glow;
-  ctx.fillRect(x, fy - 30, w, 60);
-  // faixa escura do preço
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  ctx.fillRect(x, y + h - 24, w, 24);
-  ctx.fillStyle = `rgba(${c.line},0.35)`;
-  ctx.fillRect(x, y + h - 24, w, 1);
   ctx.restore();
 }
 
