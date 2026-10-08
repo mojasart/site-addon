@@ -115,7 +115,7 @@ export const ENEMIES = {
     name: 'Locker',
     desc: 'Mini-chefão acorrentado: solta 2 Trojans',
     lore: 'Tranca tudo com correntes pesadas. Quando cai, liberta 2 Trojans.',
-    hp: 135000, // +50% de vida (era 90 mil)
+    hp: 155250, // 135 mil +15%
     lives: 90, // vidas que tira se escapar (sem isso: hp / LAYER_HP)
     speed: 35,
     radius: 26,
@@ -130,7 +130,7 @@ export const ENEMIES = {
     name: 'Adware',
     desc: 'Chefão: enche a tela de anúncios que atrapalham',
     lore: 'Veio de brinde num "player de vídeo grátis". Agora ninguém consegue fechar as janelas dele.',
-    hp: 168000, // +40% (era 120 mil)
+    hp: 193200, // 168 mil +15%
     lives: 60,
     speed: 40,
     radius: 28,
@@ -151,7 +151,7 @@ export const ENEMIES = {
     name: 'Ransomware',
     desc: 'Chefão: criptografa as defesas perto dele; solta 4 Trojans',
     lore: 'Sequestra o servidor e pede resgate em bitcoin. O chefão final da rede.',
-    hp: 510000, // +50% de vida (era 340 mil)
+    hp: 586500, // 510 mil +15%
     lives: 340,
     speed: 30,
     radius: 38,
