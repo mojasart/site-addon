@@ -19,7 +19,7 @@ import { AGES, statsAt, statRows } from '../data/towerInfo.js';
  *  Lista à esquerda e a ficha da escolhida à direita.
  * ════════════════════════════════════════════════════════════ */
 
-const ORDER = ['v1', 'v2', 'v3', 'v4', 'v5', 'worm', 'trojan', 'locker', 'ransomware'];
+const ORDER = ['v1', 'v2', 'v3', 'v4', 'v5', 'worm', 'worm2', 'worm3', 'worm4', 'trojan', 'locker', 'ransomware'];
 const TABS = [
   { id: 'threats', label: 'AMEAÇAS', file: 'THREAT_DB.EXE', items: ORDER },
   { id: 'towers', label: 'DEFESAS', file: 'AGENTS_DB.EXE', items: TOWER_ORDER },
@@ -232,7 +232,7 @@ export class CatalogScene {
   drawIcon(ctx, type, size, seen) {
     const def = ENEMIES[type];
     if (seen) {
-      if (!drawImage(ctx, def.sprite, size)) {
+      if (!drawImage(ctx, def.sprite, size, 0, 0, def.tint)) {
         ctx.beginPath();
         ctx.arc(0, 0, size * 0.35, 0, Math.PI * 2);
         fillOutline(ctx, def.color, 2);

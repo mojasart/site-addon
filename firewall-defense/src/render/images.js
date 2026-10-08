@@ -105,12 +105,14 @@ export function hasImage(name) {
 
 // Desenha a sprite `name` num quadrado de lado `size` centrado em (dx,dy).
 // A imagem é reduzida uma vez só pro tamanho de tela (fica nítida e leve).
-// Devolve false se a imagem ainda não carregou.
-export function drawImage(ctx, name, size, dx = 0, dy = 0) {
+// tint: filtro de cor do canvas (ex.: worms de outras cores), aplicado só
+// na hora de guardar no cache. Devolve false se a imagem ainda não carregou.
+export function drawImage(ctx, name, size, dx = 0, dy = 0, tint = null) {
   const img = images.get(name);
   if (!img) return false;
-  const c = cachedSprite(`img:${name}:${size}`, size, (g) => {
+  const c = cachedSprite(`img:${name}:${size}:${tint ?? ''}`, size, (g) => {
     g.imageSmoothingQuality = 'high';
+    if (tint) g.filter = tint;
     g.drawImage(img, -size / 2, -size / 2, size, size);
   });
   ctx.drawImage(c, dx - size / 2, dy - size / 2, size, size);

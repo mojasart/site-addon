@@ -79,6 +79,9 @@ Os vírus funcionam como os balões do Bloons: cada camada estourada revela a de
 | --- | --- |
 | **Vírus** vermelho → azul → verde → amarelo → rosa | Cada cor é uma camada a mais e é mais rápida |
 | **Worm** | Rápido: vai soltando vírus azuis pelo caminho enquanto está vivo |
+| **Worm Mutante** (azul) | Solta Vírus Verdes pelo caminho e mais 2 quando estoura. A partir da rodada 18 |
+| **Worm Polimórfico** (roxo) | Solta Vírus Amarelos pelo caminho e mais 2 quando estoura. A partir da rodada 21 |
+| **Worm Rei** (vermelho) | Solta Vírus Rosas pelo caminho; estourado, vira 2 Worms Mutantes. A partir da rodada 24 |
 | **Trojan** | Blindado: os teclados do Hacker não furam |
 | **Locker** | Mini-chefão acorrentado (rodadas 15+). Solta 2 Trojans |
 | **Ransomware** | Chefão dirigível (rodadas 20 e 25). A cada quadrado que anda, com defesa a até 3 quadrados, tem 12% de chance de parar tremendo por 0,5s e criptografar as defesas nesse alcance: elas param até você tocar nelas e pagar $50 de resgate. Solta 4 Trojans |
