@@ -905,13 +905,13 @@ export class Game {
       if (!inRect(tile, sx, sy)) continue;
       const def = TOWERS[tile.type];
       if (tile.type === this.blocked) {
-        this.fx.text(tile.x + tile.w / 2 - this.offsetX, tile.y + 30, 'Bloqueado!', '#ff7a8a', 16);
+        this.fx.panelText(tile.x + tile.w / 2, tile.y + 30, 'Bloqueado!', '#ff7a8a', 16);
         this.sound.play('error');
         return;
       }
       const toggleOff = this.placing === tile.type;
       if (!toggleOff && !this.canAfford(this.costOf(tile.type))) {
-        this.fx.text(tile.x + tile.w / 2 - this.offsetX, tile.y + 30, 'Sem dinheiro!', '#ff7a8a', 16);
+        this.fx.panelText(tile.x + tile.w / 2, tile.y + 30, 'Sem dinheiro!', '#ff7a8a', 16);
         this.sound.play('error');
         // mesmo sem dinheiro dá pra ver os atributos na aba de informações
         // (tocar de novo na mesma defesa fecha)
@@ -1113,6 +1113,7 @@ export class Game {
 
     drawInfoPanel(ctx, this); // antes do painel: a alça recolhida "entra" embaixo dele
     drawPanel(ctx, this);
+    this.fx.drawPanelTexts(ctx); // "Sem dinheiro!" nos cards: por cima do painel
     drawAds(ctx, this); // por cima do mapa e do painel
     if (this.toast) drawToast(ctx, this);
     drawBanner(ctx, this);

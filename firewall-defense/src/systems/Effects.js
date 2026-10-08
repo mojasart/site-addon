@@ -19,6 +19,7 @@ export class Effects {
     this.rings = [];
     this.beams = [];
     this.texts = [];
+    this.panelTexts = []; // textos em cima do painel (coordenadas de tela, desenhados depois dele)
     this.sparks = [];
     this.confetti = [];
   }
@@ -54,6 +55,12 @@ export class Effects {
     this.texts.push({ x, y, str, color, size, life: 1.1, max: 1.1 });
   }
 
+  // Texto subindo em cima do painel da direita ("Sem dinheiro!" no card da
+  // defesa): em coordenadas de tela, porque o painel é desenhado por cima do mapa
+  panelText(x, y, str, color = '#ffffff', size = 16) {
+    this.panelTexts.push({ x, y, str, color, size, life: 1.1, max: 1.1 });
+  }
+
   // Brilhinho de 4 pontas (sorte da Dark Net batendo): sem texto, some rápido
   spark(x, y, color = '#ffe79a', size = 9) {
     if (this.sparks.length < 40) this.sparks.push({ x, y, color, size, life: 0.38, max: 0.38, rot: Math.random() * 0.6 });
@@ -78,7 +85,7 @@ export class Effects {
       p.vx *= 0.93;
     }
     for (const list of [this.pops, this.rings, this.beams, this.sparks]) for (const e of list) e.life -= dt;
-    for (const t of this.texts) {
+    for (const t of [...this.texts, ...this.panelTexts]) {
       t.life -= dt;
       t.y -= 34 * dt;
     }
@@ -94,6 +101,7 @@ export class Effects {
     this.beams = this.beams.filter((b) => b.life > 0);
     this.sparks = this.sparks.filter((s) => s.life > 0);
     this.texts = this.texts.filter((t) => t.life > 0);
+    this.panelTexts = this.panelTexts.filter((t) => t.life > 0);
     this.confetti = this.confetti.filter((c) => c.life > 0);
   }
 
@@ -188,6 +196,14 @@ export class Effects {
   }
 
   // Confete é desenhado em coordenadas de tela, por cima de tudo
+  drawPanelTexts(ctx) {
+    for (const t of this.panelTexts) {
+      ctx.globalAlpha = Math.min(1, t.life / (t.max * 0.4));
+      text(ctx, t.str, t.x, t.y, { size: t.size, color: t.color });
+    }
+    ctx.globalAlpha = 1;
+  }
+
   drawConfetti(ctx) {
     for (const c of this.confetti) {
       ctx.save();
