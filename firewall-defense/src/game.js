@@ -25,7 +25,7 @@ import { drawHazards, drawStunned, drawHazardWarning } from './render/hazards.js
 import { drawEncrypted, ENCRYPT_FILTER } from './render/ransom.js';
 import { drawSpawns } from './render/spawns.js';
 import { drawDuck } from './render/duck.js';
-import { drawAds, adClose, adSpot, ADS, AD_W, AD_H } from './render/ads.js';
+import { drawAds, adClose, adSpot, adScale, adSize, ADS, CRYPT_AD, CLOSE_SPOTS } from './render/ads.js';
 import { pickCoinTiles, coinTileAt, COIN_SEASONS } from './core/coinTiles.js';
 import { drawCoinTiles, drawNoMine } from './render/coinTiles.js';
 import { rrect, fillOutline, circle, text, setFont } from './render/canvas.js';
@@ -617,15 +617,25 @@ export class Game {
     this.sound.play('upgrade');
   }
 
-  // Adware abre um anúncio num lugar sorteado da tela (sem repetir o último tipo)
+  // Adware abre um anúncio enorme num lugar sorteado da tela (sem repetir o
+  // último tipo). Com a chance `crypt`, vem o criptografado: o X dele foge
+  // pra outra borda 2 a 4 vezes antes de fechar
   spawnAd(e) {
     const cfg = e.def.ads;
     if (this.ads.filter((a) => a.closing == null).length >= cfg.max) return;
-    let type = Math.floor(Math.random() * ADS.length);
-    if (type === this.lastAd) type = (type + 1) % ADS.length;
+    const normal = ADS.length - 1; // os tipos comuns vêm antes do criptografado
+    let type = chance(cfg.crypt) ? CRYPT_AD : Math.floor(Math.random() * normal);
+    if (type !== CRYPT_AD && type === this.lastAd) type = (type + 1) % normal;
     this.lastAd = type;
+    const s = adScale(this.viewW);
+    const { w, h } = adSize(s);
     const speed = 70 + Math.random() * 50;
-    this.ads.push({ type, ...adSpot(this.viewW), t: 0, seed: Math.random() * 10, vx: chance(cfg.moving) ? (chance(0.5) ? speed : -speed) : 0 });
+    this.ads.push({
+      type, s, w, h, ...adSpot(this.viewW, w, h), t: 0, seed: Math.random() * 10,
+      vx: chance(cfg.moving) ? (chance(0.5) ? speed : -speed) : 0,
+      closeAt: 0,
+      dodges: type === CRYPT_AD ? 2 + Math.floor(Math.random() * 3) : 0,
+    });
     this.sound.play('star');
   }
 
@@ -639,22 +649,31 @@ export class Game {
       if (ad.closing != null) ad.closing -= dt;
       if (!ad.vx) continue;
       ad.x += ad.vx * dt;
-      if (ad.x < 8 || ad.x > this.viewW - AD_W - 8) {
+      if (ad.x < 8 || ad.x > this.viewW - ad.w - 8) {
         ad.vx = -ad.vx;
-        ad.x = Math.max(8, Math.min(this.viewW - AD_W - 8, ad.x));
+        ad.x = Math.max(8, Math.min(this.viewW - ad.w - 8, ad.x));
       }
     }
     this.ads = this.ads.filter((ad) => ad.closing == null || ad.closing > 0);
   }
 
-  // Toque num anúncio (o de cima primeiro): o X fecha; no resto, o toque morre ali
+  // Toque num anúncio (o de cima primeiro): o X fecha (o do criptografado
+  // ainda foge pra outra borda enquanto tiver `dodges`); no resto, o toque morre ali
   adTap(sx, sy) {
     for (let i = this.ads.length - 1; i >= 0; i--) {
       const ad = this.ads[i];
-      if (ad.closing != null || sx < ad.x || sx > ad.x + AD_W || sy < ad.y || sy > ad.y + AD_H) continue;
+      if (ad.closing != null || sx < ad.x || sx > ad.x + ad.w || sy < ad.y || sy > ad.y + ad.h) continue;
       if (inRect(adClose(ad), sx, sy)) {
-        ad.closing = 0.18;
-        this.sound.play('click');
+        if (ad.dodges > 0) {
+          ad.dodges--;
+          let to = Math.floor(Math.random() * (CLOSE_SPOTS.length - 1));
+          if (to >= ad.closeAt) to++; // sempre outra borda
+          ad.closeAt = to;
+          this.sound.play('error');
+        } else {
+          ad.closing = 0.18;
+          this.sound.play('click');
+        }
       }
       return true;
     }
