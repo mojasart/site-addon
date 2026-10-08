@@ -43,6 +43,14 @@ export class TitleScene {
 
   update(dt) {
     this.t += dt;
+    this.wormJump = Math.max(0, (this.wormJump ?? 0) - dt * 2);
+    this.debugNote = Math.max(0, (this.debugNote ?? 0) - dt);
+  }
+
+  // Easter egg: tocar no worm liga o modo debug (app.enableDebug)
+  wormHit(x, y) {
+    const cx = this.app.viewW - (960 - WORM.x);
+    return Math.abs(x - cx) < WORM.size * 0.42 && Math.abs(y - WORM.y) < WORM.size * 0.32;
   }
 
   render(ctx) {
@@ -70,12 +78,18 @@ export class TitleScene {
     ctx.rotate(Math.sin(t * 1.1) * 0.03);
     sprite(ctx, 'ransomware', 0, 0, BOSS.size, -1, this.app.pixelScale);
     ctx.restore();
-    sprite(ctx, 'worm', R(WORM.x), WORM.y + hop(1.3), WORM.size, -1, this.app.pixelScale);
+    sprite(ctx, 'worm', R(WORM.x), WORM.y + hop(1.3) - Math.sin((this.wormJump ?? 0) * Math.PI) * 60, WORM.size, -1, this.app.pixelScale);
     badge(ctx, R(914), 132, 'AMEAÇAS', '#ff5a6a', 0.07, 'right');
     ctx.restore();
 
     this.drawVs(ctx, W / 2, 280, t);
     this.drawLogo(ctx, W / 2, 58, t);
+    if (this.debugNote > 0) {
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, this.debugNote * 2);
+      text(ctx, 'MODO DEBUG ATIVADO', W / 2, 118, { size: 22, color: '#3dff9a' });
+      ctx.restore();
+    }
 
     const L = this.layout();
     ctx.save();
@@ -167,6 +181,12 @@ export class TitleScene {
     if (inRect(L.music, x, y)) this.app.toggleMusic();
     else if (inRect(L.sfx, x, y)) this.app.toggleSfx();
     else if (inRect(L.play, x, y)) this.pressed = true;
+    else if (this.wormHit(x, y)) {
+      this.wormJump = 1;
+      this.debugNote = 2.5;
+      this.app.sound.play(this.app.debug ? 'click' : 'upgrade');
+      this.app.enableDebug();
+    }
   }
 
   pointerUp(x, y) {

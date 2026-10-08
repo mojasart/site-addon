@@ -1,4 +1,4 @@
-import { VIEW_H, PANEL_W, SPEEDS, TURBO_SPEED, DANGER_TIME, EARLY_BONUS } from './config.js';
+import { VIEW_H, PANEL_W, SPEEDS, TURBO_SPEED, DANGER_TIME, EARLY_BONUS, DEBUG } from './config.js';
 import { MAPS } from './data/maps.js';
 import { ROUNDS } from './data/rounds.js';
 import { PLAT_TIME, PLAT_LIVES, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
@@ -67,7 +67,7 @@ export class Game {
 
   reset() {
     // Acesso Root (Dark Net): dinheiro a mais no começo da fase
-    this.money = this.app.debug ? 99999 : this.map.money + (this.app.perks?.root ? ROOT_MONEY : 0);
+    this.money = this.app.debug ? DEBUG.money : this.map.money + (this.app.perks?.root ? ROOT_MONEY : 0);
     this.lives = this.platinum ? PLAT_LIVES : this.map.lives;
     this.towers = [];
     this.coinTiles = pickCoinTiles(this); // pilhas de bitcoin (seasons 1 e 2)

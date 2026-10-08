@@ -1,6 +1,6 @@
-import { MIN_VIEW_W, VIEW_H } from './config.js';
+import { MIN_VIEW_W, VIEW_H, DEBUG } from './config.js';
 import { MAPS, MAPS_PER_SEASON } from './data/maps.js';
-import { loadSave, writeSave } from './save.js';
+import { loadSave, writeSave, pauseSaving } from './save.js';
 import { Sound } from './audio/Sound.js';
 import { setPixelScale } from './render/canvas.js';
 import { TitleScene } from './scenes/TitleScene.js';
@@ -14,14 +14,31 @@ import { DARKNET_STARS, COFFEE, mapCoffee, NODE, TREE } from './data/darknet.js'
 // o progresso salvo e o som.
 export class App {
   constructor({ debug = false } = {}) {
-    this.debug = debug;
+    this.debug = false;
     this.save = loadSave();
+    if (debug) this.enableDebug();
     this.sound = new Sound(this.save);
     this.viewW = MIN_VIEW_W;
     this.pixelScale = 1;
     this.scene = new TitleScene(this);
     this.next = null; // próxima cena (durante o fade)
     this.fade = 1; // começa escuro e clareia
+  }
+
+  // Modo debug (?debug na URL ou tocando no worm da tela inicial): todos os
+  // mapas liberados com 3 estrelas e platina, DEBUG.money por fase e
+  // DEBUG.coffee cafés. Usa uma cópia do save que não é gravada: o progresso
+  // de verdade volta ao recarregar a página
+  enableDebug() {
+    if (this.debug) return;
+    this.debug = true;
+    pauseSaving();
+    const s = structuredClone(this.save);
+    for (const m of MAPS) {
+      s.stars[m.id] = 3;
+      s.platinum[m.id] = true;
+    }
+    this.save = s;
   }
 
   get game() {
@@ -82,6 +99,7 @@ export class App {
 
   // Saldo de cafés pra gastar na Dark Net (com 2 casas: os abatidos dão fração)
   get coffee() {
+    if (this.debug) return Math.round((DEBUG.coffee - (this.save.coffeeSpent ?? 0)) * 100) / 100;
     return Math.round((this.coffeeEarned - (this.save.coffeeSpent ?? 0)) * 100) / 100;
   }
 
