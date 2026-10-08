@@ -52,6 +52,7 @@ export function drawCharacter(ctx, type, s = {}) {
  *  Cada partícula percorre um ciclo p de 0 a 1 e some nas pontas
  *  (alpha = sin(p·π)); os desvios de fase (i / n) espalham as partículas.
  *  Tudo bem transparente pra não poluir o mapa. */
+const frac = (v) => v - Math.floor(v); // ciclo 0..1 (também com t negativo)
 const AMBIENT = {
   // Minerador: moedinhas de bitcoin subindo devagar e sumindo
   minerador: {
@@ -59,7 +60,7 @@ const AMBIENT = {
       // o adulto minera no computador: as moedas saem da tela
       const [x0, y0] = sprite === 'minerador' ? MONITOR : [25, 4];
       for (let i = 0; i < 3; i++) {
-        const p = (t * 0.35 + i / 3) % 1;
+        const p = frac(t * 0.35 + i / 3);
         // saem do lado da frente (onde a picareta bate), sem passar no rosto
         const x = x0 + Math.sin(i * 2.1 + p * 4) * 5;
         const y = y0 - p * 46;
@@ -83,7 +84,7 @@ const AMBIENT = {
       const dir = -2.3; // a parabólica aponta pra cima e pra trás
       ctx.lineCap = 'round';
       for (let i = 0; i < 3; i++) {
-        const p = (t * 0.6 + i / 3) % 1;
+        const p = frac(t * 0.6 + i / 3);
         ctx.globalAlpha = Math.sin(p * Math.PI) * 0.6;
         ctx.strokeStyle = '#9ff0ff';
         ctx.lineWidth = 2.2 - p;
@@ -107,7 +108,7 @@ const AMBIENT = {
     },
     front(ctx, t) {
       for (let i = 0; i < 4; i++) {
-        const p = (t * 0.45 + i / 4) % 1;
+        const p = frac(t * 0.45 + i / 4);
         const x = Math.sin(i * 2.4 + p * 4) * 16;
         const y = 8 - p * 46;
         ctx.globalAlpha = Math.sin(p * Math.PI) * 0.55;
@@ -122,7 +123,7 @@ const AMBIENT = {
   firewall: {
     front(ctx, t) {
       for (let i = 0; i < 4; i++) {
-        const p = (t * 0.7 + i / 4) % 1;
+        const p = frac(t * 0.7 + i / 4);
         const x = Math.sin(i * 1.9 + p * 5) * 9 + (i - 1.5) * 4;
         const y = -40 - p * 24;
         ctx.globalAlpha = Math.sin(p * Math.PI) * 0.75;
@@ -137,7 +138,7 @@ const AMBIENT = {
   pinguim: {
     front(ctx, t) {
       for (let i = 0; i < 4; i++) {
-        const p = (t * 0.28 + i / 4) % 1;
+        const p = frac(t * 0.28 + i / 4);
         const side = i % 2 ? 1 : -1;
         const x = side * (18 + Math.sin(p * 6 + i) * 4);
         const y = -48 + p * 54;

@@ -325,7 +325,8 @@ export class DarkNetScene {
       const k = (p.r * 1.7) / 62;
       ctx.translate(p.x, p.y + 16 * k);
       ctx.scale(k, k);
-      drawCharacter(ctx, n.tower, { t: t + p.x * 0.01, face: 1 });
+      // +10: o relógio da animação nunca fica negativo (nós à esquerda têm x < 0)
+      drawCharacter(ctx, n.tower, { t: t + 10 + p.x * 0.01, face: 1 });
     } else {
       ctx.translate(p.x, p.y);
       ICONS.darknet(ctx, p.r * 0.5);

@@ -130,6 +130,8 @@ function requestFullscreenOnMobile() {
 let last = performance.now();
 
 function frame(now) {
+  // pede o próximo antes: se um quadro der erro, o jogo não congela
+  requestAnimationFrame(frame);
   const dt = Math.min((now - last) / 1000, 0.05); // evita "teleporte" depois de travadas
   last = now;
   app.update(dt);
@@ -144,10 +146,11 @@ function frame(now) {
   ctx.beginPath();
   ctx.rect(0, 0, app.viewW, VIEW_H);
   ctx.clip();
-  app.render(ctx);
-  ctx.restore();
-
-  requestAnimationFrame(frame);
+  try {
+    app.render(ctx);
+  } finally {
+    ctx.restore();
+  }
 }
 
 // Espera as sprites (no máximo 3s; o que faltar usa o desenho antigo)
