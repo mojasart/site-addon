@@ -654,7 +654,7 @@ export class Game {
     const { w, h } = adSize(s);
     const speed = 70 + Math.random() * 50;
     this.ads.push({
-      type, s, w, h, ...adSpot(this.viewW, w, h), t: 0, seed: Math.random() * 10,
+      type, s, w, h, ...adSpot(this.viewW, w, h, this.ads), t: 0, seed: Math.random() * 10,
       vx: chance(cfg.moving) ? (chance(0.5) ? speed : -speed) : 0,
       closeAt: 0,
       dodges: type === CRYPT_AD ? 1 : 0,
@@ -724,7 +724,7 @@ export class Game {
       const s0 = adScale(this.viewW);
       const s = s0 * (0.45 + Math.random() * 0.55);
       const { w, h } = adSize(s);
-      this.ads.push({ type: Math.floor(Math.random() * (ADS.length - 1)), s, s0, w, h, ...adSpot(this.viewW, w, h), t: 0, seed: Math.random() * 10, vx: 0, closeAt: 0, dodges: 0, snap: true });
+      this.ads.push({ type: Math.floor(Math.random() * (ADS.length - 1)), s, s0, w, h, ...adSpot(this.viewW, w, h, this.ads), t: 0, seed: Math.random() * 10, vx: 0, closeAt: 0, dodges: 0, snap: true });
       if (st.n % 3 === 0) this.sound.play(st.n % 2 ? 'error' : 'star');
       st.n++;
       st.next += Math.max(STORM.minGap, STORM.gap * STORM.accel ** st.n);

@@ -232,10 +232,26 @@ function drawIcon(ctx, icon, t) {
   }
 }
 
-// Lugar sorteado na tela pra um anúncio de tamanho w × h (dentro da tela)
-export function adSpot(viewW, w, h) {
-  return {
+// Lugar na tela pra um anúncio w × h: entre vários sorteios, o mais longe dos
+// anúncios já abertos (assim eles se espalham e tomam a tela inteira, em vez
+// de se amontoar num canto)
+const SPOT_TRIES = 16;
+export function adSpot(viewW, w, h, others = []) {
+  const pick = () => ({
     x: 8 + Math.random() * Math.max(0, viewW - w - 16),
     y: 8 + Math.random() * Math.max(0, VIEW_H - h - 16),
-  };
+  });
+  const open = others.filter((o) => o.closing == null);
+  if (!open.length) return pick();
+  let best = null;
+  let bestD = -1;
+  for (let i = 0; i < SPOT_TRIES; i++) {
+    const p = pick();
+    const cx = p.x + w / 2;
+    const cy = p.y + h / 2;
+    let d = Infinity;
+    for (const o of open) d = Math.min(d, Math.hypot(cx - (o.x + o.w / 2), cy - (o.y + o.h / 2)));
+    if (d > bestD) [best, bestD] = [p, d];
+  }
+  return best;
 }
