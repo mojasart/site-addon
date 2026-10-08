@@ -25,6 +25,7 @@ import { drawHazards, drawStunned, drawHazardWarning } from './render/hazards.js
 import { drawEncrypted, ENCRYPT_FILTER } from './render/ransom.js';
 import { drawSpawns } from './render/spawns.js';
 import { drawDuck } from './render/duck.js';
+import { CatalogScene } from './scenes/CatalogScene.js';
 import { drawAds, adClose, adSpot, adScale, adSize, ADS, CRYPT_AD, CLOSE_SPOTS } from './render/ads.js';
 
 // Enxurrada de anúncios (clicou no anúncio em vez do X): dura `time` s até o
@@ -836,7 +837,11 @@ export class Game {
       if (inRect(L.resume, sx, sy)) this.resume();
       else if (inRect(L.restart, sx, sy)) this.app.startMap(this.mapIndex, this.mode);
       else if (inRect(L.maps, sx, sy)) this.app.goMaps();
-      else if (inRect(L.music, sx, sy) || inRect(L.sfx, sx, sy)) {
+      else if (inRect(L.catalog, sx, sy)) {
+        // catálogo por cima da partida: o voltar dele traz esta partida, ainda pausada
+        this.sound.play('click');
+        this.app.go(() => new CatalogScene(this.app, { returnTo: this }));
+      } else if (inRect(L.music, sx, sy) || inRect(L.sfx, sx, sy)) {
         // barra de volume: toca ou arrasta
         this.volDrag = inRect(L.music, sx, sy) ? 'music' : 'sfx';
         this.app.setVolume(this.volDrag, sliderValue(L[this.volDrag], sx));

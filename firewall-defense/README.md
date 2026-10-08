@@ -84,9 +84,9 @@ Os vírus funcionam como os balões do Bloons: cada camada estourada revela a de
 | **Worm Polimórfico** (roxo) | Solta Vírus Amarelos pelo caminho e mais 2 quando estoura. A partir da rodada 21 |
 | **Worm Rei** (vermelho) | Solta Vírus Rosas pelo caminho; estourado, vira 2 Worms Mutantes. A partir da rodada 24 |
 | **Trojan** | Blindado: os teclados do Hacker não furam |
-| **Locker** | Mini-chefão acorrentado (rodadas 15+), 135.000 de vida. Solta 2 Trojans |
-| **Adware** | Chefão pop-up (rodada 15, junto com o Locker), 168.000 de vida. Enquanto está na tela, abre um anúncio a cada 4–7 s (no máximo 2 ao mesmo tempo): janelas cômicas enormes (~70% da altura da tela) que cobrem o jogo e só fecham no X. 10% delas ficam andando de um lado pro outro, e 10% vêm **criptografadas**: no primeiro toque o X foge pra outra borda do anúncio. Os anúncios ficam na tela até você fechar, mesmo depois de ele morrer. Solta 3 Vírus Amarelos |
-| **Ransomware** | Chefão dirigível (rodadas 20 e 25), 510.000 de vida, numa barra grande no topo da tela. A cada quadrado que anda, com defesa a até 3 quadrados, pode parar tremendo por 0,5s e criptografar as defesas nesse alcance. A chance vale pra partida toda: a 1ª vez é certa, depois cai pra 10%, e a partir da 2ª cai pra 0%, sempre subindo 1% a cada quadrado que ele anda sem criptografar. As defesas criptografadas param até você tocar nelas e pagar $50 de resgate. Solta 4 Trojans |
+| **Locker** | Mini-chefão acorrentado (rodadas 15+), 155.250 de vida. Solta 2 Trojans |
+| **Adware** | Chefão pop-up (rodada 15, junto com o Locker), 193.200 de vida. Enquanto está na tela, abre um anúncio a cada 4–7 s (no máximo 2 ao mesmo tempo): janelas cômicas enormes (~70% da altura da tela) que cobrem o jogo e só fecham no X. 10% delas ficam andando de um lado pro outro, e 10% vêm **criptografadas**: no primeiro toque o X foge pra outra borda do anúncio. Os anúncios ficam na tela até você fechar, mesmo depois de ele morrer. Solta 3 Vírus Amarelos |
+| **Ransomware** | Chefão dirigível (rodadas 20 e 25), 586.500 de vida, numa barra grande no topo da tela. A cada quadrado que anda, com defesa a até 3 quadrados, pode parar tremendo por 0,5s e criptografar as defesas nesse alcance. A chance vale pra partida toda: a 1ª vez é certa, depois cai pra 10%, e a partir da 2ª cai pra 0%, sempre subindo 1% a cada quadrado que ele anda sem criptografar. As defesas criptografadas param até você tocar nelas e pagar $50 de resgate. Solta 4 Trojans |
 
 ## Catálogo de ameaças
 
