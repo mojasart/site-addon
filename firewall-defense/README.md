@@ -122,6 +122,13 @@ Além disso, **cada monstro abatido vale café**: 0,25 café a cada 1000 abatido
 
 A tela de vitória mostra os cafés novos da partida (ex.: *+2,1*: 2 das estrelas e 0,1 dos abatidos). O save guarda os cafés gastos (`coffeeSpent`); o saldo é o que ganhou menos o que gastou, com até 2 casas.
 
+## Bug Bounty (fase bônus)
+
+Os mapas **10, 20, 30 e 40** são **Bug Bounty**: 90 segundos de vírus sem parar, sem vida pra perder
+(quem chega no servidor só some e zera o combo). Cada camada estourada dá pontos × combo; as estrelas
+saem da % de vírus estourados (bronze 40%, prata 65%, ouro 85%) e valem 2, 4 ou 6 cafés (fase bônus: mais que uma fase normal, mas só uma vez, pelo recorde). Não trava a
+progressão e não tem modo platina. Regras em `src/data/bounty.js`.
+
 ## Seasons e mapas
 
 São **3 seasons de 15 mapas** (45 fases), numa ordem só de dificuldade. Vencer um mapa libera o próximo, e a season seguinte abre ao vencer o último mapa da anterior.

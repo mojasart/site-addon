@@ -1,4 +1,5 @@
 import { VIEW_H, PANEL_W, OUTLINE, GOLD } from '../config.js';
+import { comboMul } from '../data/bounty.js';
 import { TOWERS, TOWER_ORDER, TARGET_MODES } from '../data/towers.js';
 import { rrect, circle, fillOutline, text, setFont, button } from './canvas.js';
 import { drawCharacter } from './characters.js';
@@ -46,13 +47,20 @@ export function drawHud(ctx, game) {
   const L = layout(game);
   const t = game.anim;
 
-  ctx.save();
-  ctx.translate(30, 30);
-  const beat = game.hurt > 0 ? 1 + Math.sin(t * 40) * 0.12 : 1;
-  ctx.scale(beat, beat);
-  drawHeart(ctx, 15);
-  ctx.restore();
-  text(ctx, String(Math.max(0, game.lives)), 54, 32, { size: 28, align: 'left' });
+  if (game.bounty) {
+    // Bug Bounty: pontos e combo no lugar das vidas
+    text(ctx, `${game.points} pts`, 16, 32, { size: 28, align: 'left', color: '#ffe07a' });
+    const mul = comboMul(game.combo);
+    if (mul > 1) text(ctx, `COMBO x${String(mul).replace('.', ',')}`, 18 + measureText(ctx, `${game.points} pts`, 28) + 10, 34, { size: 16, align: 'left', color: '#ff9a2e' });
+  } else {
+    ctx.save();
+    ctx.translate(30, 30);
+    const beat = game.hurt > 0 ? 1 + Math.sin(t * 40) * 0.12 : 1;
+    ctx.scale(beat, beat);
+    drawHeart(ctx, 15);
+    ctx.restore();
+    text(ctx, String(Math.max(0, game.lives)), 54, 32, { size: 28, align: 'left' });
+  }
 
   ctx.save();
   ctx.translate(30, 72);
@@ -64,7 +72,14 @@ export function drawHud(ctx, game) {
   text(ctx, game.money < 0 ? `-$${-game.money}` : `$${game.money}`, 54, 73, { size: 28 + game.coinBump * 4, color: game.money < 0 ? '#ff7a8a' : GOLD, align: 'left' });
 
   const r = game.rounds;
-  if (game.platinum) {
+  if (game.bounty) {
+    // Bug Bounty: relógio dos 90 s (pisca vermelho nos últimos 10)
+    const left = Math.ceil(game.bountyLeft);
+    const clock = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+    const hurry = game.rounds.started > 0 && left <= 10 && Math.sin(t * 10) > 0;
+    text(ctx, 'BUG BOUNTY', L.pause.x - 14, 20, { size: 14, align: 'right', color: '#ffe07a' });
+    text(ctx, clock, L.pause.x - 14, 45, { size: 28, align: 'right', color: hurry ? '#ff7a8a' : '#ffffff' });
+  } else if (game.platinum) {
     // platina: relógio até o chefão (pisca vermelho no fim)
     const left = Math.ceil(game.platLeft);
     const clock = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
@@ -425,7 +440,7 @@ function drawPlayButton(ctx, game, r) {
   ICONS.play(ctx, 10);
   ctx.restore();
   let label = 'INICIAR';
-  if (game.platinum && game.rounds.started > 0) label = 'AUTO';
+  if ((game.platinum || game.bounty) && game.rounds.started > 0) label = 'AUTO';
   else if (!game.rounds.canStart) label = 'ÚLTIMA';
   else if (!can) label = 'ESPERE';
   else if (bonus > 0) label = `+$${bonus}`;
@@ -468,4 +483,10 @@ export function drawRange(ctx, x, y, range, valid = true, color = null) {
   ctx.lineWidth = 2.5;
   ctx.strokeStyle = valid ? 'rgba(255,255,255,0.75)' : 'rgba(255,90,100,0.9)';
   ctx.stroke();
+}
+
+// Largura de um texto no tamanho dado (pra pôr o combo do lado dos pontos)
+function measureText(ctx, str, size) {
+  setFont(ctx, size);
+  return ctx.measureText(str).width;
 }
