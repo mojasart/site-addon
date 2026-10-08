@@ -878,7 +878,7 @@ export class Game {
   // ── Input (coordenadas de tela já convertidas) ────────────
 
   key(k) {
-    if (k === ' ' && this.state === 'playing' && !this.tutorial?.frozen) this.playPressed();
+    if (k === ' ' && this.state === 'playing' && (!this.tutorial || this.tutorial.done)) this.playPressed();
     else if (k === 'Escape') {
       if (this.state === 'paused') this.resume();
       else this.pause();
@@ -1056,6 +1056,13 @@ export class Game {
   }
 
   tryPlace(type, x, y) {
+    // tutorial: só no quadrado que a mãozinha mostra
+    if (this.tutorial && !this.tutorial.allowPlace(type, x, y)) {
+      this.tutorial.nudge = 1;
+      this.fx.text(x, y - 30, 'Coloque no quadrado indicado!', '#ff7a8a', 18);
+      this.sound.play('error');
+      return;
+    }
     if (this.place(type, x, y)) return;
     const def = TOWERS[type];
     this.fx.text(x, y - 30, def.onPath ? 'Só no caminho!' : 'Aqui não dá!', '#ff7a8a', 18);

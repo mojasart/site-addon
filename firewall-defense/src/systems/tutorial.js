@@ -1,7 +1,7 @@
 import { TOWERS } from '../data/towers.js';
 import { layout } from '../render/ui.js';
 import { inRect } from '../render/widgets.js';
-import { TILE, COLS, ROWS, tileCenter } from '../core/grid.js';
+import { TILE, COLS, ROWS, tileCenter, tileOf } from '../core/grid.js';
 import { writeSave } from '../save.js';
 import { Enemy } from '../entities/Enemy.js';
 
@@ -173,12 +173,27 @@ export class Tutorial {
       if (this.t > 0.35) this.next(); // (meio segundo pra não pular sem ler)
       return true;
     }
+    const L = layout(this.g);
     if (s.kind === 'do') {
-      if (s.allow(x, y, layout(this.g))) return false;
+      if (s.allow(x, y, L)) return false;
       this.nudge = 1; // tocou fora: a mãozinha chacoalha
       return true;
     }
-    return false;
+    // esperando (onda rolando): só pausar, iniciar e acelerar; o resto
+    // (posicionar, vender, upgrade...) fica travado até o tutorial acabar
+    return !(inRect(L.pause, x, y) || inRect(L.speed, x, y) || (inRect(L.play, x, y) && !this.g.rounds.active));
+  }
+
+  // Posicionar defesa: durante o tutorial só no passo de colocar aquela
+  // defesa e só no quadrado que a mãozinha mostra (x, y do mapa)
+  allowPlace(type, x, y) {
+    if (this.done) return true;
+    const s = this.step;
+    if (s?.kind !== 'do' || s.event?.[0] !== 'place' || s.event[1] !== type) return false;
+    const tg = s.target();
+    const [c, r] = tileOf(x, y);
+    const [tc, tr] = tileOf(tg.x - this.g.offsetX, tg.y);
+    return c === tc && r === tr;
   }
 
   // ── alvos da mãozinha (coordenadas de tela) ──

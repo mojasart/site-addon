@@ -72,7 +72,7 @@ export function playTutorial(log = () => {}, { passive = false } = {}) {
       }
     }
     // momento livre: constrói; depois do tutorial, solta as ondas
-    if (!passive && (tut.done || tut.step.kind === 'wait')) build(g);
+    if (!passive && tut.done) build(g); // (no tutorial não dá pra construir fora dos passos)
     if (tut.done && !g.rounds.active && g.state === 'playing') g.playPressed();
   }
   r.won = g.state === 'won';
