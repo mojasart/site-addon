@@ -108,6 +108,7 @@ export function drawOverlay(ctx, game) {
       // vidas que sobraram e cafés novos lado a lado; ameaças contidas embaixo
       drawResults(ctx, cx, 270, game.lives, game.coffeeGain, game.overlayTime);
       text(ctx, `Ameaças contidas: ${game.stats.pops}`, cx, 318, { size: 19, color: GOLD });
+      if (game.turboUnlocked) text(ctx, 'ACELERAR 5x LIBERADO!', cx, 348, { size: 17, color: '#bdeeff' });
     } else {
       const survived = Math.floor(Math.min(game.platTime, 180));
       const lines = game.platinum

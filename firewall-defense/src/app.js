@@ -1,5 +1,5 @@
 import { MIN_VIEW_W, VIEW_H } from './config.js';
-import { MAPS } from './data/maps.js';
+import { MAPS, MAPS_PER_SEASON } from './data/maps.js';
 import { loadSave, writeSave } from './save.js';
 import { Sound } from './audio/Sound.js';
 import { setPixelScale } from './render/canvas.js';
@@ -161,6 +161,11 @@ export class App {
 
   hasPlatinum(mapId) {
     return !!this.save.platinum?.[mapId];
+  }
+
+  // Todos os mapas da season com a platina vencida?
+  seasonPlatinum(s) {
+    return MAPS.slice(s * MAPS_PER_SEASON, (s + 1) * MAPS_PER_SEASON).every((m) => this.hasPlatinum(m.id));
   }
 
   // Modo platina liberado nesse mapa? (precisa das 3 estrelas)

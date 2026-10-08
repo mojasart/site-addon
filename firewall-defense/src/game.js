@@ -1,4 +1,4 @@
-import { VIEW_H, PANEL_W, MAX_SPEED, EARLY_BONUS } from './config.js';
+import { VIEW_H, PANEL_W, SPEEDS, TURBO_SPEED, DANGER_TIME, EARLY_BONUS } from './config.js';
 import { MAPS } from './data/maps.js';
 import { ROUNDS } from './data/rounds.js';
 import { PLAT_TIME, PLAT_LIVES, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
@@ -149,7 +149,10 @@ export class Game {
       this.stars = this.lives >= L * 0.9 ? 3 : this.lives >= L * 0.5 ? 2 : 1;
       if (this.platinum) {
         this.stars = 3; // vencer a platina já vale as 3 (em platina)
+        const hadTurbo = this.app.seasonPlatinum?.(0);
         this.app.recordPlatinum?.(this.map.id);
+        // fechou a platina da Placa-Mãe agora: libera o 5x (aviso na vitória)
+        this.turboUnlocked = !hadTurbo && !!this.app.seasonPlatinum?.(0);
       }
       this.app.recordStars(this.map.id, this.stars);
       this.fx.celebrate(this.viewW, VIEW_H);
@@ -217,6 +220,7 @@ export class Game {
     for (const p of this.projectiles) p.update(dt, this);
     this.flushSpawns();
     for (const e of this.enemies) if (!e.dead) e.update(dt, this);
+    if (this.speed > 1) this.checkDanger();
     for (const p of this.packets) p.update(dt, this);
     this.hazards.update(dt, this);
     for (let k = 0; k < this.spawnFlash.length; k++) this.spawnFlash[k] = Math.max(0, this.spawnFlash[k] - dt * 4);
@@ -382,9 +386,30 @@ export class Game {
     this.startRound();
   }
 
+  // Velocidades do botão: 1x, 2x, 3x e, com a Placa-Mãe toda platinada, 5x
+  get speeds() {
+    return this.app.seasonPlatinum?.(0) ? [...SPEEDS, TURBO_SPEED] : SPEEDS;
+  }
+
   speedPressed() {
-    this.speed = (this.speed % MAX_SPEED) + 1;
+    const list = this.speeds;
+    this.speed = list[(list.indexOf(this.speed) + 1) % list.length];
     this.sound.play('click');
+  }
+
+  // Acelerado e um vírus que faria perder (tira todas as vidas que sobram)
+  // está chegando na base: volta pra 1x pra dar tempo de salvar. Cada vírus
+  // avisa uma vez só (dá pra acelerar de novo)
+  checkDanger() {
+    for (const e of this.enemies) {
+      if (e.dead || e.dangerSeen) continue;
+      if (e.remaining / Math.max(1, e.speed) > DANGER_TIME || e.threat < this.lives) continue;
+      e.dangerSeen = true;
+      this.speed = 1;
+      this.toast = { text: 'PERIGO! Velocidade normal', time: 2.6 };
+      this.sound.play('error');
+      return;
+    }
   }
 
   startRound() {
