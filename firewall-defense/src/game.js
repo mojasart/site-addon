@@ -26,6 +26,7 @@ import { drawEncrypted, ENCRYPT_FILTER } from './render/ransom.js';
 import { drawSpawns } from './render/spawns.js';
 import { drawDuck } from './render/duck.js';
 import { CatalogScene } from './scenes/CatalogScene.js';
+import { ITEM, CASH, BACKUP_LIVES, useConsumable } from './data/consumables.js';
 import { drawAds, adClose, adSpot, adScale, adSize, ADS, CRYPT_AD, CLOSE_SPOTS } from './render/ads.js';
 
 // Enxurrada de anúncios (clicou no anúncio em vez do X): dura `time` s até o
@@ -35,7 +36,7 @@ const STORM = { time: 4, max: 45, gap: 0.35, accel: 0.88, minGap: 0.05 };
 import { pickCoinTiles, coinTileAt, COIN_SEASONS } from './core/coinTiles.js';
 import { drawCoinTiles, drawNoMine } from './render/coinTiles.js';
 import { rrect, fillOutline, circle, text, setFont } from './render/canvas.js';
-import { rand, chance } from './util.js';
+import { rand, chance, plural } from './util.js';
 
 const TOUCH_LIFT = 46; // ao arrastar com o dedo, a defesa aparece acima dele
 const BASE_HIT = 24; // raio da hitbox do servidor (ele ocupa 1 quadrado)
@@ -100,6 +101,7 @@ export class Game {
     this.placing = null; // tipo de defesa sendo posicionada
     this.inspect = null; // defesa da loja só sendo olhada (sem dinheiro pra comprar): mostra os atributos
     this.selectedTower = null;
+    this.panelTab = 'towers'; // aba do painel: towers (DEFESAS) | items (ITENS)
     this.banner = null;
     this.hurt = 0;
     this.duckHop = 0; // pulinho do Pato de Borracha quando acha café
@@ -882,6 +884,23 @@ export class Game {
       return;
     }
 
+    // abas DEFESAS / ITENS (com o nome da defesa no lugar delas, o toque ali não troca)
+    if (!this.placing && !this.inspect) {
+      const tab = L.tabs.find((r) => inRect(r, sx, sy));
+      if (tab) {
+        if (tab.id !== this.panelTab) {
+          this.panelTab = tab.id;
+          this.sound.play('click');
+        }
+        return;
+      }
+    }
+    if (this.panelTab === 'items') {
+      const tile = L.items.find((r) => inRect(r, sx, sy));
+      if (tile) this.itemTapped(tile);
+      return;
+    }
+
     for (const tile of L.tiles) {
       if (!inRect(tile, sx, sy)) continue;
       const def = TOWERS[tile.type];
@@ -905,6 +924,26 @@ export class Game {
       this.drag = { type: tile.type, x: sx, y: sy, moved: false, fromMap: false, toggleOff };
       this.sound.play('click');
       return;
+    }
+  }
+
+  // Card da aba ITENS: usa o consumível e avisa no toast (texto em cima do
+  // card ficaria por baixo do painel)
+  itemTapped(tile) {
+    const item = ITEM[tile.id];
+    const lives = this.platinum ? 1 : BACKUP_LIVES;
+    if (!((this.app.inventory?.[tile.id] ?? 0) > 0)) {
+      this.toast = { text: `Sem ${item.name}! Compre na LOJA, na tela de mapas`, time: 2.6 };
+      this.sound.play('error');
+      return;
+    }
+    if (useConsumable(this, tile.id)) {
+      const done = { cash: `+$${CASH}`, free: 'a próxima defesa sai de graça', freeze: 'vírus congelados', lives: `+${lives} ${plural(lives, 'vida', 'vidas')}` };
+      this.toast = { text: `${item.name.toUpperCase()}: ${done[tile.id] ?? 'usado'}`, time: 2.2 };
+    } else {
+      // não deu pra usar agora (o item não foi gasto)
+      const why = { free: 'Já tem uma defesa grátis esperando', freeze: 'Nenhum vírus pra congelar' };
+      this.toast = { text: why[tile.id] ?? 'Agora não dá pra usar', time: 2.2 };
     }
   }
 
