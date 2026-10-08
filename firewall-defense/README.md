@@ -49,8 +49,8 @@ Tocar num mapa abre a escolha **NORMAL** / **PLATINA** (`src/data/platinum.js`);
 - As ondas vêm **uma atrás da outra**, sem esperar o mapa limpar, por **3 minutos** (o relógio fica no HUD).
   O bônus de cada onda vem quando ela começa.
 - Aos 3:00 vem o **chefão** (Locker nos mapas 1–5 da season, Ransomware nos 6–10 e Ransomware com
-  Lockers nos 11–15). Derrotou, ganhou a platina: as estrelas do mapa ficam **azul-gelo**, ganham
-  um diamante do lado e o card da fase vira **prata azulado metálico**.
+  Lockers nos 11–15). Derrotou, ganhou a platina: as estrelas do mapa ficam **azul-gelo** e o
+  card da fase vira **prata azulado metálico**.
 - Cada mapa tem um **aliado bloqueado** (sorteado pelo mapa, sempre o mesmo). Ele só aparece dentro
   da partida: no aviso do começo e trancado no painel.
 

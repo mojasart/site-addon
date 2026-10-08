@@ -65,8 +65,6 @@ const ICON_NAMES = [
   'star_bronze',
   'star_silver',
   'star_platinum',
-  'gem',
-  'gem_empty',
   'coin',
   'coin_flat',
   'auto',
