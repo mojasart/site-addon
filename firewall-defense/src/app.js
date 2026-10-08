@@ -9,6 +9,7 @@ import { Game } from './game.js';
 import { CatalogScene } from './scenes/CatalogScene.js';
 import { DarkNetScene } from './scenes/DarkNetScene.js';
 import { ShopScene } from './scenes/ShopScene.js';
+import { NameScene } from './scenes/NameScene.js';
 import { ITEM } from './data/consumables.js';
 import { drawEnergyModal, energyLayout } from './render/energy.js';
 import { inRect } from './render/widgets.js';
@@ -78,6 +79,22 @@ export class App {
 
   goMaps() {
     this.go(() => new LevelSelectScene(this));
+  }
+
+  // JOGAR na tela inicial: na primeira vez pergunta o nome; depois, mapas
+  goPlay() {
+    if (this.save.playerName) this.goMaps();
+    else this.go(() => new NameScene(this));
+  }
+
+  // Nome que o Hacker usa pra falar com o jogador
+  get playerName() {
+    return this.save.playerName || null;
+  }
+
+  setPlayerName(name) {
+    this.save.playerName = name;
+    writeSave(this.save);
   }
 
   goCatalog() {
