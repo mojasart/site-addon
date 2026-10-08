@@ -1,5 +1,6 @@
 import { VIEW_H, OUTLINE, GOLD, ENERGY } from '../config.js';
-import { rrect, fillOutline, text } from './canvas.js';
+import { rrect, fillOutline, text, setFont } from './canvas.js';
+import { drawImage } from './images.js';
 import { bigButton, iconButton, ribbon } from './widgets.js';
 import { ICONS } from './sprites.js';
 import { easeOutBack } from '../util.js';
@@ -13,8 +14,10 @@ import { easeOutBack } from '../util.js';
  *  Tudo em coordenadas de tela.
  * ════════════════════════════════════════════════════════════ */
 
-// Raio amarelo (origem no centro, s = metade da altura)
+// Raio amarelo (origem no centro, s = metade da altura). Usa a sprite
+// energy_bolt (tools/sprites/gen.py); sem ela, o desenho em vetor
 export function drawBolt(ctx, s, gray = false) {
+  if (drawImage(ctx, 'energy_bolt', s * 2.5, 0, 0, gray ? 'grayscale(1) brightness(0.8)' : null)) return;
   ctx.beginPath();
   ctx.moveTo(s * 0.2, -s);
   ctx.lineTo(-s * 0.62, s * 0.12);
@@ -33,20 +36,62 @@ const clock = (ms) => {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 };
 
-// Contador de energia (raio + "7/10" e, embaixo, quanto falta pra próxima)
+// Contador de energia no estilo dos jogos com vidas/energia (Candy Crush,
+// Royal Match, Homescapes): o raio grande saindo da pílula pela esquerda,
+// a quantidade em destaque e, numa caixinha à direita, o relógio até a
+// próxima. A caixinha vai enchendo de amarelo enquanto a próxima carrega;
+// com a energia cheia ela fica verde com CHEIO.
+export const ENERGY_BADGE = { w: 178, h: 42 };
+
 export function drawEnergyBadge(ctx, app, x, y) {
+  const { w, h } = ENERGY_BADGE;
   const e = app.energy;
-  const w = 118;
-  rrect(ctx, x, y, w, 40, 20);
-  fillOutline(ctx, 'rgba(20,28,60,0.85)', 3);
-  ctx.save();
-  ctx.translate(x + 22, y + 20);
-  drawBolt(ctx, 13, e <= 0);
-  ctx.restore();
-  text(ctx, app.debug ? '∞' : `${e}/${ENERGY.max}`, x + 42, y + 21, { size: 20, align: 'left', color: e > 0 ? '#ffffff' : '#ff7a8a' });
-  if (!app.debug && e < ENERGY.max) {
-    text(ctx, `+1 em ${clock(app.energyNextMs())}`, x + w / 2, y + 52, { size: 12, color: '#d8e6ff' });
+  const full = app.debug || e >= ENERGY.max;
+  const empty = !app.debug && e <= 0;
+  const t = performance.now() / 1000;
+  // sombra + pílula
+  rrect(ctx, x, y + 4, w, h, h / 2);
+  ctx.fillStyle = 'rgba(10,16,40,0.45)';
+  ctx.fill();
+  rrect(ctx, x, y, w, h, h / 2);
+  fillOutline(ctx, '#1b2550', 3);
+
+  // quantidade: "9" grande e "/10" menor
+  const nx = x + 46;
+  const cy = y + h / 2 + 1;
+  const count = app.debug ? '∞' : String(e);
+  text(ctx, count, nx, cy, { size: 24, align: 'left', color: empty ? '#ff7a8a' : '#ffffff' });
+  if (!app.debug) {
+    setFont(ctx, 24);
+    text(ctx, `/${ENERGY.max}`, nx + ctx.measureText(count).width + 2, cy + 3, { size: 14, align: 'left', color: '#9fb2d8' });
   }
+
+  // caixinha do tempo (enche enquanto a próxima energia carrega)
+  const bw = 66;
+  const bh = h - 12;
+  const bx = x + w - bw - 6;
+  const by = y + 6;
+  ctx.save();
+  rrect(ctx, bx, by, bw, bh, bh / 2);
+  ctx.fillStyle = full ? '#2fbf6a' : '#0c1230';
+  ctx.fill();
+  if (!full) {
+    ctx.clip();
+    const k = 1 - app.energyNextMs() / app.energyRegenMs;
+    ctx.fillStyle = 'rgba(255,210,63,0.30)';
+    ctx.fillRect(bx, by, bw * Math.min(1, Math.max(0, k)), bh);
+  }
+  ctx.restore();
+  if (full) text(ctx, 'CHEIO', bx + bw / 2, by + bh / 2 + 1, { size: 13 });
+  else text(ctx, clock(app.energyNextMs()), bx + bw / 2, by + bh / 2 + 1, { size: 15, color: '#ffe27a' });
+
+  // raio grande por cima da borda esquerda, respirando de leve
+  ctx.save();
+  ctx.translate(x + 20, y + h / 2);
+  const k = empty ? 1 : 1 + Math.sin(t * 3) * 0.04;
+  ctx.scale(k, k);
+  drawBolt(ctx, 26, empty);
+  ctx.restore();
 }
 
 // Posições da janela de energia (desenho e toque)

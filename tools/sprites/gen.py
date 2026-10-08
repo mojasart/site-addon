@@ -131,6 +131,12 @@ ASSETS = {
     # ── HUD ──────────────────────────────────────────────
     'coin': ('magenta', 'A shiny orange round Bitcoin coin with a big white tilted bitcoin symbol "₿" in the middle, front view. '),
     'heart': ('magenta', 'A glossy red cartoon heart icon for lives, front view. '),
+    # raio do contador de energia (tela de mapas e janela SEM ENERGIA)
+    'energy_bolt': ('magenta', 'A chunky glossy cartoon lightning bolt icon for an energy meter, like the energy '
+                    'icons of Clash Royale and Brawl Stars, front view, slightly tilted to the right: one thick zig-zag '
+                    'bolt with three sharp points and softly rounded corners, bright golden-yellow on top fading to '
+                    'warm orange at the bottom tip, a big soft white glossy highlight along the upper-left edges, '
+                    'a thick dark navy outline. Simple, bold, readable as a tiny game HUD icon. '),
     # ícone do botão da loja de consumíveis (tela de mapas)
     'shop_cart': ('green', 'A chunky glossy cartoon shopping cart icon, three-quarter front view: a bright golden-yellow '
                   'rounded metal basket with a thick dark navy outline, a red handle, two round black wheels, '
@@ -248,7 +254,7 @@ ASSETS['minerador_kid_attack'] = ('magenta', AGE.format(age=KID, desc=(
     '(exactly one metal head, at the lower end, striking the ground; nothing on his shoulder).')), 'minerador_pickaxe_attack')
 
 # estas usam o visual "3D de jogo mobile"; o resto é desenho animado 2D
-LOOK_3D_ASSETS = {'server', 'server_hurt', 'coin', 'heart', 'shop_cart'}
+LOOK_3D_ASSETS = {'server', 'server_hurt', 'coin', 'heart', 'shop_cart', 'energy_bolt'}
 
 
 def load_key():
