@@ -112,7 +112,8 @@ export const TOWERS = {
     packetInterval: 3.5,
     upgrades: [
       { name: 'GPU Extra', desc: '6 bitcoins por rodada', cost: 500, apply: (s) => { s.packetsPerRound = 6; } },
-      { name: 'Fazenda de Mineração', desc: 'Também rende $120 a cada rodada nova', cost: 900, apply: (s) => { s.roundBonus = 120; } },
+      // cada vírus que entra numa rodada tem goldenChance de vir dourado: destruído, solta goldenValue
+      { name: 'Toque de Midas', desc: '5% dos vírus vêm dourados e soltam $100', cost: 900, apply: (s) => { s.goldenChance = 0.05; s.goldenValue = 100; } },
     ],
   },
   honeypot: {

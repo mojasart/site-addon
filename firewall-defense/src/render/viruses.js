@@ -16,10 +16,13 @@ import { drawImage, hasImage } from './images.js';
 
 export function drawEnemy(ctx, e) {
   const def = e.def;
+  if (e.golden) goldenHalo(ctx, e);
   if (hasImage(def.sprite)) {
     drawSpriteEnemy(ctx, e);
+    if (e.golden) goldenSparkles(ctx, e);
     return;
   }
+  if (e.golden) ctx.filter = GOLD_FILTER;
   switch (def.kind) {
     case 'worm':
       drawWorm(ctx, e);
@@ -30,6 +33,8 @@ export function drawEnemy(ctx, e) {
     default:
       drawHopper(ctx, e);
   }
+  ctx.filter = 'none';
+  if (e.golden) goldenSparkles(ctx, e);
   if (e.slowTimer > 0 && !def.boss) {
     circle(ctx, 0, -e.r * 0.3, e.r + 4);
     ctx.fillStyle = 'rgba(170,235,255,0.38)';
@@ -44,6 +49,44 @@ export function drawEnemy(ctx, e) {
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
     ctx.fill();
   }
+}
+
+// Vírus dourado (Toque de Midas, Minerador nível 3): cor puxada pro ouro
+// (filtro do canvas; onde não existe, fica só o halo e os brilhos), halo
+// dourado atrás e brilhinhos girando em volta
+const GOLD_FILTER = 'sepia(1) saturate(2.2) hue-rotate(10deg) brightness(1.28) contrast(1.05)';
+
+function goldenHalo(ctx, e) {
+  const pulse = 0.5 + Math.sin(e.phase * 5) * 0.5;
+  const r = e.r * (1.5 + pulse * 0.15);
+  const g = ctx.createRadialGradient(0, -e.r * 0.3, e.r * 0.4, 0, -e.r * 0.3, r);
+  g.addColorStop(0, `rgba(255,214,70,${0.55 + pulse * 0.2})`);
+  g.addColorStop(1, 'rgba(255,214,70,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(0, -e.r * 0.3, r, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function goldenSparkles(ctx, e) {
+  ctx.save();
+  ctx.fillStyle = '#fff6c8';
+  for (let i = 0; i < 3; i++) {
+    const a = e.phase * 2.2 + (i * Math.PI * 2) / 3;
+    const k = 0.5 + 0.5 * Math.sin(e.phase * 6 + i * 2);
+    const x = Math.cos(a) * e.r * 1.05;
+    const y = -e.r * 0.3 + Math.sin(a) * e.r * 0.85;
+    const s = 2 + k * 3;
+    ctx.globalAlpha = 0.4 + 0.6 * k;
+    ctx.beginPath();
+    ctx.moveTo(x, y - s);
+    ctx.quadraticCurveTo(x, y, x + s, y);
+    ctx.quadraticCurveTo(x, y, x, y + s);
+    ctx.quadraticCurveTo(x, y, x - s, y);
+    ctx.quadraticCurveTo(x, y, x, y - s);
+    ctx.fill();
+  }
+  ctx.restore();
 }
 
 // Como cada sprite é desenhada (medidas em múltiplos do raio):
@@ -95,12 +138,16 @@ function drawSpriteEnemy(ctx, e) {
   ctx.rotate(Math.sign(turn || 1) * lean); // balança pra frente e pra trás
   ctx.scale(flip * sx, sy); // escala ancorada nos pés
   const dy = -size * look.foot;
+  if (e.golden) ctx.filter = GOLD_FILTER;
   drawImage(ctx, def.sprite, size, 0, dy);
+  ctx.filter = 'none';
   if (e.flash > 0) {
     // acerto: pisca mais claro
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = 0.6;
+    if (e.golden) ctx.filter = GOLD_FILTER;
     drawImage(ctx, def.sprite, size, 0, dy);
+    ctx.filter = 'none';
   }
   ctx.restore();
 
