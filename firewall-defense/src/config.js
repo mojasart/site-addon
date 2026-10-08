@@ -26,7 +26,7 @@ export const VERSION = '1.0';
 export const BUILD = 346;
 export const versionLabel = () => `v${VERSION}.${String(BUILD).padStart(3, '0')}`;
 
-// Energia: cada partida (começar ou reiniciar) gasta 1; volta 1 a cada regenMin
+// Energia: cada partida gasta 1 ao passar da 1ª onda; volta 1 a cada regenMin
 // minutos até max; sem energia, um anúncio de adTime s dá +ad
 export const ENERGY = { max: 10, regenMin: 12, ad: 2, adTime: 5 };
 export const SELL_RATE = 0.7; // vender devolve 70% do que foi gasto

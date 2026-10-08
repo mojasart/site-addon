@@ -242,11 +242,12 @@ export class App {
   }
 
   // mode: 'normal' ou 'platinum' (libera com 3 estrelas)
-  // Começa (ou reinicia) uma partida: gasta 1 energia. Sem energia, abre a
+  // Começa (ou reinicia) uma partida: precisa de pelo menos 1 energia, que só
+  // é gasta quando a 1ª onda acaba (Game.onRoundEnd). Sem energia, abre a
   // janela "SEM ENERGIA" (com o anúncio); depois do anúncio a partida começa
   startMap(i, mode = 'normal') {
     if (this.next || this.energyUI) return;
-    if (!this.spendEnergy()) {
+    if (!this.debug && this.energy <= 0) {
       this.energyUI = { mode: 'empty', t: 0, pending: { i, mode } };
       this.sound.play('error');
       return;

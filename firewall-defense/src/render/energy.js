@@ -7,7 +7,8 @@ import { easeOutBack } from '../util.js';
 
 /* ════════════════════════════════════════════════════════════
  *  ENERGIA
- *  Cada partida começada (ou reiniciada) gasta 1. Volta 1 a cada
+ *  Cada partida gasta 1 quando passa da 1ª onda (antes disso, sair ou
+ *  reiniciar não gasta). Volta 1 a cada
  *  ENERGY.regenMin minutos, até ENERGY.max. Sem energia, abre a janela
  *  "SEM ENERGIA" por cima de qualquer tela (app.energyUI), com o tempo pra
  *  próxima e um anúncio (simulado por enquanto) que dá +ENERGY.ad.

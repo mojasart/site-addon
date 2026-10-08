@@ -359,8 +359,16 @@ export class Game {
   }
 
   // Fim do Bug Bounty (tempo ou tudo estourado): ganha se fez pelo menos 1 estrela
+  // Gasta a energia da partida (uma vez só): quando passa da 1ª onda
+  payEnergy() {
+    if (this.energyPaid) return;
+    this.energyPaid = true;
+    this.app.spendEnergy?.();
+  }
+
   endBounty() {
     if (this.state !== 'playing') return;
+    this.payEnergy(); // a onda do Bug Bounty acabou (pelo tempo ou estourando tudo)
     this.newRecord = this.points > (this.app.bountyBest?.(this.map.id) ?? 0);
     this.app.recordBounty?.(this.map.id, this.points); // recorde conta mesmo sem estrela
     this.end(bountyStars(this.bountyRatio) > 0);
@@ -399,6 +407,9 @@ export class Game {
   }
 
   onRoundEnd(n) {
+    // passou da 1ª onda: agora a partida gasta a energia (sair, reiniciar ou
+    // perder antes disso não gasta nada)
+    this.payEnergy();
     if (this.bounty) {
       this.endBounty(); // estourou tudo antes do tempo
       return;
