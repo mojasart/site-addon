@@ -19,6 +19,13 @@ export const MAX_VIEW_W = 1170;
 // Vida de uma camada de vírus (o dano básico de um ataque também é dessa ordem:
 // Hacker 1000 por teclado). Escala grande pra buff de 10% fazer sentido
 export const LAYER_HP = 1000;
+// Versão do jogo, mostrada na tela inicial como vVERSION.BUILD (v1.0.345).
+// BUILD = número de commits: o GitHub Pages grava na hora de publicar
+// (.github/workflows/pages.yml); aqui fica o da última vez que alguém mudou
+export const VERSION = '1.0';
+export const BUILD = 346;
+export const versionLabel = () => `v${VERSION}.${String(BUILD).padStart(3, '0')}`;
+
 // Energia: cada partida (começar ou reiniciar) gasta 1; volta 1 a cada regenMin
 // minutos até max; sem energia, um anúncio de adTime s dá +ad
 export const ENERGY = { max: 10, regenMin: 12, ad: 2, adTime: 5 };
