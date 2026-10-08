@@ -51,8 +51,8 @@ export const ENEMIES = {
     children: [['v2', 1]],
   },
   // Worms evoluídos: a mesma sprite em outra cor; soltam vírus mais fortes
-  // pelo caminho e ao estourar. Só nas rodadas finais (data/rounds.js):
-  // Mutante a partir da 18, Polimórfico da 21, Rei da 24
+  // pelo caminho e ao estourar. Aparecem aos poucos (data/rounds.js):
+  // Mutante a partir da rodada 15, Polimórfico da 18, Rei da 23
   worm2: {
     name: 'Worm Mutante',
     desc: 'Solta Vírus Verdes pelo caminho e mais 2 quando estoura',
