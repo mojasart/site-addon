@@ -39,6 +39,7 @@ import { rand, chance } from './util.js';
 const TOUCH_LIFT = 46; // ao arrastar com o dedo, a defesa aparece acima dele
 const BASE_HIT = 24; // raio da hitbox do servidor (ele ocupa 1 quadrado)
 const CAST_TIME = 0.5; // Ransomware fica parado tremendo esse tempo ao criptografar
+const WIN_DELAY = 0.5; // limpou a última rodada: espera o último vírus estourar de vez antes da vitória
 
 // A partida em si (uma fase). Criada pelo App ao escolher um mapa.
 // mode: 'normal' ou 'platinum' (ondas sem parar até o chefão; data/platinum.js)
@@ -105,6 +106,7 @@ export class Game {
     this.coinBump = 0;
     this.shakeAmt = 0;
     this.endDelay = 0;
+    this.winIn = null; // contagem até a tela de vitória (WIN_DELAY), depois do último vírus
     this.overlayTime = 0;
     this.stars = 0;
     this.stats = { pops: 0 };
@@ -215,6 +217,12 @@ export class Game {
   }
 
   step(dt) {
+    // venceu: o jogo segue rodando um instante (o estouro do último vírus) e aí vem a vitória
+    if (this.winIn != null && (this.winIn -= dt) <= 0) {
+      this.winIn = null;
+      this.end(true);
+      return;
+    }
     this.callCooldown = Math.max(0, this.callCooldown - dt);
     this.updateAds(dt);
     if (this.nextIn != null && (this.nextIn -= dt) <= 0) this.startRound();
@@ -330,7 +338,7 @@ export class Game {
   onRoundEnd(n) {
     if (this.platinum) {
       // platina: o bônus da onda já veio quando ela começou (elas se acumulam)
-      if (this.rounds.finished) this.end(true);
+      if (this.rounds.finished) this.winIn = WIN_DELAY;
       return;
     }
     const bonus = 100 + n;
@@ -339,7 +347,7 @@ export class Game {
     // mapa limpo: os Mineradores entregam na hora o que faltou minerar
     if (!this.rounds.active) for (const t of this.towers) t.finishMining(this);
     if (this.rounds.finished) {
-      this.end(true);
+      this.winIn = WIN_DELAY;
       return;
     }
     this.sound.play('roundEnd');
