@@ -249,6 +249,22 @@ const DC_CHORDS = [
   { root: 48, notes: [67, 72, 76] }, // C
   { root: 40, notes: [68, 71, 76] }, // E
 ];
+
+// Catálogo ("Matrix"): mi menor harmônico, escuro, com o Si maior (Ré#) dando suspense
+const MX_CHORDS = [
+  { root: 40, notes: [52, 55, 59] }, // Em
+  { root: 40, notes: [52, 55, 59] }, // Em
+  { root: 36, notes: [48, 52, 55] }, // C
+  { root: 35, notes: [47, 51, 54] }, // B
+];
+const MX_BASS = [0, 0, 12, 0, 0, 12, 0, 7, 0, 0, 12, 0, 0, 12, 10, 7]; // pulso de semicolcheias
+const MX_RAIN = [76, 79, 81, 83, 86, 88, 91, 93, 95]; // "gotas" de código (mi menor pentatônica, agudo)
+const MX_MELODY = [64, 0, 0, 0, 67, 0, 71, 0, 70, 0, 0, 0, 67, 0, 63, 0]; // 1 nota por colcheia (com o Ré#)
+// número "aleatório" fixo por passo (a chuva sai sempre igual no loop)
+const hash01 = (n) => {
+  const x = Math.sin(n * 12.9898) * 43758.5453;
+  return x - Math.floor(x);
+};
 const DC_BASS = [0, 0, 12, 0, 0, 12, 0, 7, 0, 0, 12, 0, 3, 0, 7, 12]; // semicolcheias
 const DC_BLIPS = [0, 5, 11, 14]; // semicolcheias com bipe de dados
 const DC_MELODY = [ // 1 nota por colcheia, 4 compassos (repete)
@@ -280,6 +296,7 @@ const THEMES = {
   'battle-0': { step: 60 / 100 / 2, steps: 128, play: 'battleStep' },
   'battle-1': { step: 60 / 124 / 4, steps: 256, play: 'datacenterStep' },
   'battle-2': { step: 60 / 84 / 2, steps: 128, play: 'oceanStep' },
+  catalog: { step: 60 / 96 / 4, steps: 256, play: 'matrixStep' }, // catálogo: "Matrix"
 };
 THEMES.battle = THEMES['battle-0'];
 
@@ -385,6 +402,52 @@ class Music {
     if ((bar === 7 || bar === 15) && inBar === 4) {
       s.noise({ dur: STEP * 4, vol: 0.06, filter: 'highpass', freq: 3000, to: 9000, at, bus });
     }
+  }
+
+  // Catálogo: "Matrix" (semicolcheias, 16 por compasso). Baixo pulsando, batida
+  // quebrada, pad sombrio e a chuva de código: blips agudos curtinhos caindo
+  // de altura. Na 2ª metade entra a melodia lenta e a caixa
+  matrixStep(i, at) {
+    const s = this.s;
+    const bus = s.musicBus;
+    const STEP = THEMES.catalog.step;
+    const bar = Math.floor(i / 16);
+    const chord = MX_CHORDS[bar % 4];
+    const k = i % 16;
+    const full = bar >= 8;
+
+    // bumbo quebrado (1, "e" do 2, 3)
+    if (k === 0 || k === 6 || k === 10) s.tone({ type: 'sine', freq: 130, to: 40, dur: 0.25, vol: k === 0 ? 0.26 : 0.19, at, bus });
+    // caixa seca no 2 e no 4 (2ª metade)
+    if (full && (k === 4 || k === 12)) s.noise({ dur: 0.1, vol: 0.07, filter: 'bandpass', freq: 2200, q: 1.4, at, bus });
+    // chimbal fino nas semicolcheias ímpares
+    if (k % 2 === 1) s.noise({ dur: 0.025, vol: 0.022, filter: 'highpass', freq: 9500, at, bus });
+
+    // baixo pulsando
+    s.tone({ type: 'sawtooth', freq: midi(chord.root + MX_BASS[k]), dur: STEP * 0.7, vol: 0.05, at, bus });
+    s.tone({ type: 'triangle', freq: midi(chord.root + MX_BASS[k]), dur: STEP * 0.8, vol: 0.15, at, bus });
+
+    // pad sombrio segurando o acorde o compasso inteiro
+    if (k === 0) {
+      for (const n of chord.notes) s.tone({ type: 'sawtooth', freq: midi(n - 12), dur: STEP * 15, vol: 0.013, at, bus });
+      s.tone({ type: 'triangle', freq: midi(chord.notes[0]), dur: STEP * 15, vol: 0.07, at, bus });
+    }
+
+    // chuva de código: blips agudos em passos sorteados, caindo de altura
+    const r = hash01(i + 1);
+    if (r < 0.32) {
+      const n = MX_RAIN[Math.floor(hash01(i + 77) * MX_RAIN.length)];
+      s.tone({ type: 'square', freq: midi(n), to: midi(n - 5), dur: 0.07, vol: 0.022, at, bus });
+    }
+
+    // melodia lenta (2ª metade), 1 nota por colcheia
+    if (full && k % 2 === 0) {
+      const m = MX_MELODY[(k / 2 + (bar % 2) * 8) % MX_MELODY.length];
+      if (m) s.tone({ type: 'square', freq: midi(m), dur: STEP * 3.5, vol: 0.022, at, bus });
+    }
+
+    // varredura de "dados" no fim de cada frase
+    if (bar % 4 === 3 && k === 8) s.noise({ dur: STEP * 8, vol: 0.04, filter: 'highpass', freq: 1500, to: 9000, at, bus });
   }
 
   // Data Center: techno industrial (semicolcheias, 16 por compasso)

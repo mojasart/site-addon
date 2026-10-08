@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <defs>
+    <linearGradient id="w" gradientUnits="userSpaceOnUse" x1="0" y1="8" x2="0" y2="56"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dbe3f2"/></linearGradient>
+  </defs>
+  <!-- contorno escuro (por baixo) -->
+  <path d="M7 11 H15 L23 43 H50" stroke="#1b2340" stroke-width="11"/>
+  <path d="M17 17 H56 L51 37 H22 Z" stroke="#1b2340" stroke-width="9" fill="#1b2340"/>
+  <circle cx="25" cy="50" r="5.5" fill="#1b2340" stroke="#1b2340" stroke-width="5"/>
+  <circle cx="47" cy="50" r="5.5" fill="#1b2340" stroke="#1b2340" stroke-width="5"/>
+  <!-- carrinho branco -->
+  <path d="M7 11 H15 L23 43 H50" stroke="url(#w)" stroke-width="5"/>
+  <path d="M17 17 H56 L51 37 H22 Z" stroke="url(#w)" stroke-width="1" fill="url(#w)"/>
+  <path d="M30 17 L31 37 M42 17 L40 37 M19 27 H53" stroke="#1b2340" stroke-width="2.5" opacity="0.55"/>
+  <circle cx="25" cy="50" r="5" fill="url(#w)"/>
+  <circle cx="47" cy="50" r="5" fill="url(#w)"/>
+</svg>

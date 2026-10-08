@@ -307,8 +307,11 @@ export class App {
       if (this.fade >= 1) {
         this.scene = this.next();
         this.next = null;
-        // na partida, a música de batalha da season do mapa; nos menus, a alegre
-        this.sound.setTheme?.(this.scene instanceof Game ? `battle-${this.scene.map.season}` : 'menu');
+        // na partida, a música de batalha da season do mapa; no catálogo, a "Matrix";
+        // nos outros menus, a alegre
+        this.sound.setTheme?.(
+          this.scene instanceof Game ? `battle-${this.scene.map.season}` : this.scene instanceof CatalogScene ? 'catalog' : 'menu',
+        );
       }
     } else this.fade = Math.max(0, this.fade - dt * 4);
     this.scene.update(dt);
