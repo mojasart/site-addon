@@ -78,9 +78,10 @@ export const ITEM = Object.fromEntries(CONSUMABLES.map((c) => [c.id, c]));
 // meio de pagamento e de um servidor pra validar a compra). A loja mostra
 // como "EM BREVE" e não cobra nem pede nada.
 export const COFFEE_PACKS = [
-  { id: 'pack-s', coffee: 10, price: 'R$ 4,90' },
-  { id: 'pack-m', coffee: 30, price: 'R$ 9,90' },
-  { id: 'pack-l', coffee: 100, price: 'R$ 24,90' },
+  // sprite: desenho do pacote (assets/sprites): grãos, xícara e saco de café
+  { id: 'pack-s', coffee: 10, price: 'R$ 4,90', sprite: 'coffee_beans' },
+  { id: 'pack-m', coffee: 30, price: 'R$ 9,90', sprite: 'coffee_cup' },
+  { id: 'pack-l', coffee: 100, price: 'R$ 24,90', sprite: 'coffee_sack' },
 ];
 
 // Usa um item do inventário na partida: aplica o efeito e gasta 1.

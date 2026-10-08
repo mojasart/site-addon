@@ -2,6 +2,7 @@ import { VIEW_H, GOLD } from '../config.js';
 import { rrect, fillOutline, text, setFont, button } from '../render/canvas.js';
 import { iconButton, inRect } from '../render/widgets.js';
 import { ICONS } from '../render/sprites.js';
+import { drawImage } from '../render/images.js';
 import { wrapText } from '../render/ui.js';
 import { drawItemIcon } from '../render/consumables.js';
 import { CONSUMABLES, COFFEE_PACKS } from '../data/consumables.js';
@@ -126,9 +127,10 @@ export class ShopScene {
     ctx.fill();
     rrect(ctx, p.x, p.y, p.w, p.h, 14);
     fillOutline(ctx, '#2a2148', 3);
+    // desenho do pacote (grãos, xícara ou saco); sem a sprite, o ícone de café
     ctx.save();
-    ctx.translate(p.x + 36, p.y + 40);
-    ICONS.coffee(ctx, 18);
+    ctx.translate(p.x + 34, p.y + 44);
+    if (!drawImage(ctx, pack.sprite, 58)) ICONS.coffee(ctx, 18);
     ctx.restore();
     text(ctx, `+${pack.coffee} CAFÉS`, p.x + 66, p.y + 30, { size: 19, align: 'left', color: COFFEE_TXT });
     text(ctx, pack.price, p.x + 66, p.y + 54, { size: 15, align: 'left', color: '#bcd0f5', stroke: null });
