@@ -197,12 +197,12 @@ export class TitleScene {
     this.pressed = false;
     if (inRect(this.layout().play, x, y)) {
       this.app.sound.play('click');
-      this.app.goMaps();
+      this.app.goPlay();
     }
   }
 
   key(k) {
-    if (k === 'Enter' || k === ' ') this.app.goMaps();
+    if (k === 'Enter' || k === ' ') this.app.goPlay();
   }
 }
 
