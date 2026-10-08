@@ -73,6 +73,7 @@ export class LevelSelectScene {
       settings: { x: W - 74, y: 16, w: 56, h: 56 }, // no canto
       catalog: { x: W - 140, y: 16, w: 56, h: 56 },
       darknet: { x: W - 206, y: 16, w: 56, h: 56 }, // do lado do catálogo
+      shop: { x: W - 272, y: 16, w: 56, h: 56 }, // loja de consumíveis
       tabs: SEASONS.map((_, s) => ({ x: tabs0 + s * (tabW + 12), y: 92, w: tabW, h: 52 })),
       tiles: Array.from({ length: MAPS_PER_SEASON }, (_, k) => ({
         x: gx + (k % cols) * (tw + gap),
@@ -142,6 +143,7 @@ export class LevelSelectScene {
     iconButton(ctx, L.back, '#5fb4ff', 'back');
     iconButton(ctx, L.settings, '#5fb4ff', 'settings');
     iconButton(ctx, L.catalog, '#3fd16b', 'catalog');
+    iconButton(ctx, L.shop, '#ffb020', 'shop');
     this.drawDarkNet(ctx, L.darknet);
 
     SEASONS.forEach((season, s) => this.drawTab(ctx, L.tabs[s], season, s));
@@ -436,6 +438,11 @@ export class LevelSelectScene {
     if (inRect(L.catalog, x, y)) {
       this.app.sound.play('click');
       this.app.goCatalog();
+      return;
+    }
+    if (inRect(L.shop, x, y)) {
+      this.app.sound.play('click');
+      this.app.goShop();
       return;
     }
     if (inRect(L.darknet, x, y)) {
