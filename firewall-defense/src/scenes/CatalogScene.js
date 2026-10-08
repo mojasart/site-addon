@@ -6,7 +6,7 @@ import { TOWERS, TOWER_ORDER } from '../data/towers.js';
 import { rrect, fillOutline, cachedSprite } from '../render/canvas.js';
 import { iconButton, inRect } from '../render/widgets.js';
 import { ICONS } from '../render/sprites.js';
-import { drawImage, hasImage } from '../render/images.js';
+import { drawVirusIcon } from '../render/viruses.js';
 import { drawCharacter } from '../render/characters.js';
 import { AGES, statsAt, statRows } from '../data/towerInfo.js';
 
@@ -229,26 +229,21 @@ export class CatalogScene {
     });
   }
 
-  // Sprite da ameaça; se ainda não foi descoberta, silhueta preta + cadeado
+  // Sprite da ameaça (imagem ou o desenho do jogo, pros que não têm imagem:
+  // Spyware, Adware...); se ainda não foi descoberta, silhueta preta + cadeado
   drawIcon(ctx, type, size, seen) {
     const def = ENEMIES[type];
     if (seen) {
-      if (!drawImage(ctx, def.sprite, size)) {
-        ctx.beginPath();
-        ctx.arc(0, 0, size * 0.35, 0, Math.PI * 2);
-        fillOutline(ctx, def.color, 2);
-      }
+      drawVirusIcon(ctx, type, def, size / 3);
       return;
     }
-    if (hasImage(def.sprite)) {
-      const c = cachedSprite(`sil:${type}:${size}`, size, (g) => {
-        drawImage(g, def.sprite, size);
-        g.globalCompositeOperation = 'source-in';
-        g.fillStyle = '#0f3a24'; // silhueta "apagada" (preta some na tela escura)
-        g.fillRect(-size / 2, -size / 2, size, size);
-      });
-      ctx.drawImage(c, -size / 2, -size / 2, size, size);
-    }
+    const c = cachedSprite(`sil:${type}:${size}`, size, (g) => {
+      drawVirusIcon(g, type, def, size / 3);
+      g.globalCompositeOperation = 'source-in';
+      g.fillStyle = '#0f3a24'; // silhueta "apagada" (preta some na tela escura)
+      g.fillRect(-size / 2, -size / 2, size, size);
+    });
+    ctx.drawImage(c, -size / 2, -size / 2, size, size);
     ctx.save();
     ctx.translate(size * 0.22, size * 0.2);
     ICONS.lock(ctx, size * 0.28);
@@ -329,7 +324,7 @@ export class CatalogScene {
     }
     const cursor = Math.sin(this.t * 8) > 0 ? '_' : ' ';
     mono(ctx, `${def.name.toUpperCase()}${cursor}`, fx, pr.y + 18, 22, GREEN, 'left', true);
-    const kind = [def.boss ? 'CHEFÃO' : null, def.armored ? 'BLINDADO' : null, def.spawn ? 'SE ESPALHA' : null, def.stealth ? 'INVISÍVEL' : null, def.lock ? 'CRIPTOGRAFA' : null].filter(Boolean);
+    const kind = [def.boss ? 'CHEFÃO' : null, def.armored ? 'BLINDADO' : null, def.spawn ? 'SE ESPALHA' : null, def.stealth ? 'INVISÍVEL' : null, def.ransom ? 'CRIPTOGRAFA' : null, def.ads ? 'ANÚNCIOS' : null].filter(Boolean);
     mono(ctx, kind.length ? `[ ${kind.join(' · ')} ]` : '[ COMUM ]', fx, pr.y + 44, 13, def.boss ? RED : DIM, 'left', true);
 
     const reward = def.reward ?? 1;
