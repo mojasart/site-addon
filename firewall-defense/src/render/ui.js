@@ -74,8 +74,16 @@ export function drawHud(ctx, game) {
 // com o nome, um cadeado e a vida em pontos. Dois ao mesmo tempo: uma
 // embaixo da outra. O rastro claro mostra o dano que acabou de levar.
 const BAR_H = 26;
+const topBosses = (game) => game.enemies.filter((e) => e.def.topBar && !e.dead);
+
+// Onde acabam as barras de chefão no topo (0 = nenhuma): o aviso do topo fica embaixo delas
+export function bossBarsBottom(game) {
+  const n = topBosses(game).length;
+  return n ? 12 + n * (BAR_H + 8) - 8 : 0;
+}
+
 function drawBossBars(ctx, game) {
-  const bosses = game.enemies.filter((e) => e.def.topBar && !e.dead);
+  const bosses = topBosses(game);
   const w = Math.min(380, game.mapW - 400);
   const x = (game.mapW - w) / 2;
   bosses.forEach((e, i) => {
