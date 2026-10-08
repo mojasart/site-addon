@@ -99,7 +99,7 @@ export const TOWERS = {
       // o laser segue reto depois do alvo e acerta mais vírus em linha (até pierce no total)
       { name: 'Feixe Perfurante', desc: 'O laser atravessa e acerta até 2 vírus', cost: 350, apply: (s) => { s.pierce = 2; } },
       // o vírus atingido fica marcado: por markTime s leva markMul de dano de todas as defesas
-      { name: 'Marcar Alvo', desc: 'O vírus atingido fica marcado por 2s e leva 25% a mais de dano de todas as defesas', cost: 550, apply: (s) => { s.markTime = 2; s.markMul = 1.25; } },
+      { name: 'Marcar Alvo', desc: 'O alvo leva +25% de dano por 2s', cost: 550, apply: (s) => { s.markTime = 2; s.markMul = 1.25; } },
     ],
   },
   minerador: {
