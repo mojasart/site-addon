@@ -87,6 +87,13 @@ ASSETS = {
     'ransomware': ('green', SIDE_RIGHT + 'A big chubby purple cartoon blimp / airship boss monster floating, '
                    'facing RIGHT with huge angry eyes and a toothy evil grin at the front, little tail fins at the back, '
                    'a big golden padlock with a dollar sign hanging on its belly. No feet. '),
+    'spyware': ('green', SIDE_RIGHT + 'A sneaky little round slate-grey-blue cartoon virus spy germ with short stubby '
+                'rounded spikes, wearing a black fedora hat and a black burglar eye mask, shifty eyes glancing to the RIGHT, '
+                'a sly smirk, holding a tiny magnifying glass, tiptoeing on two tiny feet. '),
+    'adware': ('green', SIDE_RIGHT + 'A goofy angry cartoon boss monster shaped like a chunky computer pop-up window: '
+               'a rectangular white window body with a bright orange-yellow title bar on top that has a small red round '
+               'close button, big angry cartoon eyes and a wide mean toothy grin on the window, a blank gold star '
+               'sticker on its corner, two stubby legs and tiny arms waving. '),
     # ── Defesas (personagens chibi olhando pra direita) ──
     # versão original (com dardo); a do jogo é editada a partir dela
     'hacker_dart': ('green', 'Full body, chibi proportions (big head, small body), three-quarter view facing and looking to the '

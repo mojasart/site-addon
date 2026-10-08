@@ -40,6 +40,8 @@ const NAMES = [
   'trojan',
   'locker',
   'ransomware',
+  'spyware',
+  'adware',
   'server',
   'server_hurt',
   'coin',
