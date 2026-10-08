@@ -7,6 +7,7 @@ import { ENEMIES } from '../data/enemies.js';
 import { easeOutBack, clamp } from '../util.js';
 import { ICONS, drawHeart } from './sprites.js';
 import { formatCoffee } from '../data/darknet.js';
+import { BOUNTY } from '../data/bounty.js';
 import { drawDuck } from './duck.js';
 
 // Posições dos botões das telas de pausa/vitória/derrota (desenho e toque)
@@ -97,7 +98,8 @@ export function drawOverlay(ctx, game) {
   } else {
     const won = game.state === 'won';
     const plat = won && game.platinum;
-    ribbon(ctx, cx, c.y + 46, won ? 280 : 360, plat ? 'PLATINA!' : won ? 'VITÓRIA!' : 'SERVIDOR INVADIDO', plat ? '#5fb4e8' : won ? '#3fd16b' : '#ff5a6a', 30);
+    const title = game.bounty ? (won ? 'RECOMPENSA!' : 'FIM DO TEMPO') : plat ? 'PLATINA!' : won ? 'VITÓRIA!' : 'SERVIDOR INVADIDO';
+    ribbon(ctx, cx, c.y + 46, won ? 280 : 360, title, plat ? '#5fb4e8' : won ? '#3fd16b' : '#ff5a6a', 30);
     if (won) {
       const pop = (i) => easeOutBack(clamp((game.overlayTime - 0.4 - i * 0.35) * 3, 0, 1));
       stars(ctx, cx, 175, game.stars, 30, 78, pop, starTier(game.stars, plat));
@@ -108,7 +110,14 @@ export function drawOverlay(ctx, game) {
       drawEnemy(ctx, { type: 'v1', def: ENEMIES.v1, r: 15, phase: t, face: 1, slowTimer: 0, flash: 0 });
       ctx.restore();
     }
-    if (won) {
+    if (game.bounty) {
+      // Bug Bounty: pontos, % estourada, recorde e café
+      const pct = Math.round(game.bountyRatio * 100);
+      text(ctx, `${game.points} PONTOS`, cx, 262, { size: 30, color: GOLD });
+      text(ctx, `Estourou ${pct}% dos vírus${game.newRecord ? ' · NOVO RECORDE!' : ''}`, cx, 298, { size: 18, color: '#d8e6ff' });
+      if (!won) text(ctx, `Bronze com ${Math.round(BOUNTY.tiers[0] * 100)}%: tente de novo!`, cx, 326, { size: 16, color: '#ffb3c0' });
+      else if (game.coffeeGain >= 0.01) text(ctx, `+${formatCoffee(game.coffeeGain)} café`, cx, 328, { size: 20, color: '#ffe0b0' });
+    } else if (won) {
       // vidas que sobraram e cafés novos lado a lado; ameaças contidas embaixo
       drawResults(ctx, cx, 270, game.lives, game.coffeeGain, game.overlayTime);
       text(ctx, `Ameaças contidas: ${game.stats.pops}`, cx, 318, { size: 19, color: GOLD });

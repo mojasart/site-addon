@@ -3,6 +3,7 @@ import { MAPS } from './data/maps.js';
 import { ROUNDS } from './data/rounds.js';
 import { PLAT_TIME, PLAT_LIVES, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
 import { worth } from './data/enemies.js';
+import { BOUNTY, bountyRound, layers, comboMul, bountyStars } from './data/bounty.js';
 import { TOWERS, TARGET_MODES } from './data/towers.js';
 import { applyPerks, ROOT_MONEY, DUCK, INTEREST, LOAN } from './data/darknet.js';
 import { fitsTerrain } from './core/terrain.js';
@@ -55,6 +56,7 @@ export class Game {
     this.map = MAPS[mapIndex];
     this.mode = mode;
     this.platinum = mode === 'platinum';
+    this.bounty = !!this.map.bounty && !this.platinum; // fase Bug Bounty (data/bounty.js)
     this.anim = 0;
     this.pointer = { x: -1, y: -1, down: false, type: 'touch' };
     this.drag = null;
@@ -78,7 +80,7 @@ export class Game {
   reset() {
     // Acesso Root (Dark Net): dinheiro a mais no começo da fase
     this.money = this.app.debug ? DEBUG.money : this.map.money + (this.app.perks?.root ? ROOT_MONEY : 0);
-    this.lives = this.platinum ? PLAT_LIVES : this.map.lives;
+    this.lives = this.platinum ? PLAT_LIVES : this.bounty ? Infinity : this.map.lives;
     this.towers = [];
     this.coinTiles = pickCoinTiles(this); // pilhas de bitcoin (seasons 1 e 2)
     this.enemies = [];
@@ -87,8 +89,9 @@ export class Game {
     this.packets = [];
     // platina: as ondas ganham a dificuldade calibrada do modo (k)
     const k = this.platinum ? platinumScale(this.mapIndex) : 1;
-    this.rounds = new RoundManager(this.platinum ? platinumRounds(this.map) : ROUNDS.slice(0, this.map.rounds), {
-      count: this.map.pressure * k,
+    const list = this.platinum ? platinumRounds(this.map) : this.bounty ? [bountyRound(this.map.d)] : ROUNDS.slice(0, this.map.rounds);
+    this.rounds = new RoundManager(list, {
+      count: this.bounty ? 1 : this.map.pressure * k, // Bug Bounty: a quantidade já vem pronta
       minCount: this.platinum ? 0 : 1,
       gap: this.map.gapMul,
       speed: this.map.speedMul,
@@ -117,6 +120,11 @@ export class Game {
     this.overlayTime = 0;
     this.stars = 0;
     this.stats = { pops: 0 };
+    // Bug Bounty: relógio, pontos, combo e camadas que escaparam
+    this.bountyLeft = BOUNTY.time;
+    this.points = 0;
+    this.combo = 0;
+    this.escaped = 0;
     this.ransomOdds = null; // chance do Ransomware criptografar no próximo quadrado (null = ainda não veio)
     this.ransomLocks = 0; // quantas vezes já criptografou nessa partida
     this.ads = []; // anúncios do Adware abertos na tela (render/ads.js)
@@ -131,6 +139,10 @@ export class Game {
     this.tutorial = Tutorial.wanted(this) ? new Tutorial(this) : null;
     if (this.platinum) {
       this.showBanner('MODO PLATINA', 3, '#bdeeff', 46, `${TOWERS[this.blocked].name} bloqueado · chefão em 3:00`);
+      return;
+    }
+    if (this.bounty) {
+      this.showBanner('BUG BOUNTY', 3, '#ffd23f', 50, 'Estoure o máximo de vírus em 90 s!');
       return;
     }
     // mapa com novidade (várias entradas, loop, zonas...) avisa no começo
@@ -163,7 +175,7 @@ export class Game {
     if (won) {
       const L = this.map.lives;
       // 3 estrelas com 90% das vidas ou mais, 2 com pelo menos metade, 1 com menos
-      this.stars = this.lives >= L * 0.9 ? 3 : this.lives >= L * 0.5 ? 2 : 1;
+      this.stars = this.bounty ? bountyStars(this.bountyRatio) : this.lives >= L * 0.9 ? 3 : this.lives >= L * 0.5 ? 2 : 1;
       if (this.platinum) {
         this.stars = 3; // vencer a platina já vale as 3 (em platina)
         const hadTurbo = this.app.seasonPlatinum?.(0);
@@ -244,6 +256,10 @@ export class Game {
     this.updateAds(dt);
     if (this.nextIn != null && (this.nextIn -= dt) <= 0) this.startRound();
     if (this.platinum && this.rounds.started > 0) this.platinumStep(dt);
+    if (this.bounty && this.rounds.started > 0 && (this.bountyLeft -= dt) <= 0) {
+      this.endBounty();
+      return;
+    }
     this.rounds.update(dt, this);
     this.flushSpawns();
     this.revealStealth();
@@ -252,7 +268,7 @@ export class Game {
     for (const p of this.projectiles) p.update(dt, this);
     this.flushSpawns();
     for (const e of this.enemies) if (!e.dead) e.update(dt, this);
-    if (this.speed > 1) this.checkDanger();
+    if (this.speed > 1 && !this.bounty) this.checkDanger();
     for (const p of this.packets) p.update(dt, this);
     this.hazards.update(dt, this);
     for (let k = 0; k < this.spawnFlash.length; k++) this.spawnFlash[k] = Math.max(0, this.spawnFlash[k] - dt * 4);
@@ -312,12 +328,42 @@ export class Game {
   }
 
   leak(enemy) {
+    if (this.bounty) {
+      // Bug Bounty: ninguém perde vida, mas o combo zera
+      this.escaped += layers(enemy.type);
+      if (this.combo >= BOUNTY.comboStep) this.fx.text(this.server.x, this.server.y - 40, 'COMBO PERDIDO', '#ff7a8a', 18);
+      this.combo = 0;
+      return;
+    }
     this.lives -= enemy.threat;
     this.hurt = 0.4;
     this.shake(4);
     this.sound.play('leak');
     this.fx.text(this.server.x, this.server.y - 40, `-${enemy.threat}`, '#ff5a6a', 26);
     buzz(40);
+  }
+
+  // Bug Bounty: cada camada estourada vale ponto × combo (Enemy.pop chama)
+  bountyPop(e) {
+    if (!this.bounty) return;
+    this.combo++;
+    this.points += Math.round((e.def.reward ?? 1) * comboMul(this.combo) * 10);
+  }
+
+  // % das camadas estouradas do que entrou no mapa (as vivas no fim contam como não estouradas)
+  get bountyRatio() {
+    let alive = 0;
+    for (const e of [...this.enemies, ...this.newEnemies]) if (!e.dead) alive += layers(e.type);
+    const total = this.stats.pops + this.escaped + alive;
+    return total ? this.stats.pops / total : 0;
+  }
+
+  // Fim do Bug Bounty (tempo ou tudo estourado): ganha se fez pelo menos 1 estrela
+  endBounty() {
+    if (this.state !== 'playing') return;
+    this.newRecord = this.points > (this.app.bountyBest?.(this.map.id) ?? 0);
+    this.app.recordBounty?.(this.map.id, this.points); // recorde conta mesmo sem estrela
+    this.end(bountyStars(this.bountyRatio) > 0);
   }
 
   // Platina: a próxima onda começa assim que a anterior termina de entrar;
@@ -353,6 +399,10 @@ export class Game {
   }
 
   onRoundEnd(n) {
+    if (this.bounty) {
+      this.endBounty(); // estourou tudo antes do tempo
+      return;
+    }
     if (this.platinum) {
       // platina: o bônus da onda já veio quando ela começou (elas se acumulam)
       if (this.rounds.finished) this.winIn = WIN_DELAY;
@@ -388,7 +438,7 @@ export class Game {
   // uma parte do dinheiro que os vírus dela valem, proporcional ao que
   // ainda falta da rodada atual (com 1 vírus sobrando, é só $1)
   earlyBonus() {
-    if (this.platinum || !this.rounds.active || !this.canCall()) return 0;
+    if (this.platinum || this.bounty || !this.rounds.active || !this.canCall()) return 0;
     const roundValue = (r) => this.rounds.rounds[r].reduce((sum, g) => sum + g.count * worth(g.type), 0);
     const cur = this.rounds.done;
     const alive = (e) => !e.dead && e.round === cur;
@@ -402,7 +452,7 @@ export class Game {
   // Dá pra chamar a próxima com no máximo 1 rodada rolando
   // (a 3 só depois de acabar com os vírus da 1)
   canCall() {
-    if (this.platinum) return this.rounds.started === 0; // depois da 1ª, elas vêm sozinhas
+    if (this.platinum || this.bounty) return this.rounds.started === 0; // depois da 1ª, elas vêm sozinhas
     return this.rounds.canStart && this.rounds.started - this.rounds.done < 2;
   }
 

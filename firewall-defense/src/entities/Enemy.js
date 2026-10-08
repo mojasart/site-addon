@@ -238,6 +238,7 @@ export class Enemy {
     }
     game.money += this.def.reward ?? 1;
     game.stats.pops++;
+    game.bountyPop?.(this); // Bug Bounty: ponto e combo
     if (game.killsBy) game.killsBy[this.type] = (game.killsBy[this.type] ?? 0) + 1; // catálogo
     if (opts.source) {
       opts.source.pops++;

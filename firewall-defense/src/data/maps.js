@@ -20,6 +20,7 @@
 //    terrain/zones → terreno ('land'/'water'); defesas só vão na terra
 //    hazards  → zonas eletrificadas (Data Center)
 //    seed     → semente do caminho e da decoração
+//    bounty   → fase Bug Bounty (mapas 10, 20, 30 e 40: data/bounty.js)
 //
 //  A curva DIFF dá o ponto de partida; a pressão final de cada mapa vem
 //  de data/tuning.js, calibrada com bots (node tools/sim/calibrate.js)
@@ -127,14 +128,16 @@ function buildMaps() {
         const edges = { top: !mine(0, -1), left: floor(-1, 0), right: floor(1, 0), bottom: floor(0, 1) };
         return { ...h, period: 8, offset: (h.group * 8) / groups, edges };
       });
+      const bounty = (g + 1) % 10 === 0; // 10, 20, 30, 40: Bug Bounty
       maps.push({
         id: `${season.id}-${k + 1}`,
         season: s,
         number: k + 1,
-        name: `${season.name} ${k + 1}`,
+        bounty,
+        name: bounty ? 'Bug Bounty' : `${season.name} ${k + 1}`,
         difficulty: label(d),
         d,
-        desc: describe(gen, season),
+        desc: bounty ? 'estoure o máximo de vírus em 90 s' : describe(gen, season),
         theme: season.theme,
         rounds: Math.round(lerp(season.rounds[0], season.rounds[1], ks)),
         money: round5(lerp(DIFF.money[0], DIFF.money[1], d)),

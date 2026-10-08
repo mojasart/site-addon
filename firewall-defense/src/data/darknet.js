@@ -14,10 +14,12 @@
 // ─────────────────────────────────────────────────────────────
 export const DARKNET_STARS = 35;
 
-export const COFFEE = { star: 1, three: 2, platinum: 2, perKill: 0.25 / 1000 };
+export const COFFEE = { star: 1, three: 2, platinum: 2, perKill: 0.25 / 1000, bounty: [0, 1, 2, 3] };
 
 // Cafés que um mapa já deu, pelo recorde de estrelas e a platina
-export function mapCoffee(stars = 0, platinum = false) {
+// (Bug Bounty: 1, 2 ou 3 cafés pela faixa bronze, prata ou ouro)
+export function mapCoffee(stars = 0, platinum = false, bounty = false) {
+  if (bounty) return COFFEE.bounty[stars] ?? 0;
   const base = stars >= 3 ? COFFEE.three : stars >= 1 ? COFFEE.star : 0;
   return base + (platinum ? COFFEE.platinum : 0);
 }

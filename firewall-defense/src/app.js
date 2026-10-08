@@ -145,7 +145,7 @@ export class App {
   // Cafés ganhos até agora (pelo recorde de cada mapa: data/darknet.js)
   // (mais os dos monstros abatidos em todas as partidas)
   get coffeeEarned() {
-    const maps = MAPS.reduce((sum, m) => sum + mapCoffee(this.save.stars[m.id], this.hasPlatinum(m.id)), 0);
+    const maps = MAPS.reduce((sum, m) => sum + mapCoffee(this.save.stars[m.id], this.hasPlatinum(m.id), m.bounty), 0);
     return maps + (this.save.kills ?? 0) * COFFEE.perKill + (this.save.duckCoffee ?? 0);
   }
 
@@ -327,7 +327,7 @@ export class App {
 
   // Todos os mapas da season com a platina vencida?
   seasonPlatinum(s) {
-    return MAPS.slice(s * MAPS_PER_SEASON, (s + 1) * MAPS_PER_SEASON).every((m) => this.hasPlatinum(m.id));
+    return MAPS.slice(s * MAPS_PER_SEASON, (s + 1) * MAPS_PER_SEASON).every((m) => m.bounty || this.hasPlatinum(m.id)); // Bug Bounty não tem platina
   }
 
   // Modo platina liberado nesse mapa? (precisa das 3 estrelas)
@@ -341,8 +341,22 @@ export class App {
     writeSave(this.save);
   }
 
+  // O Bug Bounty não trava a progressão: o mapa depois dele abre junto com ele
   isUnlocked(i) {
-    return this.debug || i === 0 || (this.save.stars[MAPS[i - 1].id] ?? 0) > 0;
+    if (this.debug || i === 0) return true;
+    const prev = MAPS[i - 1];
+    return prev.bounty ? this.isUnlocked(i - 1) : (this.save.stars[prev.id] ?? 0) > 0;
+  }
+
+  // Recorde de pontos de um Bug Bounty
+  bountyBest(mapId) {
+    return this.save.bounty?.[mapId] ?? 0;
+  }
+
+  recordBounty(mapId, score) {
+    if (score <= this.bountyBest(mapId)) return;
+    this.save.bounty = { ...this.save.bounty, [mapId]: score };
+    writeSave(this.save);
   }
 
   recordStars(mapId, n) {

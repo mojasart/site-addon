@@ -373,8 +373,16 @@ export class LevelSelectScene {
     // bolinha de dificuldade à direita das estrelas:
     // pela % de bots que venceram; sem dados, a dificuldade do mapa
     const rate = BOT_WIN.normal[i];
-    diffDot(ctx, cx + 58, sy - 2, rate != null ? tierOf(rate).color : DIFF_COLOR[map.difficulty], 7);
+    if (!map.bounty) diffDot(ctx, cx + 58, sy - 2, rate != null ? tierOf(rate).color : DIFF_COLOR[map.difficulty], 7);
     stars(ctx, cx, sy, got, 9, 22, null, starTier(got, plat));
+    if (map.bounty) {
+      // selo de fase bônus em cima da miniatura (e o recorde de pontos)
+      rrect(ctx, c.x + c.w - 98, c.y + 10, 88, 22, 11);
+      fillOutline(ctx, '#ffd23f', 2);
+      text(ctx, 'BUG BOUNTY', c.x + c.w - 54, c.y + 21, { size: 12, color: OUTLINE, stroke: null });
+      const best = this.app.bountyBest?.(map.id) ?? 0;
+      if (best) text(ctx, `recorde ${best}`, cx, sy - 20, { size: 11, color: '#ffe07a' });
+    }
     if (!unlocked) {
       rrect(ctx, c.x, c.y, c.w, c.h, 16);
       ctx.fillStyle = 'rgba(15,22,48,0.72)';
@@ -480,6 +488,12 @@ export class LevelSelectScene {
     if (i < 0) return;
     const tile = this.layout().tiles[i - this.season * MAPS_PER_SEASON];
     if (!tile || !inRect(tile, x, y)) return;
+    // Bug Bounty não tem platina: entra direto
+    if (MAPS[i].bounty) {
+      if (this.app.isUnlocked(i)) this.launch(i, 'normal');
+      else this.app.sound.play('error');
+      return;
+    }
     this.app.sound.play('click');
     // sempre pergunta o modo (sem 3 estrelas, a platina aparece trancada)
     this.pick = i;
