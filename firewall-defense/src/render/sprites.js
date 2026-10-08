@@ -323,6 +323,28 @@ export const ICONS = {
     circle(ctx, 0, 0, s * 0.85);
     fillOutline(ctx, '#ffffff', 2.5);
   },
+  // loja de consumíveis (carrinho de compras)
+  shop(ctx, s = 12) {
+    if (svgIcon(ctx, 'shop', s)) return;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-s * 1.05, -s * 0.85);
+    ctx.lineTo(-s * 0.7, -s * 0.85);
+    ctx.lineTo(-s * 0.4, s * 0.35);
+    ctx.lineTo(s * 0.8, s * 0.35);
+    ctx.lineTo(s * 1.0, -s * 0.5);
+    ctx.lineTo(-s * 0.6, -s * 0.5);
+    for (const [w, c] of [[s * 0.42, OUTLINE], [s * 0.2, '#ffffff']]) {
+      ctx.lineWidth = w;
+      ctx.strokeStyle = c;
+      ctx.stroke();
+    }
+    for (const x of [-s * 0.25, s * 0.6]) {
+      circle(ctx, x, s * 0.8, s * 0.22);
+      fillOutline(ctx, '#ffffff', 2);
+    }
+  },
   // Dark Net (cebola roxa, como a do Tor)
   darknet(ctx, s = 12) {
     if (svgIcon(ctx, 'darknet', s)) return;

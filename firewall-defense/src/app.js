@@ -8,6 +8,8 @@ import { LevelSelectScene } from './scenes/LevelSelectScene.js';
 import { Game } from './game.js';
 import { CatalogScene } from './scenes/CatalogScene.js';
 import { DarkNetScene } from './scenes/DarkNetScene.js';
+import { ShopScene } from './scenes/ShopScene.js';
+import { ITEM } from './data/consumables.js';
 import { DARKNET_STARS, COFFEE, mapCoffee, NODE, TREE } from './data/darknet.js';
 
 // Controla as telas (título → mapas → jogo), a transição entre elas,
@@ -82,6 +84,33 @@ export class App {
 
   goDarkNet() {
     this.go(() => new DarkNetScene(this));
+  }
+
+  goShop() {
+    this.go(() => new ShopScene(this));
+  }
+
+  // Consumíveis no inventário (data/consumables.js): { id: quantidade }
+  get inventory() {
+    return (this.save.inventory ??= {});
+  }
+
+  // Compra 1 consumível com café (vai pro inventário)
+  buyConsumable(id) {
+    const item = ITEM[id];
+    if (!item || this.coffee < item.cost) return false;
+    this.save.coffeeSpent = (this.save.coffeeSpent ?? 0) + item.cost;
+    this.inventory[id] = (this.inventory[id] ?? 0) + 1;
+    writeSave(this.save);
+    return true;
+  }
+
+  // Gasta 1 consumível do inventário (usado na partida)
+  consumeItem(id) {
+    if (!(this.inventory[id] > 0)) return false;
+    this.inventory[id]--;
+    writeSave(this.save);
+    return true;
   }
 
   // Estrelas somadas de todos os mapas

@@ -597,6 +597,7 @@ export class Game {
 
   // Preço da defesa com os descontos da Dark Net (GPU de Segunda Mão)
   costOf(type) {
+    if (this.freeTower) return 0; // consumível Defesa Grátis: a próxima sai de graça
     return applyPerks({ ...TOWERS[type] }, type, this.app.perks).cost;
   }
 
@@ -605,6 +606,7 @@ export class Game {
     if (!this.canAfford(cost) || !this.canPlace(type, x, y)) return false;
     ({ x, y } = snapToTile(x, y)); // a defesa fica no centro do quadrado
     this.pay(cost);
+    this.freeTower = false; // (se era a grátis, já usou)
     const tower = new Tower(type, x, y, !this.rounds.active);
     tower.spent = cost; // vende pelo que pagou
     // bônus da Dark Net pra essa defesa (por cima dos status e dos upgrades)
