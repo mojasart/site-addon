@@ -3,7 +3,7 @@ import { MAPS, SEASONS, MAPS_PER_SEASON } from '../data/maps.js';
 import { ENEMIES } from '../data/enemies.js';
 import { renderThumb } from '../render/maps/index.js';
 import { rrect, fillOutline, text, button, setFont } from '../render/canvas.js';
-import { iconButton, inRect, stars, ribbon, bigButton, starTier } from '../render/widgets.js';
+import { iconButton, inRect, stars, ribbon, bigButton, starTier, volumeSlider, sliderValue } from '../render/widgets.js';
 import { drawVirusIcon } from '../render/viruses.js';
 import { ICONS } from '../render/sprites.js';
 import { BOT_WIN } from '../data/botStats.js';
@@ -267,13 +267,15 @@ export class LevelSelectScene {
     }
   }
 
-  // Opções da janela de configurações: [ícone, nome, ligado?, alternar]
+  // Opções da janela de configurações: [ícone, nome, valor, ação]. Música e
+  // efeitos são barras de volume (valor 0 a 1, ação = qual volume); o turno
+  // automático liga/desliga (valor = ligado?, ação = alternar)
   options() {
     const app = this.app;
     const auto = app.save.autoRound !== false;
     return [
-      ['music', 'MÚSICA', app.save.music, () => app.toggleMusic()],
-      ['sfx', 'EFEITOS SONOROS', app.save.sfx, () => app.toggleSfx()],
+      ['music', 'MÚSICA', app.save.musicVol, 'music'],
+      ['sfx', 'EFEITOS SONOROS', app.save.sfxVol, 'sfx'],
       ['auto', 'TURNO AUTOMÁTICO', auto, () => app.toggleAuto()],
     ];
   }
@@ -291,8 +293,12 @@ export class LevelSelectScene {
     fillOutline(ctx, '#34497f', 5);
     ribbon(ctx, W / 2, c.y + 4, 280, 'CONFIGURAÇÕES', '#5fb4ff', 24);
     iconButton(ctx, M.close, '#ff5a5a', 'close');
-    this.options().forEach(([icon, name, on], k) => {
+    this.options().forEach(([icon, name, on, act], k) => {
       const r = M.rows[k];
+      if (typeof act === 'string') {
+        volumeSlider(ctx, r, icon, on, name);
+        return;
+      }
       button(ctx, r, on ? '#3fd16b' : '#7d8fa8', { radius: 16, depth: 6 });
       const cy = r.y + (r.h - 6) / 2;
       ctx.save();
@@ -391,7 +397,12 @@ export class LevelSelectScene {
     if (this.settings) {
       const M = L.modal;
       const k = M.rows.findIndex((r) => inRect(r, x, y));
-      if (k >= 0) this.options()[k][3](); // (o toggle já toca o clique)
+      const act = k >= 0 ? this.options()[k][3] : null;
+      if (typeof act === 'string') {
+        // barra de volume: toca ou arrasta
+        this.volDrag = { kind: act, row: M.rows[k] };
+        this.app.setVolume(act, sliderValue(M.rows[k], x, true));
+      } else if (act) act(); // (o toggle já toca o clique)
       else if (inRect(M.close, x, y) || !inRect(M.card, x, y)) {
         this.settings = false;
         this.app.sound.play('click');
@@ -454,7 +465,16 @@ export class LevelSelectScene {
     });
   }
 
+  pointerMove(x) {
+    const d = this.volDrag;
+    if (d) this.app.setVolume(d.kind, sliderValue(d.row, x, true));
+  }
+
   pointerUp(x, y) {
+    if (this.volDrag) {
+      this.volDrag = null;
+      this.app.sound.play('click'); // dá pra ouvir o volume novo dos efeitos
+    }
     const i = this.pressed;
     this.pressed = -1;
     if (i < 0) return;

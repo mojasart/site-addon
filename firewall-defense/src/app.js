@@ -17,10 +17,15 @@ export class App {
     this.debug = false;
     this.save = loadSave();
     if (debug) this.enableDebug();
+    // saves antigos: música/efeitos desligados viram volume 0
+    if (this.save.music === false) this.save.musicVol = 0;
+    if (this.save.sfx === false) this.save.sfxVol = 0;
+    delete this.save.music;
+    delete this.save.sfx;
     if (mute) {
-      // ?mute: sem música nem efeitos (dá pra religar nos botões)
-      this.save.music = false;
-      this.save.sfx = false;
+      // ?mute: sem música nem efeitos (dá pra aumentar de novo no volume)
+      this.save.musicVol = 0;
+      this.save.sfxVol = 0;
     }
     this.sound = new Sound(this.save);
     this.viewW = MIN_VIEW_W;
@@ -223,9 +228,21 @@ export class App {
     }
   }
 
-  toggleMusic() {
-    this.sound.setMusic(!this.save.music);
+  // Volume da música ou dos efeitos (kind: 'music' | 'sfx'), de 0 (mudo) a 1,
+  // em passos de 5%
+  setVolume(kind, v) {
+    v = Math.round(Math.min(1, Math.max(0, v)) * 20) / 20;
+    const key = kind === 'music' ? 'musicVol' : 'sfxVol';
+    if (this.save[key] === v) return;
+    if (kind === 'music') this.sound.setMusicVol(v);
+    else this.sound.setSfxVol(v);
     writeSave(this.save);
+  }
+
+  // Botão de som da tela inicial: abaixa em degraus (100% → 50% → 0% → 100%)
+  stepVolume(kind) {
+    const v = this.save[kind === 'music' ? 'musicVol' : 'sfxVol'];
+    this.setVolume(kind, v > 0.5 ? 0.5 : v > 0 ? 0 : 1);
     this.sound.play('click');
   }
 
@@ -240,12 +257,6 @@ export class App {
   // Aba de informações da defesa (no jogo): aberta ou recolhida
   toggleInfo() {
     this.save.infoOpen = this.save.infoOpen === false;
-    writeSave(this.save);
-    this.sound.play('click');
-  }
-
-  toggleSfx() {
-    this.sound.setSfx(!this.save.sfx);
     writeSave(this.save);
     this.sound.play('click');
   }

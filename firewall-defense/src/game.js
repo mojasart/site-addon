@@ -15,7 +15,7 @@ import { Hazards } from './systems/Hazards.js';
 import { MapView } from './render/maps/index.js';
 import { TILE, tileOf, tileKey, inGrid, snapToTile } from './core/grid.js';
 import { layout, drawHud, drawPanel, drawRange, bossBarsBottom } from './render/ui.js';
-import { inRect } from './render/widgets.js';
+import { inRect, sliderValue } from './render/widgets.js';
 import { drawBanner, drawOverlay, overlayLayout } from './render/screens.js';
 import { drawInfoPanel, infoLayout } from './render/infoPanel.js';
 import { drawCharacter } from './render/characters.js';
@@ -834,9 +834,11 @@ export class Game {
       if (inRect(L.resume, sx, sy)) this.resume();
       else if (inRect(L.restart, sx, sy)) this.app.startMap(this.mapIndex, this.mode);
       else if (inRect(L.maps, sx, sy)) this.app.goMaps();
-      else if (inRect(L.music, sx, sy)) this.app.toggleMusic();
-      else if (inRect(L.sfx, sx, sy)) this.app.toggleSfx();
-      else if (inRect(L.auto, sx, sy)) this.app.toggleAuto();
+      else if (inRect(L.music, sx, sy) || inRect(L.sfx, sx, sy)) {
+        // barra de volume: toca ou arrasta
+        this.volDrag = inRect(L.music, sx, sy) ? 'music' : 'sfx';
+        this.app.setVolume(this.volDrag, sliderValue(L[this.volDrag], sx));
+      } else if (inRect(L.auto, sx, sy)) this.app.toggleAuto();
       return;
     }
     if (this.endDelay > 0) return;
@@ -901,12 +903,17 @@ export class Game {
 
   pointerMove(sx, sy, type = 'touch') {
     Object.assign(this.pointer, { x: sx, y: sy, type });
+    if (this.volDrag && this.state === 'paused') this.app.setVolume(this.volDrag, sliderValue(overlayLayout(this)[this.volDrag], sx));
     const d = this.drag;
     if (d && !d.moved && Math.hypot(sx - d.x, sy - d.y) > 10) d.moved = true;
   }
 
   pointerUp(sx, sy) {
     this.pointer.down = false;
+    if (this.volDrag) {
+      this.volDrag = null;
+      this.sound.play('click'); // dá pra ouvir o volume novo dos efeitos
+    }
     const d = this.drag;
     this.drag = null;
     if (!d || this.state !== 'playing') return;

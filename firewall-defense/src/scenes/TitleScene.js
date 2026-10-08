@@ -100,8 +100,12 @@ export class TitleScene {
     bigButton(ctx, L.play, '#3fd16b', 'JOGAR', { icon: 'play', size: 40, depth: 8 });
     ctx.restore();
     const s = this.app.save;
-    iconButton(ctx, L.music, s.music ? '#8a7dff' : '#7d8fa8', 'music', s.music);
-    iconButton(ctx, L.sfx, s.sfx ? '#8a7dff' : '#7d8fa8', 'sfx', s.sfx);
+    // volume em degraus: a % aparece embaixo quando não está no máximo
+    for (const [kind, key] of [['music', 'musicVol'], ['sfx', 'sfxVol']]) {
+      const v = s[key];
+      iconButton(ctx, L[kind], v > 0 ? '#8a7dff' : '#7d8fa8', kind, v > 0);
+      if (v < 1) text(ctx, `${Math.round(v * 100)}%`, L[kind].x + L[kind].w / 2, L[kind].y + L[kind].h + 10, { size: 13 });
+    }
   }
 
   // Fundo: as duas metades com raios girando devagar e o corte escuro no meio
@@ -178,8 +182,8 @@ export class TitleScene {
 
   pointerDown(x, y) {
     const L = this.layout();
-    if (inRect(L.music, x, y)) this.app.toggleMusic();
-    else if (inRect(L.sfx, x, y)) this.app.toggleSfx();
+    if (inRect(L.music, x, y)) this.app.stepVolume('music');
+    else if (inRect(L.sfx, x, y)) this.app.stepVolume('sfx');
     else if (inRect(L.play, x, y)) this.pressed = true;
     else if (this.wormHit(x, y)) {
       this.wormJump = 1;
