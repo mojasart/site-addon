@@ -140,9 +140,10 @@ export class DarkNetScene {
     return { x0, y0, x1, y1 };
   }
 
-  // Aparece na árvore? Os comprados e os vizinhos diretos deles (dá pra comprar)
-  visible(id) {
-    return this.state(id) !== 'locked';
+  // Aparece na árvore? Todos: os trancados ficam com cadeado e sem revelar
+  // o que fazem (nome e descrição escondidos no painel)
+  visible() {
+    return true;
   }
 
   // Onde o nó está agora: flutuando devagar em volta do lugar dele
@@ -352,9 +353,10 @@ export class DarkNetScene {
     }
     ctx.restore();
     if (st === 'locked') {
+      // cadeado no meio: ainda não dá pra ver o que é
       ctx.save();
-      ctx.translate(p.x + p.r * 0.55, p.y + p.r * 0.55);
-      ICONS.lock(ctx, 9);
+      ctx.translate(p.x, p.y);
+      ICONS.lock(ctx, p.r * 0.42);
       ctx.restore();
     }
     // selo embaixo: custo ou ✔
@@ -399,10 +401,12 @@ export class DarkNetScene {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = GREEN;
-    ctx.fillText(`> upgrade://${n.id}`, P.x + 18, P.y + 24);
+    // trancado: não revela o que o upgrade faz
+    const hidden = st === 'locked';
+    ctx.fillText(`> upgrade://${hidden ? '??????' : n.id}`, P.x + 18, P.y + 24);
 
-    text(ctx, n.name.toUpperCase(), P.x + 18, P.y + 60, { size: 24, color: '#ffffff', align: 'left' });
-    wrap(ctx, n.desc, P.x + 18, P.y + 98, P.w - 36, 17, '#e6d0ff');
+    text(ctx, hidden ? '??????' : n.name.toUpperCase(), P.x + 18, P.y + 60, { size: 24, color: hidden ? '#9a8bb5' : '#ffffff', align: 'left' });
+    wrap(ctx, hidden ? 'Upgrade bloqueado. Compre o anterior no ramo pra revelar o que ele faz.' : n.desc, P.x + 18, P.y + 98, P.w - 36, 17, hidden ? '#9a8bb5' : '#e6d0ff');
 
     // estado (trancado não diz nada: a árvore já mostra o caminho)
     ctx.font = `bold 13px ${MONO}`;
@@ -502,7 +506,6 @@ export class DarkNetScene {
     const L = this.layout();
     const w = this.toWorld(x, y);
     for (const n of TREE) {
-      if (!this.visible(n.id)) continue; // escondido: não dá pra tocar
       const p = this.at(L.nodes[n.id]);
       if (Math.hypot(w.x - p.x, w.y - p.y) <= p.r + 6 / this.cam.z) {
         this.sel = n.id;
