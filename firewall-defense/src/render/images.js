@@ -43,6 +43,7 @@ const NAMES = [
   'spyware',
   'adware',
   'duck',
+  'shop_cart',
   'server',
   'server_hurt',
   'coin',

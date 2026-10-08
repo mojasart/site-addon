@@ -325,6 +325,7 @@ export const ICONS = {
   },
   // loja de consumíveis (carrinho de compras)
   shop(ctx, s = 12) {
+    if (drawImage(ctx, 'shop_cart', s * 3.6)) return; // carrinho cheio (sprite)
     if (svgIcon(ctx, 'shop', s)) return;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
