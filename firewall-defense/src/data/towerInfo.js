@@ -25,7 +25,7 @@ export function statRows(s, { armor = false } = {}) {
   const rows = [];
   if (s.attack === 'farm') {
     rows.push(['RENDA', `${s.packetsPerRound} × $${s.packetValue} por rodada`]);
-    if (s.roundBonus) rows.push(['BÔNUS', `+$${s.roundBonus} por rodada`]);
+    if (s.goldenChance) rows.push(['DOURADOS', `${Math.round(s.goldenChance * 100)}% · $${s.goldenValue} cada`]);
     return rows;
   }
   if (s.attack === 'decoy') {

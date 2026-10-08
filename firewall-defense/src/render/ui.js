@@ -160,7 +160,7 @@ function towerInfo(tw, game) {
       return { title: 'TEMPO DA ISCA', big: `${Math.ceil(tw.timeLeft)}s`, sub: 'Gasta sozinha; vírus mordendo aceleram' };
     case 'farm':
       if (!game.canMine(tw)) return { sub: 'Fora da pilha de bitcoin: não minera. Coloque em cima de uma pilha!' };
-      return { sub: `Minera ${s.packetsPerRound} bitcoins de $${s.packetValue} por rodada${s.roundBonus ? ` e mais $${s.roundBonus} quando ela começa` : ''}` };
+      return { sub: `Minera ${s.packetsPerRound} bitcoins de $${s.packetValue} por rodada${s.goldenChance ? ` e ${Math.round(s.goldenChance * 100)}% dos vírus vêm dourados ($${s.goldenValue})` : ''}` };
     default:
       if (s.slow) return { sub: `Suporte: deixa os vírus lentos${s.vulnerable ? ' e eles levam dano dobrado' : ''}` };
       if (s.burn) return { sub: `Vírus pegam fogo: ${String(s.burn).replace('.', ',')} de dano/s por até ${s.burnTime}s (não acumula)` };

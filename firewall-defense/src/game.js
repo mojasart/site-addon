@@ -358,11 +358,7 @@ export class Game {
     if (!this.rounds.start()) return;
     if (this.rounds.started === 1) this.firstRoundAt = this.anim; // some o aviso das entradas
     this.nextIn = null;
-    for (const t of this.towers) {
-      t.onRoundStart();
-      // Minerador nível 3 (Fazenda de Mineração): um bitcoin a mais em toda rodada nova
-      if (t.stats.roundBonus && this.canMine(t)) this.spawnPacket(t.x, t.y - 10, t.stats.roundBonus);
-    }
+    for (const t of this.towers) t.onRoundStart();
     if (bonus > 0) {
       this.money += bonus;
       this.coinBump = 1;
@@ -447,6 +443,20 @@ export class Game {
   canMine(tower) {
     if (this.map.season >= COIN_SEASONS) return true;
     return !!coinTileAt(this.coinTiles, tower.x, tower.y);
+  }
+
+  // Toque de Midas (Minerador nível 3): cada vírus que entra na rodada tem a
+  // chance de vir dourado (cada Minerador minerando com o upgrade rola a sua).
+  // Destruído, solta uma moeda de goldenValue (Enemy.pop)
+  rollGolden(enemy) {
+    for (const t of this.towers) {
+      const s = t.stats;
+      if (!s.goldenChance || !this.canMine(t)) continue;
+      if (Math.random() < s.goldenChance) {
+        enemy.golden = s.goldenValue;
+        return;
+      }
+    }
   }
 
   spawnPacket(x, y, value) {

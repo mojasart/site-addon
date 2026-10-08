@@ -80,6 +80,7 @@ export class RoundManager {
       enemy.speedMul = this.mod.speed;
       enemy.scaleHp(q.hp ?? this.mod.hp);
       enemy.place();
+      game.rollGolden?.(enemy); // Toque de Midas: pode vir dourado
       game.spawnEnemy(enemy);
       this.pending[q.round]--;
     }
