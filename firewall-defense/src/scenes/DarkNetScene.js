@@ -39,7 +39,7 @@ const BRANCH_ORDER = ['hacker', 'firewall', 'pinguim', 'scanner', 'minerador', '
 const ZOOM_MIN = 0.45;
 const ZOOM_MAX = 2.4;
 const ROAM = 450; // quanto dá pra passear além da borda da árvore
-const DUCK_AWAY = { x: 300, y: 250 }; // Pato de Borracha: longe da árvore, pra cima e pra esquerda (dentro do ROAM)
+const DUCK_AWAY = { x: 420, y: 400 }; // Pato de Borracha: quase no limite do ROAM, pra cima e pra esquerda
 const DRAG_SLOP = 8; // até quantos px um toque ainda é toque (e não arrasto)
 const DOT_GAP = 48; // pontinhos do chão, pra sentir o movimento
 
@@ -328,14 +328,17 @@ export class DarkNetScene {
 
   drawNode(ctx, n, p, t) {
     const st = this.state(n.id);
+    // Pato de Borracha ainda não comprado: apagado, com cara de indisponível
+    const ghost = n.id === 'duck' && st !== 'owned';
     const selected = this.sel === n.id;
     const canBuy = this.app.canBuyPerk(n.id);
     const pulse = canBuy ? 0.5 + Math.sin(t * 4) * 0.5 : 0;
     ctx.save();
+    if (ghost) ctx.globalAlpha = this.sel === 'duck' ? 0.6 : 0.35;
     // anel: verde comprado, roxo aberto (pulsando se dá pra comprar), cinza trancado
-    const ring = st === 'owned' ? GREEN : st === 'open' ? PURPLE : '#4a3f63';
+    const ring = st === 'owned' ? GREEN : st === 'open' && !ghost ? PURPLE : '#4a3f63';
     ctx.shadowColor = ring;
-    ctx.shadowBlur = (st === 'locked' ? 0 : 14 + pulse * 10 + (this.flash[n.id] ?? 0) * 30) * this.app.pixelScale * this.cam.z;
+    ctx.shadowBlur = (st === 'locked' || ghost ? 0 : 14 + pulse * 10 + (this.flash[n.id] ?? 0) * 30) * this.app.pixelScale * this.cam.z;
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
     ctx.fillStyle = st === 'owned' ? '#0f2a1f' : '#170a2c';
@@ -352,7 +355,7 @@ export class DarkNetScene {
     if (st === 'locked') ctx.globalAlpha = 0.35;
     if (n.id === 'duck') {
       ctx.translate(p.x - 2, p.y + p.r * 0.32);
-      drawDuck(ctx, p.r * 0.45, { t });
+      drawDuck(ctx, p.r * 0.45, { t, gray: ghost });
     } else if (n.tower) {
       const k = (p.r * 1.7) / 62;
       ctx.translate(p.x, p.y + 16 * k);

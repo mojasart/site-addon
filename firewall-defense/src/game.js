@@ -4,7 +4,7 @@ import { ROUNDS } from './data/rounds.js';
 import { PLAT_TIME, PLAT_LIVES, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
 import { worth } from './data/enemies.js';
 import { TOWERS, TARGET_MODES } from './data/towers.js';
-import { applyPerks, ROOT_MONEY, DUCK } from './data/darknet.js';
+import { applyPerks, ROOT_MONEY, DUCK, INTEREST, LOAN } from './data/darknet.js';
 import { fitsTerrain } from './core/terrain.js';
 import { Tower } from './entities/Tower.js';
 import { Projectile } from './entities/Projectile.js';
@@ -386,6 +386,13 @@ export class Game {
       this.money += bonus;
       this.coinBump = 1;
     }
+    // Juros (Dark Net): rende uma parte do dinheiro guardado
+    const interest = this.app.perks?.minerador4 && this.money > 0 ? Math.min(INTEREST.max, Math.floor(this.money * INTEREST.rate)) : 0;
+    if (interest > 0) {
+      this.money += interest;
+      this.coinBump = 1;
+    }
+    const juros = interest > 0 ? `Juros: +$${interest}` : null;
     if (this.platinum) {
       // a partir da 2ª onda, o bônus de rodada vem no começo de cada uma
       const wave = this.rounds.started;
@@ -394,9 +401,9 @@ export class Game {
         this.money += pay;
         this.coinBump = 1;
       }
-      this.showBanner(`ONDA ${wave}`, 0.9, '#bdeeff', 36, pay ? `+$${pay}` : null);
+      this.showBanner(`ONDA ${wave}`, 0.9, '#bdeeff', 36, [pay ? `+$${pay}` : null, juros].filter(Boolean).join(' · ') || null);
     }
-    else this.showBanner(`RODADA ${this.rounds.started}`, 1.1, '#ffffff', 46, bonus > 0 ? `Chamou antes: +$${bonus}` : null);
+    else this.showBanner(`RODADA ${this.rounds.started}`, 1.1, '#ffffff', 46, [bonus > 0 ? `Chamou antes: +$${bonus}` : null, juros].filter(Boolean).join(' · ') || null);
     this.sound.play('round');
   }
 
@@ -506,6 +513,19 @@ export class Game {
     return this.towers.every((t) => tileKey(...tileOf(t.x, t.y)) !== k);
   }
 
+  // Dá pra pagar? Com o Empréstimo (Dark Net), 1 vez por rodada o dinheiro
+  // pode ficar até LOAN no negativo
+  canAfford(cost) {
+    if (this.money >= cost) return true;
+    return !!this.app.perks?.minerador4b && this.loanRound !== this.rounds.started && this.money - cost >= -LOAN;
+  }
+
+  // Paga (usando o empréstimo da rodada se faltar dinheiro)
+  pay(cost) {
+    if (this.money < cost) this.loanRound = this.rounds.started;
+    this.money -= cost;
+  }
+
   // Preço da defesa com os descontos da Dark Net (GPU de Segunda Mão)
   costOf(type) {
     return applyPerks({ ...TOWERS[type] }, type, this.app.perks).cost;
@@ -513,9 +533,9 @@ export class Game {
 
   place(type, x, y) {
     const cost = this.costOf(type);
-    if (this.money < cost || !this.canPlace(type, x, y)) return false;
+    if (!this.canAfford(cost) || !this.canPlace(type, x, y)) return false;
     ({ x, y } = snapToTile(x, y)); // a defesa fica no centro do quadrado
-    this.money -= cost;
+    this.pay(cost);
     const tower = new Tower(type, x, y, !this.rounds.active);
     tower.spent = cost; // vende pelo que pagou
     // bônus da Dark Net pra essa defesa (por cima dos status e dos upgrades)
@@ -540,12 +560,12 @@ export class Game {
   buyUpgrade(tower) {
     const up = tower.nextUpgrade;
     if (!up) return;
-    if (this.money < up.cost) {
+    if (!this.canAfford(up.cost)) {
       this.fx.text(tower.x, tower.y - 50, 'Sem dinheiro!', '#ff7a8a', 18);
       this.sound.play('error');
       return;
     }
-    this.money -= up.cost;
+    this.pay(up.cost);
     tower.upgrade();
     this.fx.burst(tower.x, tower.y - 10, '#ffd23f', 22, 190, 0.55, 5, true);
     this.sound.play('upgrade');
@@ -587,12 +607,12 @@ export class Game {
   // Paga o resgate de uma defesa criptografada: ela volta a funcionar
   payRansom(tower) {
     if (!tower.ransom) return false;
-    if (this.money < tower.ransom) {
+    if (!this.canAfford(tower.ransom)) {
       this.fx.text(tower.x, tower.y - 50, 'Sem dinheiro!', '#ff7a8a', 16);
       this.sound.play('error');
       return false;
     }
-    this.money -= tower.ransom;
+    this.pay(tower.ransom);
     tower.ransom = 0;
     tower.spawnAnim = 1;
     this.fx.burst(tower.x, tower.y - 20, '#ffd23f', 14, 160, 0.5, 4, true);
@@ -698,7 +718,7 @@ export class Game {
         return;
       }
       const toggleOff = this.placing === tile.type;
-      if (!toggleOff && this.money < this.costOf(tile.type)) {
+      if (!toggleOff && !this.canAfford(this.costOf(tile.type))) {
         this.fx.text(tile.x + tile.w / 2 - this.offsetX, tile.y + 30, 'Sem dinheiro!', '#ff7a8a', 16);
         this.sound.play('error');
         // mesmo sem dinheiro dá pra ver os atributos na aba de informações
@@ -825,13 +845,15 @@ export class Game {
       drawProjectile(ctx, p, t);
       ctx.restore();
     }
+    // dinamites do Minerador no ar (arco)
+    for (const tw of this.towers) for (const b of tw.bombs ?? []) drawDynamite(ctx, b, t);
 
     this.fx.draw(ctx);
 
     const g = this.ghost();
     if (g) {
       const def = TOWERS[this.placing];
-      const valid = this.canPlace(this.placing, g.x, g.y) && this.money >= this.costOf(this.placing);
+      const valid = this.canPlace(this.placing, g.x, g.y) && this.canAfford(this.costOf(this.placing));
       drawTileMark(ctx, g.x, g.y, valid);
       if (Number.isFinite(def.range) && def.range > 0) drawRange(ctx, g.x, g.y, def.range, valid);
       else drawRange(ctx, g.x, g.y, def.radius + 8, valid);
@@ -986,4 +1008,27 @@ function drawVulnerable(ctx, e, t) {
   circle(ctx, x, y, 10);
   fillOutline(ctx, '#3ec5ff', 2.5);
   text(ctx, 'x2', x, y + 1, { size: 12 });
+}
+
+// Dinamite voando em arco (b.t de 0 a 1), girando, com a faísca no pavio
+function drawDynamite(ctx, b, t) {
+  const x = b.x0 + (b.x1 - b.x0) * b.t;
+  const y = b.y0 + (b.y1 - b.y0) * b.t - Math.sin(b.t * Math.PI) * 70;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(b.t * 9);
+  rrect(ctx, -4, -9, 8, 18, 3);
+  fillOutline(ctx, '#e8413c', 2);
+  ctx.fillStyle = '#fbe3c4';
+  ctx.fillRect(-4, -2, 8, 3);
+  ctx.beginPath();
+  ctx.moveTo(0, -9);
+  ctx.quadraticCurveTo(4, -13, 2, -16);
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = '#3a2a1a';
+  ctx.stroke();
+  circle(ctx, 2, -16, 2.5 + Math.sin(t * 40) * 1);
+  ctx.fillStyle = '#ffd23f';
+  ctx.fill();
+  ctx.restore();
 }

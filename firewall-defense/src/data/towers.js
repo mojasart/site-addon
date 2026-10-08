@@ -113,8 +113,10 @@ export const TOWERS = {
     packetInterval: 3.5,
     upgrades: [
       { name: 'GPU Extra', desc: '6 bitcoins por rodada', cost: 500, apply: (s) => { s.packetsPerRound = 6; } },
-      // cada vírus que entra numa rodada tem goldenChance de vir dourado: destruído, solta goldenValue
-      { name: 'Toque de Midas', desc: 'Chance de 5% dos vírus virem dourados', cost: 900, apply: (s) => { s.goldenChance = 0.05; s.goldenValue = 100; } },
+      // nas rodadas, a cada `every` s joga uma dinamite no vírus mais adiantado
+      // a até `range`: explode em área (`radius`) tirando `damage` (fura blindagem)
+      { name: 'Dinamite', desc: 'A cada 6s joga uma dinamite que explode em área e tira 2 de vida (fura blindagem)', cost: 900,
+        apply: (s) => { s.dynamite = { every: 6, range: 140, radius: 50, damage: 2 }; } },
     ],
   },
   honeypot: {

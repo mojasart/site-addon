@@ -39,6 +39,8 @@ export function formatCoffee(v) {
 // e Enemy.js. Os bônus valem POR CIMA dos upgrades da fase (Tower.refresh),
 // então upgrade que troca um valor (s.slow = 0.3) não apaga o bônus.
 export const ROOT_MONEY = 75; // Acesso Root: dinheiro a mais no começo de cada fase
+export const INTEREST = { rate: 0.05, max: 150 }; // Juros: % do dinheiro guardado no começo de cada rodada
+export const LOAN = 250; // Empréstimo: até quanto o dinheiro pode ficar negativo (1 vez por rodada)
 
 export const TREE = [
   { id: 'root', name: 'Acesso Root', desc: `Toda fase começa com +$${ROOT_MONEY}`, cost: 3, parent: null },
@@ -126,6 +128,14 @@ export const TREE = [
     apply: (s) => { s.doubleChance = (s.doubleChance ?? 0) + 0.04; } },
   { id: 'minerador3c', tower: 'minerador', name: 'Hash da Sorte', desc: '+2% de chance de bloco raro', cost: 12, parent: 'minerador3b',
     apply: (s) => { s.goldChance = (s.goldChance ?? 0) + 0.02; } },
+  // C: dinheiro (Juros e Empréstimo valem pra partida toda, não só pro Minerador; ver game.js)
+  { id: 'minerador4', tower: 'minerador', name: 'Juros', desc: `No começo de cada rodada rende ${INTEREST.rate * 100}% do dinheiro guardado (máximo $${INTEREST.max})`, cost: 10, parent: 'minerador',
+    apply: () => {} },
+  { id: 'minerador4b', tower: 'minerador', name: 'Empréstimo', desc: `Uma vez por rodada dá pra comprar ficando até $${LOAN} no negativo`, cost: 12, parent: 'minerador4',
+    apply: () => {} },
+  // cada vírus que entra numa rodada tem goldenChance de vir dourado: destruído, solta goldenValue (game.rollGolden)
+  { id: 'minerador4c', tower: 'minerador', name: 'Toque de Midas', desc: '5% dos vírus vêm dourados e, destruídos, soltam $100', cost: 15, parent: 'minerador4b',
+    apply: (s) => { s.goldenChance = (s.goldenChance ?? 0) + 0.05; s.goldenValue = 100; } },
 
   // Honeypot — A: resistência · B: armadilha
   { id: 'honeypot2', tower: 'honeypot', name: 'Pote Reforçado', desc: '+20% de vida', cost: 8, parent: 'honeypot',

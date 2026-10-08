@@ -26,6 +26,7 @@ export function statRows(s, { armor = false } = {}) {
   if (s.attack === 'farm') {
     rows.push(['RENDA', `${s.packetsPerRound} × $${s.packetValue} por rodada`]);
     if (s.goldenChance) rows.push(['DOURADOS', `${Math.round(s.goldenChance * 100)}% · $${s.goldenValue} cada`]);
+    if (s.dynamite) rows.push(['DINAMITE', `${s.dynamite.damage} de dano em área a cada ${num(s.dynamite.every)}s`]);
     return [...rows, ...luckRows(s)];
   }
   if (s.attack === 'decoy') {

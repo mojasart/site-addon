@@ -7,6 +7,8 @@ import { applyPerks } from '../data/darknet.js';
 const SWARM_R = 70; // alcance das abelhas da Colmeia
 const RECHARGE = 0.3; // recarga instantânea (Avalanche, Varredura Dupla): dispara de novo nesse tempo
 
+const DYNAMITE_FLIGHT = 0.6; // segundos no ar até explodir
+
 export class Tower {
   // fresh: comprada antes de a rodada começar → vende pelo preço cheio
   constructor(type, x, y, fresh = false) {
@@ -160,6 +162,7 @@ export class Tower {
 
   update(dt, game) {
     const s = this.stats;
+    this.updateBombs(dt, game);
     this.anim += dt;
     this.cooldown = Math.max(0, this.cooldown - dt);
     this.attack = Math.max(0, this.attack - dt * 4);
@@ -262,6 +265,7 @@ export class Tower {
         // a isca não ataca: quem faz tudo são os vírus mordendo (bite)
         break;
       case 'farm': {
+        if (s.dynamite && game.rounds.active) this.throwDynamite(dt, game);
         if (!game.rounds.active || this.dropped >= s.packetsPerRound || !game.canMine(this)) break;
         this.dropTimer -= dt;
         if (this.dropTimer <= 0) {
@@ -273,6 +277,43 @@ export class Tower {
         break;
       }
     }
+  }
+
+  // Dinamite (2º upgrade do Minerador): mira onde o vírus mais adiantado vai
+  // estar quando ela cair; explode em área e fura blindagem
+  throwDynamite(dt, game) {
+    const d = this.stats.dynamite;
+    this.dynCd = (this.dynCd ?? 1) - dt;
+    if (this.dynCd > 0) return;
+    const target = game.enemiesInRange(this.x, this.y, d.range)[0];
+    if (!target) {
+      this.dynCd = 0.3;
+      return;
+    }
+    const p = target.route.pointAt(target.dist + target.speed * DYNAMITE_FLIGHT);
+    this.bombs ??= [];
+    this.bombs.push({ x0: this.x, y0: this.y - 22, x1: p.x, y1: p.y, t: 0 });
+    this.dynCd = d.every;
+    this.attack = 1;
+    this.lookAt(p.x);
+    game.sound.play('throw');
+  }
+
+  // Dinamites no ar: andam em arco e explodem ao cair
+  updateBombs(dt, game) {
+    if (!this.bombs?.length) return;
+    const d = this.stats.dynamite;
+    for (const b of this.bombs) {
+      b.t += dt / DYNAMITE_FLIGHT;
+      if (b.t < 1) continue;
+      for (const e of game.enemiesInRange(b.x1, b.y1, d.radius)) e.takeDamage(d.damage, game, { armored: true, source: this });
+      game.fx.ring(b.x1, b.y1, d.radius, 'fire');
+      game.fx.burst(b.x1, b.y1, '#ff9a2e', 18, 220, 0.45, 5, true);
+      game.fx.burst(b.x1, b.y1, '#4a3f3a', 10, 160, 0.6, 6, true);
+      game.sound.play('fire');
+      game.shake(3);
+    }
+    this.bombs = this.bombs.filter((b) => b.t < 1);
   }
 
   fire() {

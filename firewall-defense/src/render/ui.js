@@ -47,7 +47,8 @@ export function drawHud(ctx, game) {
   ctx.scale(bump, bump);
   drawCoin(ctx, 16.5); // do tamanho do coração de cima
   ctx.restore();
-  text(ctx, `$${game.money}`, 54, 73, { size: 28 + game.coinBump * 4, color: GOLD, align: 'left' });
+  // negativo (Empréstimo da Dark Net) fica vermelho: -$120
+  text(ctx, game.money < 0 ? `-$${-game.money}` : `$${game.money}`, 54, 73, { size: 28 + game.coinBump * 4, color: game.money < 0 ? '#ff7a8a' : GOLD, align: 'left' });
 
   const r = game.rounds;
   if (game.platinum) {
@@ -134,7 +135,7 @@ function drawShop(ctx, game, L) {
     const def = TOWERS[tile.type];
     const placing = shown === tile.type;
     const cost = game.costOf(tile.type);
-    const affordable = game.money >= cost;
+    const affordable = game.canAfford(cost);
     button(ctx, tile, placing ? '#ffcf4a' : '#2fc8ff', { radius: 14, depth: 5 });
     drawCyberScreen(ctx, tile, game.anim, placing, TOWER_ORDER.indexOf(tile.type));
     ctx.save();
@@ -231,7 +232,7 @@ function drawTowerInfo(ctx, game, L) {
 
 // Defesa criptografada pelo Ransomware: um botão grande pra pagar o resgate
 function drawRansom(ctx, game, tw, r) {
-  const can = game.money >= tw.ransom;
+  const can = game.canAfford(tw.ransom);
   button(ctx, r, can ? '#2fbf6a' : '#5d6680', { radius: 14, depth: 5 });
   const cx = r.x + r.w / 2;
   ctx.save();
@@ -246,7 +247,7 @@ function drawRansom(ctx, game, tw, r) {
 function drawUpgrade(ctx, game, tw, up, i, r) {
   const bought = tw.level > i;
   const next = tw.level === i;
-  const affordable = game.money >= up.cost;
+  const affordable = game.canAfford(up.cost);
   const face = bought ? '#ffcf4a' : next && affordable ? '#3fd16b' : '#7d8fa8';
   button(ctx, r, face, { radius: 14, depth: 5 });
   text(ctx, up.name, r.x + r.w / 2, r.y + 17, { size: up.name.length > 16 ? 14 : 16 });
