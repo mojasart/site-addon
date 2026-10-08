@@ -42,12 +42,12 @@ export const adSize = (s) => ({ w: W * s, h: H * s });
 // crypt: o criptografado (aparece com a chance `crypt` do Adware, não no sorteio comum)
 export const ADS = [
   { bar: '#8a5530', title: 'PROMOÇÃO', head: 'CAFÉ EXPRESSO: LEVE 2, PAGUE 3!', sub: 'Só hoje no Cafezinho do Hacker', cta: 'QUERO!', icon: 'coffee' },
-  { bar: '#ff9a2e', title: 'PARABÉNS!!!', head: 'VOCÊ É O VISITANTE 1.000.000', sub: 'Resgate seu iPhone 3G agora', cta: 'RESGATAR', icon: 'star' },
-  { bar: '#3f8cff', title: 'PC LENTO?', head: 'BAIXE MAIS MEMÓRIA RAM', sub: '16 GB grátis, é só clicar aqui', cta: 'BAIXAR', icon: 'ram' },
-  { bar: '#ff4d5e', title: 'ALERTA!!!', head: 'SEU PC TEM 37 VÍRUS', sub: 'Limpe agora (instala só mais 38)', cta: 'LIMPAR', icon: 'virus' },
+  { bar: '#ff9a2e', title: 'PARABÉNS!!!', head: 'VOCÊ É O VISITANTE 1.000.000', sub: 'Resgate seu iPhone 19 agora', cta: 'RESGATAR', icon: 'star' },
+  { bar: '#3f8cff', title: 'PC LENTO?', head: 'BAIXE MAIS MEMÓRIA RAM', sub: '16 GB grátis, clique aqui!', cta: 'BAIXAR', icon: 'ram' },
+  { bar: '#ff4d5e', title: 'ALERTA!!!', head: 'SEU PC TEM 37 VÍRUS', sub: 'Limpe agora', cta: 'LIMPAR', icon: 'virus' },
   { bar: '#ff6fd0', title: 'ENCONTROS', head: 'VÍRUS SOLTEIROS NA SUA REDE', sub: 'A 2 metros do seu servidor', cta: 'CONHECER', icon: 'heart' },
-  { bar: '#2fbf6a', title: 'RENDA EXTRA', head: 'GANHE BITCOIN DORMINDO', sub: 'Mineradores odeiam esse truque', cta: 'COMEÇAR', icon: 'coin' },
-  { bar: '#8a7dff', title: 'CURSO ONLINE', head: 'VIRE HACKER EM 7 DIAS', sub: 'Aula 1: como arremessar teclados', cta: 'MATRICULAR', icon: 'keyboard' },
+  { bar: '#2fbf6a', title: 'RENDA EXTRA', head: 'GANHE BITCOIN DORMINDO', sub: 'Ficar rico é fácil e rápido', cta: 'COMEÇAR', icon: 'coin' },
+  { bar: '#8a7dff', title: 'CURSO ONLINE', head: 'VIRE HACKER EM 7 DIAS', sub: 'Aula 1: RCE no WordPress', cta: 'MATRICULAR', icon: 'keyboard' },
   { bar: '#7a3cc4', title: 'CRIPTOGRAFADO', head: '', sub: 'Pague 0,5 BTC pra fechar', cta: 'DESCRIPTOGRAFAR', icon: 'lock', crypt: true },
 ];
 export const CRYPT_AD = ADS.findIndex((a) => a.crypt);
