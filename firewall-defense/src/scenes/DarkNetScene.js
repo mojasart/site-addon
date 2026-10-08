@@ -39,6 +39,7 @@ const BRANCH_ORDER = ['hacker', 'firewall', 'pinguim', 'scanner', 'minerador', '
 const ZOOM_MIN = 0.45;
 const ZOOM_MAX = 2.4;
 const ROAM = 450; // quanto dá pra passear além da borda da árvore
+const DUCK_AWAY = { x: 300, y: 250 }; // Pato de Borracha: longe da árvore, pra cima e pra esquerda (dentro do ROAM)
 const DRAG_SLOP = 8; // até quantos px um toque ainda é toque (e não arrasto)
 const DOT_GAP = 48; // pontinhos do chão, pra sentir o movimento
 
@@ -64,7 +65,6 @@ export class DarkNetScene {
     const zy = VIEW_H - 64;
     return {
       back: { x: 18, y: 16, w: 56, h: 56 },
-      secret: { x: 46, y: 118, r: 28 }, // Pato de Borracha: fixo na tela, colado na esquerda embaixo do voltar
       panel,
       buy: { x: panel.x + 24, y: panel.y + panel.h - 74, w: panel.w - 48, h: 54 },
       zoomIn: { x: 18, y: zy, w: 46, h: 46, label: '+' },
@@ -99,6 +99,12 @@ export class DarkNetScene {
       const d = rr(STEP[0], STEP[1]);
       nodes[n.id] = { x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d, r: 28, a, ph: rr(0, Math.PI * 2) };
     }
+    // Pato de Borracha (upgrade secreto): solto no mundo, longe dos outros
+    // upgrades; fica fora do enquadramento inicial (bounds só olha a TREE)
+    const ids = Object.keys(nodes);
+    const minX = Math.min(...ids.map((id) => nodes[id].x));
+    const minY = Math.min(...ids.map((id) => nodes[id].y));
+    nodes.duck = { x: minX - DUCK_AWAY.x, y: minY - DUCK_AWAY.y, r: 28, a: 0, ph: 1.7 };
     this.nodes = nodes;
     return nodes;
   }
@@ -233,6 +239,7 @@ export class DarkNetScene {
     this.drawDots(ctx, W);
     this.drawLinks(ctx, L, t);
     for (const n of TREE) if (this.visible(n.id)) this.drawNode(ctx, n, this.at(L.nodes[n.id], t), t);
+    this.drawNode(ctx, NODE.duck, this.at(L.nodes.duck, t), t);
     ctx.restore();
 
     // por cima: faixa escura atrás do título, título, painel e botões
@@ -245,7 +252,6 @@ export class DarkNetScene {
     this.drawCoffee(ctx, W / 2, 92);
     this.drawPanel(ctx, L);
     iconButton(ctx, L.back, '#5fb4ff', 'back');
-    this.drawSecret(ctx, L.secret, t);
     for (const b of [L.zoomIn, L.zoomOut, L.center]) this.drawZoomButton(ctx, b);
   }
 
@@ -389,12 +395,6 @@ export class DarkNetScene {
     ctx.restore();
   }
 
-  // Pato de Borracha: nó normal (mesmo visual dos outros), mas fixo na tela
-  // e fora da árvore
-  drawSecret(ctx, p, t) {
-    this.drawNode(ctx, NODE.duck, p, t);
-  }
-
   // Terminal com o upgrade escolhido e o botão de comprar
   drawPanel(ctx, L) {
     const n = NODE[this.sel];
@@ -493,11 +493,6 @@ export class DarkNetScene {
       this.app.sound.play('click');
       return;
     }
-    if (Math.hypot(x - L.secret.x, y - L.secret.y) <= L.secret.r + 6) {
-      this.sel = 'duck';
-      this.app.sound.play('click');
-      return;
-    }
     if (inRect(L.panel, x, y)) return;
     // começa um arrasto; se soltar sem mexer, vira toque no nó
     this.homing = false;
@@ -522,7 +517,7 @@ export class DarkNetScene {
     if (!d || d.moved || pinched) return;
     const L = this.layout();
     const w = this.toWorld(x, y);
-    for (const n of TREE) {
+    for (const n of [...TREE, NODE.duck]) {
       const p = this.at(L.nodes[n.id]);
       if (Math.hypot(w.x - p.x, w.y - p.y) <= p.r + 6 / this.cam.z) {
         this.sel = n.id;
