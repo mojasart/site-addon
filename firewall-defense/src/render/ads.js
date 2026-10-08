@@ -1,6 +1,5 @@
 import { VIEW_H, OUTLINE, GOLD } from '../config.js';
 import { rrect, fillOutline, text, button, circle } from './canvas.js';
-import { iconButton } from './widgets.js';
 import { drawCoin, drawHeart, ICONS } from './sprites.js';
 import { drawImage } from './images.js';
 import { drawVirusIcon } from './viruses.js';
@@ -26,11 +25,14 @@ import { easeOutBack } from '../util.js';
 const W = 250; // medidas do desenho (antes da escala)
 const H = 158;
 const BAR = 34; // barra de título (com o X)
-const CLOSE = 30; // lado do X
+const CLOSE = 26; // lado do X
+const CLOSE_DEPTH = 2; // "altura" do botão do X (sombra curta embaixo)
+// y do X na barra do título: a face do botão (sem a sombra) fica no meio da barra
+const BAR_X_Y = (BAR + 2) / 2 - (CLOSE - CLOSE_DEPTH) / 2;
 
-// Escala do anúncio: ~70% da altura da tela, sem passar de ~66% da largura
+// Escala do anúncio: ~74% da altura da tela, sem passar de ~69% da largura
 export function adScale(viewW) {
-  return Math.min((VIEW_H * 0.7) / H, (viewW * 0.66) / W);
+  return Math.min((VIEW_H * 0.735) / H, (viewW * 0.693) / W);
 }
 
 // Tamanho do anúncio na tela
@@ -53,9 +55,9 @@ export const CRYPT_AD = ADS.findIndex((a) => a.crypt);
 // Lugares do X na borda do anúncio (medidas do desenho). O normal fica no
 // canto de cima à direita; o criptografado pula entre eles
 export const CLOSE_SPOTS = [
-  [W - CLOSE - 4, 3],
-  [4, 3],
-  [W / 2 - CLOSE / 2, 3],
+  [W - CLOSE - 8, BAR_X_Y], // à direita, no meio da barra do título
+  [8, BAR_X_Y],
+  [W / 2 - CLOSE / 2, BAR_X_Y],
   [W - CLOSE - 4, H - CLOSE - 4],
   [4, H - CLOSE - 4],
   [W / 2 - CLOSE / 2, H - CLOSE - 4],
@@ -128,13 +130,19 @@ function drawBody(ctx, def, ad, t) {
   ctx.fillStyle = def.bar;
   ctx.fillRect(0, 0, W, BAR + 2);
   ctx.restore();
+  // divisa bem marcada entre a barra do título e o corpo do anúncio
+  ctx.beginPath();
+  ctx.moveTo(0, BAR + 2);
+  ctx.lineTo(W, BAR + 2);
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = def.crypt ? '#3dff9a' : OUTLINE;
+  ctx.stroke();
   rrect(ctx, 0, 0, W, H, 16);
   ctx.lineWidth = 4;
-  ctx.strokeStyle = def.crypt ? '#3dff9a' : OUTLINE;
   ctx.stroke();
   const title = def.crypt && Math.sin(t * 3 + ad.seed) > 0.3 ? cipher(ad.seed, 13, t) : def.title;
   text(ctx, title, 14, BAR / 2 + 2, { size: 15, align: 'left' });
-  if (ad.vx) text(ctx, 'AD', W - 52, BAR / 2 + 2, { size: 11, color: GOLD }); // os que andam
+  if (ad.vx) text(ctx, 'AD', W - CLOSE - 24, BAR / 2 + 2, { size: 11, color: GOLD }); // os que andam
 
   // desenho à esquerda, chamada e texto à direita
   ctx.save();
@@ -159,7 +167,11 @@ function drawBody(ctx, def, ad, t) {
   text(ctx, def.cta, b.x + b.w / 2, b.y + 12, { size: def.cta.length > 12 ? 11 : 13 });
   // X por último (no criptografado ele pode estar em cima do botão)
   const [xx, xy] = CLOSE_SPOTS[ad.closeAt ?? 0];
-  iconButton(ctx, { x: xx, y: xy, w: CLOSE, h: CLOSE }, '#ff5a5a', 'close');
+  button(ctx, { x: xx, y: xy, w: CLOSE, h: CLOSE }, '#ff5a5a', { radius: 8, depth: CLOSE_DEPTH });
+  ctx.save();
+  ctx.translate(xx + CLOSE / 2, xy + (CLOSE - CLOSE_DEPTH) / 2);
+  ICONS.close(ctx, CLOSE * 0.22);
+  ctx.restore();
 }
 
 // Texto embaralhado que muda sozinho (anúncio criptografado)
