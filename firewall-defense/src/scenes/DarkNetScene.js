@@ -423,10 +423,15 @@ export class DarkNetScene {
     ctx.fillStyle = GREEN;
     // trancado: não revela o que o upgrade faz
     const hidden = st === 'locked';
-    ctx.fillText(`> upgrade://${hidden ? '??????' : n.id}`, P.x + 18, P.y + 24);
+    ctx.fillText(`> upgrade://${hidden ? cipher(n.id, 8, this.t) : n.id}`, P.x + 18, P.y + 24);
 
-    text(ctx, hidden ? '??????' : n.name.toUpperCase(), P.x + 18, P.y + 60, { size: 24, color: hidden ? '#9a8bb5' : '#ffffff', align: 'left' });
-    wrap(ctx, hidden ? 'Upgrade bloqueado. Compre o anterior no ramo pra revelar o que ele faz.' : n.desc, P.x + 18, P.y + 98, P.w - 36, 17, hidden ? '#9a8bb5' : '#e6d0ff');
+    if (hidden) {
+      // criptografado: nome em caracteres embaralhados que ficam trocando
+      ctx.font = `bold 24px ${MONO}`;
+      ctx.fillStyle = '#b77bff';
+      ctx.fillText(cipher(n.id + '#', 12, this.t), P.x + 18, P.y + 60);
+    } else text(ctx, n.name.toUpperCase(), P.x + 18, P.y + 60, { size: 24, color: '#ffffff', align: 'left' });
+    wrap(ctx, hidden ? 'Upgrade criptografado. Compre o anterior no ramo pra descriptografar o que ele faz.' : n.desc, P.x + 18, P.y + 98, P.w - 36, 17, hidden ? '#9a8bb5' : '#e6d0ff');
 
     // estado (trancado não diz nada: a árvore já mostra o caminho)
     ctx.font = `bold 13px ${MONO}`;
@@ -583,6 +588,20 @@ function coffeeLabel(ctx, value, x, y, size, color, prefix = '') {
   ICONS.coffee(ctx, size * 0.48);
   ctx.restore();
   text(ctx, value, x0 + icon, y, { size, color, align: 'left' });
+}
+
+// Texto "criptografado": len caracteres embaralhados que vão trocando com o
+// tempo (cada posição no seu ritmo; a mesma semente dá sempre o mesmo jeito)
+const CIPHER = '#$%&@*!?<>/{}[]=+~^01ØΣΞ¥';
+function cipher(seed, len, t) {
+  let h = 7;
+  for (const ch of seed) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  let out = '';
+  for (let i = 0; i < len; i++) {
+    const tick = Math.floor(t * (5 + ((h >> i) & 3)) + i * 1.7);
+    out += CIPHER[(h + i * 131 + tick * 17) % CIPHER.length];
+  }
+  return out;
 }
 
 // Texto quebrado em linhas (fonte do jogo)
