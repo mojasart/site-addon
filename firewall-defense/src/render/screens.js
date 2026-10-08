@@ -111,9 +111,7 @@ export function drawOverlay(ctx, game) {
       if (game.turboUnlocked) text(ctx, 'ACELERAR 5x LIBERADO!', cx, 348, { size: 17, color: '#bdeeff' });
     } else {
       const survived = Math.floor(Math.min(game.platTime, 180));
-      const lines = game.lossReason === 'adware'
-        ? ['Você clicou no anúncio!', 'Os pop-ups tomaram tudo. Feche sempre no X!']
-        : game.platinum
+      const lines = game.platinum
         ? [game.bossCalled ? 'O chefão invadiu o servidor.' : `Os vírus venceram em ${Math.floor(survived / 60)}:${String(survived % 60).padStart(2, '0')}.`, 'Tente outras defesas ou upgrades!']
         : [`Os vírus venceram na rodada ${game.rounds.current}.`, 'Tente outras defesas ou upgrades!'];
       text(ctx, lines[0], cx, 262, { size: 24 });

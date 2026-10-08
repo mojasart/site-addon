@@ -114,6 +114,16 @@ export class App {
     writeSave(this.save);
   }
 
+  // Catálogo: soma os abatidos por tipo de vírus e as defesas usadas
+  addTally(kills, placed) {
+    const add = (into, from) => {
+      for (const [k, n] of Object.entries(from)) into[k] = (into[k] ?? 0) + n;
+    };
+    add((this.save.killsBy ??= {}), kills);
+    add((this.save.placedBy ??= {}), placed);
+    writeSave(this.save);
+  }
+
   // Árvore da Dark Net: upgrades comprados (save.darknet)
   get perks() {
     return this.save.darknet ?? {};

@@ -103,6 +103,8 @@ export class Game {
     this.hurt = 0;
     this.duckHop = 0; // pulinho do Pato de Borracha quando acha café
     this.duckCoffee = 0; // café que ele achou nesta partida
+    this.killsBy = {}; // abatidos por tipo de vírus nesta partida (catálogo)
+    this.placedBy = {}; // defesas colocadas por tipo nesta partida (catálogo)
     this.coinBump = 0;
     this.shakeAmt = 0;
     this.endDelay = 0;
@@ -175,6 +177,12 @@ export class Game {
   // Monstros abatidos viram cafés: soma no save os desta partida que ainda
   // não foram contados (no fim da partida e ao sair dela no meio)
   bankKills() {
+    // contagem do catálogo (abatidos por vírus e defesas usadas)
+    if (Object.keys(this.killsBy).length || Object.keys(this.placedBy).length) {
+      this.app.addTally?.(this.killsBy, this.placedBy);
+      this.killsBy = {};
+      this.placedBy = {};
+    }
     const n = this.stats.pops - (this.killsBanked ?? 0);
     if (n <= 0) return;
     this.killsBanked = this.stats.pops;
@@ -604,6 +612,7 @@ export class Game {
     if (tower.stats.hp) tower.hp = tower.maxHp = tower.stats.hp;
     if (this.rounds.active) tower.onRoundStart();
     this.towers.push(tower);
+    this.placedBy[type] = (this.placedBy[type] ?? 0) + 1;
     this.fx.burst(x, y, '#ffffff', 14, 160, 0.35, 5, true);
     this.sound.play('place');
     this.placing = null;
@@ -721,7 +730,6 @@ export class Game {
       st.next += Math.max(STORM.minGap, STORM.gap * STORM.accel ** st.n);
     }
     if (st.t >= STORM.time) {
-      this.lossReason = 'adware';
       this.end(false);
     }
   }
