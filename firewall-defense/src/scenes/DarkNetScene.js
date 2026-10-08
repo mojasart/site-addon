@@ -29,7 +29,8 @@ const COLS = 64;
 const RADIUS = [125, 185]; // distância do centro da árvore até os ramos (sorteada)
 const STEP = [88, 122]; // distância entre um nó e o seguinte no mesmo ramo (sorteada)
 const TURN = 0.55; // quanto cada ramo pode virar a cada nó (radianos, pra cada lado)
-const SEED = 2142; // semente do layout (o grafo sai sempre igual)
+const FORK = 0.62; // ramo em Y: quanto cada galho abre pra um lado (radianos)
+const SEED = 1938; // semente do layout (o grafo sai sempre igual)
 const FLOAT = 5; // quanto os nós flutuam (px no mundo)
 const HOME_ZOOM = [0.45, 1.15]; // zoom inicial: enquadra os nós visíveis, dentro desses limites
 const FOCUS_ZOOM = 1.4; // tocou num nó: aproxima até esse zoom (se estiver mais longe)
@@ -89,7 +90,10 @@ export class DarkNetScene {
     for (const n of TREE) {
       if (nodes[n.id]) continue;
       const p = nodes[n.parent];
-      const a = p.a + rr(-TURN, TURN);
+      // irmãos (ramo em Y) abrem pra lados opostos; filho único vai virando
+      const sibs = TREE.filter((m) => m.parent === n.parent);
+      const k = sibs.indexOf(n) - (sibs.length - 1) / 2;
+      const a = sibs.length > 1 ? p.a + k * 2 * FORK + rr(-0.15, 0.15) : p.a + rr(-TURN, TURN);
       const d = rr(STEP[0], STEP[1]);
       nodes[n.id] = { x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d, r: 28, a, ph: rr(0, Math.PI * 2) };
     }
