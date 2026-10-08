@@ -816,6 +816,7 @@ export class Game {
       ctx.restore();
       if (e.def.boss && !e.def.topBar) drawBossBar(ctx, e); // (Ransomware: barra no topo, drawBossBars)
       if (e.vulnTimer > 0) drawVulnerable(ctx, e, t);
+      if (e.markTimer > 0) drawMarked(ctx, e, t);
     }
 
     for (const p of this.projectiles) {
@@ -950,6 +951,32 @@ function drawBossBar(ctx, e) {
     ctx.fillStyle = '#ff4d6d';
     ctx.fill();
   }
+}
+
+// Mira vermelha girando em volta do vírus marcado (Marcar Alvo do Robô NMAP)
+function drawMarked(ctx, e, t) {
+  const r = e.r + 7 + Math.sin(t * 8) * 1.5;
+  const cy = e.y - e.r * 0.3;
+  ctx.save();
+  ctx.translate(e.x, cy);
+  ctx.rotate(t * 1.5);
+  ctx.globalAlpha = Math.min(1, e.markTimer * 3); // some no fim
+  ctx.lineCap = 'round';
+  for (const [w, color] of [[5, 'rgba(26,16,40,0.85)'], [2.5, '#ff4d6d']]) {
+    ctx.lineWidth = w;
+    ctx.strokeStyle = color;
+    for (let i = 0; i < 4; i++) {
+      const a = (i * Math.PI) / 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, r, a + 0.25, a + Math.PI / 2 - 0.25);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * (r - 6), Math.sin(a) * (r - 6));
+      ctx.lineTo(Math.cos(a) * (r + 5), Math.sin(a) * (r + 5));
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
 }
 
 // Selinho "x2" em cima do vírus: está vulnerável e leva dano dobrado (Era do Gelo)

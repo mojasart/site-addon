@@ -23,6 +23,8 @@ export class Enemy {
     this.sticky = false; // Mel Pegajoso (Dark Net): sai lento do Honeypot
     this.slowMul = 1;
     this.vulnTimer = 0; // vulnerável (Penguin Linux com Era do Gelo): leva dano dobrado
+    this.markTimer = 0; // marcado (Robô NMAP com Marcar Alvo): leva markMul de dano
+    this.markMul = 1;
     this.burnTimer = 0; // pegando fogo (Golem com Incêndio): perde burnDps de vida por segundo
     this.burnDps = 0;
     this.burnSource = null;
@@ -77,6 +79,7 @@ export class Enemy {
     this.slowTimer = Math.max(0, this.slowTimer - dt);
     this.freezeTimer = Math.max(0, this.freezeTimer - dt);
     this.vulnTimer = Math.max(0, this.vulnTimer - dt);
+    this.markTimer = Math.max(0, this.markTimer - dt);
     this.flash = Math.max(0, this.flash - dt);
     this.quake = Math.max(0, this.quake - dt);
     // barra do topo: a parte perdida some devagar atrás da vida (rastro do dano)
@@ -181,6 +184,12 @@ export class Enemy {
     this.vulnTimer = Math.max(this.vulnTimer, time);
   }
 
+  // Marcar Alvo: por `time` s leva `mul` de dano de todas as defesas (vale pro chefão também)
+  mark(time, mul) {
+    this.markTimer = Math.max(this.markTimer, time);
+    this.markMul = Math.max(this.markMul, mul);
+  }
+
   // Incêndio: pega fogo por `time` s. Não acumula: enquanto estiver
   // queimando, outra onda não renova o tempo nem soma dano (no máximo
   // `time` s seguidos); só pega fogo de novo depois de apagar
@@ -202,6 +211,7 @@ export class Enemy {
       return;
     }
     if (this.vulnTimer > 0 && !opts.overflow) amount *= 2;
+    if (this.markTimer > 0 && !opts.overflow) amount *= this.markMul;
     if (!opts.dot) this.flash = 0.08;
     this.hp -= amount;
     if (this.hp <= 0) this.pop(game, -this.hp, opts);
@@ -240,6 +250,8 @@ export class Enemy {
         child.shatter = this.shatter;
         child.slowMul = this.slowMul;
         child.vulnTimer = this.vulnTimer;
+        child.markTimer = this.markTimer;
+        child.markMul = this.markMul;
         child.burnTimer = this.burnTimer;
         child.burnDps = this.burnDps;
         child.burnSource = this.burnSource;

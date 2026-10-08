@@ -88,7 +88,7 @@ export const TOWERS = {
     radius: 18,
     range: 300,
     attack: 'beam',
-    fireRate: 2.5,
+    fireRate: 2.8,
     damage: 12, // sniper: tiro lento e pesado (o que mais tira vida de chefão)
     canHitArmored: true,
     targeting: true,
@@ -97,7 +97,8 @@ export const TOWERS = {
     upgrades: [
       // o laser segue reto depois do alvo e acerta mais vírus em linha (até pierce no total)
       { name: 'Feixe Perfurante', desc: 'O laser atravessa e acerta até 2 vírus', cost: 350, apply: (s) => { s.pierce = 2; } },
-      { name: 'Varredura Contínua', desc: 'Atira 40% mais rápido', cost: 550, apply: (s) => { s.fireRate *= 0.6; } },
+      // o vírus atingido fica marcado: por markTime s leva markMul de dano de todas as defesas
+      { name: 'Marcar Alvo', desc: 'O vírus atingido fica marcado por 2s e leva 25% a mais de dano de todas as defesas', cost: 550, apply: (s) => { s.markTime = 2; s.markMul = 1.25; } },
     ],
   },
   minerador: {

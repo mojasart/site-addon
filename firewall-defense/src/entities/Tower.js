@@ -216,7 +216,10 @@ export class Tower {
         // Ping da Morte (Dark Net): às vezes o tiro dá dano triplo (Sobrecarga: quádruplo)
         const triple = chance(s.tripleChance);
         if (triple) game.fx.spark(target.x, target.y - target.r, '#ff6b81', 12);
-        for (const e of hits) e.takeDamage(s.damage * (triple ? s.tripleMul ?? 3 : 1), game, this.opts());
+        for (const e of hits) {
+          if (s.markTime) e.mark(s.markTime, s.markMul); // Marcar Alvo: antes do dano (os filhos já nascem marcados)
+          e.takeDamage(s.damage * (triple ? s.tripleMul ?? 3 : 1), game, this.opts());
+        }
         this.fire();
         // Varredura Dupla (Dark Net): às vezes recarrega na hora
         if (chance(s.rechargeChance)) this.cooldown = RECHARGE;
