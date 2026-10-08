@@ -81,10 +81,11 @@ export class App {
     this.go(() => new LevelSelectScene(this));
   }
 
-  // JOGAR na tela inicial: na primeira vez pergunta o nome; depois, mapas
+  // JOGAR na tela inicial: na primeira vez pergunta o nome (janelinha por
+  // cima da tela inicial, sem transição); depois, mapas
   goPlay() {
     if (this.save.playerName) this.goMaps();
-    else this.go(() => new NameScene(this));
+    else if (!this.next) this.scene = new NameScene(this, this.scene);
   }
 
   // Nome que o Hacker usa pra falar com o jogador
