@@ -5,6 +5,8 @@
 // mudam de direção não escapam. Exceção: se o alvo anda mais rápido que
 // a munição, o tiro não persegue (segue reto). Se o alvo morre antes,
 // ele procura o vírus mais perto e continua.
+import { chance } from '../util.js';
+
 const TURN_RATE = 16; // quanto o tiro consegue virar por segundo (radianos)
 const RETARGET_R = 140; // raio pra achar um alvo novo quando o dele morre
 
@@ -18,7 +20,8 @@ export class Projectile {
     this.y = tower.y - 14 + Math.sin(angle) * 16;
     this.vx = Math.cos(angle) * this.speed;
     this.vy = Math.sin(angle) * this.speed;
-    this.damage = s.damage;
+    this.crit = chance(s.critChance); // Tecla Crítica (Dark Net): dano dobrado
+    this.damage = s.damage * (this.crit ? 2 : 1);
     this.pierce = s.pierce ?? 1; // quantos vírus atravessa (upgrades podem aumentar)
     this.armored = tower.hitsArmored;
     this.source = tower;
@@ -77,7 +80,16 @@ export class Projectile {
       const rr = e.r + this.r;
       if ((e.x - this.x) ** 2 + (e.y - this.y) ** 2 >= rr * rr) continue;
       this.hit.add(e);
-      e.takeDamage(this.damage, game, { armored: this.armored, source: this.source, hitSet: this.hit });
+      const opts = { armored: this.armored, source: this.source, hitSet: this.hit };
+      const reach = !e.def.armored || this.armored;
+      // Zero-Day (Dark Net): às vezes estoura o vírus inteiro, todas as camadas (chefão não)
+      if (reach && !e.def.boss && chance(this.source.stats.executeChance)) {
+        game.fx.spark(e.x, e.y - e.r, '#7dffb0', 13);
+        e.takeDamage(1e6, game, opts);
+      } else {
+        if (this.crit && reach) game.fx.spark(e.x, e.y - e.r);
+        e.takeDamage(this.damage, game, opts);
+      }
       if (--this.pierce <= 0) {
         this.dead = true;
         return;

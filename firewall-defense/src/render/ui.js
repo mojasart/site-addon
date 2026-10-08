@@ -4,6 +4,7 @@ import { rrect, circle, fillOutline, text, setFont, button } from './canvas.js';
 import { drawCharacter } from './characters.js';
 import { drawCoin, drawHeart, ICONS } from './sprites.js';
 import { iconButton } from './widgets.js';
+import { seeded } from '../util.js';
 
 // Posições da interface do jogo (pra desenhar E pra detectar toques).
 // Coordenadas de tela; o painel fica colado na direita.
@@ -24,7 +25,6 @@ export function layout(game) {
     upgrades: [0, 1].map((i) => ({ x: px + 10, y: 64 + i * 98, w: W - 20, h: 90 })),
     target: { x: px + 10, y: 262, w: W - 20, h: 46 },
     sell: { x: px + 10, y: 314, w: W - 20, h: 50 },
-    info: { x: px + 10, y: 372, w: W - 20, h: 82 },
   };
 }
 
@@ -92,7 +92,8 @@ function drawShop(ctx, game, L) {
     const def = TOWERS[tile.type];
     const placing = shown === tile.type;
     const affordable = game.money >= def.cost;
-    button(ctx, tile, placing ? '#ffcf4a' : '#5fb4ff', { radius: 14, depth: 5 });
+    button(ctx, tile, placing ? '#ffcf4a' : '#2fc8ff', { radius: 14, depth: 5 });
+    drawCyberScreen(ctx, tile, game.anim, placing, TOWER_ORDER.indexOf(tile.type));
     ctx.save();
     ctx.beginPath();
     rrect(ctx, tile.x + 2, tile.y + 2, tile.w - 4, tile.h - 8, 12);
@@ -120,6 +121,117 @@ function drawShop(ctx, game, L) {
   }
 }
 
+// ── Fundo cyber dos cards da loja ───────────────────────────
+// Uma "telinha" dentro da moldura neon do botão: grade fina, trilhas de
+// circuito (cada card com o seu desenho) com dados correndo devagar e um
+// brilho no chão embaixo do boneco. Dourada quando é a defesa escolhida.
+const CYBER = {
+  idle: { top: '#0c1a3c', bottom: '#060d22', line: '95,200,255', glow: '47,200,255' },
+  pick: { top: '#2a1d05', bottom: '#140d02', line: '255,207,74', glow: '255,207,74' },
+};
+const traceCache = new Map(); // desenho das trilhas de cada card (fixo)
+
+function cardTraces(seed, w, h) {
+  const key = `${seed},${w},${h}`;
+  if (traceCache.has(key)) return traceCache.get(key);
+  const rnd = seeded(seed * 7919 + 13);
+  const step = 8;
+  const traces = [];
+  for (let i = 0; i < 5; i++) {
+    // sai de uma borda e anda em ângulos retos (com uma diagonal de 45° às vezes)
+    let x = Math.round((rnd() * (w - 16) + 8) / step) * step;
+    let y = rnd() < 0.5 ? 0 : h;
+    const dirY = y === 0 ? 1 : -1;
+    const pts = [[x, y]];
+    for (let k = 0; k < 3; k++) {
+      y += dirY * step * (1 + Math.floor(rnd() * 3));
+      pts.push([x, y]);
+      const dx = (rnd() < 0.5 ? -1 : 1) * step * (1 + Math.floor(rnd() * 2));
+      if (rnd() < 0.4) {
+        x += dx;
+        y += dirY * Math.abs(dx);
+      } else x += dx;
+      x = Math.max(6, Math.min(w - 6, x));
+      pts.push([x, y]);
+    }
+    traces.push(pts);
+  }
+  traceCache.set(key, traces);
+  return traces;
+}
+
+function drawCyberScreen(ctx, tile, t, picked, seed) {
+  const c = picked ? CYBER.pick : CYBER.idle;
+  const x = tile.x + 4;
+  const y = tile.y + 4;
+  const w = tile.w - 8;
+  const h = tile.h - 13;
+  ctx.save();
+  rrect(ctx, x, y, w, h, 10);
+  const bg = ctx.createLinearGradient(0, y, 0, y + h);
+  bg.addColorStop(0, c.top);
+  bg.addColorStop(1, c.bottom);
+  ctx.fillStyle = bg;
+  ctx.fill();
+  ctx.clip();
+  // grade
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = `rgba(${c.line},0.07)`;
+  ctx.beginPath();
+  for (let gx = x + 8; gx < x + w; gx += 8) {
+    ctx.moveTo(gx + 0.5, y);
+    ctx.lineTo(gx + 0.5, y + h);
+  }
+  for (let gy = y + 8; gy < y + h; gy += 8) {
+    ctx.moveTo(x, gy + 0.5);
+    ctx.lineTo(x + w, gy + 0.5);
+  }
+  ctx.stroke();
+  // trilhas de circuito com a ponta (pad) e um dado correndo em cada uma
+  const traces = cardTraces(seed, w, h);
+  ctx.lineWidth = 1.5;
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = `rgba(${c.line},0.28)`;
+  for (const pts of traces) {
+    ctx.beginPath();
+    pts.forEach(([px, py], i) => (i ? ctx.lineTo(x + px, y + py) : ctx.moveTo(x + px, y + py)));
+    ctx.stroke();
+    const [ex, ey] = pts[pts.length - 1];
+    ctx.beginPath();
+    ctx.arc(x + ex, y + ey, 2, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${c.line},0.45)`;
+    ctx.fill();
+  }
+  traces.forEach((pts, i) => {
+    const segs = pts.slice(1).map((p, k) => Math.hypot(p[0] - pts[k][0], p[1] - pts[k][1]));
+    const len = segs.reduce((a, b) => a + b, 0);
+    let d = ((t * 22 + i * 37 + seed * 11) % (len + 40)) - 20; // passa e some um pouco antes de voltar
+    if (d < 0 || d > len) return;
+    let k = 0;
+    while (d > segs[k]) d -= segs[k++];
+    const [ax, ay] = pts[k];
+    const [bx, by] = pts[k + 1];
+    const f = d / segs[k];
+    ctx.beginPath();
+    ctx.arc(x + ax + (bx - ax) * f, y + ay + (by - ay) * f, 1.8, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${c.line},0.9)`;
+    ctx.fill();
+  });
+  // brilho no chão embaixo do boneco
+  const fy = y + 60;
+  const glow = ctx.createRadialGradient(x + w / 2, fy, 2, x + w / 2, fy, 30);
+  glow.addColorStop(0, `rgba(${c.glow},0.35)`);
+  glow.addColorStop(1, `rgba(${c.glow},0)`);
+  ctx.fillStyle = glow;
+  ctx.fillRect(x, fy - 30, w, 60);
+  // faixa escura do preço
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillRect(x, y + h - 24, w, 24);
+  ctx.fillStyle = `rgba(${c.line},0.35)`;
+  ctx.fillRect(x, y + h - 24, w, 1);
+  ctx.restore();
+}
+
 function drawTowerInfo(ctx, game, L) {
   const P = L.panel;
   const tw = game.selectedTower;
@@ -139,33 +251,6 @@ function drawTowerInfo(ctx, game, L) {
 
   button(ctx, L.sell, '#ff5a5a', { radius: 12, depth: 5 });
   text(ctx, `VENDER $${tw.sellValue}`, L.sell.x + L.sell.w / 2, L.sell.y + 22, { size: 19 });
-
-  const info = towerInfo(tw, game);
-  const r = def.upgrades.length ? L.info : { x: L.info.x, y: L.upgrades[0].y, w: L.info.w, h: 180 };
-  rrect(ctx, r.x, r.y, r.w, r.h, 12);
-  fillOutline(ctx, 'rgba(10,16,40,0.45)', 3);
-  if (info.big) {
-    text(ctx, info.title, r.x + r.w / 2, r.y + 26, { size: 15, color: '#d8e6ff' });
-    text(ctx, info.big, r.x + r.w / 2, r.y + 74, { size: 42, color: GOLD });
-    wrapText(ctx, info.sub, r.x + r.w / 2, r.y + 128, r.w - 20, 13, '#bcd0f5', 2);
-  } else {
-    wrapText(ctx, info.sub, r.x + r.w / 2, r.y + r.h / 2 - 9, r.w - 16, 13, '#d8e6ff', 3);
-  }
-}
-
-function towerInfo(tw, game) {
-  const s = tw.stats;
-  switch (s.attack) {
-    case 'decoy':
-      return { title: 'TEMPO DA ISCA', big: `${Math.ceil(tw.timeLeft)}s`, sub: 'Gasta sozinha; vírus mordendo aceleram' };
-    case 'farm':
-      if (!game.canMine(tw)) return { sub: 'Fora da pilha de bitcoin: não minera. Coloque em cima de uma pilha!' };
-      return { sub: `Minera ${s.packetsPerRound} bitcoins de $${s.packetValue} por rodada${s.goldenChance ? ` e ${Math.round(s.goldenChance * 100)}% dos vírus vêm dourados ($${s.goldenValue})` : ''}` };
-    default:
-      if (s.slow) return { sub: `Suporte: deixa os vírus lentos${s.vulnerable ? ' e eles levam dano dobrado' : ''}` };
-      if (s.burn) return { sub: `Vírus pegam fogo: ${String(s.burn).replace('.', ',')} de dano/s por até ${s.burnTime}s (não acumula)` };
-      return { sub: tw.hitsArmored ? 'Fura blindagem dos Trojans' : 'Não fura blindagem (Trojans)' };
-  }
 }
 
 function drawUpgrade(ctx, game, tw, up, i, r) {

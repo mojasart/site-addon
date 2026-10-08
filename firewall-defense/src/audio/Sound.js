@@ -115,6 +115,7 @@ export class Sound {
     const data = this.noiseBuf.getChannelData(0);
     for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
     this.music = new Music(this);
+    this.music.setTheme(this.theme ?? 'menu');
     this.music.start();
   }
 
@@ -133,6 +134,12 @@ export class Sound {
 
   setSfx(on) {
     this.settings.sfx = on;
+  }
+
+  // Tema da música: 'menu' (alegre) ou 'battle' (luta e suspense, na partida)
+  setTheme(name) {
+    this.theme = name;
+    this.music?.setTheme(name);
   }
 
   play(name) {
@@ -176,7 +183,11 @@ export class Sound {
   }
 }
 
-// ── Música: loop chiptune em C → Am → F → G ───────────────────
+// ── Música ─────────────────────────────────────────────────────
+// Dois temas em loop: 'menu' (chiptune alegre) e 'battle' (na partida:
+// tambores de guerra, cordas em ostinato e metais, clima de arena).
+
+// MENU: chiptune em C → Am → F → G, 128 bpm
 const CHORDS = [
   { root: 48, notes: [60, 64, 67] },
   { root: 45, notes: [57, 60, 64] },
@@ -188,13 +199,43 @@ const MELODY = [ // uma nota por tempo (null = pausa), 4 tempos por acorde
   72, null, 76, 74, 72, null, 69, null,
   69, 72, 77, 76, 74, null, 71, null,
 ];
-const STEP = 60 / 128 / 2; // colcheia a 128 bpm
+
+// BATALHA: Ré menor, Dm → B♭ → Gm → A (a dominante com Dó# segura a tensão),
+// 100 bpm. 16 compassos: os 8 primeiros só suspense (tambor + cordas + pedal
+// grave), os 8 seguintes com a melodia heroica por cima.
+const WAR_CHORDS = [
+  { root: 50, notes: [62, 65, 69] }, // Dm
+  { root: 46, notes: [58, 62, 65] }, // B♭
+  { root: 43, notes: [55, 58, 62] }, // Gm
+  { root: 45, notes: [57, 61, 64] }, // A
+];
+const OSTINATO = [0, 0, 12, 0, 7, 0, 12, 7]; // cordas curtas, em colcheias
+const DRUMS = [1, 0, 1, 1, 0, 1, 1, 0]; // galope dos tambores de guerra
+const WAR_MELODY = [ // 1 nota por tempo, 8 compassos (só na 2ª metade)
+  74, null, 69, 74, 77, null, 74, 70,
+  79, 77, 74, 70, 73, null, 76, null,
+  74, 77, 81, null, 79, 77, 74, null,
+  70, 74, 79, 77, 76, null, 73, null,
+];
+
+const THEMES = {
+  menu: { step: 60 / 128 / 2, steps: 64 },
+  battle: { step: 60 / 100 / 2, steps: 128 },
+};
 
 class Music {
   constructor(sound) {
     this.s = sound;
     this.step = 0;
     this.next = 0;
+    this.theme = 'menu';
+  }
+
+  // troca de tema: recomeça do início do loop novo
+  setTheme(name) {
+    if (!THEMES[name] || name === this.theme) return;
+    this.theme = name;
+    this.step = 0;
   }
 
   start() {
@@ -209,15 +250,18 @@ class Music {
       return;
     }
     while (this.next < ctx.currentTime + 0.25) {
-      this.playStep(this.step, this.next - ctx.currentTime);
-      this.step = (this.step + 1) % 64;
-      this.next += STEP;
+      const th = THEMES[this.theme];
+      if (this.theme === 'battle') this.battleStep(this.step, this.next - ctx.currentTime);
+      else this.menuStep(this.step, this.next - ctx.currentTime);
+      this.step = (this.step + 1) % th.steps;
+      this.next += th.step;
     }
   }
 
-  playStep(i, at) {
+  menuStep(i, at) {
     const s = this.s;
     const bus = s.musicBus;
+    const STEP = THEMES.menu.step;
     const chord = CHORDS[Math.floor(i / 8) % 4];
     const inBar = i % 8;
     // baixo
@@ -236,5 +280,50 @@ class Music {
     }
     // chimbal
     if (inBar % 2 === 1) s.noise({ dur: 0.03, vol: 0.05, filter: 'highpass', freq: 7000, at, bus });
+  }
+
+  battleStep(i, at) {
+    const s = this.s;
+    const bus = s.musicBus;
+    const STEP = THEMES.battle.step;
+    const bar = Math.floor(i / 8);
+    const chord = WAR_CHORDS[bar % 4];
+    const inBar = i % 8;
+    const full = bar >= 8; // 2ª metade: entra a melodia e a caixa
+
+    // tambor de guerra (grave, com o "tum" caindo de altura)
+    if (DRUMS[inBar]) {
+      const accent = inBar === 0;
+      s.tone({ type: 'sine', freq: accent ? 120 : 100, to: 42, dur: 0.38, vol: accent ? 0.34 : 0.24, at, bus });
+      s.noise({ dur: 0.09, vol: accent ? 0.12 : 0.07, filter: 'lowpass', freq: 500, at, bus });
+    }
+    // caixa no tempo 3 (só com a melodia)
+    if (full && inBar === 4) s.noise({ dur: 0.16, vol: 0.09, filter: 'bandpass', freq: 1800, q: 1.2, at, bus });
+
+    // cordas em ostinato (curtinhas, no grave)
+    const o = chord.root + OSTINATO[inBar];
+    s.tone({ type: 'sawtooth', freq: midi(o), dur: STEP * 0.55, vol: 0.022, at, bus });
+
+    // pedal grave segurando o acorde (suspense), 1 por compasso
+    if (inBar === 0) s.tone({ type: 'triangle', freq: midi(chord.root - 12), dur: STEP * 7.5, vol: 0.12, at, bus });
+
+    // metais: acorde cortado no começo do compasso
+    if (inBar === 0) {
+      for (const n of chord.notes) s.tone({ type: 'sawtooth', freq: midi(n), dur: STEP * 1.1, vol: full ? 0.022 : 0.014, at, bus });
+    }
+
+    // melodia heroica (tipo trompa), 1 nota por tempo
+    if (full && i % 2 === 0) {
+      const m = WAR_MELODY[((i - 64) / 2) % WAR_MELODY.length];
+      if (m) {
+        s.tone({ type: 'triangle', freq: midi(m), dur: STEP * 1.8, vol: 0.07, at, bus });
+        s.tone({ type: 'sawtooth', freq: midi(m), dur: STEP * 1.6, vol: 0.012, at, bus });
+      }
+    }
+
+    // prato crescendo pra virada entre as metades (e no fim do loop)
+    if ((bar === 7 || bar === 15) && inBar === 4) {
+      s.noise({ dur: STEP * 4, vol: 0.06, filter: 'highpass', freq: 3000, to: 9000, at, bus });
+    }
   }
 }
