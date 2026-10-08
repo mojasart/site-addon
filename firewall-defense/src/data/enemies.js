@@ -15,6 +15,7 @@ import { LAYER_HP } from '../config.js';
 //  reward   → moedas ao estourar essa camada (padrão 1)
 //  spawn    → { type, every }: vai soltando esse vírus enquanto está vivo
 //  stealth  → invisível: só dá pra acertar no alcance de um Robô NMAP
+//  tint     → filtro de cor por cima da sprite (worms evoluídos: mesma sprite, outra cor)
 //  lore     → frase do catálogo de ameaças (scenes/CatalogScene.js)
 // ─────────────────────────────────────────────────────────────
 export const ENEMIES = {
@@ -47,6 +48,54 @@ export const ENEMIES = {
     kind: 'spy',
     stealth: true,
     children: [['v2', 1]],
+  },
+  // Worms evoluídos: a mesma sprite em outra cor; soltam vírus mais fortes
+  // pelo caminho e ao estourar. Só nas rodadas finais (data/rounds.js):
+  // Mutante a partir da 18, Polimórfico da 21, Rei da 24
+  worm2: {
+    name: 'Worm Mutante',
+    desc: 'Solta Vírus Verdes pelo caminho e mais 2 quando estoura',
+    lore: 'Um Worm que aprendeu a se copiar mais rápido. Deixa um rastro de vírus verdes.',
+    hp: 4 * LAYER_HP,
+    speed: 165,
+    radius: 16,
+    color: '#3d8bff',
+    kind: 'worm',
+    sprite: 'worm',
+    tint: 'hue-rotate(115deg) saturate(1.3)',
+    reward: 2,
+    spawn: { type: 'v3', every: 1.4 },
+    children: [['v3', 2]],
+  },
+  worm3: {
+    name: 'Worm Polimórfico',
+    desc: 'Solta Vírus Amarelos pelo caminho e mais 2 quando estoura',
+    lore: 'Reescreve o próprio código a cada salto. Os antivírus nunca o reconhecem duas vezes.',
+    hp: 6 * LAYER_HP,
+    speed: 160,
+    radius: 17,
+    color: '#a35cf0',
+    kind: 'worm',
+    sprite: 'worm',
+    tint: 'hue-rotate(170deg) saturate(1.4)',
+    reward: 3,
+    spawn: { type: 'v4', every: 1.5 },
+    children: [['v4', 2]],
+  },
+  worm4: {
+    name: 'Worm Rei',
+    desc: 'Solta Vírus Rosas pelo caminho; estourado, vira 2 Worms Mutantes',
+    lore: 'O ancestral de todos os Worms. Onde passa, a rede inteira se infecta.',
+    hp: 8 * LAYER_HP,
+    speed: 150,
+    radius: 18,
+    color: '#ff4d5e',
+    kind: 'worm',
+    sprite: 'worm',
+    tint: 'hue-rotate(268deg) saturate(2.2) brightness(0.9)',
+    reward: 4,
+    spawn: { type: 'v5', every: 1.6 },
+    children: [['worm2', 2]],
   },
   trojan: {
     name: 'Trojan',

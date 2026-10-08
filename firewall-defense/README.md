@@ -80,6 +80,9 @@ Os vírus funcionam como os balões do Bloons: cada camada estourada revela a de
 | **Vírus** vermelho → azul → verde → amarelo → rosa | Cada cor é uma camada a mais e é mais rápida |
 | **Worm** | Rápido: vai soltando vírus azuis pelo caminho enquanto está vivo |
 | **Spyware** | Invisível: só aparece (e leva dano) no alcance de um Robô NMAP. Passa reto pelo Honeypot |
+| **Worm Mutante** (azul) | Solta Vírus Verdes pelo caminho e mais 2 quando estoura. A partir da rodada 18 |
+| **Worm Polimórfico** (roxo) | Solta Vírus Amarelos pelo caminho e mais 2 quando estoura. A partir da rodada 21 |
+| **Worm Rei** (vermelho) | Solta Vírus Rosas pelo caminho; estourado, vira 2 Worms Mutantes. A partir da rodada 24 |
 | **Trojan** | Blindado: os teclados do Hacker não furam |
 | **Locker** | Mini-chefão acorrentado (rodadas 15+), 135.000 de vida. Solta 2 Trojans |
 | **Adware** | Chefão pop-up (rodada 15, junto com o Locker), 120.000 de vida. Enquanto está na tela, abre um anúncio a cada 4–7 s (até 4 ao mesmo tempo): janelas cômicas que cobrem o jogo e só fecham no X. 10% delas ficam andando de um lado pro outro. Quando ele morre, os anúncios somem. Solta 3 Vírus Amarelos |

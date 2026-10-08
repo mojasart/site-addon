@@ -139,14 +139,14 @@ function drawSpriteEnemy(ctx, e) {
   ctx.scale(flip * sx, sy); // escala ancorada nos pés
   const dy = -size * look.foot;
   if (e.golden) ctx.filter = GOLD_FILTER;
-  drawImage(ctx, def.sprite, size, 0, dy);
+  drawImage(ctx, def.sprite, size, 0, dy, def.tint);
   ctx.filter = 'none';
   if (e.flash > 0) {
     // acerto: pisca mais claro
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = 0.6;
     if (e.golden) ctx.filter = GOLD_FILTER;
-    drawImage(ctx, def.sprite, size, 0, dy);
+    drawImage(ctx, def.sprite, size, 0, dy, def.tint);
     ctx.filter = 'none';
   }
   ctx.restore();
@@ -474,7 +474,7 @@ function drawWorm(ctx, e) {
     circle(ctx, (dx + 0.3) * r, -r * 1.35, r * 0.14);
     fillOutline(ctx, '#ff4d5e', 2);
   }
-  blit(ctx, cachedSprite(`worm:${r}`, r * 3.4, (g) => blob(g, r, '#7be04a', true)), r * 3.4);
+  blit(ctx, cachedSprite(`worm:${r}:${e.def.color}`, r * 3.4, (g) => blob(g, r, e.def.color, true)), r * 3.4);
   ctx.restore();
 }
 
@@ -556,6 +556,6 @@ function bossBody(g, L, W, color) {
 
 // Vírus parado (decoração de menus)
 export function drawVirusIcon(ctx, type, def, r) {
-  if (drawImage(ctx, def.sprite, r * 3)) return;
+  if (drawImage(ctx, def.sprite, r * 3, 0, 0, def.tint)) return;
   blit(ctx, enemySprite(type, def, r), r * 3.4);
 }
