@@ -209,6 +209,7 @@ export class Enemy {
 
   pop(game, overflow, opts) {
     this.dead = true;
+    game.duckRoll?.(this); // Pato de Borracha (Dark Net): às vezes acha um café
     // Estilhaço (Dark Net): estourou no gelo do Penguin → às vezes acerta os vizinhos
     if (this.slowTimer > 0 && chance(this.shatter)) {
       game.fx.spark(this.x, this.y, '#c8f4ff', 12);

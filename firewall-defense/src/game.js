@@ -4,7 +4,7 @@ import { ROUNDS } from './data/rounds.js';
 import { PLAT_TIME, PLAT_LIVES, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
 import { worth } from './data/enemies.js';
 import { TOWERS, TARGET_MODES } from './data/towers.js';
-import { applyPerks, ROOT_MONEY } from './data/darknet.js';
+import { applyPerks, ROOT_MONEY, DUCK } from './data/darknet.js';
 import { fitsTerrain } from './core/terrain.js';
 import { Tower } from './entities/Tower.js';
 import { Projectile } from './entities/Projectile.js';
@@ -24,6 +24,7 @@ import { drawProjectile, drawCoin, drawServer } from './render/sprites.js';
 import { drawHazards, drawStunned, drawHazardWarning } from './render/hazards.js';
 import { drawEncrypted, ENCRYPT_FILTER } from './render/ransom.js';
 import { drawSpawns } from './render/spawns.js';
+import { drawDuck } from './render/duck.js';
 import { pickCoinTiles, coinTileAt, COIN_SEASONS } from './core/coinTiles.js';
 import { drawCoinTiles, drawNoMine } from './render/coinTiles.js';
 import { rrect, fillOutline, circle, text } from './render/canvas.js';
@@ -93,6 +94,8 @@ export class Game {
     this.selectedTower = null;
     this.banner = null;
     this.hurt = 0;
+    this.duckHop = 0; // pulinho do Pato de Borracha quando acha café
+    this.duckCoffee = 0; // café que ele achou nesta partida
     this.coinBump = 0;
     this.shakeAmt = 0;
     this.endDelay = 0;
@@ -154,7 +157,7 @@ export class Game {
     // cafés novos da partida: o que passou do recorde do mapa e os monstros
     // abatidos (data/darknet.js)
     this.bankKills();
-    this.coffeeGain = (this.app.coffeeEarned ?? 0) - coffeeBefore;
+    this.coffeeGain = (this.app.coffeeEarned ?? 0) - coffeeBefore + this.duckCoffee; // (o do pato já entrou no save durante a partida)
   }
 
   // Monstros abatidos viram cafés: soma no save os desta partida que ainda
@@ -182,6 +185,7 @@ export class Game {
     if (this.state === 'paused') return;
     this.endDelay = Math.max(0, this.endDelay - dt);
     this.hurt = Math.max(0, this.hurt - dt);
+    this.duckHop = Math.max(0, this.duckHop - dt * 2.5);
     this.coinBump = Math.max(0, this.coinBump - dt * 4);
     this.shakeAmt = Math.max(0, this.shakeAmt - dt * 30);
     if (this.banner && (this.banner.time -= dt) <= 0) this.banner = null;
@@ -246,6 +250,17 @@ export class Game {
   touchesBase(e) {
     const s = this.server;
     return Math.hypot(e.x - s.x, e.y - s.y) < BASE_HIT + e.r * 0.5;
+  }
+
+  // Pato de Borracha (upgrade secreto da Dark Net): cada vírus estourado tem
+  // DUCK.chance de render DUCK.coffee café (direto no save)
+  duckRoll(e) {
+    if (!this.app.perks?.duck || !chance(DUCK.chance)) return;
+    this.app.addDuckCoffee?.(DUCK.coffee);
+    this.duckCoffee += DUCK.coffee;
+    this.duckHop = 1;
+    this.fx.spark(e.x, e.y - e.r, '#ffe0b0', 10);
+    this.sound.play('coin');
   }
 
   leak(enemy) {
@@ -831,6 +846,13 @@ export class Game {
     ctx.restore();
 
     drawHud(ctx, this);
+    // Pato de Borracha boiando no canto de baixo do mapa
+    if (this.app.perks?.duck) {
+      ctx.save();
+      ctx.translate(30, VIEW_H - 24);
+      drawDuck(ctx, 13, { t, hop: this.duckHop });
+      ctx.restore();
+    }
 
     // moedas voando até o contador (por cima do HUD)
     ctx.save();

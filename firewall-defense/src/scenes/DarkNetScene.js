@@ -3,6 +3,7 @@ import { rrect, fillOutline, text, setFont, button } from '../render/canvas.js';
 import { iconButton, inRect } from '../render/widgets.js';
 import { ICONS } from '../render/sprites.js';
 import { drawCharacter } from '../render/characters.js';
+import { drawDuck } from '../render/duck.js';
 import { TREE, NODE, formatCoffee } from '../data/darknet.js';
 import { seeded } from '../util.js';
 
@@ -63,6 +64,7 @@ export class DarkNetScene {
     const zy = VIEW_H - 64;
     return {
       back: { x: 18, y: 16, w: 56, h: 56 },
+      secret: { x: 46, y: 116, r: 22 }, // Pato de Borracha: apagadinho embaixo do voltar
       panel,
       buy: { x: panel.x + 24, y: panel.y + panel.h - 74, w: panel.w - 48, h: 54 },
       zoomIn: { x: 18, y: zy, w: 46, h: 46, label: '+' },
@@ -243,6 +245,7 @@ export class DarkNetScene {
     this.drawCoffee(ctx, W / 2, 92);
     this.drawPanel(ctx, L);
     iconButton(ctx, L.back, '#5fb4ff', 'back');
+    this.drawSecret(ctx, L.secret, t);
     for (const b of [L.zoomIn, L.zoomOut, L.center]) this.drawZoomButton(ctx, b);
   }
 
@@ -383,6 +386,27 @@ export class DarkNetScene {
     ctx.restore();
   }
 
+  // Upgrade secreto (Pato de Borracha): quase invisível até alguém tocar;
+  // comprado, fica colorido e com um brilho suave
+  drawSecret(ctx, p, t) {
+    const owned = this.state('duck') === 'owned';
+    const sel = this.sel === 'duck';
+    ctx.save();
+    ctx.globalAlpha = owned ? 0.95 : sel ? 0.65 : 0.3 + Math.sin(t * 1.3) * 0.08;
+    if (sel || owned) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.lineWidth = sel ? 3 : 2;
+      ctx.strokeStyle = owned ? GREEN : PURPLE;
+      ctx.setLineDash(owned ? [] : [4, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    ctx.translate(p.x - 2, p.y + 7);
+    drawDuck(ctx, 11, { t, gray: !owned });
+    ctx.restore();
+  }
+
   // Terminal com o upgrade escolhido e o botão de comprar
   drawPanel(ctx, L) {
     const n = NODE[this.sel];
@@ -478,6 +502,11 @@ export class DarkNetScene {
     }
     if (inRect(L.center, x, y)) {
       this.homing = true;
+      this.app.sound.play('click');
+      return;
+    }
+    if (Math.hypot(x - L.secret.x, y - L.secret.y) <= L.secret.r + 6) {
+      this.sel = 'duck';
       this.app.sound.play('click');
       return;
     }

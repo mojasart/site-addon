@@ -142,7 +142,20 @@ export const TREE = [
     apply: (s) => { s.swarmChance = (s.swarmChance ?? 0) + 0.05; } },
 ];
 
-export const NODE = Object.fromEntries(TREE.map((n) => [n.id, n]));
+// Upgrade secreto: fora da árvore, apagadinho no canto de cima da Dark Net.
+// O Pato de Borracha acompanha as partidas e, a cada vírus estourado, tem
+// DUCK.chance de render DUCK.coffee café (fica no save: duckCoffee)
+export const DUCK = { chance: 0.0025, coffee: 0.1 };
+export const SECRET = {
+  id: 'duck',
+  name: 'Pato de Borracha',
+  desc: 'Um patinho acompanha suas partidas. Cada vírus estourado tem 0,25% de chance de render 0,1 café',
+  cost: 20,
+  parent: null,
+  secret: true,
+};
+
+export const NODE = Object.fromEntries([...TREE, SECRET].map((n) => [n.id, n]));
 
 // Aplica nos status de uma defesa os bônus comprados pra ela
 export function applyPerks(stats, type, owned = {}) {

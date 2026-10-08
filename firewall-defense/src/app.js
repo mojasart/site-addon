@@ -71,7 +71,13 @@ export class App {
   // (mais os dos monstros abatidos em todas as partidas)
   get coffeeEarned() {
     const maps = MAPS.reduce((sum, m) => sum + mapCoffee(this.save.stars[m.id], this.hasPlatinum(m.id)), 0);
-    return maps + (this.save.kills ?? 0) * COFFEE.perKill;
+    return maps + (this.save.kills ?? 0) * COFFEE.perKill + (this.save.duckCoffee ?? 0);
+  }
+
+  // Café que o Pato de Borracha achou numa partida (upgrade secreto)
+  addDuckCoffee(v) {
+    this.save.duckCoffee = Math.round(((this.save.duckCoffee ?? 0) + v) * 100) / 100;
+    writeSave(this.save);
   }
 
   // Saldo de cafés pra gastar na Dark Net (com 2 casas: os abatidos dão fração)
