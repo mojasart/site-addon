@@ -39,7 +39,7 @@ const BRANCH_ORDER = ['hacker', 'firewall', 'pinguim', 'scanner', 'minerador', '
 const ZOOM_MIN = 0.45;
 const ZOOM_MAX = 2.4;
 const ROAM = 450; // quanto dá pra passear além da borda da árvore
-const DUCK_AWAY = { x: 420, y: 400 }; // Pato de Borracha: quase no limite do ROAM, pra cima e pra esquerda
+const DUCK_AWAY = { x: 1000, y: 900 }; // Pato de Borracha: bem isolado, pra cima e pra esquerda (a câmera alcança: clampCam)
 const DRAG_SLOP = 8; // até quantos px um toque ainda é toque (e não arrasto)
 const DOT_GAP = 48; // pontinhos do chão, pra sentir o movimento
 
@@ -184,7 +184,12 @@ export class DarkNetScene {
   // Não deixa a árvore sumir de vez: o centro da tela fica perto dela
   clampCam() {
     const c = this.cam;
-    const { x0, y0, x1, y1 } = this.bounds(this.graph()); // só os visíveis
+    const nodes = this.graph();
+    let { x0, y0, x1, y1 } = this.bounds(nodes); // só a árvore
+    // o Pato de Borracha fica isolado longe da árvore: a câmera vai até ele
+    // (o ROAM soma em volta, então chega até o meio da tela em cima dele)
+    x0 = Math.min(x0, nodes.duck.x + ROAM);
+    y0 = Math.min(y0, nodes.duck.y + ROAM);
     const mid = this.toWorld(this.app.viewW / 2, VIEW_H / 2);
     const mx = Math.min(x1 + ROAM, Math.max(x0 - ROAM, mid.x));
     const my = Math.min(y1 + ROAM, Math.max(y0 - ROAM, mid.y));
