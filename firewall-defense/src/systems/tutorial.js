@@ -25,8 +25,9 @@ import { Enemy } from '../entities/Enemy.js';
 export const TUTORIAL_LOCKED = ['pinguim', 'scanner', 'minerador']; // na 1-1 só Hacker, Golem e Honeypot
 // enxurrada da aula do Honeypot: n vírus, um a cada gap s; a aula começa quando o
 // primeiro está a `near` quadrados (pelo caminho) do lugar do pote, perto do Hacker
-const SWARM = { type: 'v2', n: 24, gap: 0.16, near: 3 };
-// a 2ª onda do tutorial vem com WAVE2 da quantidade normal (a enxurrada já é grande)
+const SWARM = { type: 'v2', n: 6, gap: 0.16, near: 3 };
+// (n: com mais de 7 o pote + o Hacker não seguram e vaza vida; tools/sim/tutorial.js)
+// a 2ª onda do tutorial vem com WAVE2 da quantidade normal
 const WAVE2 = 0.8;
 
 export class Tutorial {

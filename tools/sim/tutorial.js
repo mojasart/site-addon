@@ -7,7 +7,7 @@
 //    node tools/sim/tutorial.js --passive  → só faz o que a mãozinha manda
 //                                            (não constrói nada a mais)
 //
-//  Falha (exit 1) se tomar dano na 1ª onda ou se o tutorial travar/não
+//  Falha (exit 1) se tomar dano durante o tutorial ou se ele travar/não
 //  terminar. Nos momentos livres (tutorial esperando ou já acabado) ele
 //  gasta o dinheiro em Hacker e Golem onde mais cobre o caminho.
 // ─────────────────────────────────────────────────────────────
@@ -45,13 +45,14 @@ export function playTutorial(log = () => {}, { passive = false } = {}) {
     g.pointerDown(x, y, 'touch');
     g.pointerUp(x, y);
   };
-  const r = { livesStart: g.lives, wave1Lives: null, wave2Lives: null, honey: null, steps: 0 };
+  const r = { livesStart: g.lives, wave1Lives: null, wave2Lives: null, tutLives: null, honey: null, steps: 0 };
   let lastStep = -1;
   let stuck = 0;
 
   for (let f = 0; f < 60 * 60 * 30 && g.state === 'playing'; f++) {
     g.update(DT);
     if (r.wave1Lives == null && g.rounds.done >= 1) r.wave1Lives = g.lives;
+    if (r.tutLives == null && tut.done) r.tutLives = g.lives; // fim do tutorial
     if (r.wave2Lives == null && g.rounds.done >= 2) r.wave2Lives = g.lives;
 
     if (!tut.done) {
@@ -125,14 +126,14 @@ if (import.meta.url === `file:///${process.argv[1].replace(/\\/g, '/')}` || proc
   let fails = 0;
   for (let n = 1; n <= runs; n++) {
     const r = playTutorial(runs === 1 ? console.log : () => {}, { passive });
-    const hit = r.wave1Lives < r.livesStart;
+    const hit = (r.tutLives ?? r.lives) < r.livesStart;
     const h = r.honey;
     const honey = h ? `pote a ${h.hacker.toFixed(1)} quadrados do Hacker (alcance ${h.hackerRange.toFixed(1)}), vírus a ${h.lead?.toFixed(1)}` : 'pote: ?';
     console.log(
-      `#${n} ${r.won ? 'venceu' : 'PERDEU'}  vidas ${r.livesStart}→1ª onda ${r.wave1Lives}→2ª ${r.wave2Lives}→fim ${r.lives}  ${honey}${hit ? '  ← DANO NA 1ª ONDA' : ''}${r.done ? '' : '  ← TUTORIAL INCOMPLETO'}`,
+      `#${n} ${r.won ? 'venceu' : 'PERDEU'}  vidas ${r.livesStart}→1ª onda ${r.wave1Lives}→2ª ${r.wave2Lives}→fim do tutorial ${r.tutLives}→fim da fase ${r.lives}  ${honey}${hit ? '  ← DANO NO TUTORIAL' : ''}${r.done ? '' : '  ← TUTORIAL INCOMPLETO'}`,
     );
     if (hit || !r.done) fails++;
   }
-  console.log(fails ? `${fails}/${runs} com problema` : `ok: ${runs}/${runs} sem dano na 1ª onda`);
+  console.log(fails ? `${fails}/${runs} com problema` : `ok: ${runs}/${runs} sem dano no tutorial`);
   process.exit(fails ? 1 : 0);
 }
