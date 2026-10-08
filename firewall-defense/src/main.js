@@ -8,9 +8,10 @@ const stage = document.getElementById('stage'); // área útil da tela (fora do 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
-// Abra com ?debug na URL: dinheiro infinito e todos os mapas liberados
-const debug = new URLSearchParams(location.search).has('debug');
-const app = new App({ debug });
+// Abra com ?debug na URL: dinheiro infinito e todos os mapas liberados.
+// ?mute: começa com música e efeitos desligados (servidores de teste)
+const params = new URLSearchParams(location.search);
+const app = new App({ debug: params.has('debug'), mute: params.has('mute') });
 window.app = app; // acesso pelo console do navegador pra testar coisas
 
 // O canvas só baixa a fonte se alguém pedir; quando chega, os mapas são redesenhados
