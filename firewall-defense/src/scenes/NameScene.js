@@ -2,6 +2,7 @@ import { VIEW_H, OUTLINE, GOLD } from '../config.js';
 import { rrect, fillOutline, text, button } from '../render/canvas.js';
 import { iconButton, inRect } from '../render/widgets.js';
 import { drawCharacter } from '../render/characters.js';
+import { drawDuck } from '../render/duck.js';
 
 /* ════════════════════════════════════════════════════════════
  *  NOME DO JOGADOR
@@ -64,11 +65,15 @@ export class NameScene {
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, W, VIEW_H);
 
-    // o Hacker à esquerda, falando
+    // o Hacker criança à esquerda, falando, com o Pato de Borracha no pé
     ctx.save();
     ctx.translate(L.cx - 330, 410 + Math.sin(this.t * 2.2) * 4);
     ctx.scale(2.6, 2.6);
-    drawCharacter(ctx, 'hacker', { t: this.t, face: 1, level: 2 });
+    drawCharacter(ctx, 'hacker', { t: this.t, face: 1, level: 0 });
+    ctx.restore();
+    ctx.save();
+    ctx.translate(L.cx - 266, 428);
+    drawDuck(ctx, 17, { t: this.t });
     ctx.restore();
 
     text(ctx, 'Olá, podemos te chamar de', L.cx, 168, { size: 30 });
@@ -83,7 +88,7 @@ export class NameScene {
     ctx.restore();
     text(ctx, '?', L.field.x + L.field.w + 22, L.field.y + L.field.h / 2 + 2, { size: 38 });
     const n = this.input.value.length;
-    text(ctx, `só letras · ${n}/${MAX_NAME}`, L.cx, L.field.y + L.field.h + 22, { size: 13, color: '#bcd0f5', stroke: null });
+    text(ctx, `${n}/${MAX_NAME}`, L.cx, L.field.y + L.field.h + 22, { size: 13, color: '#bcd0f5', stroke: null });
 
     const ready = this.name.length > 0;
     button(ctx, L.ok, ready ? '#3fd16b' : '#7d8aa8', { radius: 18, depth: 6 });
