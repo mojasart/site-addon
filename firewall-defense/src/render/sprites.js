@@ -313,6 +313,8 @@ export const ICONS = {
   },
   // café (o que se gasta na Dark Net)
   coffee(ctx, s = 12) {
+    // xícara nova (sprite coffee_cup); sem ela, o ícone SVG antigo
+    if (drawImage(ctx, 'coffee_cup', s * 2.7)) return;
     if (svgIcon(ctx, 'coffee', s)) return;
     rrect(ctx, -s * 0.8, -s * 0.6, s * 1.4, s * 1.4, 4);
     fillOutline(ctx, '#f3e6d4', 2.5);
