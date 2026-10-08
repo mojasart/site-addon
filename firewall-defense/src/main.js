@@ -47,25 +47,61 @@ function toWorld(e) {
   };
 }
 
+// dedos na tela (pra pinça de zoom): id -> posição no mundo
+const touches = new Map();
+let pinchPrev = null;
+function pinchState() {
+  const [a, b] = [...touches.values()];
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, d: Math.hypot(a.x - b.x, a.y - b.y) || 1 };
+}
+
 canvas.addEventListener('pointerdown', (e) => {
-  if (!e.isPrimary) return; // ignora o segundo dedo
   e.preventDefault();
-  canvas.setPointerCapture?.(e.pointerId);
   const p = toWorld(e);
+  touches.set(e.pointerId, p);
+  if (touches.size === 2) pinchPrev = pinchState();
+  if (!e.isPrimary) return; // o segundo dedo só serve pra pinça
+  canvas.setPointerCapture?.(e.pointerId);
   app.pointerDown(p.x, p.y, e.pointerType);
   requestFullscreenOnMobile();
 });
 canvas.addEventListener('pointermove', (e) => {
-  if (!e.isPrimary) return;
   const p = toWorld(e);
+  if (touches.has(e.pointerId)) touches.set(e.pointerId, p);
+  if (touches.size === 2 && pinchPrev) {
+    const now = pinchState();
+    app.pinch(now.x, now.y, now.d / pinchPrev.d, now.x - pinchPrev.x, now.y - pinchPrev.y);
+    pinchPrev = now;
+    return;
+  }
+  if (!e.isPrimary) return;
   app.pointerMove(p.x, p.y, e.pointerType);
 });
+function pointerEnd(e) {
+  touches.delete(e.pointerId);
+  if (touches.size < 2) pinchPrev = null;
+}
 canvas.addEventListener('pointerup', (e) => {
+  pointerEnd(e);
   if (!e.isPrimary) return;
   const p = toWorld(e);
   app.pointerUp(p.x, p.y);
 });
-canvas.addEventListener('pointercancel', () => app.pointerCancel());
+canvas.addEventListener('pointercancel', (e) => {
+  pointerEnd(e);
+  app.pointerCancel();
+});
+// roda do mouse / gesto de zoom do trackpad
+canvas.addEventListener(
+  'wheel',
+  (e) => {
+    e.preventDefault();
+    const p = toWorld(e);
+    const k = e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 400 : 1; // linhas/páginas -> px
+    app.wheel(p.x, p.y, e.deltaY * k);
+  },
+  { passive: false },
+);
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 window.addEventListener('keydown', (e) => app.key(e.key));
 

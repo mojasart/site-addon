@@ -1,7 +1,11 @@
 import { TOWERS } from '../data/towers.js';
 import { SELL_RATE } from '../config.js';
-import { rand } from '../util.js';
+import { rand, chance } from '../util.js';
 import { laserOrigin } from '../render/characters.js';
+
+const SWARM_R = 70; // alcance das abelhas da Colmeia
+const IGNITE = { dps: 0.33, time: 3 }; // Brasa Viva: o mesmo fogo do upgrade Incêndio
+const RECHARGE = 0.3; // recarga instantânea (Avalanche, Varredura Dupla): dispara de novo nesse tempo
 
 export class Tower {
   // fresh: comprada antes de a rodada começar → vende pelo preço cheio
@@ -61,8 +65,19 @@ export class Tower {
   finishMining(game) {
     const s = this.stats;
     if (s.attack !== 'farm' || !game.canMine(this)) return;
-    for (; this.dropped < s.packetsPerRound; this.dropped++) game.spawnPacket(this.x, this.y - 10, s.packetValue);
+    for (; this.dropped < s.packetsPerRound; this.dropped++) this.mine(game);
     this.attack = 1;
+  }
+
+  // Solta um bitcoin. Sorte da Dark Net: Bloco Raro (5×, moeda grande),
+  // Overclock (2×) e Pool de Mineração (vem outro junto)
+  mine(game) {
+    const s = this.stats;
+    const gold = chance(s.goldChance);
+    const mul = gold ? 5 : chance(s.doubleChance) ? 2 : 1;
+    game.spawnPacket(this.x, this.y - 10, s.packetValue * mul, gold);
+    if (chance(s.bonusCoinChance)) game.spawnPacket(this.x, this.y - 10, s.packetValue);
+    if (mul > 1) game.fx.spark(this.x, this.y - 34);
   }
 
   lookAt(x) {
@@ -90,9 +105,23 @@ export class Tower {
     if (this.dead) return;
     this.hp -= amount;
     if (this.hp > 0) return;
+    // Mel Turbinado (Dark Net): às vezes volta com metade da vida
+    if (chance(this.stats.reviveChance)) {
+      this.hp = this.maxHp / 2;
+      this.spawnAnim = 1;
+      game.fx.spark(this.x, this.y - 24);
+      game.fx.burst(this.x, this.y, '#f5a524', 12, 120, 0.45, 4, true);
+      return;
+    }
     this.dead = true;
     game.fx.burst(this.x, this.y, '#f5a524', 20, 170, 0.55, 5, true);
     game.sound.play('pop');
+    // Colmeia (Dark Net): às vezes solta abelhas que tiram 1 camada de quem está em volta
+    if (chance(this.stats.swarmChance)) {
+      game.fx.burst(this.x, this.y, '#ffd23f', 14, 220, 0.6, 3, true);
+      game.fx.burst(this.x, this.y, '#2b2118', 8, 200, 0.6, 3, true);
+      for (const e of game.enemiesInRange(this.x, this.y, SWARM_R)) e.takeDamage(1, game, { armored: true, source: this });
+    }
   }
 
   // Laser perfurante: até n vírus atrás do alvo, na linha do tiro (os mais
@@ -148,8 +177,12 @@ export class Tower {
         const angle = Math.atan2(p.y - handY, p.x - this.x);
         const shots = s.multishot ?? 1;
         // tiros teleguiados: no triplo, cada teclado vai num alvo diferente (se houver)
-        const targets = shots > 1 ? game.findTargets(this, shots) : [target];
-        for (let i = 0; i < shots; i++) game.spawnProjectile(this, angle + (i - (shots - 1) / 2) * 0.22, targets[i] ?? target);
+        // Ctrl+C Ctrl+V (Dark Net): às vezes sai um teclado a mais, num outro vírus
+        const copy = chance(s.extraShotChance);
+        const n = shots + (copy ? 1 : 0);
+        const targets = n > 1 ? game.findTargets(this, n) : [target];
+        for (let i = 0; i < n; i++) game.spawnProjectile(this, angle + (i - (n - 1) / 2) * 0.22, targets[i] ?? target);
+        if (copy) game.fx.spark(this.x, this.y - 40, '#bfe3ff', 8);
         this.lookAt(p.x);
         this.fire();
         break;
@@ -165,28 +198,53 @@ export class Tower {
         const x0 = this.x + this.face * eye.x;
         const y0 = this.y + eye.y;
         // Feixe Perfurante: o laser segue reto e acerta quem está atrás do alvo
-        const hits = [target, ...this.behind(game, target, x0, y0, (s.pierce ?? 1) - 1)];
+        // Lente Calibrada (Dark Net): às vezes atravessa mais um
+        const lucky = chance(s.pierceChance);
+        const hits = [target, ...this.behind(game, target, x0, y0, (s.pierce ?? 1) - 1 + (lucky ? 1 : 0))];
         const last = hits[hits.length - 1];
+        if (lucky && hits.length > (s.pierce ?? 1)) game.fx.spark(last.x, last.y - last.r, '#ffb3c0');
         game.fx.beam(x0, y0, last.x, last.y);
-        for (const e of hits) e.takeDamage(s.damage, game, this.opts());
+        // Ping da Morte (Dark Net): às vezes o tiro dá dano triplo
+        const triple = chance(s.tripleChance);
+        if (triple) game.fx.spark(target.x, target.y - target.r, '#ff6b81', 12);
+        for (const e of hits) e.takeDamage(s.damage * (triple ? 3 : 1), game, this.opts());
         this.fire();
+        // Varredura Dupla (Dark Net): às vezes recarrega na hora
+        if (chance(s.rechargeChance)) this.cooldown = RECHARGE;
         break;
       }
       case 'pulse': {
         if (this.cooldown > 0) break;
-        const targets = game.enemiesInRange(this.x, this.y, s.range);
+        let range = s.range;
+        let targets = game.enemiesInRange(this.x, this.y, range);
         if (targets.length === 0) break;
+        // Erupção (Dark Net): às vezes a onda sai com o dobro do alcance
+        if (chance(s.bigPulseChance)) {
+          range *= 2;
+          targets = game.enemiesInRange(this.x, this.y, range);
+        }
         // vira o corpo pro inimigo mais adiantado que está acertando
         this.lookAt(targets.reduce((a, b) => (b.remaining < a.remaining ? b : a)).x);
         for (const e of targets.slice(0, s.maxTargets)) {
           if (s.slow) e.slow(s.slow, s.slowTime);
+          if (s.shatterChance) e.shatter = s.shatterChance; // Estilhaço: vale enquanto estiver no gelo
           if (s.vulnerable) e.weaken(s.slowTime);
           if (s.burn) e.ignite(s.burn, s.burnTime, this); // antes do dano: os filhos já nascem pegando fogo
+          // bônus de sorte da Dark Net, antes do dano (os filhos já nascem com eles):
+          // Brasa Viva (pega fogo), Tremor de Terra (empurrão), Kernel Gelado (congela)
+          if (!s.burn && chance(s.igniteChance)) {
+            e.ignite(IGNITE.dps, IGNITE.time, this);
+            game.fx.spark(e.x, e.y - e.r, '#ffb36b', 7);
+          }
+          if (chance(s.knockChance) && e.knockBack(28)) game.fx.spark(e.x, e.y - e.r, '#ffb36b', 7);
+          if (chance(s.freezeChance) && e.freeze(1)) game.fx.spark(e.x, e.y - e.r, '#c8f4ff', 8);
           if (s.damage) e.takeDamage(s.damage, game, this.opts());
         }
-        game.fx.ring(this.x, this.y, s.range, s.effect);
+        game.fx.ring(this.x, this.y, range, s.effect);
         this.pulse = 1;
         this.fire();
+        // Avalanche (Dark Net): às vezes vem outra onda logo em seguida
+        if (chance(s.repeatChance)) this.cooldown = RECHARGE;
         break;
       }
       case 'decoy':
@@ -196,7 +254,7 @@ export class Tower {
         if (!game.rounds.active || this.dropped >= s.packetsPerRound || !game.canMine(this)) break;
         this.dropTimer -= dt;
         if (this.dropTimer <= 0) {
-          game.spawnPacket(this.x, this.y - 10, s.packetValue);
+          this.mine(game);
           this.dropped++;
           this.dropTimer = s.packetInterval;
           this.attack = 1;

@@ -89,7 +89,21 @@ Na escolha de mapa, o ícone do monitor (canto de cima) abre o `THREAT_DB.EXE`: 
 
 ## Dark Net e cafés
 
-Na escolha de mapa, a cebola roxa (ao lado do catálogo) é a **Dark Net**: uma árvore de upgrades paga com **cafés** (a árvore ainda está em construção). Ela libera com **35 estrelas** somadas em todos os mapas; antes disso o botão fica trancado e avisa quantas faltam. O saldo de cafés fica do lado dele.
+Na escolha de mapa, a cebola roxa (ao lado do catálogo) é a **Dark Net**: uma árvore de upgrades paga com **cafés**. Ela libera com **35 estrelas** somadas em todos os mapas; antes disso o botão fica trancado e avisa quantas faltam. O saldo de cafés aparece lá dentro.
+
+A árvore começa num nó central, que abre um ramo por defesa. Cada nó é um bônus permanente (vale em toda fase, normal e platina), comprado uma vez (`TREE` em `src/data/darknet.js`, salvo em `save.darknet`):
+
+| Nó | Efeito | Custo |
+|----|--------|-------|
+| Acesso Root (centro) | toda fase começa com +$75; libera os ramos | 3 cafés |
+| Teclado Mecânico | Hacker ataca 10% mais rápido | 5 cafés |
+| Tijolo Refratário | Golem Firewall com +15% de alcance | 5 cafés |
+| Kernel Gelado | lentidão do Penguin Linux dura +0,5 s | 5 cafés |
+| Lente Calibrada | Robô NMAP com +1 de dano | 5 cafés |
+| Overclock | cada bitcoin minerado vale +$5 | 5 cafés |
+| Mel Turbinado | Honeypot com +50% de vida | 5 cafés |
+
+Os bots jogam sem esses bônus, então a dificuldade calibrada é a de quem ainda não comprou nada.
 
 Os cafés vêm do melhor resultado de cada mapa (`src/data/darknet.js`), então nunca se ganha o mesmo café duas vezes:
 
@@ -155,14 +169,14 @@ firewall-defense/
     ├── main.js              canvas, escala da tela, input touch, loop
     ├── app.js               troca de telas (título → mapas → jogo), save, som
     ├── game.js              a partida: regras, toque, desenho geral
-    ├── save.js              estrelas, platinas, cafés gastos e configurações no localStorage
+    ├── save.js              estrelas, platinas, cafés gastos, upgrades da Dark Net e configurações no localStorage
     ├── config.js            tela, regras globais, fonte, cores base
     ├── data/                ← BALANCEAMENTO E CONTEÚDO FICAM AQUI
     │   ├── towers.js        defesas, custos, upgrades
     │   ├── enemies.js       vírus, camadas, chefões
     │   ├── rounds.js        as 25 rodadas
     │   ├── platinum.js      modo platina (ondas sem parar, chefão, aliado bloqueado)
-    │   ├── darknet.js       Dark Net: estrelas pra liberar e cafés de cada mapa
+    │   ├── darknet.js       Dark Net: estrelas pra liberar, cafés de cada mapa e a árvore de upgrades
     │   ├── maps.js          seasons e os 45 mapas (dificuldade de cada um)
     │   ├── mapgen.js        gerador de caminhos (loop, Y, várias entradas)
     │   ├── tuning.js        pressão de cada mapa, calibrada com bots
