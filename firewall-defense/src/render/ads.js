@@ -42,12 +42,12 @@ export const adSize = (s) => ({ w: W * s, h: H * s });
 // crypt: o criptografado (aparece com a chance `crypt` do Adware, não no sorteio comum)
 export const ADS = [
   { bar: '#8a5530', title: 'PROMOÇÃO', head: 'CAFÉ EXPRESSO: LEVE 2, PAGUE 3!', sub: 'Só hoje no Cafezinho do Hacker', cta: 'QUERO!', icon: 'coffee' },
-  { bar: '#ff9a2e', title: 'PARABÉNS!!!', head: 'VOCÊ É O VISITANTE 1.000.000', sub: 'Resgate seu iPhone 3G agora', cta: 'RESGATAR', icon: 'star' },
-  { bar: '#3f8cff', title: 'PC LENTO?', head: 'BAIXE MAIS MEMÓRIA RAM', sub: '16 GB grátis, é só clicar aqui', cta: 'BAIXAR', icon: 'ram' },
-  { bar: '#ff4d5e', title: 'ALERTA!!!', head: 'SEU PC TEM 37 VÍRUS', sub: 'Limpe agora (instala só mais 38)', cta: 'LIMPAR', icon: 'virus' },
+  { bar: '#ff9a2e', title: 'PARABÉNS!!!', head: 'VOCÊ É O VISITANTE 1.000.000', sub: 'Resgate seu iPhone 19 agora', cta: 'RESGATAR', icon: 'star' },
+  { bar: '#3f8cff', title: 'PC LENTO?', head: 'BAIXE MAIS MEMÓRIA RAM', sub: '16 GB grátis, clique aqui!', cta: 'BAIXAR', icon: 'ram' },
+  { bar: '#ff4d5e', title: 'ALERTA!!!', head: 'SEU PC TEM 37 VÍRUS', sub: 'Limpe agora', cta: 'LIMPAR', icon: 'virus' },
   { bar: '#ff6fd0', title: 'ENCONTROS', head: 'VÍRUS SOLTEIROS NA SUA REDE', sub: 'A 2 metros do seu servidor', cta: 'CONHECER', icon: 'heart' },
-  { bar: '#2fbf6a', title: 'RENDA EXTRA', head: 'GANHE BITCOIN DORMINDO', sub: 'Mineradores odeiam esse truque', cta: 'COMEÇAR', icon: 'coin' },
-  { bar: '#8a7dff', title: 'CURSO ONLINE', head: 'VIRE HACKER EM 7 DIAS', sub: 'Aula 1: como arremessar teclados', cta: 'MATRICULAR', icon: 'keyboard' },
+  { bar: '#2fbf6a', title: 'RENDA EXTRA', head: 'GANHE BITCOIN DORMINDO', sub: 'Ficar rico é fácil e rápido', cta: 'COMEÇAR', icon: 'coin' },
+  { bar: '#8a7dff', title: 'CURSO ONLINE', head: 'VIRE HACKER EM 7 DIAS', sub: 'Aula 1: RCE no WordPress', cta: 'MATRICULAR', icon: 'keyboard' },
   { bar: '#7a3cc4', title: 'CRIPTOGRAFADO', head: '', sub: 'Pague 0,5 BTC pra fechar', cta: 'DESCRIPTOGRAFAR', icon: 'lock', crypt: true },
 ];
 export const CRYPT_AD = ADS.findIndex((a) => a.crypt);
@@ -232,10 +232,26 @@ function drawIcon(ctx, icon, t) {
   }
 }
 
-// Lugar sorteado na tela pra um anúncio de tamanho w × h (dentro da tela)
-export function adSpot(viewW, w, h) {
-  return {
+// Lugar na tela pra um anúncio w × h: entre vários sorteios, o mais longe dos
+// anúncios já abertos (assim eles se espalham e tomam a tela inteira, em vez
+// de se amontoar num canto)
+const SPOT_TRIES = 16;
+export function adSpot(viewW, w, h, others = []) {
+  const pick = () => ({
     x: 8 + Math.random() * Math.max(0, viewW - w - 16),
     y: 8 + Math.random() * Math.max(0, VIEW_H - h - 16),
-  };
+  });
+  const open = others.filter((o) => o.closing == null);
+  if (!open.length) return pick();
+  let best = null;
+  let bestD = -1;
+  for (let i = 0; i < SPOT_TRIES; i++) {
+    const p = pick();
+    const cx = p.x + w / 2;
+    const cy = p.y + h / 2;
+    let d = Infinity;
+    for (const o of open) d = Math.min(d, Math.hypot(cx - (o.x + o.w / 2), cy - (o.y + o.h / 2)));
+    if (d > bestD) [best, bestD] = [p, d];
+  }
+  return best;
 }
