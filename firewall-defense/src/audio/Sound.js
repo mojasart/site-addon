@@ -291,12 +291,43 @@ const SEA_MELODY = [ // 1 nota por tempo, 8 compassos
   74, null, 71, null, 74, 73, 71, null,
 ];
 
+// LOJA: bossa nova de "música de loja" (tipo canal de compras de videogame),
+// Dó maior, 112 bpm em colcheias. Acordes com sétima (I–vi–ii–V e depois
+// IV–iii–ii–V), baixo de bossa, chocalho, Rhodes sincopado, melodia de
+// marimba e um "tlim-tlim" de moedinha no fim de cada frase. Clima leve e
+// feliz pra deixar a pessoa à vontade olhando os itens. Na 2ª metade entram
+// o aro da clave e o sininho dobrando a melodia uma oitava acima.
+const SHOP_CHORDS = [
+  { root: 48, notes: [60, 64, 67, 71] }, // Cmaj7
+  { root: 45, notes: [57, 60, 64, 67] }, // Am7
+  { root: 50, notes: [62, 65, 69, 72] }, // Dm7
+  { root: 43, notes: [55, 59, 62, 65] }, // G7
+  { root: 41, notes: [53, 57, 60, 64] }, // Fmaj7
+  { root: 40, notes: [55, 59, 62, 64] }, // Em7
+  { root: 50, notes: [62, 65, 69, 72] }, // Dm7
+  { root: 43, notes: [55, 59, 62, 65] }, // G7
+];
+const SHOP_BASS = [0, null, null, 7, 0, null, null, 7]; // tônica e quinta, no balanço da bossa
+const SHOP_COMP = [1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0]; // Rhodes (2 compassos)
+const SHOP_CLAVE = [1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0]; // aro (2 compassos)
+const SHOP_MELODY = [ // 1 nota por colcheia, 8 compassos (repete na 2ª metade)
+  76, null, 79, 76, 71, null, 72, 74,
+  76, null, 72, null, 69, 72, 76, null,
+  77, null, 76, 74, 72, null, 69, null,
+  71, 72, 74, null, 77, null, 79, null,
+  81, null, 79, 77, 76, null, 72, null,
+  79, null, 76, null, 74, 71, 67, null,
+  74, null, 77, 81, 79, null, 77, 74,
+  71, null, 67, null, 74, null, 72, null,
+];
+
 const THEMES = {
   menu: { step: 60 / 128 / 2, steps: 64, play: 'menuStep' },
   'battle-0': { step: 60 / 100 / 2, steps: 128, play: 'battleStep' },
   'battle-1': { step: 60 / 124 / 4, steps: 256, play: 'datacenterStep' },
   'battle-2': { step: 60 / 84 / 2, steps: 128, play: 'oceanStep' },
   catalog: { step: 60 / 96 / 4, steps: 256, play: 'matrixStep' }, // catálogo: "Matrix"
+  shop: { step: 60 / 112 / 2, steps: 128, play: 'shopStep' }, // loja: bossa de compras
 };
 THEMES.battle = THEMES['battle-0'];
 
@@ -448,6 +479,50 @@ class Music {
 
     // varredura de "dados" no fim de cada frase
     if (bar % 4 === 3 && k === 8) s.noise({ dur: STEP * 8, vol: 0.04, filter: 'highpass', freq: 1500, to: 9000, at, bus });
+  }
+
+  // Loja: bossa nova de compras (colcheias, 8 por compasso)
+  shopStep(i, at) {
+    const s = this.s;
+    const bus = s.musicBus;
+    const STEP = THEMES.shop.step;
+    const bar = Math.floor(i / 8);
+    const chord = SHOP_CHORDS[bar % 8];
+    const k = i % 8;
+    const k16 = i % 16;
+    const full = bar >= 8;
+
+    // baixo de bossa (redondo) e bumbo macio junto da tônica
+    const b = SHOP_BASS[k];
+    if (b !== null) s.tone({ type: 'triangle', freq: midi(chord.root + b), dur: STEP * 1.6, vol: 0.17, at, bus });
+    if (k === 0 || k === 4) s.tone({ type: 'sine', freq: 110, to: 50, dur: 0.18, vol: 0.12, at, bus });
+
+    // chocalho em toda colcheia, mais forte no contratempo
+    s.noise({ dur: 0.045, vol: k % 2 ? 0.035 : 0.018, filter: 'highpass', freq: 6500, at, bus });
+    // aro da clave (2ª metade)
+    if (full && SHOP_CLAVE[k16]) s.noise({ dur: 0.03, vol: 0.06, filter: 'bandpass', freq: 2600, q: 5, at, bus });
+
+    // Rhodes: acorde com sétima, curtinho e sincopado
+    if (SHOP_COMP[k16]) {
+      for (const n of chord.notes) {
+        s.tone({ type: 'sine', freq: midi(n), dur: STEP * 1.3, vol: 0.03, at, bus });
+        s.tone({ type: 'triangle', freq: midi(n + 12), dur: STEP * 0.5, vol: 0.006, at, bus });
+      }
+    }
+
+    // melodia de marimba (+ sininho uma oitava acima na 2ª metade)
+    const m = SHOP_MELODY[i % SHOP_MELODY.length];
+    if (m) {
+      s.tone({ type: 'sine', freq: midi(m), dur: 0.32, vol: 0.09, at, bus });
+      s.tone({ type: 'triangle', freq: midi(m + 12), dur: 0.06, vol: 0.02, at, bus });
+      if (full) s.tone({ type: 'sine', freq: midi(m + 24), dur: 0.5, vol: 0.018, at, bus });
+    }
+
+    // "tlim-tlim" de moedinha no fim de cada frase de 4 compassos
+    if (bar % 4 === 3 && k === 7) {
+      s.tone({ type: 'sine', freq: midi(96), dur: 0.12, vol: 0.035, at, bus });
+      s.tone({ type: 'sine', freq: midi(100), dur: 0.35, vol: 0.035, at: at + 0.07, bus });
+    }
   }
 
   // Data Center: techno industrial (semicolcheias, 16 por compasso)

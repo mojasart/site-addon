@@ -81,10 +81,11 @@ export class App {
     this.go(() => new LevelSelectScene(this));
   }
 
-  // JOGAR na tela inicial: na primeira vez pergunta o nome; depois, mapas
+  // JOGAR na tela inicial: na primeira vez pergunta o nome (janelinha por
+  // cima da tela inicial, sem transição); depois, mapas
   goPlay() {
     if (this.save.playerName) this.goMaps();
-    else this.go(() => new NameScene(this));
+    else if (!this.next) this.scene = new NameScene(this, this.scene);
   }
 
   // Nome que o Hacker usa pra falar com o jogador
@@ -418,9 +419,15 @@ export class App {
         this.scene = this.next();
         this.next = null;
         // na partida, a música de batalha da season do mapa; no catálogo, a "Matrix";
-        // nos outros menus, a alegre
+        // na loja, a bossa de compras; nos outros menus, a alegre
         this.sound.setTheme?.(
-          this.scene instanceof Game ? `battle-${this.scene.map.season}` : this.scene instanceof CatalogScene ? 'catalog' : 'menu',
+          this.scene instanceof Game
+            ? `battle-${this.scene.map.season}`
+            : this.scene instanceof CatalogScene
+              ? 'catalog'
+              : this.scene instanceof ShopScene
+                ? 'shop'
+                : 'menu',
         );
       }
     } else this.fade = Math.max(0, this.fade - dt * 4);
