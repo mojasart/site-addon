@@ -31,6 +31,7 @@ import { rand } from './util.js';
 
 const TOUCH_LIFT = 46; // ao arrastar com o dedo, a defesa aparece acima dele
 const BASE_HIT = 24; // raio da hitbox do servidor (ele ocupa 1 quadrado)
+const CAST_TIME = 0.5; // Ransomware fica parado tremendo esse tempo ao criptografar
 
 // A partida em si (uma fase). Criada pelo App ao escolher um mapa.
 // mode: 'normal' ou 'platinum' (ondas sem parar até o chefão; data/platinum.js)
@@ -538,10 +539,11 @@ export class Game {
     return this.towers.filter((t) => !t.dead && !t.ransom && Math.hypot(t.x - e.x, t.y - e.y) <= R);
   }
 
-  // Ransomware treme e criptografa as defesas em volta (param até pagar o resgate)
+  // Ransomware para e treme um instante (CAST_TIME) e criptografa as defesas
+  // em volta (param até pagar o resgate)
   ransom(e) {
     const rs = e.def.ransom;
-    e.quake = 0.6;
+    e.quake = CAST_TIME;
     this.shake(6);
     this.sound.play('zap');
     this.fx.ring(e.x, e.y, rs.range * TILE, 'ransom');

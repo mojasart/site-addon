@@ -31,7 +31,7 @@ export class Enemy {
     this.phase = rand(0, 10); // relógio da animação
     this.dead = false;
     this.speedMul = 1; // dificuldade do mapa (RoundManager)
-    this.quake = 0; // tremendo (Ransomware lançando a criptografia)
+    this.quake = 0; // tremendo parado (Ransomware lançando a criptografia)
   }
 
   // Vida dos inimigos de várias camadas (Worm, Locker, Ransomware) muda
@@ -42,7 +42,7 @@ export class Enemy {
   }
 
   get speed() {
-    if (this.freezeTimer > 0) return 0;
+    if (this.freezeTimer > 0 || this.quake > 0) return 0;
     return this.def.speed * this.speedMul * (this.slowTimer > 0 ? this.slowMul : 1);
   }
 
