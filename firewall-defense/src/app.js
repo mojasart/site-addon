@@ -404,9 +404,15 @@ export class App {
         this.scene = this.next();
         this.next = null;
         // na partida, a música de batalha da season do mapa; no catálogo, a "Matrix";
-        // nos outros menus, a alegre
+        // na loja, a bossa de compras; nos outros menus, a alegre
         this.sound.setTheme?.(
-          this.scene instanceof Game ? `battle-${this.scene.map.season}` : this.scene instanceof CatalogScene ? 'catalog' : 'menu',
+          this.scene instanceof Game
+            ? `battle-${this.scene.map.season}`
+            : this.scene instanceof CatalogScene
+              ? 'catalog'
+              : this.scene instanceof ShopScene
+                ? 'shop'
+                : 'menu',
         );
       }
     } else this.fade = Math.max(0, this.fade - dt * 4);
