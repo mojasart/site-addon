@@ -116,7 +116,7 @@ export const TOWERS = {
       { name: 'GPU Extra', desc: '6 bitcoins por rodada', cost: 500, apply: (s) => { s.packetsPerRound = 6; } },
       // escolhe uma defesa aleatória (que ataca) pra patrocinar: cada vírus que
       // ela estourar solta +$`sponsor` (Tower.updateSponsor, Enemy.pop)
-      { name: 'Patrocínio', desc: 'Uma defesa aleatória dá mais gold', cost: 900,
+      { name: 'Patrocínio', desc: 'Uma defesa aleatória dá mais bitcoins por morte', cost: 900,
         apply: (s) => { s.sponsor = 1; } },
     ],
   },
