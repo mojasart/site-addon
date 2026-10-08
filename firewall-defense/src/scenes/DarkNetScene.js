@@ -5,7 +5,7 @@ import { ICONS } from '../render/sprites.js';
 import { drawCharacter } from '../render/characters.js';
 import { drawDuck } from '../render/duck.js';
 import { TREE, NODE, formatCoffee } from '../data/darknet.js';
-import { seeded } from '../util.js';
+import { seeded, plural } from '../util.js';
 
 /* ════════════════════════════════════════════════════════════
  *  DARK NET: a árvore de upgrades paga com cafés
@@ -425,9 +425,12 @@ export class DarkNetScene {
     ctx.textAlign = 'left';
     let status = null;
     const extra = st === 'owned' ? this.app.perkRollbackSet(n.id).length - 1 : 0;
-    if (extra > 0) status = [`> vender leva junto ${extra} upgrade${extra > 1 ? 's' : ''}`, '#ffc62e'];
+    if (extra > 0) status = [`> vender leva junto ${extra} ${plural(extra, 'upgrade', 'upgrades')}`, '#ffc62e'];
     else if (st === 'owned') status = ['> instalado', GREEN];
-    else if (st === 'open' && !can) status = [`> faltam ${formatCoffee(n.cost - this.app.coffee)} café(s)`, '#ffc62e'];
+    else if (st === 'open' && !can) {
+      const miss = n.cost - this.app.coffee;
+      status = [`> ${plural(miss, 'falta', 'faltam')} ${formatCoffee(miss)} ${plural(miss, 'café', 'cafés')}`, '#ffc62e'];
+    }
     else if (st === 'open') status = ['> pronto pra instalar', PURPLE];
     if (status) {
       ctx.fillStyle = status[1];
