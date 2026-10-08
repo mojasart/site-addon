@@ -34,8 +34,10 @@ const BG = '#03130a';
 const RED = '#ff5a6a';
 
 export class CatalogScene {
-  constructor(app) {
+  // returnTo: partida pausada pra onde o voltar leva (aberto pelo menu de pausa)
+  constructor(app, { returnTo = null } = {}) {
     this.app = app;
+    this.returnTo = returnTo;
     this.t = 0;
     this.tab = 0;
     this.sel = [Math.max(0, ORDER.findIndex((k) => app.hasSeen(k))), 0]; // um por aba
@@ -397,7 +399,7 @@ export class CatalogScene {
     const L = this.layout();
     if (inRect(L.back, x, y)) {
       this.app.sound.play('click');
-      this.app.goTitle();
+      this.leave();
       return;
     }
     L.tabs.forEach((r, i) => {
@@ -416,8 +418,15 @@ export class CatalogScene {
     }
   }
 
+  // Voltar: pra partida pausada (se veio do menu de pausa) ou pra tela inicial
+  leave() {
+    const game = this.returnTo;
+    if (game) this.app.go(() => game);
+    else this.app.goTitle();
+  }
+
   key(k) {
-    if (k === 'Escape') this.app.goTitle();
+    if (k === 'Escape') this.leave();
     if (k === 'ArrowDown') this.select(this.sel[this.tab] + 1);
     if (k === 'ArrowUp') this.select(this.sel[this.tab] - 1);
     if (k === 'ArrowRight') this.setTab(this.tab + 1);

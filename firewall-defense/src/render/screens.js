@@ -16,7 +16,9 @@ export function overlayLayout(game) {
   if (game.state === 'paused') {
     L.resume = { x: cx - 150, y: 150, w: 300, h: 72 };
     L.restart = { x: cx - 150, y: 234, w: 300, h: 66 };
-    L.maps = { x: cx - 150, y: 312, w: 300, h: 66 };
+    // MAPAS e CATÁLOGO lado a lado (o catálogo volta pra partida pausada)
+    L.maps = { x: cx - 150, y: 312, w: 146, h: 66 };
+    L.catalog = { x: cx + 4, y: 312, w: 146, h: 66 };
     // volume da música e dos efeitos (barras) e o turno automático do lado
     L.music = { x: cx - 235, y: 392, w: 340, h: 40 };
     L.sfx = { x: cx - 235, y: 440, w: 340, h: 40 };
@@ -86,7 +88,8 @@ export function drawOverlay(ctx, game) {
     ribbon(ctx, cx, c.y + 46, 260, 'PAUSADO', '#5fb4ff', 30);
     bigButton(ctx, L.resume, '#3fd16b', 'CONTINUAR', { icon: 'play', size: 28 });
     bigButton(ctx, L.restart, '#5fb4ff', 'REINICIAR', { icon: 'restart', size: 24 });
-    bigButton(ctx, L.maps, '#ff9a2e', 'MAPAS', { icon: 'map', size: 24 });
+    bigButton(ctx, L.maps, '#ff9a2e', 'MAPAS', { icon: 'map', size: 20 });
+    bigButton(ctx, L.catalog, '#8a7dff', 'CATÁLOGO', { icon: 'catalog', size: 17 });
     volumeSlider(ctx, L.music, 'music', game.app.save.musicVol);
     volumeSlider(ctx, L.sfx, 'sfx', game.app.save.sfxVol);
     iconButton(ctx, L.auto, game.autoRound ? '#3fd16b' : '#7d8fa8', 'auto', game.autoRound);
