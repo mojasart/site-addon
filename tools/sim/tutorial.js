@@ -67,12 +67,12 @@ export function playTutorial(log = () => {}, { passive = false } = {}) {
       if (s.kind === 'say' && tut.t > 0.6) tap(g.mapW / 2, 300);
       else if (s.kind === 'do' && tut.t > 0.8 && (f % 30 === 0)) {
         const tg = s.target();
-        if (s.event[0] === 'place' && s.event[1] === 'honeypot' && g.placing === 'honeypot') r.honey = honeyInfo(g, tg);
+        if (s.event?.[0] === 'place' && s.event[1] === 'honeypot' && g.placing === 'honeypot') r.honey = honeyInfo(g, tg);
         tap(tg.x, tg.y);
       }
     }
     // momento livre: constrói; depois do tutorial, solta as ondas
-    if (!passive && (tut.done || tut.step.kind === 'wait')) build(g);
+    if (!passive && tut.done) build(g); // (no tutorial não dá pra construir fora dos passos)
     if (tut.done && !g.rounds.active && g.state === 'playing') g.playPressed();
   }
   r.won = g.state === 'won';
