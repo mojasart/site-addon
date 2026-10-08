@@ -19,6 +19,9 @@ export const MAX_VIEW_W = 1170;
 // Vida de uma camada de vírus (o dano básico de um ataque também é dessa ordem:
 // Hacker 1000 por teclado). Escala grande pra buff de 10% fazer sentido
 export const LAYER_HP = 1000;
+// Energia: cada partida (começar ou reiniciar) gasta 1; volta 1 a cada regenMin
+// minutos até max; sem energia, um anúncio de adTime s dá +ad
+export const ENERGY = { max: 10, regenMin: 12, ad: 2, adTime: 5 };
 export const SELL_RATE = 0.7; // vender devolve 70% do que foi gasto
 export const SPEEDS = [1, 2, 3]; // botão de acelerar: 1x → 2x → 3x
 export const TURBO_SPEED = 5; // a mais no fim da lista com a Placa-Mãe (season 1) toda platinada

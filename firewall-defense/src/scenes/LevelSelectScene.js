@@ -1,13 +1,12 @@
 import { VIEW_H, OUTLINE, GOLD } from '../config.js';
 import { MAPS, SEASONS, MAPS_PER_SEASON } from '../data/maps.js';
-import { ENEMIES } from '../data/enemies.js';
 import { renderThumb } from '../render/maps/index.js';
 import { rrect, fillOutline, text, button, setFont } from '../render/canvas.js';
 import { iconButton, inRect, stars, ribbon, bigButton, starTier, volumeSlider, sliderValue } from '../render/widgets.js';
-import { drawVirusIcon } from '../render/viruses.js';
 import { ICONS } from '../render/sprites.js';
 import { BOT_WIN } from '../data/botStats.js';
 import { DARKNET_STARS } from '../data/darknet.js';
+import { drawEnergyBadge } from '../render/energy.js';
 
 const DIFF_COLOR = { 'FÁCIL': '#3fd16b', 'MÉDIO': '#ff9a2e', 'DIFÍCIL': '#ff5a6a', 'EXTREMO': '#b65cff' };
 // Dificuldade pela % de partidas de bots que venceram o mapa (data/botStats.js)
@@ -129,14 +128,8 @@ export class LevelSelectScene {
       ctx.fill();
     }
     ctx.restore();
-    // vírus boiando no canto de cima
-    [['v2', 120, 52]].forEach(([type, x, y], i) => {
-      ctx.save();
-      ctx.translate(x, y + Math.sin(t * 2 + i) * 6);
-      ctx.rotate(Math.sin(t + i) * 0.2);
-      drawVirusIcon(ctx, type, ENEMIES[type], 16);
-      ctx.restore();
-    });
+    // energia no canto de cima (cada partida gasta 1)
+    drawEnergyBadge(ctx, this.app, 88, 24);
 
     const L = this.layout();
     ribbon(ctx, W / 2, 46, 340, 'ESCOLHA O MAPA', '#ff9a2e', 28);

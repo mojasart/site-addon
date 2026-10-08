@@ -1,0 +1,141 @@
+import { VIEW_H, OUTLINE, GOLD, ENERGY } from '../config.js';
+import { rrect, fillOutline, text } from './canvas.js';
+import { bigButton, iconButton, ribbon } from './widgets.js';
+import { ICONS } from './sprites.js';
+import { easeOutBack } from '../util.js';
+
+/* ════════════════════════════════════════════════════════════
+ *  ENERGIA
+ *  Cada partida começada (ou reiniciada) gasta 1. Volta 1 a cada
+ *  ENERGY.regenMin minutos, até ENERGY.max. Sem energia, abre a janela
+ *  "SEM ENERGIA" por cima de qualquer tela (app.energyUI), com o tempo pra
+ *  próxima e um anúncio (simulado por enquanto) que dá +ENERGY.ad.
+ *  Tudo em coordenadas de tela.
+ * ════════════════════════════════════════════════════════════ */
+
+// Raio amarelo (origem no centro, s = metade da altura)
+export function drawBolt(ctx, s, gray = false) {
+  ctx.beginPath();
+  ctx.moveTo(s * 0.2, -s);
+  ctx.lineTo(-s * 0.62, s * 0.12);
+  ctx.lineTo(-s * 0.05, s * 0.12);
+  ctx.lineTo(-s * 0.28, s);
+  ctx.lineTo(s * 0.62, -s * 0.18);
+  ctx.lineTo(s * 0.04, -s * 0.18);
+  ctx.closePath();
+  ctx.lineJoin = 'round';
+  fillOutline(ctx, gray ? '#7d8fa8' : '#ffd23f', Math.max(2, s * 0.22));
+}
+
+// mm:ss
+const clock = (ms) => {
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+};
+
+// Contador de energia (raio + "7/10" e, embaixo, quanto falta pra próxima)
+export function drawEnergyBadge(ctx, app, x, y) {
+  const e = app.energy;
+  const w = 118;
+  rrect(ctx, x, y, w, 40, 20);
+  fillOutline(ctx, 'rgba(20,28,60,0.85)', 3);
+  ctx.save();
+  ctx.translate(x + 22, y + 20);
+  drawBolt(ctx, 13, e <= 0);
+  ctx.restore();
+  text(ctx, app.debug ? '∞' : `${e}/${ENERGY.max}`, x + 42, y + 21, { size: 20, align: 'left', color: e > 0 ? '#ffffff' : '#ff7a8a' });
+  if (!app.debug && e < ENERGY.max) {
+    text(ctx, `+1 em ${clock(app.energyNextMs())}`, x + w / 2, y + 52, { size: 12, color: '#d8e6ff' });
+  }
+}
+
+// Posições da janela de energia (desenho e toque)
+export function energyLayout(app) {
+  const cx = app.viewW / 2;
+  const card = { x: cx - 230, y: 110, w: 460, h: 320 };
+  return {
+    card,
+    close: { x: card.x + card.w - 54, y: card.y + 14, w: 42, h: 42 },
+    watch: { x: card.x + 50, y: card.y + 222, w: card.w - 100, h: 70 },
+    skip: { x: cx - 130, y: VIEW_H - 110, w: 260, h: 70 }, // fim do anúncio
+  };
+}
+
+export function drawEnergyModal(ctx, app) {
+  const ui = app.energyUI;
+  if (ui.mode === 'ad') return drawAd(ctx, app, ui);
+  const W = app.viewW;
+  const L = energyLayout(app);
+  const c = L.card;
+  const k = easeOutBack(Math.min(1, ui.t * 4));
+  ctx.fillStyle = `rgba(10,18,40,${0.75 * Math.min(1, ui.t * 4)})`;
+  ctx.fillRect(0, 0, W, VIEW_H);
+  ctx.save();
+  ctx.translate(W / 2, VIEW_H / 2);
+  ctx.scale(0.7 + 0.3 * k, 0.7 + 0.3 * k);
+  ctx.translate(-W / 2, -VIEW_H / 2);
+  rrect(ctx, c.x, c.y + 10, c.w, c.h, 28);
+  ctx.fillStyle = 'rgba(10,16,40,0.55)';
+  ctx.fill();
+  rrect(ctx, c.x, c.y, c.w, c.h, 28);
+  fillOutline(ctx, '#34497f', 5);
+  ribbon(ctx, W / 2, c.y + 4, 280, 'SEM ENERGIA', '#ff9a2e', 26);
+  iconButton(ctx, L.close, '#ff5a5a', 'close');
+  // raio apagado pulsando
+  ctx.save();
+  ctx.translate(W / 2, c.y + 100);
+  const p = 1 + Math.sin(ui.t * 5) * 0.06;
+  ctx.scale(p, p);
+  drawBolt(ctx, 34, true);
+  ctx.restore();
+  text(ctx, `0/${ENERGY.max} energias`, W / 2, c.y + 158, { size: 22 });
+  text(ctx, `A próxima volta em ${clock(app.energyNextMs())}`, W / 2, c.y + 190, { size: 16, color: '#d8e6ff' });
+  bigButton(ctx, L.watch, '#3fd16b', `ASSISTIR ANÚNCIO  +${ENERGY.ad}`, { icon: 'play', size: 21 });
+  ctx.restore();
+}
+
+// Anúncio simulado: tela cheia com uma propaganda e a contagem; no fim,
+// o botão de pegar as energias
+function drawAd(ctx, app, ui) {
+  const W = app.viewW;
+  const L = energyLayout(app);
+  const left = Math.max(0, ENERGY.adTime - ui.t);
+  ctx.fillStyle = '#05070f';
+  ctx.fillRect(0, 0, W, VIEW_H);
+  text(ctx, 'ANÚNCIO', 24, 28, { size: 14, align: 'left', color: '#7d8fa8' });
+  // "vídeo": propaganda do Cafezinho do Hacker
+  const cx = W / 2;
+  const cy = VIEW_H / 2 - 40;
+  rrect(ctx, cx - 260, cy - 120, 520, 240, 24);
+  fillOutline(ctx, '#2a1840', 4);
+  const bob = Math.sin(ui.t * 4) * 6;
+  text(ctx, 'CAFEZINHO DO HACKER', cx, cy - 70 + bob * 0.3, { size: 32, color: GOLD });
+  text(ctx, 'O expresso que compila mais rápido', cx, cy - 24, { size: 18, color: '#ffffff' });
+  for (const dx of [-70, 0, 70]) {
+    ctx.save();
+    ctx.translate(cx + dx, cy + 30 + (dx === 0 ? bob : -bob));
+    ICONS.coffee(ctx, 20);
+    ctx.restore();
+  }
+  text(ctx, 'Peça já no seu terminal', cx, cy + 86, { size: 15, color: '#bcd0f5' });
+  // barra de progresso do "vídeo"
+  const pw = 520;
+  const prog = Math.min(1, ui.t / ENERGY.adTime);
+  rrect(ctx, cx - pw / 2, cy + 140, pw, 8, 4);
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.fill();
+  rrect(ctx, cx - pw / 2, cy + 140, Math.max(8, pw * prog), 8, 4);
+  ctx.fillStyle = GOLD;
+  ctx.fill();
+  if (left > 0) {
+    text(ctx, `Recompensa em ${Math.ceil(left)}…`, W - 24, 28, { size: 16, align: 'right', color: '#d8e6ff' });
+  } else {
+    bigButton(ctx, L.skip, '#3fd16b', `PEGAR +${ENERGY.ad}`, { size: 24 });
+    ctx.save();
+    ctx.translate(L.skip.x + L.skip.w - 40, L.skip.y + (L.skip.h - 6) / 2);
+    drawBolt(ctx, 14);
+    ctx.restore();
+  }
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = OUTLINE;
+}

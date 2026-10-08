@@ -1,4 +1,4 @@
-import { MIN_VIEW_W, VIEW_H, DEBUG } from './config.js';
+import { MIN_VIEW_W, VIEW_H, DEBUG, ENERGY } from './config.js';
 import { MAPS, MAPS_PER_SEASON } from './data/maps.js';
 import { loadSave, writeSave, pauseSaving } from './save.js';
 import { Sound } from './audio/Sound.js';
@@ -10,6 +10,8 @@ import { CatalogScene } from './scenes/CatalogScene.js';
 import { DarkNetScene } from './scenes/DarkNetScene.js';
 import { ShopScene } from './scenes/ShopScene.js';
 import { ITEM } from './data/consumables.js';
+import { drawEnergyModal, energyLayout } from './render/energy.js';
+import { inRect } from './render/widgets.js';
 import { DARKNET_STARS, COFFEE, mapCoffee, NODE, TREE } from './data/darknet.js';
 
 // Controla as telas (título → mapas → jogo), a transição entre elas,
@@ -222,8 +224,84 @@ export class App {
   }
 
   // mode: 'normal' ou 'platinum' (libera com 3 estrelas)
+  // Começa (ou reinicia) uma partida: gasta 1 energia. Sem energia, abre a
+  // janela "SEM ENERGIA" (com o anúncio); depois do anúncio a partida começa
   startMap(i, mode = 'normal') {
+    if (this.next || this.energyUI) return;
+    if (!this.spendEnergy()) {
+      this.energyUI = { mode: 'empty', t: 0, pending: { i, mode } };
+      this.sound.play('error');
+      return;
+    }
     this.go(() => new Game(this, i, mode));
+  }
+
+  // ── Energia (ENERGY em config.js; save.energy + save.energyAt) ──
+  // energyAt: quando a recarga atual começou a contar (ms). Volta 1 a cada
+  // regenMin minutos enquanto estiver abaixo do máximo
+  get energyRegenMs() {
+    return ENERGY.regenMin * 60 * 1000;
+  }
+
+  refreshEnergy() {
+    const s = this.save;
+    if (s.energy >= ENERGY.max) return;
+    const gained = Math.floor((Date.now() - s.energyAt) / this.energyRegenMs);
+    if (gained <= 0) return;
+    s.energy = Math.min(ENERGY.max, s.energy + gained);
+    s.energyAt = s.energy >= ENERGY.max ? Date.now() : s.energyAt + gained * this.energyRegenMs;
+    writeSave(s);
+  }
+
+  get energy() {
+    this.refreshEnergy();
+    return this.save.energy;
+  }
+
+  // ms até a próxima energia voltar (0 com a energia cheia)
+  energyNextMs() {
+    if (this.energy >= ENERGY.max) return 0;
+    return Math.max(0, this.save.energyAt + this.energyRegenMs - Date.now());
+  }
+
+  // Gasta 1 energia (no modo debug é de graça). false se não tiver
+  spendEnergy() {
+    if (this.debug) return true;
+    if (this.energy <= 0) return false;
+    if (this.save.energy >= ENERGY.max) this.save.energyAt = Date.now(); // começa a recarregar agora
+    this.save.energy--;
+    writeSave(this.save);
+    return true;
+  }
+
+  addEnergy(n) {
+    this.refreshEnergy();
+    this.save.energy = Math.min(ENERGY.max, this.save.energy + n);
+    writeSave(this.save);
+  }
+
+  // Toque na janela de energia (ela fica por cima de qualquer tela)
+  energyTap(x, y) {
+    const ui = this.energyUI;
+    const L = energyLayout(this);
+    if (ui.mode === 'ad') {
+      // anúncio: só fecha depois da contagem, pegando as energias
+      if (ui.t >= ENERGY.adTime && inRect(L.skip, x, y)) {
+        this.addEnergy(ENERGY.ad);
+        this.sound.play('upgrade');
+        const p = ui.pending;
+        this.energyUI = null;
+        if (p) this.startMap(p.i, p.mode); // segue pra partida que ia começar
+      }
+      return;
+    }
+    if (inRect(L.watch, x, y)) {
+      this.energyUI = { mode: 'ad', t: 0, pending: ui.pending };
+      this.sound.play('click');
+    } else if (inRect(L.close, x, y) || !inRect(L.card, x, y)) {
+      this.energyUI = null;
+      this.sound.play('click');
+    }
   }
 
   hasPlatinum(mapId) {
@@ -302,6 +380,7 @@ export class App {
   }
 
   update(dt) {
+    if (this.energyUI) this.energyUI.t += dt;
     if (this.next) {
       this.fade = Math.min(1, this.fade + dt * 5);
       if (this.fade >= 1) {
@@ -323,21 +402,24 @@ export class App {
       ctx.fillStyle = `rgba(15,22,48,${this.fade})`;
       ctx.fillRect(0, 0, this.viewW, VIEW_H);
     }
+    if (this.energyUI) drawEnergyModal(ctx, this); // por cima de tudo
   }
 
   // ── input ──
   pointerDown(x, y, type) {
     this.sound.unlock();
     if (this.next) return;
+    if (this.energyUI) return this.energyTap(x, y);
     this.scene.pointerDown?.(x, y, type);
   }
 
   pointerMove(x, y, type) {
+    if (this.energyUI) return;
     this.scene.pointerMove?.(x, y, type);
   }
 
   pointerUp(x, y) {
-    if (this.next) return;
+    if (this.next || this.energyUI) return;
     this.scene.pointerUp?.(x, y);
   }
 
@@ -355,6 +437,10 @@ export class App {
 
   key(k) {
     this.sound.unlock();
+    if (this.energyUI) {
+      if (k === 'Escape' && this.energyUI.mode !== 'ad') this.energyUI = null;
+      return;
+    }
     if (!this.next) this.scene.key?.(k);
   }
 }
