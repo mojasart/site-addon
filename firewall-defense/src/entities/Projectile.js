@@ -80,8 +80,16 @@ export class Projectile {
       const rr = e.r + this.r;
       if ((e.x - this.x) ** 2 + (e.y - this.y) ** 2 >= rr * rr) continue;
       this.hit.add(e);
-      if (this.crit && (!e.def.armored || this.armored)) game.fx.text(e.x, e.y - e.r - 6, 'CRÍTICO!', '#ffd84a', 15);
-      e.takeDamage(this.damage, game, { armored: this.armored, source: this.source, hitSet: this.hit });
+      const opts = { armored: this.armored, source: this.source, hitSet: this.hit };
+      const reach = !e.def.armored || this.armored;
+      // Zero-Day (Dark Net): às vezes estoura o vírus inteiro, todas as camadas (chefão não)
+      if (reach && !e.def.boss && chance(this.source.stats.executeChance)) {
+        game.fx.spark(e.x, e.y - e.r, '#7dffb0', 13);
+        e.takeDamage(1e6, game, opts);
+      } else {
+        if (this.crit && reach) game.fx.spark(e.x, e.y - e.r);
+        e.takeDamage(this.damage, game, opts);
+      }
       if (--this.pierce <= 0) {
         this.dead = true;
         return;

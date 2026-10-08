@@ -451,8 +451,8 @@ export class Game {
     return !!coinTileAt(this.coinTiles, tower.x, tower.y);
   }
 
-  spawnPacket(x, y, value) {
-    this.packets.push(new Packet(x, y, value));
+  spawnPacket(x, y, value, big = false) {
+    this.packets.push(new Packet(x, y, value, big));
   }
 
   // ── Defesas: colocar, selecionar, upgrade, vender ─────────
@@ -764,7 +764,7 @@ export class Game {
     for (const p of this.packets) {
       ctx.save();
       ctx.translate(p.x, p.y);
-      drawCoin(ctx, p.state === 'flying' ? 11 : 13, p.spin);
+      drawCoin(ctx, (p.state === 'flying' ? 11 : 13) * (p.big ? 1.5 : 1), p.spin);
       ctx.restore();
     }
     ctx.restore();

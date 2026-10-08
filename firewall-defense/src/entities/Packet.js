@@ -3,7 +3,7 @@ import { rand } from '../util.js';
 // Moeda minerada pelo Minerador: pula pra perto dele e, logo depois,
 // voa sozinha até o contador de dinheiro (não precisa tocar).
 export class Packet {
-  constructor(x, y, value) {
+  constructor(x, y, value, big = false) {
     const a = rand(0, Math.PI * 2);
     const d = rand(24, 44);
     this.x = x;
@@ -13,6 +13,7 @@ export class Packet {
     this.toX = x + Math.cos(a) * d;
     this.toY = y + Math.sin(a) * d * 0.6;
     this.value = value;
+    this.big = big; // Bloco Raro (Dark Net): moeda maior
     this.t = 0;
     this.wait = 0.35;
     this.state = 'jumping'; // jumping → resting → flying

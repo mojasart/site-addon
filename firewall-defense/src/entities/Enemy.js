@@ -1,5 +1,8 @@
 import { ENEMIES, threat } from '../data/enemies.js';
-import { rand } from '../util.js';
+import { rand, chance } from '../util.js';
+
+const SHATTER_R = 45; // alcance do Estilhaço
+const STICKY = { mul: 0.5, time: 2 }; // Mel Pegajoso: 50% mais lento por 2 s
 
 export class Enemy {
   constructor(type, dist, route = null) {
@@ -15,6 +18,8 @@ export class Enemy {
     this.face = 1;
     this.slowTimer = 0;
     this.freezeTimer = 0; // congelado (Kernel Gelado, Dark Net): parado
+    this.shatter = 0; // Estilhaço (Dark Net): chance de estilhaçar se estourar no gelo
+    this.sticky = false; // Mel Pegajoso (Dark Net): sai lento do Honeypot
     this.slowMul = 1;
     this.vulnTimer = 0; // vulnerável (Penguin Linux com Era do Gelo): leva dano dobrado
     this.burnTimer = 0; // pegando fogo (Golem com Incêndio): perde burnDps de vida por segundo
@@ -83,10 +88,17 @@ export class Enemy {
     // Honeypot no caminho: para e fica mordendo a isca até ela quebrar
     const bait = game.baitAt?.(this);
     if (bait) {
+      // Mel Pegajoso (Dark Net): ao parar no pote, às vezes fica grudado
+      if (this.biting !== bait && chance(bait.stats.stickyChance)) this.sticky = true;
       this.biting = bait;
       if (Math.abs(bait.x - this.x) > 4) this.face = bait.x < this.x ? -1 : 1;
       bait.bite(this.biteDps * dt, game);
       return;
+    }
+    if (this.biting && this.sticky) {
+      this.sticky = false;
+      this.slow(STICKY.mul, STICKY.time);
+      game.fx.spark(this.x, this.y - this.r, '#f5a524', 8);
     }
     this.biting = null;
     this.dist += this.speed * dt;
@@ -174,6 +186,12 @@ export class Enemy {
 
   pop(game, overflow, opts) {
     this.dead = true;
+    // Estilhaço (Dark Net): estourou no gelo do Penguin → às vezes acerta os vizinhos
+    if (this.slowTimer > 0 && chance(this.shatter)) {
+      game.fx.spark(this.x, this.y, '#c8f4ff', 12);
+      game.fx.burst(this.x, this.y, '#c8f4ff', 10, 200, 0.4, 4);
+      for (const e of game.enemiesInRange(this.x, this.y, SHATTER_R)) if (e !== this) e.takeDamage(1, game, { armored: true });
+    }
     game.money += this.def.reward ?? 1;
     game.stats.pops++;
     if (opts.source) opts.source.pops++;
@@ -190,6 +208,7 @@ export class Enemy {
         const child = new Enemy(type, Math.max(0, this.dist - i * 12), this.route);
         child.slowTimer = this.slowTimer;
         child.freezeTimer = this.freezeTimer;
+        child.shatter = this.shatter;
         child.slowMul = this.slowMul;
         child.vulnTimer = this.vulnTimer;
         child.burnTimer = this.burnTimer;

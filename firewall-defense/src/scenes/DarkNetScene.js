@@ -23,6 +23,8 @@ const COFFEE_TXT = '#ffe0b0';
 const CHARS = '01₿#$%<>/{}';
 const COLS = 64;
 const RADIUS = 150; // distância do centro da árvore até os ramos
+const STEP = 100; // distância entre um nó e o seguinte no mesmo ramo
+const HOME_ZOOM = 0.55; // zoom inicial: a árvore inteira cabe na tela
 const BRANCH_ORDER = ['hacker', 'firewall', 'pinguim', 'scanner', 'minerador', 'honeypot'];
 const ZOOM_MIN = 0.45;
 const ZOOM_MAX = 2.4;
@@ -52,8 +54,14 @@ export class DarkNetScene {
       const a = -Math.PI / 2 + (i * Math.PI * 2) / BRANCH_ORDER.length;
       nodes[id] = { x: Math.cos(a) * RADIUS, y: Math.sin(a) * RADIUS, r: 32, a };
     });
+    // os outros nós de cada ramo seguem em linha reta pra fora, um depois do outro
+    for (const n of TREE) {
+      if (nodes[n.id]) continue;
+      const p = nodes[n.parent];
+      nodes[n.id] = { x: p.x + Math.cos(p.a) * STEP, y: p.y + Math.sin(p.a) * STEP, r: 28, a: p.a };
+    }
     // câmera inicial: raiz no meio do espaço à esquerda do painel
-    const home = { x: (panel.x - 20) / 2 + 10, y: 300, z: 1 };
+    const home = { x: (panel.x - 20) / 2 + 10, y: 302, z: HOME_ZOOM };
     if (!this.cam) this.cam = { ...home };
     const zy = VIEW_H - 64;
     return {
@@ -210,52 +218,60 @@ export class DarkNetScene {
 
   // Ligações: centro → ramos (verde e com dados correndo quando o ramo é
   // comprado) e, de cada ramo, um traço apagado pra fora com "?" (próxima fase)
+  // Ligações: cada nó com o anterior (verde e com dados correndo quando
+  // comprado) e, na ponta de cada ramo, um traço apagado com "?" (próxima fase)
   drawLinks(ctx, L, t) {
-    const root = L.nodes.root;
     ctx.lineCap = 'round';
-    for (const id of BRANCH_ORDER) {
-      const p = L.nodes[id];
-      const owned = this.state(id) === 'owned';
-      const lit = owned || this.state(id) === 'open';
+    const parents = new Set(TREE.map((n) => n.parent));
+    for (const n of TREE) {
+      if (!n.parent) continue;
+      const from = L.nodes[n.parent];
+      const p = L.nodes[n.id];
+      const owned = this.state(n.id) === 'owned';
+      const lit = owned || this.state(n.id) === 'open';
       ctx.lineWidth = owned ? 5 : 3;
       ctx.strokeStyle = owned ? GREEN : lit ? 'rgba(183,123,255,0.7)' : 'rgba(110,80,160,0.35)';
       ctx.shadowColor = owned ? GREEN : PURPLE;
       ctx.shadowBlur = owned || lit ? 10 * this.app.pixelScale * this.cam.z : 0;
       ctx.beginPath();
-      ctx.moveTo(root.x, root.y);
+      ctx.moveTo(from.x, from.y);
       ctx.lineTo(p.x, p.y);
       ctx.stroke();
       ctx.shadowBlur = 0;
       if (owned) {
-        // pacotinhos de dados indo do centro pro ramo
+        // pacotinhos de dados indo do nó anterior pro comprado
         for (let k = 0; k < 2; k++) {
           const f = (t * 0.7 + k / 2) % 1;
           ctx.beginPath();
-          ctx.arc(root.x + (p.x - root.x) * f, root.y + (p.y - root.y) * f, 3, 0, Math.PI * 2);
+          ctx.arc(from.x + (p.x - from.x) * f, from.y + (p.y - from.y) * f, 3, 0, Math.PI * 2);
           ctx.fillStyle = '#d6ffe9';
           ctx.fill();
         }
       }
-      // próxima fase: traço tracejado pra fora + "?"
-      const ox = p.x + Math.cos(p.a) * 62;
-      const oy = p.y + Math.sin(p.a) * 62;
-      ctx.setLineDash([4, 6]);
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = 'rgba(183,123,255,0.25)';
-      ctx.beginPath();
-      ctx.moveTo(p.x + Math.cos(p.a) * (p.r + 4), p.y + Math.sin(p.a) * (p.r + 4));
-      ctx.lineTo(ox, oy);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.arc(ox, oy, 11, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(30,12,55,0.85)';
-      ctx.fill();
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = 'rgba(183,123,255,0.35)';
-      ctx.stroke();
-      text(ctx, '?', ox, oy + 1, { size: 13, color: 'rgba(200,170,255,0.6)', stroke: null });
+      if (!parents.has(n.id)) this.drawStub(ctx, p);
     }
+  }
+
+  // Próxima fase: traço tracejado pra fora + "?"
+  drawStub(ctx, p) {
+    const ox = p.x + Math.cos(p.a) * 62;
+    const oy = p.y + Math.sin(p.a) * 62;
+    ctx.setLineDash([4, 6]);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(183,123,255,0.25)';
+    ctx.beginPath();
+    ctx.moveTo(p.x + Math.cos(p.a) * (p.r + 4), p.y + Math.sin(p.a) * (p.r + 4));
+    ctx.lineTo(ox, oy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.arc(ox, oy, 11, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(30,12,55,0.85)';
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(183,123,255,0.35)';
+    ctx.stroke();
+    text(ctx, '?', ox, oy + 1, { size: 13, color: 'rgba(200,170,255,0.6)', stroke: null });
   }
 
   drawNode(ctx, n, p, t) {

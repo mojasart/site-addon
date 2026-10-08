@@ -18,6 +18,7 @@ export class Effects {
     this.rings = [];
     this.beams = [];
     this.texts = [];
+    this.sparks = [];
     this.confetti = [];
   }
 
@@ -52,6 +53,11 @@ export class Effects {
     this.texts.push({ x, y, str, color, size, life: 1.1, max: 1.1 });
   }
 
+  // Brilhinho de 4 pontas (sorte da Dark Net batendo): sem texto, some rápido
+  spark(x, y, color = '#ffe79a', size = 9) {
+    if (this.sparks.length < 40) this.sparks.push({ x, y, color, size, life: 0.38, max: 0.38, rot: Math.random() * 0.6 });
+  }
+
   celebrate(w, h) {
     const colors = ['#ff4d5e', '#ffd23f', '#3dff9a', '#5fb4ff', '#ff6fd0', '#ffffff'];
     for (let i = 0; i < 140; i++) {
@@ -70,7 +76,7 @@ export class Effects {
       p.y += p.vy * dt;
       p.vx *= 0.93;
     }
-    for (const list of [this.pops, this.rings, this.beams]) for (const e of list) e.life -= dt;
+    for (const list of [this.pops, this.rings, this.beams, this.sparks]) for (const e of list) e.life -= dt;
     for (const t of this.texts) {
       t.life -= dt;
       t.y -= 34 * dt;
@@ -85,6 +91,7 @@ export class Effects {
     this.pops = this.pops.filter((p) => p.life > 0);
     this.rings = this.rings.filter((r) => r.life > 0);
     this.beams = this.beams.filter((b) => b.life > 0);
+    this.sparks = this.sparks.filter((s) => s.life > 0);
     this.texts = this.texts.filter((t) => t.life > 0);
     this.confetti = this.confetti.filter((c) => c.life > 0);
   }
@@ -150,6 +157,27 @@ export class Effects {
       ctx.stroke();
       ctx.restore();
     }
+
+    for (const s of this.sparks) {
+      const k = 1 - s.life / s.max; // 0 → 1
+      const r = s.size * (0.5 + Math.sin(k * Math.PI) * 0.7);
+      ctx.save();
+      ctx.globalAlpha = 1 - k * k;
+      ctx.translate(s.x, s.y);
+      ctx.rotate(s.rot + k * 0.8);
+      ctx.beginPath();
+      for (let i = 0; i < 8; i++) {
+        const rr = i % 2 ? r * 0.28 : r;
+        const a = (i / 8) * TAU;
+        if (i === 0) ctx.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
+        else ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+      }
+      ctx.closePath();
+      ctx.fillStyle = s.color;
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
 
     for (const t of this.texts) {
       ctx.globalAlpha = Math.min(1, t.life / (t.max * 0.4));
