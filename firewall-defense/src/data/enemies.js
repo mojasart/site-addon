@@ -130,7 +130,7 @@ export const ENEMIES = {
     name: 'Adware',
     desc: 'Chefão: enche a tela de anúncios que atrapalham',
     lore: 'Veio de brinde num "player de vídeo grátis". Agora ninguém consegue fechar as janelas dele.',
-    hp: 120000,
+    hp: 168000, // +40% (era 120 mil)
     lives: 60,
     speed: 40,
     radius: 28,
@@ -141,9 +141,10 @@ export const ENEMIES = {
     reward: 30,
     children: [['v4', 3]],
     // enquanto está na tela, abre um anúncio a cada `every` s (no máximo `max`
-    // ao mesmo tempo); `moving` deles ficam andando de um lado pro outro.
-    // Morreu: os anúncios somem (Game.spawnAd / updateAds, render/ads.js)
-    ads: { every: [4, 7], max: 2, moving: 0.1 },
+    // ao mesmo tempo); `moving` deles ficam andando de um lado pro outro e
+    // `crypt` vêm criptografados (o X foge uma vez). Os anúncios ficam até
+    // o jogador fechar, mesmo com ele morto (Game.spawnAd / adTap, render/ads.js)
+    ads: { every: [4, 7], max: 2, moving: 0.1, crypt: 0.1 },
     topBar: true,
   },
   ransomware: {

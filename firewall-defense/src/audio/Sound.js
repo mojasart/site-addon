@@ -85,9 +85,12 @@ const SFX = {
   },
 };
 
+const MUSIC_GAIN = 0.5; // volume da música no máximo (musicVol = 1)
+const SFX_GAIN = 0.7; // dos efeitos
+
 export class Sound {
   constructor(settings) {
-    this.settings = settings; // { music, sfx } (salvo no save)
+    this.settings = settings; // { musicVol, sfxVol } de 0 a 1 (salvo no save)
     this.ctx = null;
     this.last = {};
   }
@@ -105,10 +108,10 @@ export class Sound {
     this.master.gain.value = 0.9;
     this.master.connect(this.ctx.destination);
     this.sfxBus = this.ctx.createGain();
-    this.sfxBus.gain.value = 0.7;
+    this.sfxBus.gain.value = SFX_GAIN * (this.settings.sfxVol ?? 1);
     this.sfxBus.connect(this.master);
     this.musicBus = this.ctx.createGain();
-    this.musicBus.gain.value = this.settings.music ? 0.5 : 0;
+    this.musicBus.gain.value = MUSIC_GAIN * (this.settings.musicVol ?? 1);
     this.musicBus.connect(this.master);
     const len = this.ctx.sampleRate;
     this.noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
@@ -127,13 +130,15 @@ export class Sound {
     this.ctx?.resume();
   }
 
-  setMusic(on) {
-    this.settings.music = on;
-    if (this.musicBus) this.musicBus.gain.setTargetAtTime(on ? 0.5 : 0, this.ctx.currentTime, 0.1);
+  // Volumes de 0 (mudo) a 1
+  setMusicVol(v) {
+    this.settings.musicVol = v;
+    if (this.musicBus) this.musicBus.gain.setTargetAtTime(MUSIC_GAIN * v, this.ctx.currentTime, 0.05);
   }
 
-  setSfx(on) {
-    this.settings.sfx = on;
+  setSfxVol(v) {
+    this.settings.sfxVol = v;
+    if (this.sfxBus) this.sfxBus.gain.setTargetAtTime(SFX_GAIN * v, this.ctx.currentTime, 0.05);
   }
 
   // Tema da música: 'menu' (alegre) ou 'battle' (luta e suspense, na partida)
@@ -142,8 +147,23 @@ export class Sound {
     this.music?.setTheme(name);
   }
 
+  // Clicou no anúncio: a música gagueja, desaba e fica muda até a próxima
+  // troca de tela (setTheme volta ela)
+  crashMusic() {
+    if (!this.ctx || !this.music) return;
+    this.music.crashed = true;
+    const bus = this.musicBus;
+    for (let k = 0; k < 7; k++) {
+      const f = 330 * 0.88 ** k;
+      this.tone({ type: 'sawtooth', freq: f, dur: 0.07, vol: 0.09, at: k * 0.075, bus });
+      this.tone({ type: 'square', freq: f * 1.5, dur: 0.06, vol: 0.04, at: k * 0.075, bus });
+    }
+    this.tone({ type: 'sawtooth', freq: 220, to: 28, dur: 1.2, vol: 0.12, at: 0.55, bus });
+    this.noise({ dur: 0.9, vol: 0.12, filter: 'bandpass', freq: 2500, to: 200, q: 2, at: 0.5, bus });
+  }
+
   play(name) {
-    if (!this.ctx || !this.settings.sfx || this.ctx.state !== 'running') return;
+    if (!this.ctx || !(this.settings.sfxVol > 0) || this.ctx.state !== 'running') return;
     const now = this.ctx.currentTime;
     if (now - (this.last[name] ?? -1) < (MIN_GAP[name] ?? 0.02)) return;
     this.last[name] = now;
@@ -273,6 +293,7 @@ class Music {
 
   // troca de tema: recomeça do início do loop novo
   setTheme(name) {
+    this.crashed = false; // trocou de tela: a música volta
     if (!THEMES[name] || name === this.theme) return;
     this.theme = name;
     this.step = 0;
@@ -285,7 +306,7 @@ class Music {
 
   schedule() {
     const ctx = this.s.ctx;
-    if (ctx.state !== 'running' || !this.s.settings.music) {
+    if (ctx.state !== 'running' || !(this.s.settings.musicVol > 0) || this.crashed) {
       this.next = ctx.currentTime + 0.1;
       return;
     }

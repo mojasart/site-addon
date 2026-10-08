@@ -58,7 +58,7 @@ Tocar num mapa abre a escolha **NORMAL** / **PLATINA** (`src/data/platinum.js`);
 
 | Defesa | Custo | O que faz | Upgrades |
 | --- | --- | --- | --- |
-| **Hacker** | $250 | Arremessa teclados (1 vírus por teclado) | Dedos Rápidos (mais rápido e atravessa 2 vírus) · Exploit Triplo |
+| **Hacker** | $250 | Arremessa teclados (1 vírus por teclado) | Dedos Rápidos (30% mais rápido) · Exploit Triplo |
 | **Golem Firewall** | $350 | Onda de fogo em volta, queima blindados | Muralha de Fogo (mais alcance e ondas mais rápidas) · Incêndio (vírus pegam fogo: 500 de dano/s por até 3 s, mesmo fora do alcance; não acumula nem renova enquanto queima) |
 | **Penguin Linux** | $250 | Suporte: não dá dano, congela os vírus em volta (lentidão) | Criptografia AES (75% mais lento por 2,5 s) · Frente Fria (mais alcance e ondas um pouco mais rápidas). Na Dark Net, o Gelo Quebradiço deixa os congelados vulneráveis: levam 5% a mais de dano |
 | **Robô NMAP** | $500 | Laser de longo alcance: tiro lento, dano alto, fura blindagem | Feixe Perfurante (o laser atravessa e acerta até 2 vírus em linha) · Marcar Alvo (o vírus atingido fica marcado por 2 s e leva 25% a mais de dano de todas as defesas) |
@@ -85,7 +85,7 @@ Os vírus funcionam como os balões do Bloons: cada camada estourada revela a de
 | **Worm Rei** (vermelho) | Solta Vírus Rosas pelo caminho; estourado, vira 2 Worms Mutantes. A partir da rodada 24 |
 | **Trojan** | Blindado: os teclados do Hacker não furam |
 | **Locker** | Mini-chefão acorrentado (rodadas 15+), 135.000 de vida. Solta 2 Trojans |
-| **Adware** | Chefão pop-up (rodada 15, junto com o Locker), 120.000 de vida. Enquanto está na tela, abre um anúncio a cada 4–7 s (no máximo 2 ao mesmo tempo): janelas cômicas que cobrem o jogo e só fecham no X. 10% delas ficam andando de um lado pro outro. Quando ele morre, os anúncios somem. Solta 3 Vírus Amarelos |
+| **Adware** | Chefão pop-up (rodada 15, junto com o Locker), 168.000 de vida. Enquanto está na tela, abre um anúncio a cada 4–7 s (no máximo 2 ao mesmo tempo): janelas cômicas enormes (~70% da altura da tela) que cobrem o jogo e só fecham no X. 10% delas ficam andando de um lado pro outro, e 10% vêm **criptografadas**: no primeiro toque o X foge pra outra borda do anúncio. Os anúncios ficam na tela até você fechar, mesmo depois de ele morrer. Solta 3 Vírus Amarelos |
 | **Ransomware** | Chefão dirigível (rodadas 20 e 25), 510.000 de vida, numa barra grande no topo da tela. A cada quadrado que anda, com defesa a até 3 quadrados, pode parar tremendo por 0,5s e criptografar as defesas nesse alcance. A chance vale pra partida toda: a 1ª vez é certa, depois cai pra 10%, e a partir da 2ª cai pra 0%, sempre subindo 1% a cada quadrado que ele anda sem criptografar. As defesas criptografadas param até você tocar nelas e pagar $50 de resgate. Solta 4 Trojans |
 
 ## Catálogo de ameaças

@@ -42,6 +42,7 @@ const NAMES = [
   'ransomware',
   'spyware',
   'adware',
+  'duck',
   'server',
   'server_hurt',
   'coin',

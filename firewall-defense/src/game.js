@@ -15,7 +15,7 @@ import { Hazards } from './systems/Hazards.js';
 import { MapView } from './render/maps/index.js';
 import { TILE, tileOf, tileKey, inGrid, snapToTile } from './core/grid.js';
 import { layout, drawHud, drawPanel, drawRange, bossBarsBottom } from './render/ui.js';
-import { inRect } from './render/widgets.js';
+import { inRect, sliderValue } from './render/widgets.js';
 import { drawBanner, drawOverlay, overlayLayout } from './render/screens.js';
 import { drawInfoPanel, infoLayout } from './render/infoPanel.js';
 import { drawCharacter } from './render/characters.js';
@@ -25,7 +25,12 @@ import { drawHazards, drawStunned, drawHazardWarning } from './render/hazards.js
 import { drawEncrypted, ENCRYPT_FILTER } from './render/ransom.js';
 import { drawSpawns } from './render/spawns.js';
 import { drawDuck } from './render/duck.js';
-import { drawAds, adClose, adSpot, ADS, AD_W, AD_H } from './render/ads.js';
+import { drawAds, adClose, adSpot, adScale, adSize, ADS, CRYPT_AD, CLOSE_SPOTS } from './render/ads.js';
+
+// Enxurrada de anúncios (clicou no anúncio em vez do X): dura `time` s até o
+// game over, com no máximo `max` anúncios; o intervalo entre eles começa
+// em `gap` e encurta (×accel) até `minGap`
+const STORM = { time: 4, max: 45, gap: 0.35, accel: 0.88, minGap: 0.05 };
 import { pickCoinTiles, coinTileAt, COIN_SEASONS } from './core/coinTiles.js';
 import { drawCoinTiles, drawNoMine } from './render/coinTiles.js';
 import { rrect, fillOutline, circle, text, setFont } from './render/canvas.js';
@@ -34,6 +39,7 @@ import { rand, chance } from './util.js';
 const TOUCH_LIFT = 46; // ao arrastar com o dedo, a defesa aparece acima dele
 const BASE_HIT = 24; // raio da hitbox do servidor (ele ocupa 1 quadrado)
 const CAST_TIME = 0.5; // Ransomware fica parado tremendo esse tempo ao criptografar
+const WIN_DELAY = 0.5; // limpou a última rodada: espera o último vírus estourar de vez antes da vitória
 
 // A partida em si (uma fase). Criada pelo App ao escolher um mapa.
 // mode: 'normal' ou 'platinum' (ondas sem parar até o chefão; data/platinum.js)
@@ -97,9 +103,12 @@ export class Game {
     this.hurt = 0;
     this.duckHop = 0; // pulinho do Pato de Borracha quando acha café
     this.duckCoffee = 0; // café que ele achou nesta partida
+    this.killsBy = {}; // abatidos por tipo de vírus nesta partida (catálogo)
+    this.placedBy = {}; // defesas colocadas por tipo nesta partida (catálogo)
     this.coinBump = 0;
     this.shakeAmt = 0;
     this.endDelay = 0;
+    this.winIn = null; // contagem até a tela de vitória (WIN_DELAY), depois do último vírus
     this.overlayTime = 0;
     this.stars = 0;
     this.stats = { pops: 0 };
@@ -168,6 +177,12 @@ export class Game {
   // Monstros abatidos viram cafés: soma no save os desta partida que ainda
   // não foram contados (no fim da partida e ao sair dela no meio)
   bankKills() {
+    // contagem do catálogo (abatidos por vírus e defesas usadas)
+    if (Object.keys(this.killsBy).length || Object.keys(this.placedBy).length) {
+      this.app.addTally?.(this.killsBy, this.placedBy);
+      this.killsBy = {};
+      this.placedBy = {};
+    }
     const n = this.stats.pops - (this.killsBanked ?? 0);
     if (n <= 0) return;
     this.killsBanked = this.stats.pops;
@@ -188,6 +203,7 @@ export class Game {
     this.anim += dt;
     if (this.state !== 'playing') this.overlayTime += dt;
     if (this.state === 'paused') return;
+    if (this.adStorm && this.state === 'playing') this.updateAdStorm(dt);
     this.endDelay = Math.max(0, this.endDelay - dt);
     this.hurt = Math.max(0, this.hurt - dt);
     this.duckHop = Math.max(0, this.duckHop - dt * 2.5);
@@ -209,6 +225,12 @@ export class Game {
   }
 
   step(dt) {
+    // venceu: o jogo segue rodando um instante (o estouro do último vírus) e aí vem a vitória
+    if (this.winIn != null && (this.winIn -= dt) <= 0) {
+      this.winIn = null;
+      this.end(true);
+      return;
+    }
     this.callCooldown = Math.max(0, this.callCooldown - dt);
     this.updateAds(dt);
     if (this.nextIn != null && (this.nextIn -= dt) <= 0) this.startRound();
@@ -324,7 +346,7 @@ export class Game {
   onRoundEnd(n) {
     if (this.platinum) {
       // platina: o bônus da onda já veio quando ela começou (elas se acumulam)
-      if (this.rounds.finished) this.end(true);
+      if (this.rounds.finished) this.winIn = WIN_DELAY;
       return;
     }
     const bonus = 100 + n;
@@ -333,7 +355,7 @@ export class Game {
     // mapa limpo: os Mineradores entregam na hora o que faltou minerar
     if (!this.rounds.active) for (const t of this.towers) t.finishMining(this);
     if (this.rounds.finished) {
-      this.end(true);
+      this.winIn = WIN_DELAY;
       return;
     }
     this.sound.play('roundEnd');
@@ -590,6 +612,7 @@ export class Game {
     if (tower.stats.hp) tower.hp = tower.maxHp = tower.stats.hp;
     if (this.rounds.active) tower.onRoundStart();
     this.towers.push(tower);
+    this.placedBy[type] = (this.placedBy[type] ?? 0) + 1;
     this.fx.burst(x, y, '#ffffff', 14, 160, 0.35, 5, true);
     this.sound.play('place');
     this.placing = null;
@@ -617,48 +640,98 @@ export class Game {
     this.sound.play('upgrade');
   }
 
-  // Adware abre um anúncio num lugar sorteado da tela (sem repetir o último tipo)
+  // Adware abre um anúncio enorme num lugar sorteado da tela (sem repetir o
+  // último tipo). Com a chance `crypt`, vem o criptografado: o X dele foge
+  // pra outra borda uma vez antes de fechar
   spawnAd(e) {
     const cfg = e.def.ads;
     if (this.ads.filter((a) => a.closing == null).length >= cfg.max) return;
-    let type = Math.floor(Math.random() * ADS.length);
-    if (type === this.lastAd) type = (type + 1) % ADS.length;
+    const normal = ADS.length - 1; // os tipos comuns vêm antes do criptografado
+    let type = chance(cfg.crypt) ? CRYPT_AD : Math.floor(Math.random() * normal);
+    if (type !== CRYPT_AD && type === this.lastAd) type = (type + 1) % normal;
     this.lastAd = type;
+    const s = adScale(this.viewW);
+    const { w, h } = adSize(s);
     const speed = 70 + Math.random() * 50;
-    this.ads.push({ type, ...adSpot(this.viewW), t: 0, seed: Math.random() * 10, vx: chance(cfg.moving) ? (chance(0.5) ? speed : -speed) : 0 });
+    this.ads.push({
+      type, s, w, h, ...adSpot(this.viewW, w, h), t: 0, seed: Math.random() * 10,
+      vx: chance(cfg.moving) ? (chance(0.5) ? speed : -speed) : 0,
+      closeAt: 0,
+      dodges: type === CRYPT_AD ? 1 : 0,
+    });
     this.sound.play('star');
   }
 
-  // Anúncios: entram pulando, os que andam batem nas bordas; sem Adware vivo, somem
+  // Anúncios: entram pulando, os que andam batem nas bordas. Ficam até o
+  // jogador fechar no X (mesmo depois de o Adware morrer)
   updateAds(dt) {
     if (!this.ads.length) return;
-    const adware = this.enemies.some((e) => e.def.ads && !e.dead);
     for (const ad of this.ads) {
       ad.t += dt;
-      if (!adware && ad.closing == null) ad.closing = 0.18;
       if (ad.closing != null) ad.closing -= dt;
       if (!ad.vx) continue;
       ad.x += ad.vx * dt;
-      if (ad.x < 8 || ad.x > this.viewW - AD_W - 8) {
+      if (ad.x < 8 || ad.x > this.viewW - ad.w - 8) {
         ad.vx = -ad.vx;
-        ad.x = Math.max(8, Math.min(this.viewW - AD_W - 8, ad.x));
+        ad.x = Math.max(8, Math.min(this.viewW - ad.w - 8, ad.x));
       }
     }
     this.ads = this.ads.filter((ad) => ad.closing == null || ad.closing > 0);
   }
 
-  // Toque num anúncio (o de cima primeiro): o X fecha; no resto, o toque morre ali
+  // Toque num anúncio (o de cima primeiro): o X fecha (o do criptografado
+  // ainda foge pra outra borda enquanto tiver `dodges`); no resto do anúncio
+  // (corpo ou botão) abre a enxurrada de anúncios (startAdStorm)
   adTap(sx, sy) {
     for (let i = this.ads.length - 1; i >= 0; i--) {
       const ad = this.ads[i];
-      if (ad.closing != null || sx < ad.x || sx > ad.x + AD_W || sy < ad.y || sy > ad.y + AD_H) continue;
-      if (inRect(adClose(ad), sx, sy)) {
+      if (ad.closing != null || sx < ad.x || sx > ad.x + ad.w || sy < ad.y || sy > ad.y + ad.h) continue;
+      // clicou no anúncio (fora do X): a música trava e vem a enxurrada
+      if (!inRect(adClose(ad), sx, sy)) {
+        this.startAdStorm();
+        return true;
+      }
+      if (ad.dodges > 0) {
+        ad.dodges--;
+        let to = Math.floor(Math.random() * (CLOSE_SPOTS.length - 1));
+        if (to >= ad.closeAt) to++; // sempre outra borda
+        ad.closeAt = to;
+        this.sound.play('error');
+      } else {
         ad.closing = 0.18;
         this.sound.play('click');
       }
       return true;
     }
     return false;
+  }
+
+  // Caiu no anúncio: a música trava e os anúncios brotam cada vez mais
+  // rápido até cobrir a tela; aí é game over (updateAdStorm)
+  startAdStorm() {
+    if (this.adStorm || this.state !== 'playing') return;
+    this.adStorm = { t: 0, next: 0, n: 0 };
+    this.sound.crashMusic?.();
+    this.shake(6);
+  }
+
+  // Roda no tempo de verdade (não acelera com o 2x/3x)
+  updateAdStorm(dt) {
+    const st = this.adStorm;
+    st.t += dt;
+    st.next -= dt;
+    while (st.next <= 0 && st.n < STORM.max) {
+      const s0 = adScale(this.viewW);
+      const s = s0 * (0.45 + Math.random() * 0.55);
+      const { w, h } = adSize(s);
+      this.ads.push({ type: Math.floor(Math.random() * (ADS.length - 1)), s, s0, w, h, ...adSpot(this.viewW, w, h), t: 0, seed: Math.random() * 10, vx: 0, closeAt: 0, dodges: 0, snap: true });
+      if (st.n % 3 === 0) this.sound.play(st.n % 2 ? 'error' : 'star');
+      st.n++;
+      st.next += Math.max(STORM.minGap, STORM.gap * STORM.accel ** st.n);
+    }
+    if (st.t >= STORM.time) {
+      this.end(false);
+    }
   }
 
   // Ransomware andou um quadrado: com defesa no alcance, sorteia a chance da
@@ -761,9 +834,11 @@ export class Game {
       if (inRect(L.resume, sx, sy)) this.resume();
       else if (inRect(L.restart, sx, sy)) this.app.startMap(this.mapIndex, this.mode);
       else if (inRect(L.maps, sx, sy)) this.app.goMaps();
-      else if (inRect(L.music, sx, sy)) this.app.toggleMusic();
-      else if (inRect(L.sfx, sx, sy)) this.app.toggleSfx();
-      else if (inRect(L.auto, sx, sy)) this.app.toggleAuto();
+      else if (inRect(L.music, sx, sy) || inRect(L.sfx, sx, sy)) {
+        // barra de volume: toca ou arrasta
+        this.volDrag = inRect(L.music, sx, sy) ? 'music' : 'sfx';
+        this.app.setVolume(this.volDrag, sliderValue(L[this.volDrag], sx));
+      } else if (inRect(L.auto, sx, sy)) this.app.toggleAuto();
       return;
     }
     if (this.endDelay > 0) return;
@@ -828,12 +903,17 @@ export class Game {
 
   pointerMove(sx, sy, type = 'touch') {
     Object.assign(this.pointer, { x: sx, y: sy, type });
+    if (this.volDrag && this.state === 'paused') this.app.setVolume(this.volDrag, sliderValue(overlayLayout(this)[this.volDrag], sx));
     const d = this.drag;
     if (d && !d.moved && Math.hypot(sx - d.x, sy - d.y) > 10) d.moved = true;
   }
 
   pointerUp(sx, sy) {
     this.pointer.down = false;
+    if (this.volDrag) {
+      this.volDrag = null;
+      this.sound.play('click'); // dá pra ouvir o volume novo dos efeitos
+    }
     const d = this.drag;
     this.drag = null;
     if (!d || this.state !== 'playing') return;

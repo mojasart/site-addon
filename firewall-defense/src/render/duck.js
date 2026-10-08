@@ -1,11 +1,13 @@
 import { OUTLINE } from '../config.js';
 import { ellipse, fillOutline } from './canvas.js';
+import { drawImage } from './images.js';
 
 /* ════════════════════════════════════════════════════════════
  *  PATO DE BORRACHA (upgrade secreto da Dark Net)
  *  Patinho amarelo olhando pra direita, centrado na origem. s = raio do
  *  corpo. gray: apagado (ainda não comprado, na Dark Net). hop (0→1):
- *  pulinho quando acha um café.
+ *  pulinho quando acha um café. Usa a sprite (assets/sprites/duck.png);
+ *  sem ela, o desenho com formas.
  * ════════════════════════════════════════════════════════════ */
 
 const COLORS = {
@@ -26,6 +28,11 @@ export function drawDuck(ctx, s, { t = 0, gray = false, hop = 0 } = {}) {
   ctx.save();
   ctx.translate(0, bob);
   ctx.rotate(-tilt);
+  // sprite: ocupa o mesmo espaço do desenho com formas (corpo + cabeça)
+  if (drawImage(ctx, 'duck', s * 2.9, s * 0.05, -s * 0.35, gray ? 'grayscale(1) brightness(0.55)' : null)) {
+    ctx.restore();
+    return;
+  }
 
   // rabinho pra cima, atrás do corpo
   ctx.beginPath();

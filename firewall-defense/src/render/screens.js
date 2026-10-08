@@ -1,6 +1,6 @@
 import { VIEW_H, GOLD } from '../config.js';
 import { rrect, fillOutline, text, setFont } from './canvas.js';
-import { bigButton, iconButton, stars, ribbon, starTier } from './widgets.js';
+import { bigButton, iconButton, stars, ribbon, starTier, volumeSlider } from './widgets.js';
 import { drawEnemy } from './viruses.js';
 import { drawCharacter } from './characters.js';
 import { ENEMIES } from '../data/enemies.js';
@@ -17,9 +17,10 @@ export function overlayLayout(game) {
     L.resume = { x: cx - 150, y: 150, w: 300, h: 72 };
     L.restart = { x: cx - 150, y: 234, w: 300, h: 66 };
     L.maps = { x: cx - 150, y: 312, w: 300, h: 66 };
-    L.music = { x: cx - 105, y: 400, w: 60, h: 60 };
-    L.sfx = { x: cx - 30, y: 400, w: 60, h: 60 };
-    L.auto = { x: cx + 45, y: 400, w: 60, h: 60 };
+    // volume da música e dos efeitos (barras) e o turno automático do lado
+    L.music = { x: cx - 235, y: 392, w: 340, h: 40 };
+    L.sfx = { x: cx - 235, y: 440, w: 340, h: 40 };
+    L.auto = { x: cx + 135, y: 396, w: 60, h: 60 };
   } else if (retryOffered(game)) {
     // venceu com 2 estrelas ou menos: MAPAS · DE NOVO · PRÓXIMO
     L.maps = { x: cx - 255, y: 392, w: 160, h: 72 };
@@ -86,10 +87,10 @@ export function drawOverlay(ctx, game) {
     bigButton(ctx, L.resume, '#3fd16b', 'CONTINUAR', { icon: 'play', size: 28 });
     bigButton(ctx, L.restart, '#5fb4ff', 'REINICIAR', { icon: 'restart', size: 24 });
     bigButton(ctx, L.maps, '#ff9a2e', 'MAPAS', { icon: 'map', size: 24 });
-    iconButton(ctx, L.music, game.app.save.music ? '#8a7dff' : '#7d8fa8', 'music', game.app.save.music);
-    iconButton(ctx, L.sfx, game.app.save.sfx ? '#8a7dff' : '#7d8fa8', 'sfx', game.app.save.sfx);
+    volumeSlider(ctx, L.music, 'music', game.app.save.musicVol);
+    volumeSlider(ctx, L.sfx, 'sfx', game.app.save.sfxVol);
     iconButton(ctx, L.auto, game.autoRound ? '#3fd16b' : '#7d8fa8', 'auto', game.autoRound);
-    text(ctx, game.autoRound ? 'TURNO AUTOMÁTICO: LIGADO' : 'TURNO AUTOMÁTICO: DESLIGADO', game.viewW / 2, 478, { size: 13, color: '#d8e6ff' });
+    text(ctx, game.autoRound ? 'AUTO: LIGADO' : 'AUTO: DESLIGADO', L.auto.x + L.auto.w / 2, 474, { size: 12, color: '#d8e6ff' });
   } else {
     const won = game.state === 'won';
     const plat = won && game.platinum;

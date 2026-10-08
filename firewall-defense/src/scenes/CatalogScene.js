@@ -340,6 +340,8 @@ export class CatalogScene {
     const drops = def.spawn ? `Solta ${ENEMIES[def.spawn.type].name} a cada ${String(def.spawn.every).replace('.', ',')}s` : kids ? `Ao estourar solta: ${kids}` : 'Não solta nada ao estourar';
     const ly = pr.y + pr.s + 22;
     mono(ctx, '> ARQUIVO', d.x + 16, ly, 14, DIM, 'left', true);
+    const kills = this.app.save.killsBy?.[type] ?? 0;
+    mono(ctx, `${fmt(kills)} ${plural(kills, 'ABATIDO', 'ABATIDOS')}`, d.x + d.w - 16, ly, 14, GREEN, 'right', true);
     mono(ctx, drops, d.x + 16, ly + 24, 14, GREEN, 'left', true);
     this.drawLore(ctx, def.lore ?? def.desc ?? '', d.x + 16, ly + 52, d.w - 32);
   }
@@ -372,6 +374,8 @@ export class CatalogScene {
 
     // evolução: um nível por linha (tocar fixa a idade no retrato)
     mono(ctx, '> EVOLUÇÃO', d.x + 16, L.evoY, 14, DIM, 'left', true);
+    const used = this.app.save.placedBy?.[type] ?? 0;
+    mono(ctx, `USADO ${fmt(used)} ${plural(used, 'VEZ', 'VEZES')}`, d.x + d.w - 16, L.evoY, 14, GREEN, 'right', true);
     const levels = def.upgrades.length + 1;
     for (let i = 0; i < levels; i++) {
       const r = L.evo[i];

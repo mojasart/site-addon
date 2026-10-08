@@ -1,10 +1,50 @@
 import { OUTLINE, GOLD } from '../config.js';
-import { rrect, fillOutline, text, button } from './canvas.js';
+import { rrect, fillOutline, text, button, circle } from './canvas.js';
 import { ICONS } from './sprites.js';
 import { drawImage } from './images.js';
 import { star } from './characters.js';
 
 export const inRect = (r, x, y) => !!r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+
+// Barra de volume (música ou efeitos): ícone à esquerda, trilho com a parte
+// cheia e a bolinha, e a porcentagem à direita. label: nome em cima do trilho
+// (barras mais altas). Tocar/arrastar no trilho usa sliderValue
+export function volumeSlider(ctx, r, icon, value, label = null) {
+  const on = value > 0;
+  rrect(ctx, r.x, r.y, r.w, r.h, Math.min(18, r.h / 2));
+  fillOutline(ctx, 'rgba(20,28,60,0.85)', 3);
+  ctx.save();
+  ctx.translate(r.x + 28, r.y + r.h / 2);
+  ICONS[icon](ctx, Math.min(13, r.h * 0.3), on);
+  ctx.restore();
+  const t = sliderTrack(r, !!label);
+  if (label) text(ctx, label, t.x, r.y + r.h * 0.3, { size: 15, align: 'left' });
+  rrect(ctx, t.x, t.y, t.w, t.h, t.h / 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.16)';
+  ctx.fill();
+  if (on) {
+    rrect(ctx, t.x, t.y, Math.max(t.h, t.w * value), t.h, t.h / 2);
+    ctx.fillStyle = '#8a7dff';
+    ctx.fill();
+  }
+  circle(ctx, t.x + t.w * value, t.y + t.h / 2, 10);
+  fillOutline(ctx, '#ffffff', 3);
+  text(ctx, `${Math.round(value * 100)}%`, r.x + r.w - 14, r.y + r.h / 2 + 1, { size: 15, align: 'right', color: on ? '#ffffff' : '#7d8fa8' });
+}
+
+// Trilho da barra de volume (entre o ícone e a porcentagem)
+function sliderTrack(r, labeled) {
+  const x = r.x + 56;
+  const w = r.w - 56 - 64;
+  const cy = labeled ? r.y + r.h * 0.66 : r.y + r.h / 2;
+  return { x, y: cy - 5, w, h: 10 };
+}
+
+// Volume (0 a 1) no ponto x da barra
+export function sliderValue(r, x, labeled = false) {
+  const t = sliderTrack(r, labeled);
+  return Math.min(1, Math.max(0, (x - t.x) / t.w));
+}
 
 // Botão grande com texto (e ícone opcional à esquerda)
 export function bigButton(ctx, r, face, label, { icon, size = 26, pressed = false, depth = 6 } = {}) {
