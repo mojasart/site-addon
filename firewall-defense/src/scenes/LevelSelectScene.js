@@ -6,7 +6,6 @@ import { rrect, fillOutline, text, button, setFont } from '../render/canvas.js';
 import { iconButton, inRect, stars, ribbon, bigButton, starTier } from '../render/widgets.js';
 import { drawVirusIcon } from '../render/viruses.js';
 import { ICONS } from '../render/sprites.js';
-import { drawImage } from '../render/images.js';
 import { BOT_WIN } from '../data/botStats.js';
 import { DARKNET_STARS } from '../data/darknet.js';
 
@@ -221,12 +220,9 @@ export class LevelSelectScene {
 
     bigButton(ctx, M.normal, '#3fd16b', 'NORMAL', { icon: 'play', size: 26 });
     bigButton(ctx, M.platinum, '#5fb4e8', 'PLATINA', { size: 26 });
+    // platina já vencida nesse mapa: um ✔ no canto do botão
     const p = M.platinum;
-    ctx.save();
-    ctx.translate(p.x + 40, p.y + (p.h - 6) / 2);
-    drawImage(ctx, 'icon_gem', 38);
-    ctx.restore();
-    if (this.app.hasPlatinum(map.id)) text(ctx, '✔', p.x + 64, p.y + 18, { size: 18, color: '#ffffff' });
+    if (this.app.hasPlatinum(map.id)) text(ctx, '✔', p.x + 34, p.y + (p.h - 6) / 2 + 1, { size: 26, color: '#ffffff' });
     // dificuldade de cada modo: bolinha + nome
     for (const [r, mode] of [[M.normal, 'normal'], [M.platinum, 'platinum']]) {
       const rate = BOT_WIN[mode][i];
