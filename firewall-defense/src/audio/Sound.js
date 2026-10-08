@@ -184,8 +184,10 @@ export class Sound {
 }
 
 // ── Música ─────────────────────────────────────────────────────
-// Dois temas em loop: 'menu' (chiptune alegre) e 'battle' (na partida:
-// tambores de guerra, cordas em ostinato e metais, clima de arena).
+// Temas em loop: 'menu' (chiptune alegre) e um de batalha por season
+// ('battle-0' Placa-Mãe: tambores de guerra e metais, clima de arena;
+// 'battle-1' Data Center: techno industrial; 'battle-2' Cabo Submarino:
+// grave, sonar e ondas).
 
 // MENU: chiptune em C → Am → F → G, 128 bpm
 const CHORDS = [
@@ -218,10 +220,48 @@ const WAR_MELODY = [ // 1 nota por tempo, 8 compassos (só na 2ª metade)
   70, 74, 79, 77, 76, null, 73, null,
 ];
 
+// DATA CENTER: Lá menor, Am → F → C → E, 124 bpm em semicolcheias.
+// Bumbo em todo tempo, palmas no 2 e no 4, baixo serrilhado correndo e
+// bipes de dados como luz de servidor piscando; a 2ª metade traz o synth.
+const DC_CHORDS = [
+  { root: 45, notes: [69, 72, 76] }, // Am
+  { root: 41, notes: [65, 69, 72] }, // F
+  { root: 48, notes: [67, 72, 76] }, // C
+  { root: 40, notes: [68, 71, 76] }, // E
+];
+const DC_BASS = [0, 0, 12, 0, 0, 12, 0, 7, 0, 0, 12, 0, 3, 0, 7, 12]; // semicolcheias
+const DC_BLIPS = [0, 5, 11, 14]; // semicolcheias com bipe de dados
+const DC_MELODY = [ // 1 nota por colcheia, 4 compassos (repete)
+  76, null, 76, 79, 81, null, 79, 76,
+  77, null, 76, 72, 74, null, 72, null,
+  72, null, 76, 79, 84, null, 81, 79,
+  80, null, 76, null, 71, 74, 76, null,
+];
+
+// CABO SUBMARINO: Mi menor, Em → C → D → Bm, 84 bpm em colcheias. Baixo bem
+// grave, batida de coração, ping de sonar com eco, ondas subindo e
+// descendo e bolhas em arpejo; a 2ª metade traz a melodia com eco.
+const SEA_CHORDS = [
+  { root: 40, notes: [64, 67, 71] }, // Em
+  { root: 36, notes: [64, 67, 72] }, // C
+  { root: 38, notes: [62, 66, 69] }, // D
+  { root: 35, notes: [62, 66, 71] }, // Bm
+];
+const SEA_BUBBLES = [0, 1, 2, 1]; // arpejo das bolhas (nas colcheias de contratempo)
+const SEA_MELODY = [ // 1 nota por tempo, 8 compassos
+  71, null, 74, 76, 79, null, 76, null,
+  76, null, 79, 76, 74, null, 72, null,
+  74, 76, 78, null, 81, null, 78, 76,
+  74, null, 71, null, 74, 73, 71, null,
+];
+
 const THEMES = {
-  menu: { step: 60 / 128 / 2, steps: 64 },
-  battle: { step: 60 / 100 / 2, steps: 128 },
+  menu: { step: 60 / 128 / 2, steps: 64, play: 'menuStep' },
+  'battle-0': { step: 60 / 100 / 2, steps: 128, play: 'battleStep' },
+  'battle-1': { step: 60 / 124 / 4, steps: 256, play: 'datacenterStep' },
+  'battle-2': { step: 60 / 84 / 2, steps: 128, play: 'oceanStep' },
 };
+THEMES.battle = THEMES['battle-0'];
 
 class Music {
   constructor(sound) {
@@ -251,8 +291,7 @@ class Music {
     }
     while (this.next < ctx.currentTime + 0.25) {
       const th = THEMES[this.theme];
-      if (this.theme === 'battle') this.battleStep(this.step, this.next - ctx.currentTime);
-      else this.menuStep(this.step, this.next - ctx.currentTime);
+      this[th.play](this.step, this.next - ctx.currentTime);
       this.step = (this.step + 1) % th.steps;
       this.next += th.step;
     }
@@ -285,7 +324,7 @@ class Music {
   battleStep(i, at) {
     const s = this.s;
     const bus = s.musicBus;
-    const STEP = THEMES.battle.step;
+    const STEP = THEMES['battle-0'].step;
     const bar = Math.floor(i / 8);
     const chord = WAR_CHORDS[bar % 4];
     const inBar = i % 8;
@@ -325,5 +364,89 @@ class Music {
     if ((bar === 7 || bar === 15) && inBar === 4) {
       s.noise({ dur: STEP * 4, vol: 0.06, filter: 'highpass', freq: 3000, to: 9000, at, bus });
     }
+  }
+
+  // Data Center: techno industrial (semicolcheias, 16 por compasso)
+  datacenterStep(i, at) {
+    const s = this.s;
+    const bus = s.musicBus;
+    const STEP = THEMES['battle-1'].step;
+    const bar = Math.floor(i / 16);
+    const chord = DC_CHORDS[bar % 4];
+    const k = i % 16;
+    const full = bar >= 8;
+
+    // bumbo em todo tempo
+    if (k % 4 === 0) s.tone({ type: 'sine', freq: 150, to: 45, dur: 0.22, vol: 0.3, at, bus });
+    // palmas no 2 e no 4
+    if (k === 4 || k === 12) s.noise({ dur: 0.12, vol: 0.08, filter: 'bandpass', freq: 1500, q: 1.1, at, bus });
+    // chimbal aberto no contratempo; fechado nas semicolcheias na 2ª metade
+    if (k % 4 === 2) s.noise({ dur: 0.07, vol: 0.05, filter: 'highpass', freq: 8000, at, bus });
+    else if (full) s.noise({ dur: 0.02, vol: 0.015, filter: 'highpass', freq: 9000, at, bus });
+
+    // baixo serrilhado correndo
+    s.tone({ type: 'sawtooth', freq: midi(chord.root + DC_BASS[k]), dur: STEP * 0.8, vol: 0.03, at, bus });
+
+    // zumbido dos servidores: acorde longo, 1 por compasso
+    if (k === 0) for (const n of chord.notes) s.tone({ type: 'triangle', freq: midi(n - 12), dur: STEP * 15, vol: 0.025, at, bus });
+
+    // bipes de dados
+    if (DC_BLIPS.includes(k)) {
+      const n = chord.notes[(bar + k) % 3] + 12;
+      s.tone({ type: 'square', freq: midi(n), dur: 0.05, vol: 0.016, at, bus });
+    }
+
+    // synth na 2ª metade (1 nota por colcheia)
+    if (full && k % 2 === 0) {
+      const m = DC_MELODY[((i - 128) / 2) % DC_MELODY.length];
+      if (m) s.tone({ type: 'square', freq: midi(m), dur: STEP * 1.8, vol: 0.03, at, bus });
+    }
+
+    // subida de ruído pra virada (meio e fim do loop)
+    if ((bar === 7 || bar === 15) && k === 8) s.noise({ dur: STEP * 8, vol: 0.05, filter: 'highpass', freq: 1500, to: 9000, at, bus });
+  }
+
+  // Cabo Submarino: grave, sonar e ondas (colcheias, 8 por compasso)
+  oceanStep(i, at) {
+    const s = this.s;
+    const bus = s.musicBus;
+    const STEP = THEMES['battle-2'].step;
+    const bar = Math.floor(i / 8);
+    const chord = SEA_CHORDS[bar % 4];
+    const k = i % 8;
+    const full = bar >= 8;
+
+    // baixo bem grave segurando o compasso
+    if (k === 0) s.tone({ type: 'sine', freq: midi(chord.root), dur: STEP * 7.8, vol: 0.18, at, bus });
+    // batida de coração (tum-tum)
+    if (k === 0 || k === 1) s.tone({ type: 'sine', freq: 90, to: 40, dur: 0.3, vol: k === 0 ? 0.22 : 0.14, at, bus });
+    if (full && k === 4) s.noise({ dur: 0.1, vol: 0.05, filter: 'lowpass', freq: 700, at, bus });
+
+    // ping de sonar com eco, a cada 2 compassos
+    if (bar % 2 === 0 && k === 6) {
+      s.tone({ type: 'sine', freq: midi(88), dur: 1.4, vol: 0.04, at, bus });
+      s.tone({ type: 'sine', freq: midi(88), dur: 1.2, vol: 0.015, at: at + STEP * 2, bus });
+    }
+
+    // ondas: ruído grave abrindo devagar
+    if (bar % 2 === 0 && k === 0) s.noise({ dur: STEP * 8, vol: 0.05, filter: 'lowpass', freq: 250, to: 1100, at, bus });
+
+    // bolhas em arpejo, nos contratempos
+    if (k % 2 === 1) {
+      const n = chord.notes[SEA_BUBBLES[(k - 1) / 2 % 4]] + 12;
+      s.tone({ type: 'triangle', freq: midi(n), dur: STEP * 0.6, vol: 0.02, at, bus });
+    }
+
+    // melodia com eco na 2ª metade (1 nota por tempo)
+    if (full && k % 2 === 0) {
+      const m = SEA_MELODY[((i - 64) / 2) % SEA_MELODY.length];
+      if (m) {
+        s.tone({ type: 'triangle', freq: midi(m), dur: STEP * 1.8, vol: 0.06, at, bus });
+        s.tone({ type: 'triangle', freq: midi(m), dur: STEP * 1.5, vol: 0.02, at: at + STEP * 3, bus });
+      }
+    }
+
+    // brilho descendo pra virada
+    if ((bar === 7 || bar === 15) && k === 4) s.noise({ dur: STEP * 4, vol: 0.03, filter: 'highpass', freq: 5000, to: 2000, at, bus });
   }
 }
