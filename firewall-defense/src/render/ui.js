@@ -101,7 +101,8 @@ function drawBossBars(ctx, game) {
     }
     ctx.save();
     ctx.translate(x + 20, y + BAR_H / 2);
-    ICONS.lock(ctx, 9);
+    if (e.def.ads) text(ctx, 'AD', 0, 1, { size: 12, color: GOLD }); // Adware
+    else ICONS.lock(ctx, 9);
     ctx.restore();
     text(ctx, e.def.name.toUpperCase(), x + 36, y + BAR_H / 2 + 1, { size: 14, align: 'left' });
     text(ctx, `${fmt(Math.ceil(e.hp))} / ${fmt(e.maxHp)}`, x + w - 14, y + BAR_H / 2 + 1, { size: 14, align: 'right' });

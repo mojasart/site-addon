@@ -25,6 +25,7 @@ import { drawHazards, drawStunned, drawHazardWarning } from './render/hazards.js
 import { drawEncrypted, ENCRYPT_FILTER } from './render/ransom.js';
 import { drawSpawns } from './render/spawns.js';
 import { drawDuck } from './render/duck.js';
+import { drawAds, adClose, adSpot, ADS, AD_W, AD_H } from './render/ads.js';
 import { pickCoinTiles, coinTileAt, COIN_SEASONS } from './core/coinTiles.js';
 import { drawCoinTiles, drawNoMine } from './render/coinTiles.js';
 import { rrect, fillOutline, circle, text } from './render/canvas.js';
@@ -104,6 +105,7 @@ export class Game {
     this.stats = { pops: 0 };
     this.ransomOdds = null; // chance do Ransomware criptografar no próximo quadrado (null = ainda não veio)
     this.ransomLocks = 0; // quantas vezes já criptografou nessa partida
+    this.ads = []; // anúncios do Adware abertos na tela (render/ads.js)
     this.state = 'playing'; // playing | paused | won | lost
     // platina: relógio das ondas, se o chefão já veio e o aliado bloqueado
     this.platTime = 0;
@@ -205,6 +207,7 @@ export class Game {
 
   step(dt) {
     this.callCooldown = Math.max(0, this.callCooldown - dt);
+    this.updateAds(dt);
     if (this.nextIn != null && (this.nextIn -= dt) <= 0) this.startRound();
     if (this.platinum && this.rounds.started > 0) this.platinumStep(dt);
     this.rounds.update(dt, this);
@@ -579,6 +582,50 @@ export class Game {
     this.sound.play('upgrade');
   }
 
+  // Adware abre um anúncio num lugar sorteado da tela (sem repetir o último tipo)
+  spawnAd(e) {
+    const cfg = e.def.ads;
+    if (this.ads.filter((a) => a.closing == null).length >= cfg.max) return;
+    let type = Math.floor(Math.random() * ADS.length);
+    if (type === this.lastAd) type = (type + 1) % ADS.length;
+    this.lastAd = type;
+    const speed = 70 + Math.random() * 50;
+    this.ads.push({ type, ...adSpot(this.viewW), t: 0, seed: Math.random() * 10, vx: chance(cfg.moving) ? (chance(0.5) ? speed : -speed) : 0 });
+    this.sound.play('star');
+  }
+
+  // Anúncios: entram pulando, os que andam batem nas bordas; sem Adware vivo, somem
+  updateAds(dt) {
+    if (!this.ads.length) return;
+    const adware = this.enemies.some((e) => e.def.ads && !e.dead);
+    for (const ad of this.ads) {
+      ad.t += dt;
+      if (!adware && ad.closing == null) ad.closing = 0.18;
+      if (ad.closing != null) ad.closing -= dt;
+      if (!ad.vx) continue;
+      ad.x += ad.vx * dt;
+      if (ad.x < 8 || ad.x > this.viewW - AD_W - 8) {
+        ad.vx = -ad.vx;
+        ad.x = Math.max(8, Math.min(this.viewW - AD_W - 8, ad.x));
+      }
+    }
+    this.ads = this.ads.filter((ad) => ad.closing == null || ad.closing > 0);
+  }
+
+  // Toque num anúncio (o de cima primeiro): o X fecha; no resto, o toque morre ali
+  adTap(sx, sy) {
+    for (let i = this.ads.length - 1; i >= 0; i--) {
+      const ad = this.ads[i];
+      if (ad.closing != null || sx < ad.x || sx > ad.x + AD_W || sy < ad.y || sy > ad.y + AD_H) continue;
+      if (inRect(adClose(ad), sx, sy)) {
+        ad.closing = 0.18;
+        this.sound.play('click');
+      }
+      return true;
+    }
+    return false;
+  }
+
   // Ransomware andou um quadrado: com defesa no alcance, sorteia a chance da
   // partida (a 1ª é certa; depois cai pra odds[N] e sobe step por quadrado)
   rollRansom(e) {
@@ -651,6 +698,7 @@ export class Game {
   pointerDown(sx, sy, type = 'touch') {
     Object.assign(this.pointer, { x: sx, y: sy, down: true, type });
     if (this.state !== 'playing') return this.overlayTap(sx, sy);
+    if (this.adTap(sx, sy)) return; // anúncio por cima: o toque não passa
 
     const L = layout(this);
     if (sx >= L.panel.x) return this.panelTap(sx, sy, L);
@@ -903,6 +951,7 @@ export class Game {
 
     drawInfoPanel(ctx, this); // antes do painel: a alça recolhida "entra" embaixo dele
     drawPanel(ctx, this);
+    drawAds(ctx, this); // por cima do mapa e do painel
     if (this.toast) drawToast(ctx, this);
     drawBanner(ctx, this);
     drawOverlay(ctx, this);

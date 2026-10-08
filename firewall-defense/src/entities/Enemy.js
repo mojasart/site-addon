@@ -127,6 +127,12 @@ export class Enemy {
     }
     this.place();
     this.tryRansom(game);
+    // Adware: na tela, de tempos em tempos abre um anúncio (Game.spawnAd)
+    const ads = this.def.ads;
+    if (ads && game.isVisible(this) && (this.adTimer = (this.adTimer ?? rand(1, 2)) - dt) <= 0) {
+      this.adTimer = rand(ads.every[0], ads.every[1]);
+      game.spawnAd(this);
+    }
     // encostou no servidor: já conta como invasão (não passa por cima dele)
     if (game.touchesBase(this)) {
       this.dead = true;

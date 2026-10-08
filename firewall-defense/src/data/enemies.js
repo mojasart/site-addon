@@ -63,6 +63,25 @@ export const ENEMIES = {
     reward: 30,
     children: [['trojan', 2]],
   },
+  adware: {
+    name: 'Adware',
+    desc: 'Chefão: enche a tela de anúncios que atrapalham',
+    lore: 'Veio de brinde num "player de vídeo grátis". Agora ninguém consegue fechar as janelas dele.',
+    hp: 120000,
+    lives: 60,
+    speed: 40,
+    radius: 28,
+    color: '#ffb02e',
+    kind: 'adware',
+    boss: true,
+    reward: 30,
+    children: [['v4', 3]],
+    // enquanto está na tela, abre um anúncio a cada `every` s (no máximo `max`
+    // ao mesmo tempo); `moving` deles ficam andando de um lado pro outro.
+    // Morreu: os anúncios somem (Game.spawnAd / updateAds, render/ads.js)
+    ads: { every: [4, 7], max: 4, moving: 0.1 },
+    topBar: true,
+  },
   ransomware: {
     name: 'Ransomware',
     desc: 'Chefão: criptografa as defesas perto dele; solta 4 Trojans',
