@@ -1,3 +1,4 @@
+import { drawImage } from './images.js';
 import { VIEW_H, OUTLINE, GOLD } from '../config.js';
 import { rrect, fillOutline, text } from './canvas.js';
 import { drawCharacter } from './characters.js';
@@ -93,10 +94,18 @@ function drawTarget(ctx, tg, t, nudge, viewW) {
 
 // Mãozinha de luva branca (ponta do dedo na origem); rot gira a mão: com 0
 // o dedo aponta pra cima e o punho fica embaixo
+const HAND = 64; // tamanho da sprite da mão
+const HAND_TIP = [0.432, 0.02]; // ponta do dedo na sprite (fração da imagem)
+
 function drawHand(ctx, x, y, rot) {
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(rot);
+  // sprite (assets/sprites/hand.png) com a ponta do dedo na origem
+  if (drawImage(ctx, 'hand', HAND, (0.5 - HAND_TIP[0]) * HAND, (0.5 - HAND_TIP[1]) * HAND)) {
+    ctx.restore();
+    return;
+  }
   ctx.lineJoin = 'round';
   // dedo indicador
   rrect(ctx, -6, 0, 12, 30, 6);

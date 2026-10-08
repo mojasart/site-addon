@@ -656,6 +656,7 @@ export class Game {
     }
     this.pay(up.cost);
     tower.upgrade();
+    this.tutorial?.on('upgrade', tower.type);
     this.fx.burst(tower.x, tower.y - 10, '#ffd23f', 22, 190, 0.55, 5, true);
     this.sound.play('upgrade');
   }
@@ -847,6 +848,7 @@ export class Game {
     const tw = this.towerAt(mx, sy);
     if (tw) this.sound.play('click');
     this.selectedTower = tw;
+    if (tw) this.tutorial?.on('select', tw.type);
   }
 
   overlayTap(sx, sy) {
