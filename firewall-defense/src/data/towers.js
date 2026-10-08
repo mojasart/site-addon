@@ -89,7 +89,7 @@ export const TOWERS = {
     range: 300,
     attack: 'beam',
     fireRate: 2.5,
-    damage: 3,
+    damage: 12, // sniper: tiro lento e pesado (o que mais tira vida de chefão)
     canHitArmored: true,
     targeting: true,
     defaultTarget: 'strong',
