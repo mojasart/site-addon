@@ -215,6 +215,7 @@ export class Game {
     if (this.platinum && this.rounds.started > 0) this.platinumStep(dt);
     this.rounds.update(dt, this);
     this.flushSpawns();
+    this.revealStealth();
     for (const t of this.towers) t.update(dt, this);
     this.flushSpawns();
     for (const p of this.projectiles) p.update(dt, this);
@@ -245,6 +246,7 @@ export class Game {
 
   // Isca (Honeypot) que o vírus está encostando, se houver
   baitAt(e) {
+    if (e.def.stealth && !e.revealed) return null; // escondido, passa reto pela isca
     for (const t of this.towers) {
       if (t.def.attack !== 'decoy' || t.dead || t.ransom) continue; // criptografada não segura ninguém
       if (Math.hypot(e.x - t.x, e.y - t.y) < t.r + e.r * 0.8) return t;
@@ -450,7 +452,15 @@ export class Game {
   // ── Consultas usadas pelas defesas ────────────────────────
 
   isVisible(e) {
-    return e.x > -this.offsetX - 5;
+    return e.x > -this.offsetX - 5 && (!e.def.stealth || e.revealed);
+  }
+
+  // Spyware: só aparece (e pode levar dano) no alcance de um Robô NMAP
+  revealStealth() {
+    for (const e of this.enemies) {
+      if (!e.def.stealth) continue;
+      e.revealed = this.towers.some((t) => t.stats.reveals && !t.dead && Math.hypot(e.x - t.x, e.y - t.y) <= t.stats.range + e.r);
+    }
   }
 
   // Nota de cada vírus pro modo de mira da defesa (maior = alvo).
@@ -920,6 +930,7 @@ export class Game {
       const e = th.e;
       ctx.save();
       ctx.translate(e.x + (e.quake > 0 ? Math.sin(this.anim * 70) * 4 * Math.min(1, e.quake * 3) : 0), e.y); // treme lançando o Ransomware
+      if (e.def.stealth && !e.revealed) ctx.globalAlpha = 0.25; // Spyware escondido: quase transparente
       drawEnemy(ctx, e);
       ctx.restore();
       if (e.def.boss && !e.def.topBar) drawBossBar(ctx, e); // (Ransomware: barra no topo, drawBossBars)
@@ -1096,3 +1107,4 @@ function drawVulnerable(ctx, e, t) {
   fillOutline(ctx, '#3ec5ff', 2.5);
   text(ctx, `+${Math.round((e.vulnMul - 1) * 100)}%`, x, y + 1, { size: 9 }); // tudo em % (regra do jogo)
 }
+

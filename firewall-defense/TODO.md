@@ -15,7 +15,7 @@ Lista do que falta fazer no jogo. Marque com `[x]` quando terminar.
 
 ## Defesas
 
-- [ ] **Upgrade de pierce pro Hacker**: o teclado volta a atravessar vários vírus
+- [x] **Upgrade de pierce pro Hacker**: o teclado volta a atravessar vários vírus
   (no `apply` do upgrade: `s.pierce = 2`)
 - [ ] **Minerador no Cabo Submarino (season 3)**: lá não tem pilha de bitcoin, então ele só
   vai poder minerar com um **upgrade específico** (a definir: nome, custo e em que nível entra)
@@ -33,5 +33,5 @@ Lista do que falta fazer no jogo. Marque com `[x]` quando terminar.
 
 ## Balanceamento
 
-- [ ] Recalibrar os mapas com os bots (`node tools/sim/calibrate.js` e conferir com `run.js`)
+- [x] Recalibrar os mapas com os bots (`node tools/sim/calibrate.js` e conferir com `run.js`)
   depois das mudanças no Hacker (sem pierce) e no Honeypot (dura 15 s)

@@ -58,7 +58,7 @@ Tocar num mapa abre a escolha **NORMAL** / **PLATINA** (`src/data/platinum.js`);
 
 | Defesa | Custo | O que faz | Upgrades |
 | --- | --- | --- | --- |
-| **Hacker** | $250 | Arremessa teclados (1 vírus por teclado) | Dedos Rápidos · Exploit Triplo |
+| **Hacker** | $250 | Arremessa teclados (1 vírus por teclado) | Dedos Rápidos (mais rápido e atravessa 2 vírus) · Exploit Triplo |
 | **Golem Firewall** | $350 | Onda de fogo em volta, queima blindados | Muralha de Fogo (mais alcance e ondas mais rápidas) · Incêndio (vírus pegam fogo: 500 de dano/s por até 3 s, mesmo fora do alcance; não acumula nem renova enquanto queima) |
 | **Penguin Linux** | $250 | Suporte: não dá dano, congela os vírus em volta (lentidão) | Criptografia AES (75% mais lento por 2,5 s) · Frente Fria (mais alcance e ondas um pouco mais rápidas). Na Dark Net, o Gelo Quebradiço deixa os congelados vulneráveis: levam 5% a mais de dano |
 | **Robô NMAP** | $500 | Laser de longo alcance: tiro lento, dano alto, fura blindagem | Feixe Perfurante (o laser atravessa e acerta até 2 vírus em linha) · Marcar Alvo (o vírus atingido fica marcado por 2 s e leva 25% a mais de dano de todas as defesas) |
@@ -79,6 +79,7 @@ Os vírus funcionam como os balões do Bloons: cada camada estourada revela a de
 | --- | --- |
 | **Vírus** vermelho → azul → verde → amarelo → rosa | Cada cor é uma camada a mais e é mais rápida |
 | **Worm** | Rápido: vai soltando vírus azuis pelo caminho enquanto está vivo |
+| **Spyware** | Invisível: só aparece (e leva dano) no alcance de um Robô NMAP. Passa reto pelo Honeypot |
 | **Trojan** | Blindado: os teclados do Hacker não furam |
 | **Locker** | Mini-chefão acorrentado (rodadas 15+), 135.000 de vida. Solta 2 Trojans |
 | **Adware** | Chefão pop-up (rodada 15, junto com o Locker), 120.000 de vida. Enquanto está na tela, abre um anúncio a cada 4–7 s (até 4 ao mesmo tempo): janelas cômicas que cobrem o jogo e só fecham no X. 10% delas ficam andando de um lado pro outro. Quando ele morre, os anúncios somem. Solta 3 Vírus Amarelos |
@@ -217,7 +218,7 @@ firewall-defense/
 
 ## Próximos passos sugeridos
 
-- [ ] **Spyware**: vírus invisível, que só uma defesa específica consegue enxergar
+- [x] **Spyware**: vírus invisível, que só o Robô NMAP enxerga
 - [ ] **Adware**
 - [ ] Caminhos de upgrade em 2 trilhas (como o Bloons 6) e mais níveis
 - [ ] Heróis que sobem de nível durante a partida

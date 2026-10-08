@@ -2,6 +2,8 @@ import { VIEW_H, PANEL_W, OUTLINE, GOLD } from '../config.js';
 import { TOWERS, TOWER_ORDER, TARGET_MODES } from '../data/towers.js';
 import { rrect, circle, fillOutline, text, setFont, button } from './canvas.js';
 import { drawCharacter } from './characters.js';
+import { drawVirusIcon } from './viruses.js';
+import { ENEMIES } from '../data/enemies.js';
 import { drawCoin, drawHeart, ICONS } from './sprites.js';
 import { iconButton } from './widgets.js';
 import { fmt } from '../util.js';
@@ -26,6 +28,7 @@ export function layout(game) {
     ransom: { x: px + 10, y: 64, w: W - 20, h: 188 }, // no lugar dos upgrades (defesa criptografada)
     target: { x: px + 10, y: 262, w: W - 20, h: 46 },
     sell: { x: px + 10, y: 314, w: W - 20, h: 50 },
+    preview: { x: px + 10, y: 390, w: W - 20, h: 66 }, // vírus da próxima rodada
   };
 }
 
@@ -124,7 +127,10 @@ export function drawPanel(ctx, game) {
   ctx.fillRect(P.x + 5, 0, 3, P.h);
 
   if (game.selectedTower) drawTowerInfo(ctx, game, L);
-  else drawShop(ctx, game, L);
+  else {
+    drawShop(ctx, game, L);
+    drawPreview(ctx, game, L.preview);
+  }
   drawPlayButton(ctx, game, L.play);
   drawSpeedButton(ctx, game, L.speed);
 }
@@ -164,7 +170,63 @@ function drawShop(ctx, game, L) {
       continue;
     }
     text(ctx, `$${cost}`, tile.x + tile.w / 2, tile.y + tile.h - 16, { size: 18, color: affordable ? GOLD : '#ff7a8a' });
+    drawRoleTag(ctx, tile);
   }
+}
+
+// Etiqueta da função de cada defesa no card da loja (pra escolher sem abrir o catálogo)
+const ROLE = {
+  hacker: { label: 'DANO', color: '#ff7a5c' },
+  firewall: { label: 'ÁREA', color: '#ff9a2e' },
+  pinguim: { label: 'SUPORTE', color: '#5fd0ff' },
+  scanner: { label: 'SNIPER', color: '#ff5a7a' },
+  minerador: { label: 'ECONOMIA', color: '#ffc62e' },
+  honeypot: { label: 'ISCA', color: '#f5a524' },
+};
+
+function drawRoleTag(ctx, tile) {
+  const role = ROLE[tile.type];
+  if (!role) return;
+  const def = TOWERS[tile.type];
+  setFont(ctx, 10);
+  const w = ctx.measureText(role.label).width + 12;
+  const x = tile.x + tile.w / 2 - w / 2;
+  rrect(ctx, x, tile.y + 6, w, 15, 7.5);
+  fillOutline(ctx, role.color, 2);
+  text(ctx, role.label, tile.x + tile.w / 2, tile.y + 14, { size: 10, stroke: null, color: OUTLINE });
+  // escudinho: fura blindagem (Trojan)
+  if (def.canHitArmored && def.attack !== 'decoy' && def.effect !== 'frost') {
+    ctx.save();
+    ctx.translate(tile.x + tile.w - 13, tile.y + 30);
+    ctx.beginPath();
+    ctx.moveTo(0, -7);
+    ctx.lineTo(6, -4.5);
+    ctx.quadraticCurveTo(6, 3.5, 0, 7);
+    ctx.quadraticCurveTo(-6, 3.5, -6, -4.5);
+    ctx.closePath();
+    fillOutline(ctx, '#c9d3e0', 2);
+    ctx.restore();
+  }
+}
+
+// Prévia da próxima rodada: os tipos de vírus que vêm e quantos
+function drawPreview(ctx, game, r) {
+  const rounds = game.rounds;
+  if (game.platinum || !rounds.canStart) return;
+  const counts = new Map();
+  for (const g of rounds.rounds[rounds.started]) if (g.count > 0) counts.set(g.type, (counts.get(g.type) ?? 0) + g.count);
+  if (!counts.size) return;
+  text(ctx, `PRÓXIMA: RODADA ${rounds.started + 1}`, r.x + r.w / 2, r.y + 8, { size: 11, color: '#bcd0f5' });
+  const list = [...counts].slice(0, 4);
+  const step = r.w / list.length;
+  list.forEach(([type, n], i) => {
+    const cx = r.x + step * (i + 0.5);
+    ctx.save();
+    ctx.translate(cx - 9, r.y + 36);
+    drawVirusIcon(ctx, type, ENEMIES[type], 9);
+    ctx.restore();
+    text(ctx, `×${n}`, cx + 13, r.y + 38, { size: 13, align: 'center' });
+  });
 }
 
 // ── Fundo cyber dos cards da loja ───────────────────────────
@@ -230,6 +292,7 @@ function drawTowerInfo(ctx, game, L) {
 
   button(ctx, L.sell, '#ff5a5a', { radius: 12, depth: 5 });
   text(ctx, `VENDER $${tw.sellValue}`, L.sell.x + L.sell.w / 2, L.sell.y + 22, { size: 19 });
+
 }
 
 // Defesa criptografada pelo Ransomware: um botão grande pra pagar o resgate

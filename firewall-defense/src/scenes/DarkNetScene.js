@@ -4,7 +4,7 @@ import { iconButton, inRect } from '../render/widgets.js';
 import { ICONS } from '../render/sprites.js';
 import { drawCharacter } from '../render/characters.js';
 import { drawDuck } from '../render/duck.js';
-import { TREE, NODE, formatCoffee } from '../data/darknet.js';
+import { TREE, NODE, COFFEE, formatCoffee } from '../data/darknet.js';
 import { seeded, plural } from '../util.js';
 
 /* ════════════════════════════════════════════════════════════
@@ -255,6 +255,8 @@ export class DarkNetScene {
     ctx.fillRect(0, 0, W, 120);
     text(ctx, 'DARK NET', W / 2, 46, { size: 46, color: PURPLE, strokeWidth: 10 });
     this.drawCoffee(ctx, W / 2, 92);
+    // de onde vem o café (quem chega aqui pela primeira vez não sabe)
+    text(ctx, 'ganhe café vencendo mapas e estourando vírus', W / 2, 116, { size: 13, color: '#bfa8e6', stroke: null });
     this.drawPanel(ctx, L);
     iconButton(ctx, L.back, '#5fb4ff', 'back');
     for (const b of [L.zoomIn, L.zoomOut, L.center]) this.drawZoomButton(ctx, b);
@@ -448,6 +450,17 @@ export class DarkNetScene {
     if (status) {
       ctx.fillStyle = status[1];
       ctx.fillText(status[0], P.x + 18, P.y + 196);
+    }
+    // faltando café: explica como ganhar
+    if (st === 'open' && !can) {
+      ctx.font = `11px ${MONO}`;
+      ctx.fillStyle = '#bfa8e6';
+      const lines = [
+        `> vencer mapa: +${COFFEE.star} (3 estrelas: +${COFFEE.three})`,
+        `> platina: +${COFFEE.platinum}`,
+        `> cada 1000 vírus: +${formatCoffee(COFFEE.perKill * 1000)}`,
+      ];
+      lines.forEach((l, i) => ctx.fillText(l, P.x + 18, P.y + 212 + i * 13));
     }
 
     // botão: o custo em cafés (verde quando dá pra comprar); comprado vira

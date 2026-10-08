@@ -20,7 +20,7 @@ import { AGES, statsAt, statRows } from '../data/towerInfo.js';
  *  Lista à esquerda e a ficha da escolhida à direita.
  * ════════════════════════════════════════════════════════════ */
 
-const ORDER = ['v1', 'v2', 'v3', 'v4', 'v5', 'worm', 'trojan', 'locker', 'adware', 'ransomware'];
+const ORDER = ['v1', 'v2', 'v3', 'v4', 'v5', 'worm', 'spyware', 'trojan', 'locker', 'adware', 'ransomware'];
 const TABS = [
   { id: 'threats', label: 'AMEAÇAS', file: 'THREAT_DB.EXE', items: ORDER },
   { id: 'towers', label: 'DEFESAS', file: 'AGENTS_DB.EXE', items: TOWER_ORDER },
@@ -329,7 +329,7 @@ export class CatalogScene {
     }
     const cursor = Math.sin(this.t * 8) > 0 ? '_' : ' ';
     mono(ctx, `${def.name.toUpperCase()}${cursor}`, fx, pr.y + 18, 22, GREEN, 'left', true);
-    const kind = [def.boss ? 'CHEFÃO' : null, def.armored ? 'BLINDADO' : null, def.spawn ? 'SE ESPALHA' : null].filter(Boolean);
+    const kind = [def.boss ? 'CHEFÃO' : null, def.armored ? 'BLINDADO' : null, def.spawn ? 'SE ESPALHA' : null, def.stealth ? 'INVISÍVEL' : null, def.lock ? 'CRIPTOGRAFA' : null].filter(Boolean);
     mono(ctx, kind.length ? `[ ${kind.join(' · ')} ]` : '[ COMUM ]', fx, pr.y + 44, 13, def.boss ? RED : DIM, 'left', true);
 
     const reward = def.reward ?? 1;
