@@ -6,7 +6,6 @@ import { rrect, fillOutline, text, button, setFont } from '../render/canvas.js';
 import { iconButton, inRect, stars, ribbon, bigButton, starTier } from '../render/widgets.js';
 import { drawVirusIcon } from '../render/viruses.js';
 import { ICONS } from '../render/sprites.js';
-import { drawImage } from '../render/images.js';
 import { BOT_WIN } from '../data/botStats.js';
 import { DARKNET_STARS } from '../data/darknet.js';
 
@@ -25,7 +24,7 @@ const tierOf = (rate) => TIERS.find((t) => rate >= t.min);
 // Cabo Submarino) e uma grade 5×3 com os 15 mapas da season escolhida.
 // Os mapas abrem em sequência: vencer um libera o próximo.
 // Tocar num mapa abre a escolha NORMAL / PLATINA; a platina só libera com
-// 3 estrelas (antes disso aparece trancada). Platina vencida: estrelas azul-gelo e a gema do lado.
+// 3 estrelas (antes disso aparece trancada). Platina vencida: estrelas azul-gelo e o card de platina.
 // (O aliado bloqueado só aparece dentro da partida.)
 // No canto de cima: o saldo de cafés, a Dark Net (libera com
 // DARKNET_STARS estrelas; antes disso fica trancada) e o catálogo.
@@ -221,12 +220,9 @@ export class LevelSelectScene {
 
     bigButton(ctx, M.normal, '#3fd16b', 'NORMAL', { icon: 'play', size: 26 });
     bigButton(ctx, M.platinum, '#5fb4e8', 'PLATINA', { size: 26 });
+    // platina já vencida nesse mapa: um ✔ no canto do botão
     const p = M.platinum;
-    ctx.save();
-    ctx.translate(p.x + 40, p.y + (p.h - 6) / 2);
-    drawImage(ctx, 'icon_gem', 38);
-    ctx.restore();
-    if (this.app.hasPlatinum(map.id)) text(ctx, '✔', p.x + 64, p.y + 18, { size: 18, color: '#ffffff' });
+    if (this.app.hasPlatinum(map.id)) text(ctx, '✔', p.x + 34, p.y + (p.h - 6) / 2 + 1, { size: 26, color: '#ffffff' });
     // dificuldade de cada modo: bolinha + nome
     for (const [r, mode] of [[M.normal, 'normal'], [M.platinum, 'platinum']]) {
       const rate = BOT_WIN[mode][i];
@@ -320,18 +316,11 @@ export class LevelSelectScene {
 
     // estrelas embaixo (bronze, prata, ouro ou platina)
     const sy = c.y + c.h - 18;
-    // bolinha de dificuldade à direita das estrelas (espelhando a gema da platina):
+    // bolinha de dificuldade à direita das estrelas:
     // pela % de bots que venceram; sem dados, a dificuldade do mapa
     const rate = BOT_WIN.normal[i];
     diffDot(ctx, cx + 58, sy - 2, rate != null ? tierOf(rate).color : DIFF_COLOR[map.difficulty], 7);
     stars(ctx, cx, sy, got, 9, 22, null, starTier(got, plat));
-    // gema da platina: só aparece depois de vencer a platina desse mapa
-    if (plat) {
-      ctx.save();
-      ctx.translate(cx - 58, sy - 2);
-      drawImage(ctx, 'icon_gem', 24);
-      ctx.restore();
-    }
     if (!unlocked) {
       rrect(ctx, c.x, c.y, c.w, c.h, 16);
       ctx.fillStyle = 'rgba(15,22,48,0.72)';
