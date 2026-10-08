@@ -1020,5 +1020,5 @@ function drawVulnerable(ctx, e, t) {
   const y = e.y - e.r - (e.def.boss ? 30 : 18) + Math.sin(t * 6) * 1.5;
   circle(ctx, x, y, 10);
   fillOutline(ctx, '#3ec5ff', 2.5);
-  text(ctx, 'x2', x, y + 1, { size: 12 });
+  text(ctx, `+${Math.round((e.vulnMul - 1) * 100)}%`, x, y + 1, { size: 9 }); // tudo em % (regra do jogo)
 }

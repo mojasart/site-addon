@@ -23,7 +23,8 @@ export class Enemy {
     this.shatter = 0; // Estilhaço (Dark Net): chance de estilhaçar se estourar no gelo
     this.sticky = false; // Mel Pegajoso (Dark Net): sai lento do Honeypot
     this.slowMul = 1;
-    this.vulnTimer = 0; // vulnerável (Penguin Linux com Era do Gelo): leva dano dobrado
+    this.vulnTimer = 0; // vulnerável (Penguin com Gelo Quebradiço, Dark Net): leva vulnMul de dano
+    this.vulnMul = 1;
     this.markTimer = 0; // marcado (Robô NMAP com Marcar Alvo): leva markMul de dano
     this.markMul = 1;
     this.burnTimer = 0; // pegando fogo (Golem com Incêndio): perde burnDps de vida por segundo
@@ -182,7 +183,8 @@ export class Enemy {
   }
 
   // Era do Gelo: enquanto durar, cada acerto tira o dobro (vale pro chefão também)
-  weaken(time) {
+  weaken(time, mul = 2) {
+    this.vulnMul = this.vulnTimer > 0 ? Math.max(this.vulnMul, mul) : mul;
     this.vulnTimer = Math.max(this.vulnTimer, time);
   }
 
@@ -212,7 +214,7 @@ export class Enemy {
       game.sound.play('block');
       return;
     }
-    if (this.vulnTimer > 0 && !opts.overflow) amount *= 2;
+    if (this.vulnTimer > 0 && !opts.overflow) amount *= this.vulnMul;
     if (this.markTimer > 0 && !opts.overflow) amount *= this.markMul;
     if (!opts.dot) this.flash = 0.08;
     this.hp -= amount;
@@ -255,6 +257,7 @@ export class Enemy {
         child.shatter = this.shatter;
         child.slowMul = this.slowMul;
         child.vulnTimer = this.vulnTimer;
+        child.vulnMul = this.vulnMul;
         child.markTimer = this.markTimer;
         child.markMul = this.markMul;
         child.burnTimer = this.burnTimer;

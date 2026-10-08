@@ -71,13 +71,13 @@ export const TOWERS = {
     damage: 0,
     slow: 0.5, // multiplica a velocidade
     slowTime: 1.5,
-    vulnerable: false, // congelados levam dano dobrado (upgrade Era do Gelo)
+    vulnerable: false, // congelados levam vulnMul de dano (Gelo Quebradiço, Dark Net)
     maxTargets: 30,
     canHitArmored: true,
     sound: 'frost',
     upgrades: [
-      { name: 'Criptografia AES', desc: 'Lentidão mais forte e mais longa', cost: 220, apply: (s) => { s.slow = 0.3; s.slowTime = 2.5; } },
-      { name: 'Era do Gelo', desc: 'Mais alcance e congelados levam dano dobrado', cost: 450, apply: (s) => { s.vulnerable = true; s.range += 25; } },
+      { name: 'Criptografia AES', desc: 'Lentidão bem mais forte: 75% mais lento por 2,5s', cost: 220, apply: (s) => { s.slow = 0.25; s.slowTime = 2.5; } },
+      { name: 'Frente Fria', desc: 'Mais alcance e ondas um pouco mais rápidas', cost: 450, apply: (s) => { s.range += 25; s.fireRate *= 0.85; } },
     ],
   },
   scanner: {

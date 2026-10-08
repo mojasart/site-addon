@@ -100,6 +100,9 @@ export const TREE = [
     apply: (s) => { s.fireRate *= 0.92; } },
   { id: 'pinguim3c', tower: 'pinguim', name: 'Avalanche', desc: 'Cada onda tem 5% de chance de vir outra logo em seguida', cost: 12, parent: 'pinguim3b',
     apply: (s) => { s.repeatChance = (s.repeatChance ?? 0) + 0.05; } },
+  // vírus no gelo do Penguin ficam vulneráveis: levam vulnMul de dano de todas as defesas
+  { id: 'pinguim4', tower: 'pinguim', name: 'Gelo Quebradiço', desc: 'Vírus congelados ficam vulneráveis e levam 5% a mais de dano de todas as defesas', cost: 10, parent: 'pinguim',
+    apply: (s) => { s.vulnerable = true; s.vulnMul = (s.vulnMul ?? 1) + 0.05; } },
 
   // Robô NMAP — A: crítico (dano triplo) · B: varredura (velocidade e alcance)
   { id: 'scanner2', tower: 'scanner', name: 'Ping da Morte', desc: 'Cada tiro tem 5% de chance de dar dano triplo', cost: 8, parent: 'scanner',

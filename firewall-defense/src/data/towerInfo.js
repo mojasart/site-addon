@@ -36,7 +36,7 @@ export function statRows(s, { armor = false } = {}) {
   }
   if (s.effect === 'frost') {
     rows.push(['LENTIDÃO', `-${Math.round((1 - s.slow) * 100)}% por ${num(s.slowTime)}s`]);
-    if (s.vulnerable) rows.push(['CONGELADOS', 'levam dano 2×']);
+    if (s.vulnerable) rows.push(['CONGELADOS', `levam +${Math.round(((s.vulnMul ?? 2) - 1) * 100)}% de dano`]);
   } else {
     rows.push(['DANO', s.multishot > 1 ? `${fmt(s.damage)} × ${s.multishot} teclados` : fmt(s.damage)]);
     if (s.pierce > 1) rows.push(['ATRAVESSA', `até ${s.pierce} vírus`]);

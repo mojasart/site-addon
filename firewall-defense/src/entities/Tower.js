@@ -240,7 +240,7 @@ export class Tower {
         for (const e of targets.slice(0, s.maxTargets)) {
           if (s.slow) e.slow(s.slow, s.slowTime);
           if (s.shatterChance) e.shatter = s.shatterChance; // Estilhaço: vale enquanto estiver no gelo
-          if (s.vulnerable) e.weaken(s.slowTime);
+          if (s.vulnerable) e.weaken(s.slowTime, s.vulnMul ?? 2);
           // fogo (Chama Alta e Inferno, da Dark Net, deixam mais forte e mais longo)
           const burnMul = s.burnMul ?? 1;
           const burnExtra = s.burnExtra ?? 0;
