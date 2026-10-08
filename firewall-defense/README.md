@@ -126,7 +126,7 @@ A tela de vitória mostra os cafés novos da partida (ex.: *+2,1*: 2 das estrela
 
 Os mapas **10, 20, 30 e 40** são **Bug Bounty**: 90 segundos de vírus sem parar, sem vida pra perder
 (quem chega no servidor só some e zera o combo). Cada camada estourada dá pontos × combo; as estrelas
-saem da % de vírus estourados (bronze 40%, prata 65%, ouro 85%) e valem 1, 2 ou 3 cafés. Não trava a
+saem da % de vírus estourados (bronze 40%, prata 65%, ouro 85%) e valem 2, 4 ou 6 cafés (fase bônus: mais que uma fase normal, mas só uma vez, pelo recorde). Não trava a
 progressão e não tem modo platina. Regras em `src/data/bounty.js`.
 
 ## Seasons e mapas

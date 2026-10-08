@@ -8,7 +8,8 @@ import { ENEMIES } from './enemies.js';
 //    pontos  → cada camada estourada vale o `reward` do vírus × combo
 //    combo   → sobe a cada COMBO_STEP estouros seguidos sem deixar escapar
 //    estrelas→ pela % das camadas estouradas (do que entrou no mapa) e
-//              viram café pela tabela própria (COFFEE.bounty em darknet.js)
+//              viram café pela tabela própria (COFFEE.bounty em darknet.js:
+//              2/4/6, mais que fase normal, mas só uma vez pelo recorde)
 //  Não trava a progressão: o mapa seguinte abre mesmo sem estrela aqui.
 // ─────────────────────────────────────────────────────────────
 export const BOUNTY = {
