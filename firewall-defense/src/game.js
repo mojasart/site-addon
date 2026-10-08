@@ -799,7 +799,7 @@ export class Game {
       ctx.translate(e.x + (e.quake > 0 ? Math.sin(this.anim * 70) * 4 * Math.min(1, e.quake * 3) : 0), e.y); // treme lançando o Ransomware
       drawEnemy(ctx, e);
       ctx.restore();
-      if (e.def.boss) drawBossBar(ctx, e);
+      if (e.def.boss && !e.def.topBar) drawBossBar(ctx, e); // (Ransomware: barra no topo, drawBossBars)
       if (e.vulnTimer > 0) drawVulnerable(ctx, e, t);
     }
 

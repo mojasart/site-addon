@@ -79,6 +79,8 @@ export class Enemy {
     this.vulnTimer = Math.max(0, this.vulnTimer - dt);
     this.flash = Math.max(0, this.flash - dt);
     this.quake = Math.max(0, this.quake - dt);
+    // barra do topo: a parte perdida some devagar atrás da vida (rastro do dano)
+    if (this.def.topBar) this.ghostHp = Math.max(this.hp, (this.ghostHp ?? this.hp) - this.maxHp * 0.5 * dt);
     this.phase += dt * (this.slowTimer > 0 ? this.slowMul : 1);
     // vira aos poucos pro lado em que anda (o desenho "gira" na curva)
     this.turn = this.turn == null ? this.face : this.turn + (this.face - this.turn) * Math.min(1, dt * 9);

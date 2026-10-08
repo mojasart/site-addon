@@ -62,6 +62,48 @@ export function drawHud(ctx, game) {
     text(ctx, `${r.current}/${r.total}`, L.pause.x - 14, 45, { size: 28, align: 'right' });
   }
   iconButton(ctx, L.pause, '#5fb4ff', 'pause');
+  drawBossBars(ctx, game);
+}
+
+// Chefão com topBar (Ransomware): barra grande no topo, no meio do mapa,
+// com o nome, um cadeado e a vida em pontos. Dois ao mesmo tempo: uma
+// embaixo da outra. O rastro claro mostra o dano que acabou de levar.
+const BAR_H = 26;
+function drawBossBars(ctx, game) {
+  const bosses = game.enemies.filter((e) => e.def.topBar && !e.dead);
+  const w = Math.min(380, game.mapW - 400);
+  const x = (game.mapW - w) / 2;
+  bosses.forEach((e, i) => {
+    const y = 12 + i * (BAR_H + 8);
+    const k = Math.max(0, e.hp / e.maxHp);
+    const ghost = Math.max(k, (e.ghostHp ?? e.hp) / e.maxHp);
+    rrect(ctx, x, y + 3, w, BAR_H, 13);
+    ctx.fillStyle = 'rgba(10,6,20,0.45)';
+    ctx.fill();
+    rrect(ctx, x, y, w, BAR_H, 13);
+    fillOutline(ctx, '#2a1840', 3);
+    const iw = w - 6;
+    if (ghost > k) {
+      rrect(ctx, x + 3, y + 3, iw * ghost, BAR_H - 6, 10);
+      ctx.fillStyle = '#ffe0a8';
+      ctx.fill();
+    }
+    if (k > 0) {
+      rrect(ctx, x + 3, y + 3, Math.max(20, iw * k), BAR_H - 6, 10);
+      const g = ctx.createLinearGradient(0, y + 3, 0, y + BAR_H - 3);
+      g.addColorStop(0, '#ff8aa0');
+      g.addColorStop(0.45, '#ff4d6d');
+      g.addColorStop(1, '#c4234a');
+      ctx.fillStyle = g;
+      ctx.fill();
+    }
+    ctx.save();
+    ctx.translate(x + 20, y + BAR_H / 2);
+    ICONS.lock(ctx, 9);
+    ctx.restore();
+    text(ctx, e.def.name.toUpperCase(), x + 36, y + BAR_H / 2 + 1, { size: 14, align: 'left' });
+    text(ctx, `${Math.ceil(e.hp)} / ${Math.round(e.maxHp)}`, x + w - 14, y + BAR_H / 2 + 1, { size: 14, align: 'right' });
+  });
 }
 
 // ── Painel lateral ──────────────────────────────────────────

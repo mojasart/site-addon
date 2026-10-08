@@ -80,6 +80,7 @@ export const ENEMIES = {
     // criptografar N vezes cai pra odds[N] (o último vale pras seguintes) e
     // sobe `step` a cada quadrado que ele anda sem criptografar
     ransom: { range: 3, odds: [1, 0.1, 0], step: 0.01, price: 50 },
+    topBar: true, // vida numa barra grande no topo da tela (no lugar da barrinha em cima dele)
   },
 };
 
