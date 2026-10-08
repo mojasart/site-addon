@@ -1,20 +1,22 @@
 import { VIEW_H, OUTLINE } from '../config.js';
 import { drawImage } from './images.js';
+import { PATH_DEPTH } from './maps/shared.js';
 
 /* ════════════════════════════════════════════════════════════
  *  ENTRADAS DE VÍRUS
  *  Cada rota ganha, na borda da tela por onde os vírus entram:
  *   - um portal vermelho (rasgo na borda) que pulsa e dá um clarão
  *     toda vez que sai um vírus por ali (game.spawnFlash[k]);
- *   - um sinal de perigo pulsando do lado da entrada e setinhas
- *     correndo pelo começo do caminho: só antes da 1ª onda, depois
- *     somem (o portal fica pra lembrar de onde vêm).
+ *   - um sinal de perigo pulsando do lado da entrada: só antes da 1ª
+ *     onda, depois some (o portal fica pra lembrar de onde vêm).
+ *  O portal fica alinhado com o TOPO do caminho elevado (PATH_DEPTH
+ *  acima da rota), não com a pegada no chão.
  *  Tudo em coordenadas do mapa (o jogo já fez translate(offsetX)).
  * ════════════════════════════════════════════════════════════ */
 
 export function drawSpawns(ctx, game, t) {
   const routes = game.path.routes;
-  // aviso (sinal de perigo + setinhas) só antes da 1ª onda; some num fade rápido
+  // aviso (sinal de perigo) só antes da 1ª onda; some num fade rápido
   const hint = game.rounds.started === 0 ? 1 : Math.max(0, 1 - (game.anim - (game.firstRoundAt ?? 0)) * 2.5);
   routes.forEach((route, k) => {
     const e = entryOf(game, route, k);
@@ -24,7 +26,6 @@ export function drawSpawns(ctx, game, t) {
     if (hint <= 0) return;
     ctx.save();
     ctx.globalAlpha = hint;
-    chevrons(ctx, route, game.view.spawnDists[k], t);
     danger(ctx, e, t + k * 0.4);
     ctx.restore();
   });
@@ -38,7 +39,8 @@ function entryOf(game, route, k) {
   // de que borda vem: pelo sentido do caminho logo depois de entrar
   const dir = route.pointAt(d + 30);
   const ang = Math.atan2(dir.y - p.y, dir.x - p.x);
-  if (Math.abs(Math.cos(ang)) > 0.7) return { x: left, y: p.y, ang: 0, side: 'left' };
+  // entrando pelo lado: sobe junto com o topo do caminho
+  if (Math.abs(Math.cos(ang)) > 0.7) return { x: left, y: p.y - PATH_DEPTH, ang: 0, side: 'left' };
   if (Math.sin(ang) > 0) return { x: p.x, y: 0, ang: Math.PI / 2, side: 'top' };
   return { x: p.x, y: VIEW_H, ang: -Math.PI / 2, side: 'bottom' };
 }
@@ -115,34 +117,6 @@ function danger(ctx, e, t) {
     ctx.fillStyle = OUTLINE;
     ctx.fillRect(-1.8, -7, 3.6, 10);
     ctx.fillRect(-1.8, 6, 3.6, 3.6);
-  }
-  ctx.restore();
-}
-
-// Setinhas correndo pelo começo do caminho (só antes da rodada)
-function chevrons(ctx, route, start, t) {
-  ctx.save();
-  const base = ctx.globalAlpha; // já vem com o fade do aviso
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  for (let i = 0; i < 4; i++) {
-    const f = (t * 0.6 + i / 4) % 1;
-    const p = route.pointAt(start + 20 + f * 170);
-    ctx.globalAlpha = base * Math.sin(f * Math.PI) * 0.9;
-    ctx.save();
-    ctx.translate(p.x, p.y);
-    ctx.rotate(p.angle);
-    ctx.beginPath();
-    ctx.moveTo(-6, -11);
-    ctx.lineTo(6, 0);
-    ctx.lineTo(-6, 11);
-    ctx.lineWidth = 8;
-    ctx.strokeStyle = OUTLINE;
-    ctx.stroke();
-    ctx.lineWidth = 4.5;
-    ctx.strokeStyle = '#ff5a6a';
-    ctx.stroke();
-    ctx.restore();
   }
   ctx.restore();
 }
