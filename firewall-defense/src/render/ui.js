@@ -192,16 +192,23 @@ const ROLE = {
   honeypot: { label: 'ISCA', color: '#f5a524' },
 };
 
+// Função escrita como num terminal: [DANO] em fonte de máquina, na cor da
+// função e com brilho de fósforo (combina com a tela cyber do card)
+const ROLE_FONT = 'bold 11px "Courier New", ui-monospace, Menlo, Consolas, monospace';
+
 function drawRoleTag(ctx, tile) {
   const role = ROLE[tile.type];
   if (!role) return;
   const def = TOWERS[tile.type];
-  setFont(ctx, 10);
-  const w = ctx.measureText(role.label).width + 12;
-  const x = tile.x + tile.w / 2 - w / 2;
-  rrect(ctx, x, tile.y + 6, w, 15, 7.5);
-  fillOutline(ctx, role.color, 2);
-  text(ctx, role.label, tile.x + tile.w / 2, tile.y + 14, { size: 10, stroke: null, color: OUTLINE });
+  ctx.save();
+  ctx.font = ROLE_FONT;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = role.color;
+  ctx.shadowColor = role.color;
+  ctx.shadowBlur = 6;
+  ctx.fillText(`[${role.label}]`, tile.x + tile.w / 2, tile.y + 14);
+  ctx.restore();
   // escudinho: fura blindagem (Trojan)
   if (def.canHitArmored && def.attack !== 'decoy' && def.effect !== 'frost') {
     ctx.save();
