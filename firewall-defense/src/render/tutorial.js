@@ -56,7 +56,7 @@ export function drawTutorial(ctx, game) {
   drawCharacter(ctx, 'hacker', { t, face: 1, level: 0, attack: s.kind === 'say' && Math.sin(t * 9) > 0.6 ? 1 : 0 });
   ctx.restore();
 
-  text(ctx, 'HACKER', x + 120, y + 22, { size: 15, align: 'left', color: '#3dff9a' });
+  text(ctx, 'FRAGUINHA', x + 120, y + 22, { size: 15, align: 'left', color: '#3dff9a' });
   const msg = typeof s.text === 'function' ? s.text() : s.text;
   const tw = w - 136;
   wrapText(ctx, msg, x + 120 + tw / 2, y + 50, tw, 15, '#ffffff', 3, OUTLINE);

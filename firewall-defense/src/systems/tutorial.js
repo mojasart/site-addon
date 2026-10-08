@@ -10,7 +10,8 @@ import { Enemy } from '../entities/Enemy.js';
  *  O Hacker conta a história e uma mãozinha aponta onde tocar:
  *  posicionar uma defesa, começar a onda, acelerar, fazer upgrade, o
  *  Honeypot (numa enxurrada de vírus que o tutorial solta: o pote vai no
- *  caminho logo na frente deles, pra fazer efeito na hora) e um
+ *  caminho perto do Hacker, e a aula só começa quando eles estão chegando
+ *  ali, pra fazer efeito na hora) e um
  *  consumível. Cada passo:
  *    say  → fala; o jogo fica parado e qualquer toque continua
  *    do   → fala + mãozinha; só os alvos do passo respondem ao toque e o
@@ -22,8 +23,8 @@ import { Enemy } from '../entities/Enemy.js';
 
 export const TUTORIAL_LOCKED = ['pinguim', 'scanner', 'minerador']; // na 1-1 só Hacker, Golem e Honeypot
 // enxurrada da aula do Honeypot: n vírus, um a cada gap s; a aula começa quando o
-// primeiro anda `at` do caminho
-const SWARM = { type: 'v2', n: 30, gap: 0.16, at: 0.3 };
+// primeiro está a `near` quadrados (pelo caminho) do lugar do pote, perto do Hacker
+const SWARM = { type: 'v2', n: 30, gap: 0.16, near: 3 };
 
 export class Tutorial {
   // Só na 1-1, no normal, pra quem ainda não fez
@@ -40,7 +41,8 @@ export class Tutorial {
     this.roundT = 0; // tempo de onda (pro passo de acelerar)
     this.done = false;
     this.steps = [
-      { kind: 'say', freeze: true, text: () => `Ei, ${this.name}! Eu sou o Hacker. Uns vírus descobriram o nosso servidor e vão tentar invadir. A gente tem que defender a base!` },
+      { kind: 'say', freeze: true, text: () => `Ei, ${this.name}! Eu sou o Fraguinha. Comprei um curso de hacker de 7 dias e agora sou o top 1 do mundo.` },
+      { kind: 'say', freeze: true, text: 'Uns vírus descobriram o nosso servidor e vão tentar invadir. A gente tem que defender a base!' },
       { kind: 'say', freeze: true, text: 'Eles entram pelo portal e seguem o caminho até o servidor. Cada vírus que chega lá tira vidas da gente.' },
       {
         kind: 'do', event: ['place', 'hacker'],
@@ -71,14 +73,14 @@ export class Tutorial {
       },
       // (fecha o painel da defesa: a loja volta, com o Honeypot à vista)
       { kind: 'say', freeze: true, enter: () => (this.g.selectedTower = null), text: 'Cada defesa tem 2 upgrades. Quanto mais forte, mais vírus ela segura!' },
-      // Honeypot: na 2ª onda, uma enxurrada de vírus; quando os primeiros
-      // chegam perto, o jogo para e o pote vai no caminho logo na frente deles
+      // Honeypot: na 2ª onda, uma enxurrada de vírus; o pote vai no caminho
+      // perto do Hacker e o jogo só para quando os primeiros estão chegando lá
       { kind: 'wait', until: () => this.g.rounds.active },
       { kind: 'wait', enter: () => this.startSwarm(), until: () => this.swarmClose() },
-      { kind: 'say', freeze: true, enter: () => this.prepHoneypot(), text: 'Olha o tamanho dessa onda! O Honeypot é uma isca: ele vai EM CIMA do caminho. Os vírus param pra morder o pote e as defesas ganham tempo.' },
+      { kind: 'say', freeze: true, enter: () => this.prepHoneypot(), text: 'Olha o tamanho dessa onda! O Honeypot é uma isca: ele vai EM CIMA do caminho, pertinho de mim. Os vírus param pra morder o pote e eu acerto todos eles!' },
       {
         kind: 'do', freeze: true, event: ['place', 'honeypot'],
-        text: () => (this.g.placing === 'honeypot' ? 'Coloque o pote no caminho, bem na frente dos vírus!' : 'Toque no Honeypot na loja.'),
+        text: () => (this.g.placing === 'honeypot' ? 'Coloque o pote no caminho, aqui do meu lado, bem na frente dos vírus!' : 'Toque no Honeypot na loja.'),
         target: () => (this.g.placing === 'honeypot' ? this.honeySpot ?? this.spotFor('honeypot') : this.tile('honeypot')),
         allow: (x, y, L) => inRect(this.tileRect(L, 'honeypot'), x, y) || (this.g.placing === 'honeypot' && x < L.panel.x),
       },
@@ -238,9 +240,11 @@ export class Tutorial {
   }
 
   // Enxurrada da aula do Honeypot: SWARM.n vírus saindo em fila, contando
-  // como parte da onda atual (a onda só acaba quando eles morrerem)
+  // como parte da onda atual (a onda só acaba quando eles morrerem). O lugar
+  // do pote já sai escolhido: no caminho, dentro do alcance do Hacker
   startSwarm() {
     this.swarm = { left: SWARM.n, timer: 0, lead: null };
+    this.honey = this.honeyByHacker();
   }
 
   spawnSwarm(dt) {
@@ -261,20 +265,49 @@ export class Tutorial {
     }
   }
 
-  // Os primeiros vírus da enxurrada já andaram um pedaço do caminho
+  // O vírus da frente da enxurrada está chegando no lugar do pote (perto do
+  // Hacker). Sem lugar perto do Hacker: quando ele andar 30% do caminho
   swarmClose() {
     const lead = this.swarm?.lead;
     if (!lead) return false;
-    return lead.dead || lead.dist >= lead.route.length * SWARM.at;
+    if (lead.dead) return true;
+    const at = this.honey ? this.honey.d - TILE * SWARM.near : lead.route.length * 0.3;
+    return lead.dist >= at;
   }
 
-  // Dinheiro pro pote e o lugar dele: no caminho, logo na frente do vírus
-  // da frente (assim o efeito é na hora)
+  // Quadrado do caminho (1ª rota) dentro do alcance do Hacker, o mais perto
+  // dele; entre os parecidos, o que vem antes no caminho (os vírus chegam
+  // nele primeiro, e o Hacker acerta quem está mordendo)
+  honeyByHacker() {
+    const g = this.g;
+    const hk = g.towers.find((t) => t.type === 'hacker');
+    if (!hk) return null;
+    const route = g.path.routes[0];
+    const reach = hk.stats.range - TILE * 0.3;
+    let best = null;
+    for (let d = g.view.spawnDists[0] + TILE * 4; d < route.length - TILE; d += TILE / 2) {
+      const p = route.pointAt(d);
+      const c = tileCenter(Math.floor(p.x / TILE), Math.floor(p.y / TILE));
+      const far = Math.hypot(c.x - hk.x, c.y - hk.y);
+      if (far > reach || !g.canPlace('honeypot', c.x, c.y) || !this.clear(c)) continue;
+      const v = far + d * 0.02;
+      if (!best || v < best.v) best = { x: c.x, y: c.y, d, v };
+    }
+    return best;
+  }
+
+  // Dinheiro pro pote e o lugar dele: o de perto do Hacker (se os vírus ainda
+  // não passaram dele); senão no caminho, logo na frente do vírus da frente
   prepHoneypot() {
     this.fund(this.g.costOf('honeypot'));
     this.g.selectedTower = null; // a loja precisa estar à vista
     const g = this.g;
     const lead = g.enemies.filter((e) => !e.dead && e.route === g.path.routes[0]).sort((a, b) => b.dist - a.dist)[0];
+    const h = this.honey;
+    if (h && (!lead || lead.dist < h.d - TILE)) {
+      this.honeySpot = { x: h.x + g.offsetX, y: h.y, r: TILE * 0.62, tile: true };
+      return;
+    }
     if (!lead) return;
     const route = lead.route;
     for (let d = lead.dist + TILE * 2.5; d < Math.min(route.length, lead.dist + TILE * 9); d += TILE / 2) {
