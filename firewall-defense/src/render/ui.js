@@ -7,6 +7,8 @@ import { ENEMIES } from '../data/enemies.js';
 import { drawCoin, drawHeart, ICONS } from './sprites.js';
 import { iconButton } from './widgets.js';
 import { fmt } from '../util.js';
+import { CONSUMABLES } from '../data/consumables.js';
+import { drawItemIcon } from './consumables.js';
 
 // Posições da interface do jogo (pra desenhar E pra detectar toques).
 // Coordenadas de tela; o painel fica colado na direita.
@@ -20,6 +22,13 @@ export function layout(game) {
       const alone = i === TOWER_ORDER.length - 1 && i % 2 === 0;
       return { type, x: px + 10 + (alone ? 45 : (i % 2) * 90), y: 44 + Math.floor(i / 2) * 116, w: 80, h: 108 };
     }),
+    // abas no topo do painel: DEFESAS e ITENS (game.panelTab)
+    tabs: [
+      { id: 'towers', label: 'DEFESAS', x: px + 10, y: 4, w: 88, h: 34 },
+      { id: 'items', label: 'ITENS', x: px + 102, y: 4, w: W - 112, h: 34 },
+    ],
+    // aba ITENS: um card por consumível, 2 colunas, do tamanho dos cards de defesa
+    items: CONSUMABLES.map((item, i) => ({ id: item.id, x: px + 10 + (i % 2) * 90, y: 44 + Math.floor(i / 2) * 116, w: 80, h: 108 })),
     play: { x: px + 10, y: VIEW_H - 76, w: 108, h: 68 }, // próxima rodada
     speed: { x: px + 124, y: VIEW_H - 76, w: W - 134, h: 68 }, // 1x → 2x → 3x
     pause: { x: game.mapW - 58, y: 10, w: 48, h: 48 },
@@ -136,7 +145,8 @@ export function drawPanel(ctx, game) {
 
   if (game.selectedTower) drawTowerInfo(ctx, game, L);
   else {
-    drawShop(ctx, game, L);
+    if (game.panelTab === 'items') drawItems(ctx, game, L);
+    else drawShop(ctx, game, L);
     drawPreview(ctx, game, L.preview);
   }
   drawPlayButton(ctx, game, L.play);
@@ -146,7 +156,8 @@ export function drawPanel(ctx, game) {
 function drawShop(ctx, game, L) {
   const P = L.panel;
   const shown = game.placing ?? game.inspect; // posicionando ou só olhando os atributos
-  text(ctx, shown ? TOWERS[shown].name : 'DEFESAS', P.x + P.w / 2 + 2, 22, { size: shown ? 19 : 24 });
+  if (shown) text(ctx, TOWERS[shown].name, P.x + P.w / 2 + 2, 22, { size: 19 });
+  else drawTabs(ctx, game, L);
   for (const tile of L.tiles) {
     const def = TOWERS[tile.type];
     const placing = shown === tile.type;
@@ -182,6 +193,63 @@ function drawShop(ctx, game, L) {
   }
 }
 
+// Abas DEFESAS / ITENS no topo do painel: a ativa fica acesa e "colada"
+// nos cards; a outra apagada. A de itens mostra quantos itens tem no total.
+function drawTabs(ctx, game, L) {
+  const total = CONSUMABLES.reduce((n, c) => n + (game.app.inventory?.[c.id] ?? 0), 0);
+  for (const tab of L.tabs) {
+    const on = (game.panelTab ?? 'towers') === tab.id;
+    rrect(ctx, tab.x, tab.y, tab.w, tab.h, 10);
+    fillOutline(ctx, on ? '#2fc8ff' : '#2a3a68', 3);
+    if (on) {
+      rrect(ctx, tab.x + 4, tab.y + 4, tab.w - 8, tab.h / 2 - 4, 6);
+      ctx.fillStyle = 'rgba(255,255,255,0.22)';
+      ctx.fill();
+    }
+    const badge = tab.id === 'items' && total > 0;
+    const cx = tab.x + tab.w / 2 - (badge ? 8 : 0);
+    text(ctx, tab.label, cx, tab.y + tab.h / 2 + 1, { size: 15, color: on ? '#ffffff' : '#9fb2d8' });
+    if (badge) {
+      // bolinha com o total de itens no inventário
+      const bx = tab.x + tab.w - 13;
+      const by = tab.y + tab.h / 2;
+      circle(ctx, bx, by, 10);
+      fillOutline(ctx, '#ffcf4a', 2.5);
+      text(ctx, total > 99 ? '99' : String(total), bx, by + 1, { size: total > 9 ? 10 : 12, strokeWidth: 3 });
+    }
+  }
+}
+
+// Aba ITENS: os consumíveis do inventário (comprados na Loja, na tela de
+// mapas). Tocar no card usa um (useConsumable). Sem estoque fica apagado.
+function drawItems(ctx, game, L) {
+  const P = L.panel;
+  const inv = game.app.inventory ?? {};
+  drawTabs(ctx, game, L);
+  CONSUMABLES.forEach((item, i) => {
+    const tile = L.items[i];
+    const n = inv[item.id] ?? 0;
+    const active = item.id === 'free' && game.freeTower; // Defesa Grátis esperando a próxima defesa
+    button(ctx, tile, active ? '#ffcf4a' : item.color, { radius: 14, depth: 5 });
+    drawCyberScreen(ctx, tile, game.anim, active, i + 7);
+    wrapText(ctx, item.name.toUpperCase(), tile.x + tile.w / 2, tile.y + 15, tile.w - 10, 11, '#ffffff', 2, OUTLINE);
+    ctx.save();
+    ctx.translate(tile.x + tile.w / 2, tile.y + 58);
+    drawItemIcon(ctx, item.id, 18, game.anim);
+    ctx.restore();
+    if (n <= 0) {
+      rrect(ctx, tile.x, tile.y, tile.w, tile.h - 5, 14);
+      ctx.fillStyle = 'rgba(20,28,60,0.62)';
+      ctx.fill();
+    }
+    if (active) text(ctx, 'ATIVA', tile.x + tile.w / 2, tile.y + tile.h - 16, { size: 15, color: GOLD });
+    else text(ctx, String(n), tile.x + tile.w / 2, tile.y + tile.h - 16, { size: 18, color: n > 0 ? '#ffffff' : '#ff7a8a' });
+  });
+  // onde compra mais
+  const y = L.items[L.items.length - 1].y + 108 + 16;
+  wrapText(ctx, 'Compre mais na LOJA, na tela de mapas', P.x + P.w / 2 + 2, y, P.w - 30, 12, '#bcd0f5', 2);
+}
+
 // Etiqueta da função de cada defesa no card da loja (pra escolher sem abrir o catálogo)
 const ROLE = {
   hacker: { label: 'DANO', color: '#ff7a5c' },
@@ -194,6 +262,7 @@ const ROLE = {
 
 // Função escrita como num terminal: [DANO] em fonte de máquina, na cor da
 // função e com brilho de fósforo (combina com a tela cyber do card)
+const ROLE_GREEN = '#3dff9a'; // verde hacker em todas as funções
 const ROLE_FONT = 'bold 11px "Courier New", ui-monospace, Menlo, Consolas, monospace';
 
 function drawRoleTag(ctx, tile) {
@@ -204,8 +273,8 @@ function drawRoleTag(ctx, tile) {
   ctx.font = ROLE_FONT;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = role.color;
-  ctx.shadowColor = role.color;
+  ctx.fillStyle = ROLE_GREEN;
+  ctx.shadowColor = ROLE_GREEN;
   ctx.shadowBlur = 6;
   ctx.fillText(`[${role.label}]`, tile.x + tile.w / 2, tile.y + 14);
   ctx.restore();
@@ -231,7 +300,7 @@ function drawPreview(ctx, game, r) {
   const counts = new Map();
   for (const g of rounds.rounds[rounds.started]) if (g.count > 0) counts.set(g.type, (counts.get(g.type) ?? 0) + g.count);
   if (!counts.size) return;
-  text(ctx, `PRÓXIMA: RODADA ${rounds.started + 1}`, r.x + r.w / 2, r.y + 8, { size: 11, color: '#bcd0f5' });
+  text(ctx, 'PRÓXIMA RODADA', r.x + r.w / 2, r.y + 8, { size: 11, color: '#bcd0f5' });
   const list = [...counts].slice(0, 4);
   const step = r.w / list.length;
   list.forEach(([type, n], i) => {
