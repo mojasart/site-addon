@@ -1,4 +1,4 @@
-import { VIEW_H, PANEL_W, MAX_SPEED, NEXT_ROUND_DELAY, EARLY_BONUS } from './config.js';
+import { VIEW_H, PANEL_W, MAX_SPEED, EARLY_BONUS } from './config.js';
 import { MAPS } from './data/maps.js';
 import { ROUNDS } from './data/rounds.js';
 import { PLAT_TIME, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
@@ -83,7 +83,7 @@ export class Game {
     this.hazards = new Hazards(this.map.hazards);
     this.spawnFlash = this.map.routes.map(() => 0); // clarão de cada entrada ao soltar um vírus
     this.speed = 1;
-    this.nextIn = null; // contagem pra próxima rodada começar sozinha (null = espera o jogador)
+    this.nextIn = null; // turno automático: 0 = a próxima rodada começa no próximo passo (null = espera o jogador)
     this.callCooldown = 0;
     this.placing = null; // tipo de defesa sendo posicionada
     this.inspect = null; // defesa da loja só sendo olhada (sem dinheiro pra comprar): mostra os atributos
@@ -301,8 +301,9 @@ export class Game {
     }
     this.sound.play('roundEnd');
     this.showBanner(`RODADA ${n} COMPLETA!`, 1.6, '#3dff9a', 36, `+$${bonus}`);
-    // mapa limpo: com turno automático, a próxima começa sozinha daqui a pouco
-    if (!this.rounds.active && this.autoRound) this.nextIn = NEXT_ROUND_DELAY;
+    // mapa limpo: com turno automático, a próxima começa na hora (no passo
+    // seguinte, depois de os Mineradores entregarem o que faltou minerar)
+    if (!this.rounds.active && this.autoRound) this.nextIn = 0;
   }
 
   get autoRound() {
@@ -312,7 +313,7 @@ export class Game {
   // Ligou/desligou o turno automático no menu com o mapa parado
   autoChanged() {
     if (this.rounds.active || !this.rounds.canStart || this.rounds.started === 0) return;
-    this.nextIn = this.autoRound ? NEXT_ROUND_DELAY : null;
+    this.nextIn = this.autoRound ? 0 : null;
   }
 
   // Bônus por chamar a próxima rodada com outra ainda rolando:

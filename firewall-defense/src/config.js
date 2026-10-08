@@ -18,7 +18,6 @@ export const MAX_VIEW_W = 1170;
 
 export const SELL_RATE = 0.7; // vender devolve 70% do que foi gasto
 export const MAX_SPEED = 3; // botão de acelerar: 1x → 2x → 3x
-export const NEXT_ROUND_DELAY = 1; // turno automático: segundos até a próxima rodada começar (só o tempo do aviso)
 export const EARLY_BONUS = 0.15; // chamar com outra rodada rolando: até 15% do valor da próxima (cai conforme a rodada atual acaba)
 
 export const FONT = '"Lilita One", "Arial Rounded MT Bold", "Arial Black", system-ui, sans-serif';
