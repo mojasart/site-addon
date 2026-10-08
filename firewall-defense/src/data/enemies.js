@@ -12,6 +12,8 @@
 //  sprite   → imagem em assets/sprites (sem ela usa o desenho do kind)
 //  reward   → moedas ao estourar essa camada (padrão 1)
 //  spawn    → { type, every }: vai soltando esse vírus enquanto está vivo
+//  stealth  → invisível: só dá pra acertar no alcance de um Robô NMAP
+//  lock     → { every, time, range }: criptografa a defesa mais perto (Ransomware)
 //  lore     → frase do catálogo de ameaças (scenes/CatalogScene.js)
 // ─────────────────────────────────────────────────────────────
 export const ENEMIES = {
@@ -32,6 +34,18 @@ export const ENEMIES = {
     sprite: 'worm',
     spawn: { type: 'v2', every: 1.4 },
     children: [],
+  },
+  spyware: {
+    name: 'Spyware',
+    desc: 'Invisível: só aparece no alcance do Robô NMAP',
+    lore: 'Espiona a rede sem ser visto. Só o Robô NMAP, varrendo as portas, consegue revelar ele pras outras defesas.',
+    hp: 2,
+    speed: 105,
+    radius: 14,
+    color: '#4b5d73',
+    kind: 'spy',
+    stealth: true,
+    children: [['v2', 1]],
   },
   trojan: {
     name: 'Trojan',
@@ -62,8 +76,8 @@ export const ENEMIES = {
   },
   ransomware: {
     name: 'Ransomware',
-    desc: 'Chefão: solta 4 Trojans quando destruído',
-    lore: 'Sequestra o servidor e pede resgate em bitcoin. O chefão final da rede.',
+    desc: 'Chefão: criptografa as defesas por perto e solta 4 Trojans quando destruído',
+    lore: 'Sequestra o servidor e pede resgate em bitcoin. Criptografa as defesas por onde passa: pague o resgate ou espere.',
     hp: 340,
     speed: 30,
     radius: 38,
@@ -72,6 +86,7 @@ export const ENEMIES = {
     sprite: 'ransomware',
     boss: true,
     reward: 50,
+    lock: { every: 6, time: 5, range: 150 },
     children: [['trojan', 4]],
   },
 };

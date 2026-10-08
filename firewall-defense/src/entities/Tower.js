@@ -25,6 +25,7 @@ export class Tower {
     this.pulse = 0;
     this.spawnAnim = 1; // "pulinho" ao ser colocado
     this.stunned = 0; // atordoada por zona eletrificada (segundos)
+    this.locked = 0; // criptografada pelo Ransomware (segundos; o resgate destrava)
     this.targetMode = this.def.defaultTarget ?? 'first';
     this.hp = this.maxHp = this.def.hp ?? 0; // vida da isca (Honeypot)
     this.dropped = 0;
@@ -160,6 +161,10 @@ export class Tower {
     if (s.attack === 'decoy' && game.rounds.active) this.wear(this.decay * dt, game);
     if (this.stunned > 0) {
       this.stunned = Math.max(0, this.stunned - dt);
+      return;
+    }
+    if (this.locked > 0) {
+      this.locked = Math.max(0, this.locked - dt);
       return;
     }
 

@@ -214,6 +214,7 @@ export function enemySprite(type, def, r) {
   return cachedSprite(`e:${type}:${r}`, r * 3.4, (g) => {
     if (def.kind === 'trojan') trojan(g, r, def.color);
     else if (def.kind === 'locker') locker(g, r, def.color);
+    else if (def.kind === 'spy') spy(g, r, def.color);
     else blob(g, r, def.color, true);
   });
 }
@@ -246,6 +247,24 @@ function blob(g, r, color, withFace) {
   g.fillStyle = 'rgba(255,255,255,0.8)';
   g.fill();
   if (withFace) face(g, r);
+}
+
+// Spyware: vírus cinza de óculos escuros
+function spy(g, r, color) {
+  blob(g, r, color, true);
+  for (const dx of [-0.24, 0.38]) {
+    ellipse(g, dx * r, -r * 0.1, r * 0.27, r * 0.19);
+    fillOutline(g, '#141824', 2);
+    ellipse(g, (dx - 0.07) * r, -r * 0.16, r * 0.08, r * 0.04);
+    g.fillStyle = 'rgba(255,255,255,0.6)';
+    g.fill();
+  }
+  g.beginPath();
+  g.moveTo(-0.0 * r, -r * 0.12);
+  g.lineTo(0.12 * r, -r * 0.12);
+  g.lineWidth = 2.5;
+  g.strokeStyle = '#141824';
+  g.stroke();
 }
 
 // Olhões bravinhos + sorriso com caninos (olhando pra direita)

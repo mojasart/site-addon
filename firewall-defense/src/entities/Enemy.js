@@ -114,6 +114,12 @@ export class Enemy {
       game.leak(this);
       return;
     }
+    // Ransomware: de tempos em tempos criptografa a defesa mais perto
+    const lk = this.def.lock;
+    if (lk && (this.lockTimer = (this.lockTimer ?? lk.every / 2) - dt) <= 0) {
+      this.lockTimer = lk.every;
+      game.encryptNear?.(this, lk);
+    }
     // Worm: vai soltando vírus pelo caminho enquanto está vivo
     const sp = this.def.spawn;
     if (sp && (this.spawnTimer = (this.spawnTimer ?? sp.every) - dt) <= 0) {

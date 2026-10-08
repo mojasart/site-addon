@@ -201,6 +201,7 @@ export class Game {
     if (this.platinum && this.rounds.started > 0) this.platinumStep(dt);
     this.rounds.update(dt, this);
     this.flushSpawns();
+    this.revealStealth();
     for (const t of this.towers) t.update(dt, this);
     this.flushSpawns();
     for (const p of this.projectiles) p.update(dt, this);
@@ -230,6 +231,7 @@ export class Game {
 
   // Isca (Honeypot) que o vírus está encostando, se houver
   baitAt(e) {
+    if (e.def.stealth && !e.revealed) return null; // escondido, passa reto pela isca
     for (const t of this.towers) {
       if (t.def.attack !== 'decoy' || t.dead) continue;
       if (Math.hypot(e.x - t.x, e.y - t.y) < t.r + e.r * 0.8) return t;
@@ -388,7 +390,48 @@ export class Game {
   // ── Consultas usadas pelas defesas ────────────────────────
 
   isVisible(e) {
-    return e.x > -this.offsetX - 5;
+    return e.x > -this.offsetX - 5 && (!e.def.stealth || e.revealed);
+  }
+
+  // Spyware: só aparece (e pode levar dano) no alcance de um Robô NMAP
+  revealStealth() {
+    for (const e of this.enemies) {
+      if (!e.def.stealth) continue;
+      e.revealed = this.towers.some((t) => t.stats.reveals && !t.dead && Math.hypot(e.x - t.x, e.y - t.y) <= t.stats.range + e.r);
+    }
+  }
+
+  // Ransomware: criptografa a defesa mais perto dele (a isca não)
+  encryptNear(e, lock) {
+    let best = null;
+    let bestD = lock.range;
+    for (const t of this.towers) {
+      if (t.dead || t.def.attack === 'decoy' || t.locked > 0) continue;
+      const d = Math.hypot(t.x - e.x, t.y - e.y);
+      if (d < bestD) [best, bestD] = [t, d];
+    }
+    if (!best) return;
+    best.locked = lock.time;
+    this.fx.text(best.x, best.y - 50, 'CRIPTOGRAFADA!', '#d9a8ff', 16);
+    this.sound.play('error');
+  }
+
+  // Resgate pra destravar na hora: 20% do que a defesa custou (mín. $40)
+  ransomCost(tw) {
+    return Math.max(40, Math.round(tw.spent * 0.2));
+  }
+
+  payRansom(tw) {
+    const cost = this.ransomCost(tw);
+    if (this.money < cost) {
+      this.fx.text(tw.x, tw.y - 50, 'Sem dinheiro!', '#ff7a8a', 18);
+      this.sound.play('error');
+      return;
+    }
+    this.money -= cost;
+    tw.locked = 0;
+    this.fx.text(tw.x, tw.y - 50, `-$${cost}`, '#ffd23f', 18);
+    this.sound.play('sell');
   }
 
   // Nota de cada vírus pro modo de mira da defesa (maior = alvo).
@@ -606,6 +649,7 @@ export class Game {
         this.selectedTower = null;
         this.sound.play('click');
       } else if (inRect(L.sell, sx, sy)) this.sell(tw);
+      else if (tw.locked > 0 && inRect(L.ransom, sx, sy)) this.payRansom(tw);
       else if (tw.def.targeting && inRect(L.target, sx, sy)) {
         const i = TARGET_MODES.findIndex((m) => m.id === tw.targetMode);
         tw.targetMode = TARGET_MODES[(i + 1) % TARGET_MODES.length].id;
@@ -741,6 +785,7 @@ export class Game {
       const e = th.e;
       ctx.save();
       ctx.translate(e.x, e.y);
+      if (e.def.stealth && !e.revealed) ctx.globalAlpha = 0.25; // Spyware escondido: quase transparente
       drawEnemy(ctx, e);
       ctx.restore();
       if (e.def.boss) drawBossBar(ctx, e);
@@ -803,6 +848,7 @@ export class Game {
     if (idle) drawNoMine(ctx, 0, 0, this.anim);
     if (tw.def.attack === 'decoy' && tw.hp < tw.maxHp) drawBaitBar(ctx, tw);
     if (tw.stunned > 0) drawStunned(ctx, this.anim);
+    if (tw.locked > 0) drawLocked(ctx, tw, this.anim);
     ctx.restore();
   }
 }
@@ -878,4 +924,21 @@ function drawVulnerable(ctx, e, t) {
   circle(ctx, x, y, 10);
   fillOutline(ctx, '#3ec5ff', 2.5);
   text(ctx, 'x2', x, y + 1, { size: 12 });
+}
+
+// Defesa criptografada pelo Ransomware: véu roxo e cadeado em cima
+function drawLocked(ctx, tw, t) {
+  circle(ctx, 0, -8, tw.r + 12);
+  ctx.fillStyle = 'rgba(122,60,196,0.35)';
+  ctx.fill();
+  ctx.save();
+  ctx.translate(0, -tw.r - 30 + Math.sin(t * 5) * 2);
+  rrect(ctx, -9, -2, 18, 14, 4);
+  fillOutline(ctx, '#b77cff', 2.5);
+  ctx.beginPath();
+  ctx.arc(0, -2, 6, Math.PI, 0);
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = '#2b2340';
+  ctx.stroke();
+  ctx.restore();
 }

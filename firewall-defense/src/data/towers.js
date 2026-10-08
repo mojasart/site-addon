@@ -33,7 +33,7 @@ export const TOWERS = {
     targeting: true,
     sound: 'throw',
     upgrades: [
-      { name: 'Dedos Rápidos', desc: 'Arremessa 40% mais rápido', cost: 150, apply: (s) => { s.fireRate *= 0.6; } },
+      { name: 'Dedos Rápidos', desc: 'Arremessa 40% mais rápido e o teclado atravessa 2 vírus', cost: 200, apply: (s) => { s.fireRate *= 0.6; s.pierce = 2; } },
       { name: 'Exploit Triplo', desc: 'Joga 3 teclados de uma vez', cost: 300, apply: (s) => { s.multishot = 3; } },
     ],
   },
@@ -88,6 +88,7 @@ export const TOWERS = {
     radius: 18,
     range: 300,
     attack: 'beam',
+    reveals: true, // deixa o Spyware visível no alcance dele
     fireRate: 2.5,
     damage: 3,
     canHitArmored: true,
