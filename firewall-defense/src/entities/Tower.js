@@ -2,6 +2,7 @@ import { TOWERS } from '../data/towers.js';
 import { SELL_RATE } from '../config.js';
 import { rand, chance } from '../util.js';
 import { laserOrigin } from '../render/characters.js';
+import { applyPerks } from '../data/darknet.js';
 
 const SWARM_R = 70; // alcance das abelhas da Colmeia
 const IGNITE = { dps: 0.33, time: 3 }; // Brasa Viva: o mesmo fogo do upgrade Incêndio
@@ -18,6 +19,7 @@ export class Tower {
     this.level = 0;
     this.spent = this.def.cost;
     this.fresh = fresh;
+    this.perks = {}; // nós da Dark Net comprados (Game.place passa os do jogador)
     this.stats = { ...this.def }; // cópia: upgrades mexem aqui, não no original
     this.cooldown = 0.2;
     this.face = 1; // 1 = olhando pra direita, -1 = esquerda
@@ -40,7 +42,7 @@ export class Tower {
   }
 
   get sellValue() {
-    return this.fresh ? this.spent : Math.floor(this.spent * SELL_RATE);
+    return this.fresh ? this.spent : Math.floor(this.spent * (this.stats.sellRate ?? SELL_RATE)); // Revenda (Dark Net): preço cheio
   }
 
   get hitsArmored() {
@@ -48,11 +50,18 @@ export class Tower {
   }
 
   upgrade() {
-    const up = this.nextUpgrade;
-    up.apply(this.stats);
-    this.spent += up.cost;
+    this.spent += this.nextUpgrade.cost;
     this.level++;
+    this.refresh();
     this.spawnAnim = 1;
+  }
+
+  // Status = base + upgrades até o nível + bônus da Dark Net POR CIMA (upgrade
+  // que troca um valor, tipo s.slow = 0.3, não apaga o bônus de lentidão)
+  refresh() {
+    const s = { ...this.def };
+    for (let i = 0; i < this.level; i++) this.def.upgrades[i].apply(s);
+    this.stats = applyPerks(s, this.type, this.perks);
   }
 
   onRoundStart() {
@@ -205,10 +214,10 @@ export class Tower {
         const last = hits[hits.length - 1];
         if (lucky && hits.length > (s.pierce ?? 1)) game.fx.spark(last.x, last.y - last.r, '#ffb3c0');
         game.fx.beam(x0, y0, last.x, last.y);
-        // Ping da Morte (Dark Net): às vezes o tiro dá dano triplo
+        // Ping da Morte (Dark Net): às vezes o tiro dá dano triplo (Sobrecarga: quádruplo)
         const triple = chance(s.tripleChance);
         if (triple) game.fx.spark(target.x, target.y - target.r, '#ff6b81', 12);
-        for (const e of hits) e.takeDamage(s.damage * (triple ? 3 : 1), game, this.opts());
+        for (const e of hits) e.takeDamage(s.damage * (triple ? s.tripleMul ?? 3 : 1), game, this.opts());
         this.fire();
         // Varredura Dupla (Dark Net): às vezes recarrega na hora
         if (chance(s.rechargeChance)) this.cooldown = RECHARGE;
@@ -230,11 +239,14 @@ export class Tower {
           if (s.slow) e.slow(s.slow, s.slowTime);
           if (s.shatterChance) e.shatter = s.shatterChance; // Estilhaço: vale enquanto estiver no gelo
           if (s.vulnerable) e.weaken(s.slowTime);
-          if (s.burn) e.ignite(s.burn, s.burnTime, this); // antes do dano: os filhos já nascem pegando fogo
+          // fogo (Chama Alta e Inferno, da Dark Net, deixam mais forte e mais longo)
+          const burnMul = s.burnMul ?? 1;
+          const burnExtra = s.burnExtra ?? 0;
+          if (s.burn) e.ignite(s.burn * burnMul, s.burnTime + burnExtra, this); // antes do dano: os filhos já nascem pegando fogo
           // bônus de sorte da Dark Net, antes do dano (os filhos já nascem com eles):
           // Brasa Viva (pega fogo), Tremor de Terra (empurrão), Kernel Gelado (congela)
           if (!s.burn && chance(s.igniteChance)) {
-            e.ignite(IGNITE.dps, IGNITE.time, this);
+            e.ignite(IGNITE.dps * burnMul, IGNITE.time + burnExtra, this);
             game.fx.spark(e.x, e.y - e.r, '#ffb36b', 7);
           }
           if (chance(s.knockChance) && e.knockBack(28)) game.fx.spark(e.x, e.y - e.r, '#ffb36b', 7);

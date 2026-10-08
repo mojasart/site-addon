@@ -49,18 +49,22 @@ export function statRows(s, { armor = false } = {}) {
 function luckRows(s) {
   const pct = (p) => `${Math.round(p * 100)}%`;
   const rows = [];
-  if (s.critChance) rows.push(['CRÍTICO', `${pct(s.critChance)} de dano 2×`]);
+  if (s.critChance) rows.push(['CRÍTICO', `${pct(s.critChance)} de dano ${num(s.critMul ?? 2)}×`]);
   if (s.extraShotChance) rows.push(['TECLADO EXTRA', `${pct(s.extraShotChance)} de chance`]);
   if (s.executeChance) rows.push(['ZERO-DAY', `${pct(s.executeChance)} de estourar tudo`]);
   if (s.igniteChance) rows.push(['PEGAR FOGO', `${pct(s.igniteChance)} de chance`]);
   if (s.bigPulseChance) rows.push(['ERUPÇÃO', `${pct(s.bigPulseChance)} de alcance 2×`]);
   if (s.repeatChance) rows.push(['ONDA EXTRA', `${pct(s.repeatChance)} de chance`]);
   if (s.shatterChance) rows.push(['ESTILHAÇO', `${pct(s.shatterChance)} de chance`]);
-  if (s.tripleChance) rows.push(['DANO 3×', `${pct(s.tripleChance)} de chance`]);
+  if (s.tripleChance) rows.push([`DANO ${s.tripleMul ?? 3}×`, `${pct(s.tripleChance)} de chance`]);
   if (s.rechargeChance) rows.push(['RECARGA', `${pct(s.rechargeChance)} instantânea`]);
   if (s.goldChance) rows.push(['BLOCO RARO', `${pct(s.goldChance)} de 5×`]);
   if (s.stickyChance) rows.push(['GRUDAR', `${pct(s.stickyChance)} de sair lento`]);
   if (s.swarmChance) rows.push(['COLMEIA', `${pct(s.swarmChance)} ao quebrar`]);
+  if (s.stingChance) rows.push(['FERRÃO', `${pct(s.stingChance)} de -1 camada`]);
+  if (s.burnMul > 1) rows.push(['FOGO', `+${pct(s.burnMul - 1)} de dano`]);
+  if (s.burnExtra) rows.push(['FOGO DURA', `+${num(s.burnExtra)}s`]);
+  if (s.sellRate) rows.push(['REVENDA', `${pct(s.sellRate)} do preço`]);
   if (s.knockChance) rows.push(['EMPURRÃO', `${pct(s.knockChance)} de chance`]);
   if (s.freezeChance) rows.push(['CONGELAR', `${pct(s.freezeChance)} por 1s`]);
   if (s.pierceChance) rows.push(['ATRAVESSAR', `${pct(s.pierceChance)} de +1 vírus`]);

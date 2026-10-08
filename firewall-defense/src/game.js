@@ -491,7 +491,7 @@ export class Game {
 
   // Preço da defesa com os descontos da Dark Net (GPU de Segunda Mão)
   costOf(type) {
-    return applyPerks({ cost: TOWERS[type].cost }, type, this.app.perks).cost;
+    return applyPerks({ ...TOWERS[type] }, type, this.app.perks).cost;
   }
 
   place(type, x, y) {
@@ -501,8 +501,9 @@ export class Game {
     this.money -= cost;
     const tower = new Tower(type, x, y, !this.rounds.active);
     tower.spent = cost; // vende pelo que pagou
-    // bônus da Dark Net pra essa defesa (por cima dos status base)
-    applyPerks(tower.stats, type, this.app.perks);
+    // bônus da Dark Net pra essa defesa (por cima dos status e dos upgrades)
+    tower.perks = this.app.perks ?? {};
+    tower.refresh();
     if (tower.stats.hp) tower.hp = tower.maxHp = tower.stats.hp;
     if (this.rounds.active) tower.onRoundStart();
     this.towers.push(tower);

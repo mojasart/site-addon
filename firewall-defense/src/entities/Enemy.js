@@ -91,8 +91,15 @@ export class Enemy {
     // Honeypot no caminho: para e fica mordendo a isca até ela quebrar
     const bait = game.baitAt?.(this);
     if (bait) {
-      // Mel Pegajoso (Dark Net): ao parar no pote, às vezes fica grudado
-      if (this.biting !== bait && chance(bait.stats.stickyChance)) this.sticky = true;
+      // ao parar no pote: Mel Pegajoso (Dark Net) às vezes gruda; Ferrão às vezes tira 1 camada
+      if (this.biting !== bait) {
+        if (chance(bait.stats.stickyChance)) this.sticky = true;
+        if (chance(bait.stats.stingChance)) {
+          game.fx.spark(this.x, this.y - this.r, '#ffd23f', 8);
+          this.takeDamage(1, game, { armored: true, source: bait });
+          if (this.dead) return;
+        }
+      }
       this.biting = bait;
       if (Math.abs(bait.x - this.x) > 4) this.face = bait.x < this.x ? -1 : 1;
       bait.bite(this.biteDps * dt, game);
