@@ -27,7 +27,8 @@ const tierOf = (rate) => TIERS.find((t) => rate >= t.min);
 // 3 estrelas (antes disso aparece trancada). Platina vencida: estrelas azul-gelo e o card de platina.
 // (O aliado bloqueado só aparece dentro da partida.)
 // No canto de cima: o saldo de cafés, a Dark Net (libera com
-// DARKNET_STARS estrelas; antes disso fica trancada) e o catálogo.
+// DARKNET_STARS estrelas; antes disso fica trancada), o catálogo e as
+// configurações (música, efeitos e turno automático).
 export class LevelSelectScene {
   constructor(app) {
     this.app = app;
@@ -37,6 +38,7 @@ export class LevelSelectScene {
     this.pressed = -1;
     this.wiggle = { i: -1, t: 0 };
     this.pick = -1; // mapa com a janela de escolha do modo aberta
+    this.settings = false; // janela de configurações aberta
     this.toast = null; // aviso no topo (ex.: Dark Net trancada)
     this.darkWiggle = 0;
     // abre na season do mapa mais avançado já liberado
@@ -64,10 +66,13 @@ export class LevelSelectScene {
         normal: { x: card.x + 40, y: card.y + 84, w: card.w - 80, h: 70 },
         platinum: { x: card.x + 40, y: card.y + 172, w: card.w - 80, h: 70 },
         locked: { x: card.x + 24, y: card.y + 162, w: card.w - 48, h: card.h - 176 }, // cobre a platina
+        // configurações: uma linha por opção (música, efeitos, turno automático)
+        rows: [0, 1, 2].map((k) => ({ x: card.x + 40, y: card.y + 74 + k * 82, w: card.w - 80, h: 70 })),
       },
       back: { x: 18, y: 16, w: 56, h: 56 },
-      catalog: { x: W - 74, y: 16, w: 56, h: 56 },
-      darknet: { x: W - 140, y: 16, w: 56, h: 56 }, // do lado do catálogo
+      settings: { x: W - 74, y: 16, w: 56, h: 56 }, // no canto
+      catalog: { x: W - 140, y: 16, w: 56, h: 56 },
+      darknet: { x: W - 206, y: 16, w: 56, h: 56 }, // do lado do catálogo
       tabs: SEASONS.map((_, s) => ({ x: tabs0 + s * (tabW + 12), y: 92, w: tabW, h: 52 })),
       tiles: Array.from({ length: MAPS_PER_SEASON }, (_, k) => ({
         x: gx + (k % cols) * (tw + gap),
@@ -135,12 +140,14 @@ export class LevelSelectScene {
     const L = this.layout();
     ribbon(ctx, W / 2, 46, 340, 'ESCOLHA O MAPA', '#ff9a2e', 28);
     iconButton(ctx, L.back, '#5fb4ff', 'back');
+    iconButton(ctx, L.settings, '#5fb4ff', 'settings');
     iconButton(ctx, L.catalog, '#3fd16b', 'catalog');
     this.drawDarkNet(ctx, L.darknet);
 
     SEASONS.forEach((season, s) => this.drawTab(ctx, L.tabs[s], season, s));
     L.tiles.forEach((tile, k) => this.drawTile(ctx, tile, this.season * MAPS_PER_SEASON + k));
     if (this.pick >= 0) this.drawModePicker(ctx, L.modal, this.pick);
+    if (this.settings) this.drawSettings(ctx, L.modal);
     if (this.toast) this.drawToast(ctx, W / 2, 118);
   }
 
@@ -253,6 +260,43 @@ export class LevelSelectScene {
     }
   }
 
+  // Opções da janela de configurações: [ícone, nome, ligado?, alternar]
+  options() {
+    const app = this.app;
+    const auto = app.save.autoRound !== false;
+    return [
+      ['music', 'MÚSICA', app.save.music, () => app.toggleMusic()],
+      ['sfx', 'EFEITOS SONOROS', app.save.sfx, () => app.toggleSfx()],
+      ['auto', 'TURNO AUTOMÁTICO', auto, () => app.toggleAuto()],
+    ];
+  }
+
+  // Janela de configurações: cada linha liga/desliga uma opção
+  drawSettings(ctx, M) {
+    const W = this.app.viewW;
+    ctx.fillStyle = 'rgba(10,18,40,0.7)';
+    ctx.fillRect(0, 0, W, VIEW_H);
+    const c = M.card;
+    rrect(ctx, c.x, c.y + 10, c.w, c.h, 28);
+    ctx.fillStyle = 'rgba(10,16,40,0.55)';
+    ctx.fill();
+    rrect(ctx, c.x, c.y, c.w, c.h, 28);
+    fillOutline(ctx, '#34497f', 5);
+    ribbon(ctx, W / 2, c.y + 4, 280, 'CONFIGURAÇÕES', '#5fb4ff', 24);
+    iconButton(ctx, M.close, '#ff5a5a', 'close');
+    this.options().forEach(([icon, name, on], k) => {
+      const r = M.rows[k];
+      button(ctx, r, on ? '#3fd16b' : '#7d8fa8', { radius: 16, depth: 6 });
+      const cy = r.y + (r.h - 6) / 2;
+      ctx.save();
+      ctx.translate(r.x + 40, cy);
+      ICONS[icon](ctx, 15, on);
+      ctx.restore();
+      text(ctx, name, r.x + 76, cy + 1, { size: 21, align: 'left' });
+      text(ctx, on ? 'LIGADO' : 'DESLIGADO', r.x + r.w - 20, cy + 1, { size: 15, align: 'right', color: on ? '#eaffef' : '#e3e8f2' });
+    });
+  }
+
   drawTab(ctx, r, season, s) {
     const active = this.season === s;
     const first = s * MAPS_PER_SEASON;
@@ -335,6 +379,16 @@ export class LevelSelectScene {
 
   pointerDown(x, y) {
     const L = this.layout();
+    if (this.settings) {
+      const M = L.modal;
+      const k = M.rows.findIndex((r) => inRect(r, x, y));
+      if (k >= 0) this.options()[k][3](); // (o toggle já toca o clique)
+      else if (inRect(M.close, x, y) || !inRect(M.card, x, y)) {
+        this.settings = false;
+        this.app.sound.play('click');
+      }
+      return;
+    }
     if (this.pick >= 0) {
       const M = L.modal;
       const i = this.pick;
@@ -352,6 +406,11 @@ export class LevelSelectScene {
     if (inRect(L.back, x, y)) {
       this.app.sound.play('click');
       this.app.goTitle();
+      return;
+    }
+    if (inRect(L.settings, x, y)) {
+      this.app.sound.play('click');
+      this.settings = true;
       return;
     }
     if (inRect(L.catalog, x, y)) {
@@ -404,6 +463,10 @@ export class LevelSelectScene {
   }
 
   key(k) {
+    if (this.settings) {
+      if (k === 'Escape') this.settings = false;
+      return;
+    }
     if (this.pick >= 0) {
       if (k === 'Escape') this.pick = -1;
       return;
