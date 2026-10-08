@@ -6,7 +6,7 @@ import { writeSave } from '../save.js';
 import { Enemy } from '../entities/Enemy.js';
 
 /* ════════════════════════════════════════════════════════════
- *  TUTORIAL (fase 1-1, modo normal, só na primeira vez)
+ *  TUTORIAL (fase 1-1, modo normal, toda vez)
  *  O Hacker conta a história e uma mãozinha aponta onde tocar:
  *  posicionar uma defesa, começar a onda, acelerar, fazer upgrade, o
  *  Honeypot (numa enxurrada de vírus que o tutorial solta: o pote vai no
@@ -17,7 +17,7 @@ import { Enemy } from '../entities/Enemy.js';
  *           passo acaba no evento (on('place', 'hacker'), on('round')...)
  *    wait → invisível, espera uma condição (ex.: 5 s de onda)
  *  freeze: o jogo fica parado durante o passo (Game.update).
- *  Terminou: save.tutorialDone = true.
+ *  Terminou: save.tutorialDone = true (só registro: ele aparece de novo).
  * ════════════════════════════════════════════════════════════ */
 
 export const TUTORIAL_LOCKED = ['pinguim', 'scanner', 'minerador']; // na 1-1 só Hacker, Golem e Honeypot
@@ -27,8 +27,10 @@ const SWARM = { type: 'v2', n: 30, gap: 0.16, at: 0.3 };
 
 export class Tutorial {
   // Só na 1-1, no normal, pra quem ainda não fez
+  // Sempre na 1-1 no modo normal (mesmo pra quem já fez); na platina, nunca.
+  // (bots não têm save: sem tutorial)
   static wanted(game) {
-    return game.mapIndex === 0 && !game.platinum && !!game.app.save && !game.app.save.tutorialDone;
+    return game.mapIndex === 0 && !game.platinum && !!game.app.save;
   }
 
   constructor(game) {
