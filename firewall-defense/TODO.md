@@ -33,5 +33,5 @@ Lista do que falta fazer no jogo. Marque com `[x]` quando terminar.
 
 ## Balanceamento
 
-- [ ] Recalibrar os mapas com os bots (`node tools/sim/calibrate.js` e conferir com `run.js`)
+- [x] Recalibrar os mapas com os bots (`node tools/sim/calibrate.js` e conferir com `run.js`)
   depois das mudanças no Hacker (sem pierce) e no Honeypot (dura 15 s)
