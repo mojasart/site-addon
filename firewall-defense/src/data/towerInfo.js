@@ -4,6 +4,7 @@
 //  do mesmo jeito que o jogo aplica.
 // ─────────────────────────────────────────────────────────────
 import { TOWERS } from './towers.js';
+import { fmt } from '../util.js';
 
 // Idade de cada nível (os personagens crescem a cada upgrade)
 export const AGES = ['CRIANÇA', 'ADOLESCENTE', 'ADULTO'];
@@ -37,10 +38,10 @@ export function statRows(s, { armor = false } = {}) {
     rows.push(['LENTIDÃO', `-${Math.round((1 - s.slow) * 100)}% por ${num(s.slowTime)}s`]);
     if (s.vulnerable) rows.push(['CONGELADOS', 'levam dano 2×']);
   } else {
-    rows.push(['DANO', s.multishot > 1 ? `${s.damage} × ${s.multishot} teclados` : `${s.damage}`]);
+    rows.push(['DANO', s.multishot > 1 ? `${fmt(s.damage)} × ${s.multishot} teclados` : fmt(s.damage)]);
     if (s.pierce > 1) rows.push(['ATRAVESSA', `até ${s.pierce} vírus`]);
     if (s.markTime) rows.push(['MARCA', `+${Math.round((s.markMul - 1) * 100)}% de dano por ${num(s.markTime)}s`]);
-    if (s.burn) rows.push(['QUEIMA', `${num(s.burn)}/s por ${num(s.burnTime)}s`]);
+    if (s.burn) rows.push(['QUEIMA', `${fmt(s.burn * (s.burnMul ?? 1))}/s por ${num(s.burnTime + (s.burnExtra ?? 0))}s`]);
   }
   rows.push(['ALCANCE', `${s.range}`], ['RECARGA', `${num(s.fireRate)}s`]);
   if (armor) rows.push(['BLINDADOS', s.canHitArmored ? 'fura' : 'não fura']);

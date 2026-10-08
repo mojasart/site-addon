@@ -1,5 +1,6 @@
 import { MAPS } from '../data/maps.js';
-import { VIEW_H, OUTLINE } from '../config.js';
+import { VIEW_H, OUTLINE, LAYER_HP } from '../config.js';
+import { fmt } from '../util.js';
 import { ENEMIES, worth, threat } from '../data/enemies.js';
 import { TOWERS, TOWER_ORDER } from '../data/towers.js';
 import { rrect, fillOutline, cachedSprite } from '../render/canvas.js';
@@ -452,21 +453,26 @@ function wrapMono(ctx, str, x, y, maxW, size, color) {
   if (line) mono(ctx, line, x, yy, size, color, 'left', true);
 }
 
-// Vírus de camadas (vida 1): a vida é o número de camadas até o vermelho.
+// Vírus de camadas (vida LAYER_HP cada): mostra camadas × vida de uma camada.
 // Os outros: a vida muda com a fase, então mostra do mapa mais fácil ao mais difícil.
 function layers(type) {
   const def = ENEMIES[type];
-  const inner = def.children.find(([c]) => ENEMIES[c].hp <= 1);
+  const inner = def.children.find(([c]) => ENEMIES[c].hp <= LAYER_HP);
   return 1 + (inner ? layers(inner[0]) : 0);
 }
 
 function hpText(type) {
   const def = ENEMIES[type];
-  if (def.hp <= 1) return `${layers(type)}`;
+  if (def.hp <= LAYER_HP) {
+    const n = layers(type);
+    return n > 1 ? `${n} × ${fmt(LAYER_HP)}` : fmt(LAYER_HP);
+  }
+  // como no jogo (Enemy.scaleHp): arredonda pra camadas inteiras
   const ps = MAPS.map((m) => m.pressure);
-  const lo = Math.max(1, Math.round(def.hp * Math.min(...ps)));
-  const hi = Math.max(1, Math.round(def.hp * Math.max(...ps)));
-  return lo === hi ? `${lo}` : `${lo} - ${hi}`;
+  const at = (p) => Math.max(LAYER_HP, Math.round((def.hp * p) / LAYER_HP) * LAYER_HP);
+  const lo = at(Math.min(...ps));
+  const hi = at(Math.max(...ps));
+  return lo === hi ? fmt(lo) : `${fmt(lo)} - ${fmt(hi)}`;
 }
 
 // Personagem da defesa centrado no ponto atual, com `size` de altura

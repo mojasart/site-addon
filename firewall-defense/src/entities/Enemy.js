@@ -1,4 +1,5 @@
-import { ENEMIES, threat } from '../data/enemies.js';
+import { ENEMIES, threat, lives } from '../data/enemies.js';
+import { LAYER_HP } from '../config.js';
 import { rand, chance } from '../util.js';
 import { TILE } from '../core/grid.js';
 
@@ -39,8 +40,8 @@ export class Enemy {
   // Vida dos inimigos de várias camadas (Worm, Locker, Ransomware) muda
   // com a dificuldade do mapa; os vírus comuns têm 1 de vida por camada
   scaleHp(mul) {
-    if (this.def.hp <= 1) return;
-    this.hp = this.maxHp = Math.max(1, Math.round(this.def.hp * mul));
+    if (this.def.hp <= LAYER_HP) return;
+    this.hp = this.maxHp = Math.max(LAYER_HP, Math.round((this.def.hp * mul) / LAYER_HP) * LAYER_HP);
   }
 
   get speed() {
@@ -57,7 +58,8 @@ export class Enemy {
   // vidas que tira se escapar: o que sobrou dessa camada + todos os filhos.
   // Sempre inteiro (o fogo deixa vida quebrada) e sem contar a vida extra
   get threat() {
-    return Math.ceil(this.hp / this.hpMul - 1e-6) + threat(this.type) - this.def.hp;
+    const unit = this.def.lives ? this.def.hp / this.def.lives : LAYER_HP; // vida que vale 1 vida do jogador
+    return Math.ceil(this.hp / this.hpMul / unit - 1e-6) + threat(this.type) - lives(this.def);
   }
 
   // quanto falta pra chegar na base (usado pra mirar no "primeiro")
@@ -101,7 +103,7 @@ export class Enemy {
         if (chance(bait.stats.stickyChance)) this.sticky = true;
         if (chance(bait.stats.stingChance)) {
           game.fx.spark(this.x, this.y - this.r, '#ffd23f', 8);
-          this.takeDamage(1, game, { armored: true, source: bait });
+          this.takeDamage(LAYER_HP, game, { armored: true, source: bait });
           if (this.dead) return;
         }
       }
@@ -155,7 +157,7 @@ export class Enemy {
   // quanto tira da isca por segundo (chefão morde forte)
   get biteDps() {
     if (this.def.boss) return 8;
-    return this.def.hp > 1 ? 2 : 1;
+    return this.def.hp > LAYER_HP ? 2 : 1;
   }
 
   // Congela parado por `time` s (chefão não congela). true se pegou
@@ -224,7 +226,7 @@ export class Enemy {
     if (this.slowTimer > 0 && chance(this.shatter)) {
       game.fx.spark(this.x, this.y, '#c8f4ff', 12);
       game.fx.burst(this.x, this.y, '#c8f4ff', 10, 200, 0.4, 4);
-      for (const e of game.enemiesInRange(this.x, this.y, SHATTER_R)) if (e !== this) e.takeDamage(1, game, { armored: true });
+      for (const e of game.enemiesInRange(this.x, this.y, SHATTER_R)) if (e !== this) e.takeDamage(LAYER_HP, game, { armored: true });
     }
     game.money += this.def.reward ?? 1;
     game.stats.pops++;

@@ -1,3 +1,5 @@
+import { LAYER_HP } from '../config.js';
+
 // ─────────────────────────────────────────────────────────────
 //  VÍRUS: funcionam como os balões do Bloons.
 //  Cada um tem "camadas": quando a vida acaba ele estoura e solta
@@ -15,16 +17,16 @@
 //  lore     → frase do catálogo de ameaças (scenes/CatalogScene.js)
 // ─────────────────────────────────────────────────────────────
 export const ENEMIES = {
-  v1: { name: 'Vírus', lore: 'O malware mais básico da rede. Sozinho é inofensivo; em bando, derruba qualquer servidor.', sprite: 'virus_red', hp: 1, speed: 70, radius: 13, color: '#ff4d5e', children: [] },
-  v2: { name: 'Vírus Azul', lore: 'Versão atualizada: mais rápida, e esconde um Vírus vermelho dentro.', sprite: 'virus_blue', hp: 1, speed: 95, radius: 14, color: '#3d8bff', children: [['v1', 1]] },
-  v3: { name: 'Vírus Verde', lore: 'Código polimórfico: muda de cor pra fugir do antivírus. Carrega um Vírus Azul.', sprite: 'virus_green', hp: 1, speed: 120, radius: 14, color: '#2fd27a', children: [['v2', 1]] },
-  v4: { name: 'Vírus Amarelo', lore: 'Rápido como um exploit zero-day. Dentro dele vem um Vírus Verde.', sprite: 'virus_yellow', hp: 1, speed: 200, radius: 15, color: '#ffc62e', children: [['v3', 1]] },
-  v5: { name: 'Vírus Rosa', lore: 'O mais veloz da família. Cada camada estourada revela a anterior.', sprite: 'virus_pink', hp: 1, speed: 220, radius: 15, color: '#ff6fd0', children: [['v4', 1]] },
+  v1: { name: 'Vírus', lore: 'O malware mais básico da rede. Sozinho é inofensivo; em bando, derruba qualquer servidor.', sprite: 'virus_red', hp: LAYER_HP, speed: 70, radius: 13, color: '#ff4d5e', children: [] },
+  v2: { name: 'Vírus Azul', lore: 'Versão atualizada: mais rápida, e esconde um Vírus vermelho dentro.', sprite: 'virus_blue', hp: LAYER_HP, speed: 95, radius: 14, color: '#3d8bff', children: [['v1', 1]] },
+  v3: { name: 'Vírus Verde', lore: 'Código polimórfico: muda de cor pra fugir do antivírus. Carrega um Vírus Azul.', sprite: 'virus_green', hp: LAYER_HP, speed: 120, radius: 14, color: '#2fd27a', children: [['v2', 1]] },
+  v4: { name: 'Vírus Amarelo', lore: 'Rápido como um exploit zero-day. Dentro dele vem um Vírus Verde.', sprite: 'virus_yellow', hp: LAYER_HP, speed: 200, radius: 15, color: '#ffc62e', children: [['v3', 1]] },
+  v5: { name: 'Vírus Rosa', lore: 'O mais veloz da família. Cada camada estourada revela a anterior.', sprite: 'virus_pink', hp: LAYER_HP, speed: 220, radius: 15, color: '#ff6fd0', children: [['v4', 1]] },
   worm: {
     name: 'Worm',
     desc: 'Rápido: vai soltando vírus pelo caminho enquanto está vivo',
     lore: 'Se espalha sozinho pela rede, deixando cópias de si pelo caminho.',
-    hp: 3,
+    hp: 3 * LAYER_HP,
     speed: 170,
     radius: 15,
     color: '#7be04a',
@@ -37,7 +39,7 @@ export const ENEMIES = {
     name: 'Trojan',
     desc: 'Blindado: os teclados do Hacker não furam',
     lore: 'Disfarçado de programa legítimo e protegido por armadura: teclado não fura.',
-    hp: 1,
+    hp: LAYER_HP,
     speed: 60,
     radius: 17,
     color: '#a9b6c8',
@@ -50,7 +52,8 @@ export const ENEMIES = {
     name: 'Locker',
     desc: 'Mini-chefão acorrentado: solta 2 Trojans',
     lore: 'Tranca tudo com correntes pesadas. Quando cai, liberta 2 Trojans.',
-    hp: 90,
+    hp: 135000, // +50% de vida (era 90 mil)
+    lives: 90, // vidas que tira se escapar (sem isso: hp / LAYER_HP)
     speed: 35,
     radius: 26,
     color: '#a35cf0',
@@ -64,7 +67,8 @@ export const ENEMIES = {
     name: 'Ransomware',
     desc: 'Chefão: criptografa as defesas perto dele; solta 4 Trojans',
     lore: 'Sequestra o servidor e pede resgate em bitcoin. O chefão final da rede.',
-    hp: 340,
+    hp: 510000, // +50% de vida (era 340 mil)
+    lives: 340,
     speed: 30,
     radius: 38,
     color: '#7a3cc4',
@@ -93,5 +97,8 @@ export function worth(type) {
 
 export function threat(type) {
   const def = ENEMIES[type];
-  return def.hp + def.children.reduce((sum, [child, n]) => sum + n * threat(child), 0);
+  return lives(def) + def.children.reduce((sum, [child, n]) => sum + n * threat(child), 0);
 }
+
+// Vidas que a camada de cima tira (cada LAYER_HP de vida = 1 vida; chefão diz em `lives`)
+export const lives = (def) => def.lives ?? def.hp / LAYER_HP;

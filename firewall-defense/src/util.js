@@ -5,6 +5,8 @@ export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 // Plural do jogo: maior que 1 vai pro plural; 0, 1 e frações (0,5) ficam no singular
 export const plural = (n, one, many) => (n > 1 ? many : one);
 export const lerp = (a, b, t) => a + (b - a) * t;
+// Número inteiro com ponto de milhar (12.000 · 510.000)
+export const fmt = (n) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
 // Aleatório com semente: o mesmo mapa sai sempre decorado igual
 export function seeded(seed) {

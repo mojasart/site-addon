@@ -1,5 +1,5 @@
 import { TOWERS } from '../data/towers.js';
-import { SELL_RATE } from '../config.js';
+import { SELL_RATE, LAYER_HP } from '../config.js';
 import { rand, chance } from '../util.js';
 import { laserOrigin } from '../render/characters.js';
 import { applyPerks } from '../data/darknet.js';
@@ -128,7 +128,7 @@ export class Tower {
     if (chance(this.stats.swarmChance)) {
       game.fx.burst(this.x, this.y, '#ffd23f', 14, 220, 0.6, 3, true);
       game.fx.burst(this.x, this.y, '#2b2118', 8, 200, 0.6, 3, true);
-      for (const e of game.enemiesInRange(this.x, this.y, SWARM_R)) e.takeDamage(1, game, { armored: true, source: this });
+      for (const e of game.enemiesInRange(this.x, this.y, SWARM_R)) e.takeDamage(LAYER_HP, game, { armored: true, source: this });
     }
   }
 

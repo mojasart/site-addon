@@ -85,7 +85,7 @@ export class Projectile {
       // Zero-Day (Dark Net): às vezes estoura o vírus inteiro, todas as camadas (chefão não)
       if (reach && !e.def.boss && chance(this.source.stats.executeChance)) {
         game.fx.spark(e.x, e.y - e.r, '#7dffb0', 13);
-        e.takeDamage(1e6, game, opts);
+        e.takeDamage(Infinity, game, opts);
       } else {
         if (this.crit && reach) game.fx.spark(e.x, e.y - e.r);
         e.takeDamage(this.damage, game, opts);

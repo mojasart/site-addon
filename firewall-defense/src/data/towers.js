@@ -27,7 +27,7 @@ export const TOWERS = {
     attack: 'projectile',
     projectile: 'keyboard',
     fireRate: 0.95,
-    damage: 1,
+    damage: 1000,
     projectileSpeed: 650,
     canHitArmored: false,
     targeting: true,
@@ -47,7 +47,7 @@ export const TOWERS = {
     attack: 'pulse',
     effect: 'fire',
     fireRate: 1.8, // segundos entre uma onda e outra (golem é lento: bate forte, mas devagar)
-    damage: 1,
+    damage: 1000,
     maxTargets: 10,
     canHitArmored: true,
     sound: 'fire',
@@ -55,7 +55,7 @@ export const TOWERS = {
       { name: 'Muralha de Fogo', desc: 'Mais alcance e ondas mais rápidas', cost: 280, apply: (s) => { s.range += 20; s.fireRate *= 0.8; } },
       // queima: o vírus fica pegando fogo (burn de dano/s por burnTime s), mesmo fora do alcance;
       // não acumula (ver Enemy.ignite)
-      { name: 'Incêndio', desc: 'Os vírus pegam fogo', cost: 500, apply: (s) => { s.burn = 0.5; s.burnTime = 3; } },
+      { name: 'Incêndio', desc: 'Os vírus pegam fogo', cost: 500, apply: (s) => { s.burn = 500; s.burnTime = 3; } },
     ],
   },
   pinguim: {
@@ -89,7 +89,7 @@ export const TOWERS = {
     range: 300,
     attack: 'beam',
     fireRate: 2.8,
-    damage: 12, // sniper: tiro lento e pesado (o que mais tira vida de chefão)
+    damage: 12000, // sniper: tiro lento e pesado (o que mais tira vida de chefão)
     canHitArmored: true,
     targeting: true,
     defaultTarget: 'strong',

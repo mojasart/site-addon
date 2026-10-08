@@ -16,6 +16,9 @@ export const PANEL_W = 190;
 export const MIN_VIEW_W = MAP_W + PANEL_W; // 946: na tela mais estreita o mapa ocupa tudo
 export const MAX_VIEW_W = 1170;
 
+// Vida de uma camada de vírus (o dano básico de um ataque também é dessa ordem:
+// Hacker 1000 por teclado). Escala grande pra buff de 10% fazer sentido
+export const LAYER_HP = 1000;
 export const SELL_RATE = 0.7; // vender devolve 70% do que foi gasto
 export const MAX_SPEED = 3; // botão de acelerar: 1x → 2x → 3x
 export const EARLY_BONUS = 0.15; // chamar com outra rodada rolando: até 15% do valor da próxima (cai conforme a rodada atual acaba)

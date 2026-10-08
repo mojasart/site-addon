@@ -4,6 +4,7 @@ import { rrect, circle, fillOutline, text, setFont, button } from './canvas.js';
 import { drawCharacter } from './characters.js';
 import { drawCoin, drawHeart, ICONS } from './sprites.js';
 import { iconButton } from './widgets.js';
+import { fmt } from '../util.js';
 
 // Posições da interface do jogo (pra desenhar E pra detectar toques).
 // Coordenadas de tela; o painel fica colado na direita.
@@ -103,7 +104,7 @@ function drawBossBars(ctx, game) {
     ICONS.lock(ctx, 9);
     ctx.restore();
     text(ctx, e.def.name.toUpperCase(), x + 36, y + BAR_H / 2 + 1, { size: 14, align: 'left' });
-    text(ctx, `${Math.ceil(e.hp)} / ${Math.round(e.maxHp)}`, x + w - 14, y + BAR_H / 2 + 1, { size: 14, align: 'right' });
+    text(ctx, `${fmt(Math.ceil(e.hp))} / ${fmt(e.maxHp)}`, x + w - 14, y + BAR_H / 2 + 1, { size: 14, align: 'right' });
   });
 }
 
