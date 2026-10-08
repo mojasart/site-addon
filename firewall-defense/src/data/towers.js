@@ -113,10 +113,10 @@ export const TOWERS = {
     packetInterval: 3.5,
     upgrades: [
       { name: 'GPU Extra', desc: '6 bitcoins por rodada', cost: 500, apply: (s) => { s.packetsPerRound = 6; } },
-      // nas rodadas, a cada `every` s joga uma dinamite no vírus mais adiantado
-      // a até `range`: explode em área (`radius`) tirando `damage` (fura blindagem)
-      { name: 'Dinamite', desc: 'A cada 6s joga uma dinamite que explode em área e tira 2 de vida (fura blindagem)', cost: 900,
-        apply: (s) => { s.dynamite = { every: 6, range: 140, radius: 50, damage: 2 }; } },
+      // escolhe uma defesa aleatória (que ataca) pra patrocinar: cada vírus que
+      // ela estourar solta +$`sponsor` (Tower.updateSponsor, Enemy.pop)
+      { name: 'Patrocínio', desc: 'Escolhe uma defesa aleatória: cada vírus que ela estourar solta +$1', cost: 900,
+        apply: (s) => { s.sponsor = 1; } },
     ],
   },
   honeypot: {

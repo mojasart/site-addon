@@ -228,7 +228,10 @@ export class Enemy {
     }
     game.money += this.def.reward ?? 1;
     game.stats.pops++;
-    if (opts.source) opts.source.pops++;
+    if (opts.source) {
+      opts.source.pops++;
+      game.money += game.sponsorBonus?.(opts.source) ?? 0; // Patrocínio do Minerador
+    }
     game.fx.pop(this.x, this.y - this.r * 0.3, this.def.color, this.r);
     // vírus dourado (Toque de Midas): solta a moeda dele (os filhos não herdam)
     if (this.golden) {

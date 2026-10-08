@@ -252,6 +252,14 @@ export class Game {
     return Math.hypot(e.x - s.x, e.y - s.y) < BASE_HIT + e.r * 0.5;
   }
 
+  // Patrocínio: quanto a mais cada vírus estourado por essa defesa solta
+  // (soma dos Mineradores que patrocinam ela)
+  sponsorBonus(tower) {
+    let v = 0;
+    for (const m of this.towers) if (m.sponsorOf === tower && !m.ransom) v += m.stats.sponsor ?? 0;
+    return v;
+  }
+
   // Pato de Borracha (upgrade secreto da Dark Net): cada vírus estourado tem
   // DUCK.chance de render DUCK.coffee café (direto no save)
   duckRoll(e) {
@@ -827,6 +835,13 @@ export class Game {
     for (const th of things) {
       if (th.tw) {
         this.drawTowerAt(ctx, th.tw);
+        // patrocinada por um Minerador: moedinha girando em cima
+        if (this.sponsorBonus(th.tw)) {
+          ctx.save();
+          ctx.translate(th.tw.x + 16, th.tw.y - 50 + Math.sin(t * 3) * 2);
+          drawCoin(ctx, 7, t * 2);
+          ctx.restore();
+        }
         continue;
       }
       const e = th.e;
@@ -845,8 +860,6 @@ export class Game {
       drawProjectile(ctx, p, t);
       ctx.restore();
     }
-    // dinamites do Minerador no ar (arco)
-    for (const tw of this.towers) for (const b of tw.bombs ?? []) drawDynamite(ctx, b, t);
 
     this.fx.draw(ctx);
 
@@ -1008,27 +1021,4 @@ function drawVulnerable(ctx, e, t) {
   circle(ctx, x, y, 10);
   fillOutline(ctx, '#3ec5ff', 2.5);
   text(ctx, 'x2', x, y + 1, { size: 12 });
-}
-
-// Dinamite voando em arco (b.t de 0 a 1), girando, com a faísca no pavio
-function drawDynamite(ctx, b, t) {
-  const x = b.x0 + (b.x1 - b.x0) * b.t;
-  const y = b.y0 + (b.y1 - b.y0) * b.t - Math.sin(b.t * Math.PI) * 70;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(b.t * 9);
-  rrect(ctx, -4, -9, 8, 18, 3);
-  fillOutline(ctx, '#e8413c', 2);
-  ctx.fillStyle = '#fbe3c4';
-  ctx.fillRect(-4, -2, 8, 3);
-  ctx.beginPath();
-  ctx.moveTo(0, -9);
-  ctx.quadraticCurveTo(4, -13, 2, -16);
-  ctx.lineWidth = 1.5;
-  ctx.strokeStyle = '#3a2a1a';
-  ctx.stroke();
-  circle(ctx, 2, -16, 2.5 + Math.sin(t * 40) * 1);
-  ctx.fillStyle = '#ffd23f';
-  ctx.fill();
-  ctx.restore();
 }
