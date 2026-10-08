@@ -619,7 +619,7 @@ export class Game {
 
   // Adware abre um anúncio enorme num lugar sorteado da tela (sem repetir o
   // último tipo). Com a chance `crypt`, vem o criptografado: o X dele foge
-  // pra outra borda 2 a 4 vezes antes de fechar
+  // pra outra borda uma vez antes de fechar
   spawnAd(e) {
     const cfg = e.def.ads;
     if (this.ads.filter((a) => a.closing == null).length >= cfg.max) return;
@@ -634,18 +634,17 @@ export class Game {
       type, s, w, h, ...adSpot(this.viewW, w, h), t: 0, seed: Math.random() * 10,
       vx: chance(cfg.moving) ? (chance(0.5) ? speed : -speed) : 0,
       closeAt: 0,
-      dodges: type === CRYPT_AD ? 2 + Math.floor(Math.random() * 3) : 0,
+      dodges: type === CRYPT_AD ? 1 : 0,
     });
     this.sound.play('star');
   }
 
-  // Anúncios: entram pulando, os que andam batem nas bordas; sem Adware vivo, somem
+  // Anúncios: entram pulando, os que andam batem nas bordas. Ficam até o
+  // jogador fechar no X (mesmo depois de o Adware morrer)
   updateAds(dt) {
     if (!this.ads.length) return;
-    const adware = this.enemies.some((e) => e.def.ads && !e.dead);
     for (const ad of this.ads) {
       ad.t += dt;
-      if (!adware && ad.closing == null) ad.closing = 0.18;
       if (ad.closing != null) ad.closing -= dt;
       if (!ad.vx) continue;
       ad.x += ad.vx * dt;

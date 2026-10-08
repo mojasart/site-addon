@@ -14,8 +14,8 @@ import { easeOutBack } from '../util.js';
  *  Adware está vivo. São enormes (ocupam ~70% da tela), cobrem o que
  *  estiver embaixo (o toque não passa) e só fecham no X vermelho, igual
  *  ao do menu. Algumas andam de um lado pro outro. O anúncio CRIPTOGRAFADO
- *  foge: o X pula pra outra borda a cada toque, algumas vezes, antes de
- *  fechar. Morreu o Adware, somem sozinhos (Game.updateAds).
+ *  foge: no 1º toque o X pula pra outra borda; no 2º fecha. Ficam na tela
+ *  até o jogador fechar, mesmo com o Adware morto (Game.updateAds).
  *  Coordenadas de tela (por cima do mapa e do painel). O desenho é feito
  *  nas medidas W × H e escalado por ad.s (adScale).
  * ════════════════════════════════════════════════════════════ */
