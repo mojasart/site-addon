@@ -31,3 +31,6 @@ export const FONT = '"Lilita One", "Arial Rounded MT Bold", "Arial Black", syste
 export const OUTLINE = '#1b2340'; // contorno grosso de tudo (o "look" cartoon)
 export const GOLD = '#ffd23f';
 export const SKIN = '#f6c9a0';
+
+// Modo debug (?debug ou tocar no worm da tela inicial): dinheiro em cada fase e cafés da Dark Net
+export const DEBUG = { money: 99999999, coffee: 9999999 };

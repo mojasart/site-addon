@@ -1,4 +1,4 @@
-import { VIEW_H, PANEL_W, SPEEDS, TURBO_SPEED, DANGER_TIME, EARLY_BONUS } from './config.js';
+import { VIEW_H, PANEL_W, SPEEDS, TURBO_SPEED, DANGER_TIME, EARLY_BONUS, DEBUG } from './config.js';
 import { MAPS } from './data/maps.js';
 import { ROUNDS } from './data/rounds.js';
 import { PLAT_TIME, PLAT_LIVES, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
@@ -14,7 +14,7 @@ import { Effects } from './systems/Effects.js';
 import { Hazards } from './systems/Hazards.js';
 import { MapView } from './render/maps/index.js';
 import { TILE, tileOf, tileKey, inGrid, snapToTile } from './core/grid.js';
-import { layout, drawHud, drawPanel, drawRange } from './render/ui.js';
+import { layout, drawHud, drawPanel, drawRange, bossBarsBottom } from './render/ui.js';
 import { inRect } from './render/widgets.js';
 import { drawBanner, drawOverlay, overlayLayout } from './render/screens.js';
 import { drawInfoPanel, infoLayout } from './render/infoPanel.js';
@@ -28,7 +28,7 @@ import { drawDuck } from './render/duck.js';
 import { drawAds, adClose, adSpot, ADS, AD_W, AD_H } from './render/ads.js';
 import { pickCoinTiles, coinTileAt, COIN_SEASONS } from './core/coinTiles.js';
 import { drawCoinTiles, drawNoMine } from './render/coinTiles.js';
-import { rrect, fillOutline, circle, text } from './render/canvas.js';
+import { rrect, fillOutline, circle, text, setFont } from './render/canvas.js';
 import { rand, chance } from './util.js';
 
 const TOUCH_LIFT = 46; // ao arrastar com o dedo, a defesa aparece acima dele
@@ -67,7 +67,7 @@ export class Game {
 
   reset() {
     // Acesso Root (Dark Net): dinheiro a mais no começo da fase
-    this.money = this.app.debug ? 99999 : this.map.money + (this.app.perks?.root ? ROOT_MONEY : 0);
+    this.money = this.app.debug ? DEBUG.money : this.map.money + (this.app.perks?.root ? ROOT_MONEY : 0);
     this.lives = this.platinum ? PLAT_LIVES : this.map.lives;
     this.towers = [];
     this.coinTiles = pickCoinTiles(this); // pilhas de bitcoin (seasons 1 e 2)
@@ -1030,19 +1030,25 @@ function drawTileMark(ctx, x, y, valid) {
 }
 
 // Aviso de ameaça nova (catálogo), no topo do mapa
+// Aviso no topo (nova ameaça, perigo...): no meio da tela, colado em cima
+// (ou logo abaixo das barras de chefão), do tamanho do texto
 function drawToast(ctx, game) {
   const a = Math.min(1, game.toast.time * 2, (3 - game.toast.time) * 4);
-  const w = 360;
-  const x = game.mapW / 2 - w / 2;
+  setFont(ctx, 14);
+  const w = ctx.measureText(game.toast.text).width + 44;
+  const y = Math.max(8, bossBarsBottom(game) + 6);
+  // no meio da tela, mas sem passar por cima do contador de rodada (direita do mapa)
+  const x = Math.min(game.viewW / 2 - w / 2, game.mapW - 150 - w);
+  const cx = x + w / 2;
   ctx.save();
   ctx.globalAlpha = a;
-  rrect(ctx, x, 70, w, 34, 17);
+  rrect(ctx, x, y, w, 34, 17);
   fillOutline(ctx, '#0b2416', 3);
   ctx.strokeStyle = '#3dff9a';
   ctx.lineWidth = 2;
-  rrect(ctx, x + 4, 74, w - 8, 26, 13);
+  rrect(ctx, x + 4, y + 4, w - 8, 26, 13);
   ctx.stroke();
-  text(ctx, game.toast.text, game.mapW / 2, 88, { size: 14, color: '#3dff9a' });
+  text(ctx, game.toast.text, cx, y + 18, { size: 14, color: '#3dff9a' });
   ctx.restore();
 }
 

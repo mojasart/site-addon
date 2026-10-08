@@ -14,7 +14,14 @@ export function loadSave() {
   }
 }
 
+// Modo debug: o save vira só uma cópia na memória e nada é gravado
+let paused = false;
+export function pauseSaving() {
+  paused = true;
+}
+
 export function writeSave(save) {
+  if (paused) return;
   try {
     localStorage.setItem(KEY, JSON.stringify(save));
   } catch {
