@@ -4,6 +4,7 @@
 //  As ondas vêm uma atrás da outra, sem esperar o mapa limpar: a próxima
 //  começa assim que a anterior termina de entrar (+ WAVE_GAP). Depois de
 //  PLAT_TIME segundos acabam as ondas e vem o chefão; derrotou, venceu.
+//  Só PLAT_LIVES vida: qualquer vírus que chegar no servidor já é derrota.
 //  Cada mapa tem um aliado bloqueado (sorteado pelo id do mapa, então é
 //  sempre o mesmo naquele mapa).
 // ─────────────────────────────────────────────────────────────
@@ -11,6 +12,7 @@ import { ROUNDS } from './rounds.js';
 import { PLAT_TUNE } from './platinumTuning.js';
 
 export const PLAT_TIME = 180; // segundos de ondas até o chefão
+export const PLAT_LIVES = 1; // vidas no modo platina
 export const WAVE_GAP = 2.5; // pausa entre uma onda terminar de entrar e a próxima
 export const BOSS_HP = 0.6; // vida do chefão: BOSS_HP × √pressão do mapa × dificuldade da platina
 const MAX_WAVES = 60; // mais do que cabe em 3 minutos
