@@ -58,7 +58,7 @@ Tocar num mapa abre a escolha **NORMAL** / **PLATINA** (`src/data/platinum.js`);
 
 | Defesa | Custo | O que faz | Upgrades |
 | --- | --- | --- | --- |
-| **Hacker** | $250 | Arremessa teclados (1 vírus por teclado) | Dedos Rápidos (mais rápido e atravessa 2 vírus) · Exploit Triplo |
+| **Hacker** | $250 | Arremessa teclados (1 vírus por teclado) | Dedos Rápidos (30% mais rápido) · Exploit Triplo |
 | **Golem Firewall** | $350 | Onda de fogo em volta, queima blindados | Muralha de Fogo (mais alcance e ondas mais rápidas) · Incêndio (vírus pegam fogo: 500 de dano/s por até 3 s, mesmo fora do alcance; não acumula nem renova enquanto queima) |
 | **Penguin Linux** | $250 | Suporte: não dá dano, congela os vírus em volta (lentidão) | Criptografia AES (75% mais lento por 2,5 s) · Frente Fria (mais alcance e ondas um pouco mais rápidas). Na Dark Net, o Gelo Quebradiço deixa os congelados vulneráveis: levam 5% a mais de dano |
 | **Robô NMAP** | $500 | Laser de longo alcance: tiro lento, dano alto, fura blindagem | Feixe Perfurante (o laser atravessa e acerta até 2 vírus em linha) · Marcar Alvo (o vírus atingido fica marcado por 2 s e leva 25% a mais de dano de todas as defesas) |
