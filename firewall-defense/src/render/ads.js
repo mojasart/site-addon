@@ -24,7 +24,7 @@ const BAR = 34; // barra de título (com o X)
 // Tipos de anúncio: cor da barra, título, chamada, texto, botão e desenho
 export const ADS = [
   { bar: '#8a5530', title: 'PROMOÇÃO', head: 'CAFÉ EXPRESSO: LEVE 2, PAGUE 3!', sub: 'Só hoje no Cafezinho do Hacker', cta: 'QUERO!', icon: 'coffee' },
-  { bar: '#ff9a2e', title: 'PARABÉNS!!!', head: 'VOCÊ É O VISITANTE 1.000.000', sub: 'Clique pra resgatar seu iPhone 3G', cta: 'RESGATAR', icon: 'star' },
+  { bar: '#ff9a2e', title: 'PARABÉNS!!!', head: 'VOCÊ É O VISITANTE 1.000.000', sub: 'Resgate seu iPhone 3G agora', cta: 'RESGATAR', icon: 'star' },
   { bar: '#3f8cff', title: 'PC LENTO?', head: 'BAIXE MAIS MEMÓRIA RAM', sub: '16 GB grátis, é só clicar aqui', cta: 'BAIXAR', icon: 'ram' },
   { bar: '#ff4d5e', title: 'ALERTA!!!', head: 'SEU PC TEM 37 VÍRUS', sub: 'Limpe agora (instala só mais 38)', cta: 'LIMPAR', icon: 'virus' },
   { bar: '#ff6fd0', title: 'ENCONTROS', head: 'VÍRUS SOLTEIROS NA SUA REDE', sub: 'A 2 metros do seu servidor', cta: 'CONHECER', icon: 'heart' },
@@ -79,8 +79,8 @@ function drawAd(ctx, ad, t) {
   ctx.translate(ad.x + 40, ad.y + BAR + 46 + Math.sin(t * 5 + ad.seed) * 3);
   drawIcon(ctx, def.icon, t);
   ctx.restore();
-  wrapText(ctx, def.head, ad.x + 160, ad.y + BAR + 22, AD_W - 96, 14, '#2a1840', 3);
-  wrapText(ctx, def.sub, ad.x + 160, ad.y + BAR + 70, AD_W - 96, 11, '#5d6680', 2);
+  wrapText(ctx, def.head, ad.x + 160, ad.y + BAR + 20, AD_W - 96, 14, '#2a1840', 2);
+  wrapText(ctx, def.sub, ad.x + 160, ad.y + BAR + 56, AD_W - 96, 11, '#5d6680', 2);
   // botão chamativo piscando (não faz nada: é só propaganda)
   const blink = Math.sin(t * 8 + ad.seed) > 0;
   const b = { x: ad.x + 82, y: ad.y + AD_H - 38, w: AD_W - 96, h: 28 };
