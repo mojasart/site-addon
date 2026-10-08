@@ -1,4 +1,4 @@
-import { VIEW_H, GOLD, OUTLINE } from '../config.js';
+import { VIEW_H, GOLD, OUTLINE, versionLabel } from '../config.js';
 import { drawImage } from '../render/images.js';
 import { rrect, fillOutline, text, setFont } from '../render/canvas.js';
 import { bigButton, iconButton, inRect } from '../render/widgets.js';
@@ -79,6 +79,8 @@ export class TitleScene {
     sprite(ctx, 'ransomware', 0, 0, BOSS.size, -1, this.app.pixelScale);
     ctx.restore();
     sprite(ctx, 'worm', R(WORM.x), WORM.y + hop(1.3) - Math.sin((this.wormJump ?? 0) * Math.PI) * 60, WORM.size, -1, this.app.pixelScale);
+    // versão do jogo, pequenininha embaixo do worm
+    text(ctx, versionLabel(), R(WORM.x), VIEW_H - 16, { size: 12, color: 'rgba(255,255,255,0.75)', strokeWidth: 3 });
     badge(ctx, R(914), 132, 'AMEAÇAS', '#ff5a6a', 0.07, 'right');
     ctx.restore();
 

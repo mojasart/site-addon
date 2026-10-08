@@ -32,6 +32,8 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # histórico inteiro: o número do build é a contagem de commits
 
       - name: Confere a chave do Gemini
         run: |
@@ -39,6 +41,13 @@ jobs:
             echo '::error::Achei a chave do Gemini no repositório: não publiquei nada'
             exit 1
           fi
+
+      # versão na tela inicial (v1.0.XXX): o build é o número de commits
+      - name: Grava o número do build
+        run: |
+          BUILD=$(git rev-list --count HEAD)
+          sed -i "s/^export const BUILD = .*/export const BUILD = $BUILD;/" firewall-defense/src/config.js
+          grep -n '^export const BUILD' firewall-defense/src/config.js
 
       - uses: actions/configure-pages@v5
 
