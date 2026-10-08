@@ -1,6 +1,6 @@
 import { MAPS } from '../data/maps.js';
 import { VIEW_H, OUTLINE, LAYER_HP } from '../config.js';
-import { fmt } from '../util.js';
+import { fmt, plural } from '../util.js';
 import { ENEMIES, worth, threat } from '../data/enemies.js';
 import { TOWERS, TOWER_ORDER } from '../data/towers.js';
 import { rrect, fillOutline, cachedSprite } from '../render/canvas.js';
@@ -341,7 +341,7 @@ export class CatalogScene {
     ], fx, pr.y + 76);
 
     // o que ele solta
-    const kids = def.children.map(([c, n]) => `${n}× ${ENEMIES[c].name}`).join(', ');
+    const kids = def.children.map(([c, n]) => `${n} ${plural(n, ENEMIES[c].name, namePlural(ENEMIES[c].name))}`).join(', ');
     const drops = def.spawn ? `Solta ${ENEMIES[def.spawn.type].name} a cada ${String(def.spawn.every).replace('.', ',')}s` : kids ? `Ao estourar solta: ${kids}` : 'Não solta nada ao estourar';
     const ly = pr.y + pr.s + 22;
     mono(ctx, '> ARQUIVO', d.x + 16, ly, 14, DIM, 'left', true);
@@ -461,11 +461,16 @@ function layers(type) {
   return 1 + (inner ? layers(inner[0]) : 0);
 }
 
+// Plural do nome da ameaça: s na última palavra (Trojans, Vírus Amarelos; Vírus fica igual)
+function namePlural(name) {
+  return name.endsWith('s') ? name : `${name}s`;
+}
+
 function hpText(type) {
   const def = ENEMIES[type];
   if (def.hp <= LAYER_HP) {
     const n = layers(type);
-    return n > 1 ? `${n} × ${fmt(LAYER_HP)}` : fmt(LAYER_HP);
+    return n > 1 ? `${n} camadas de ${fmt(LAYER_HP)}` : fmt(LAYER_HP);
   }
   // como no jogo (Enemy.scaleHp): arredonda pra camadas inteiras
   const ps = MAPS.map((m) => m.pressure);
