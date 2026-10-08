@@ -487,12 +487,18 @@ export class Game {
     return this.towers.every((t) => tileKey(...tileOf(t.x, t.y)) !== k);
   }
 
+  // Preço da defesa com os descontos da Dark Net (GPU de Segunda Mão)
+  costOf(type) {
+    return applyPerks({ cost: TOWERS[type].cost }, type, this.app.perks).cost;
+  }
+
   place(type, x, y) {
-    const def = TOWERS[type];
-    if (this.money < def.cost || !this.canPlace(type, x, y)) return false;
+    const cost = this.costOf(type);
+    if (this.money < cost || !this.canPlace(type, x, y)) return false;
     ({ x, y } = snapToTile(x, y)); // a defesa fica no centro do quadrado
-    this.money -= def.cost;
+    this.money -= cost;
     const tower = new Tower(type, x, y, !this.rounds.active);
+    tower.spent = cost; // vende pelo que pagou
     // bônus da Dark Net pra essa defesa (por cima dos status base)
     applyPerks(tower.stats, type, this.app.perks);
     if (tower.stats.hp) tower.hp = tower.maxHp = tower.stats.hp;
@@ -621,7 +627,7 @@ export class Game {
         return;
       }
       const toggleOff = this.placing === tile.type;
-      if (!toggleOff && this.money < def.cost) {
+      if (!toggleOff && this.money < this.costOf(tile.type)) {
         this.fx.text(tile.x + tile.w / 2 - this.offsetX, tile.y + 30, 'Sem dinheiro!', '#ff7a8a', 16);
         this.sound.play('error');
         // mesmo sem dinheiro dá pra ver os atributos na aba de informações
@@ -753,7 +759,7 @@ export class Game {
     const g = this.ghost();
     if (g) {
       const def = TOWERS[this.placing];
-      const valid = this.canPlace(this.placing, g.x, g.y) && this.money >= def.cost;
+      const valid = this.canPlace(this.placing, g.x, g.y) && this.money >= this.costOf(this.placing);
       drawTileMark(ctx, g.x, g.y, valid);
       if (Number.isFinite(def.range) && def.range > 0) drawRange(ctx, g.x, g.y, def.range, valid);
       else drawRange(ctx, g.x, g.y, def.radius + 8, valid);

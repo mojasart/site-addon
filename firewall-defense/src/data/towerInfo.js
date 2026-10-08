@@ -58,7 +58,6 @@ function luckRows(s) {
   if (s.shatterChance) rows.push(['ESTILHAÇO', `${pct(s.shatterChance)} de chance`]);
   if (s.tripleChance) rows.push(['DANO 3×', `${pct(s.tripleChance)} de chance`]);
   if (s.rechargeChance) rows.push(['RECARGA', `${pct(s.rechargeChance)} instantânea`]);
-  if (s.bonusCoinChance) rows.push(['BITCOIN EXTRA', `${pct(s.bonusCoinChance)} de chance`]);
   if (s.goldChance) rows.push(['BLOCO RARO', `${pct(s.goldChance)} de 5×`]);
   if (s.stickyChance) rows.push(['GRUDAR', `${pct(s.stickyChance)} de sair lento`]);
   if (s.swarmChance) rows.push(['COLMEIA', `${pct(s.swarmChance)} ao quebrar`]);

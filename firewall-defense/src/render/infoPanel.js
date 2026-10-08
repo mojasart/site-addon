@@ -85,7 +85,7 @@ function drawCard(ctx, L, game) {
 
   // conteúdo: mede antes pra saber a altura da aba
   const rows = [
-    ...(sub.placed ? [] : [['CUSTO', `$${def.cost}`]]),
+    ...(sub.placed ? [] : [['CUSTO', `$${game.costOf(sub.type)}`]]),
     ...statRows(s, { armor: s.attack !== 'farm' && s.attack !== 'decoy' && s.effect !== 'frost' }),
   ];
   const h = PAD * 2 + 34 + (rows.length - 0.5) * ROW_H;
@@ -108,7 +108,7 @@ function drawCard(ctx, L, game) {
     ctx.fillStyle = 'rgba(255,255,255,0.06)';
     ctx.fill();
     text(ctx, k, x, y, { size: 12, align: 'left', color: '#bcd0f5' });
-    const red = (k === 'BLINDADOS' && v === 'não fura') || (k === 'CUSTO' && game.money < def.cost); // custo em vermelho: falta dinheiro
+    const red = (k === 'BLINDADOS' && v === 'não fura') || (k === 'CUSTO' && game.money < game.costOf(sub.type)); // custo em vermelho: falta dinheiro
     text(ctx, v, x + w, y, { size: 13, align: 'right', color: red ? '#ff9aa5' : GOLD });
     y += ROW_H;
   }
