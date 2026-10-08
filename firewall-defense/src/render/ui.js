@@ -173,7 +173,7 @@ function drawShop(ctx, game, L) {
     ctx.scale(0.8, 0.8);
     drawCharacter(ctx, tile.type, { t: game.anim + tile.x * 0.01, face: 1, level: 0 });
     ctx.restore();
-    const blocked = game.blocked === tile.type;
+    const blocked = game.isLocked?.(tile.type) ?? game.blocked === tile.type;
     if (!affordable || blocked) {
       rrect(ctx, tile.x, tile.y, tile.w, tile.h - 5, 14);
       ctx.fillStyle = blocked ? 'rgba(20,28,60,0.75)' : 'rgba(20,28,60,0.55)';

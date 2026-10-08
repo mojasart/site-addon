@@ -24,6 +24,8 @@ import { drawProjectile, drawCoin, drawServer } from './render/sprites.js';
 import { drawHazards, drawStunned, drawHazardWarning } from './render/hazards.js';
 import { drawEncrypted, ENCRYPT_FILTER } from './render/ransom.js';
 import { drawSpawns } from './render/spawns.js';
+import { Tutorial, TUTORIAL_LOCKED } from './systems/tutorial.js';
+import { drawTutorial } from './render/tutorial.js';
 import { drawDuck } from './render/duck.js';
 import { CatalogScene } from './scenes/CatalogScene.js';
 import { ITEM, CASH, BACKUP_LIVES, useConsumable } from './data/consumables.js';
@@ -124,6 +126,9 @@ export class Game {
     this.bossCalled = false;
     this.waveGap = null;
     this.blocked = this.platinum ? blockedAlly(this.map) : null;
+    // 1-1 (normal) é o tutorial: só Hacker, Golem e Honeypot; o Hacker ensina a jogar
+    this.lockedTowers = this.mapIndex === 0 && !this.platinum ? new Set(TUTORIAL_LOCKED) : null;
+    this.tutorial = Tutorial.wanted(this) ? new Tutorial(this) : null;
     if (this.platinum) {
       this.showBanner('MODO PLATINA', 3, '#bdeeff', 46, `${TOWERS[this.blocked].name} bloqueado · chefão em 3:00`);
       return;
@@ -206,6 +211,7 @@ export class Game {
     this.anim += dt;
     if (this.state !== 'playing') this.overlayTime += dt;
     if (this.state === 'paused') return;
+    if (this.state === 'playing') this.tutorial?.update(dt);
     if (this.adStorm && this.state === 'playing') this.updateAdStorm(dt);
     this.endDelay = Math.max(0, this.endDelay - dt);
     this.hurt = Math.max(0, this.hurt - dt);
@@ -214,8 +220,8 @@ export class Game {
     this.shakeAmt = Math.max(0, this.shakeAmt - dt * 30);
     if (this.banner && (this.banner.time -= dt) <= 0) this.banner = null;
     if (this.toast && (this.toast.time -= dt) <= 0) this.toast = null;
-    if (this.state !== 'playing') {
-      this.fx.update(dt);
+    if (this.state !== 'playing' || this.tutorial?.frozen) {
+      this.fx.update(dt); // (tutorial falando: o jogo espera)
       return;
     }
     // acelerado (2x/3x) roda em passos pequenos pra colisão não falhar
@@ -422,6 +428,7 @@ export class Game {
     const list = this.speeds;
     this.speed = list[(list.indexOf(this.speed) + 1) % list.length];
     this.sound.play('click');
+    this.tutorial?.on('speed');
   }
 
   // Acelerado e um vírus que faria perder (tira todas as vidas que sobram)
@@ -443,6 +450,7 @@ export class Game {
     const bonus = this.earlyBonus();
     if (!this.rounds.start()) return;
     if (this.rounds.started === 1) this.firstRoundAt = this.anim; // some o aviso das entradas
+    this.tutorial?.on('round');
     this.nextIn = null;
     for (const t of this.towers) t.onRoundStart();
     if (bonus > 0) {
@@ -598,6 +606,12 @@ export class Game {
   }
 
   // Preço da defesa com os descontos da Dark Net (GPU de Segunda Mão)
+  // Defesa indisponível nesta partida: o aliado bloqueado da platina ou as
+  // que ainda não existem no tutorial (1-1)
+  isLocked(type) {
+    return type === this.blocked || !!this.lockedTowers?.has(type);
+  }
+
   costOf(type) {
     if (this.freeTower) return 0; // consumível Defesa Grátis: a próxima sai de graça
     return applyPerks({ ...TOWERS[type] }, type, this.app.perks).cost;
@@ -605,7 +619,7 @@ export class Game {
 
   place(type, x, y) {
     const cost = this.costOf(type);
-    if (!this.canAfford(cost) || !this.canPlace(type, x, y)) return false;
+    if (this.isLocked(type) || !this.canAfford(cost) || !this.canPlace(type, x, y)) return false;
     ({ x, y } = snapToTile(x, y)); // a defesa fica no centro do quadrado
     this.pay(cost);
     this.freeTower = false; // (se era a grátis, já usou)
@@ -618,6 +632,7 @@ export class Game {
     if (this.rounds.active) tower.onRoundStart();
     this.towers.push(tower);
     this.placedBy[type] = (this.placedBy[type] ?? 0) + 1;
+    this.tutorial?.on('place', type);
     this.fx.burst(x, y, '#ffffff', 14, 160, 0.35, 5, true);
     this.sound.play('place');
     this.placing = null;
@@ -801,7 +816,7 @@ export class Game {
   // ── Input (coordenadas de tela já convertidas) ────────────
 
   key(k) {
-    if (k === ' ' && this.state === 'playing') this.playPressed();
+    if (k === ' ' && this.state === 'playing' && !this.tutorial?.frozen) this.playPressed();
     else if (k === 'Escape') {
       if (this.state === 'paused') this.resume();
       else this.pause();
@@ -811,6 +826,7 @@ export class Game {
   pointerDown(sx, sy, type = 'touch') {
     Object.assign(this.pointer, { x: sx, y: sy, down: true, type });
     if (this.state !== 'playing') return this.overlayTap(sx, sy);
+    if (this.tutorial?.tap(sx, sy)) return; // tutorial: fala continua; fora do alvo não passa
     if (this.adTap(sx, sy)) return; // anúncio por cima: o toque não passa
 
     const L = layout(this);
@@ -892,6 +908,7 @@ export class Game {
           this.panelTab = tab.id;
           this.sound.play('click');
         }
+        this.tutorial?.on('tab', tab.id);
         return;
       }
     }
@@ -904,7 +921,7 @@ export class Game {
     for (const tile of L.tiles) {
       if (!inRect(tile, sx, sy)) continue;
       const def = TOWERS[tile.type];
-      if (tile.type === this.blocked) {
+      if (this.isLocked(tile.type)) {
         this.fx.panelText(tile.x + tile.w / 2, tile.y + 30, 'Bloqueado!', '#ff7a8a', 16);
         this.sound.play('error');
         return;
@@ -938,6 +955,7 @@ export class Game {
       return;
     }
     if (useConsumable(this, tile.id)) {
+      this.tutorial?.on('item', tile.id);
       const done = { cash: `+$${CASH}`, free: 'a próxima defesa sai de graça', freeze: 'vírus congelados', lives: `+${lives} ${plural(lives, 'vida', 'vidas')}` };
       this.toast = { text: `${item.name.toUpperCase()}: ${done[tile.id] ?? 'usado'}`, time: 2.2 };
     } else {
@@ -1115,6 +1133,7 @@ export class Game {
     drawPanel(ctx, this);
     this.fx.drawPanelTexts(ctx); // "Sem dinheiro!" nos cards: por cima do painel
     drawAds(ctx, this); // por cima do mapa e do painel
+    drawTutorial(ctx, this); // fala do Hacker e a mãozinha (1-1)
     if (this.toast) drawToast(ctx, this);
     drawBanner(ctx, this);
     drawOverlay(ctx, this);

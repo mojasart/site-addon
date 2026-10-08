@@ -51,7 +51,7 @@ export function playMap(mapIndex, profileName, seed, mode = 'normal') {
 
   const pickWeighted = (weights) => {
     // no modo platina, o aliado bloqueado fica de fora
-    const entries = Object.entries(weights).filter(([k, w]) => w > 0 && k !== game.blocked);
+    const entries = Object.entries(weights).filter(([k, w]) => w > 0 && !game.isLocked(k));
     let total = entries.reduce((a, [, w]) => a + w, 0);
     let r = rnd() * total;
     for (const [k, w] of entries) if ((r -= w) <= 0) return k;
@@ -116,7 +116,7 @@ export function playMap(mapIndex, profileName, seed, mode = 'normal') {
       else type = pickWeighted(profile.w);
       // blindados chegando: garante quem fura blindagem (Golem ou Robô NMAP)
       if (needPierce) type = game.blocked === 'firewall' ? 'scanner' : game.blocked === 'scanner' ? 'firewall' : rnd() < 0.5 ? 'firewall' : 'scanner';
-      if (type === game.blocked) type = pickWeighted(profile.w);
+      if (game.isLocked(type)) type = pickWeighted(profile.w); // aliado bloqueado (platina) ou fora do tutorial (1-1)
       const def = TOWERS[type];
       if (def.cost > game.money) return;
       const spot = bestSpot(type);
