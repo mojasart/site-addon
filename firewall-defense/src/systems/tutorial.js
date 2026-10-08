@@ -24,7 +24,9 @@ import { Enemy } from '../entities/Enemy.js';
 export const TUTORIAL_LOCKED = ['pinguim', 'scanner', 'minerador']; // na 1-1 só Hacker, Golem e Honeypot
 // enxurrada da aula do Honeypot: n vírus, um a cada gap s; a aula começa quando o
 // primeiro está a `near` quadrados (pelo caminho) do lugar do pote, perto do Hacker
-const SWARM = { type: 'v2', n: 30, gap: 0.16, near: 3 };
+const SWARM = { type: 'v2', n: 24, gap: 0.16, near: 3 };
+// a 2ª onda do tutorial vem com WAVE2 da quantidade normal (a enxurrada já é grande)
+const WAVE2 = 0.8;
 
 export class Tutorial {
   // Só na 1-1, no normal, pra quem ainda não fez
@@ -40,6 +42,7 @@ export class Tutorial {
     this.t = 0; // tempo no passo
     this.roundT = 0; // tempo de onda (pro passo de acelerar)
     this.done = false;
+    for (const grp of game.rounds.rounds[1] ?? []) grp.count = Math.max(1, Math.round(grp.count * WAVE2));
     this.steps = [
       { kind: 'say', freeze: true, text: () => `Ei, ${this.name}! Eu sou o Fraguinha. Comprei um curso de hacker de 7 dias e agora sou o top 1 do mundo.` },
       { kind: 'say', freeze: true, text: 'Uns vírus descobriram o nosso servidor e vão tentar invadir. A gente tem que defender a base!' },
@@ -93,6 +96,21 @@ export class Tutorial {
         kind: 'do', freeze: true, event: ['item', 'cash'], text: 'Agora toque no Bitcoin Extra pra usar. Ele dá dinheiro na hora!',
         target: () => this.itemRect('cash'), allow: (x, y, L) => inRect(L.items.find((r) => r.id === 'cash'), x, y),
       },
+      // Golem Firewall: volta pra loja de DEFESAS e coloca o golem (dano em área)
+      {
+        kind: 'do', freeze: true, event: ['tab', 'towers'], enter: () => this.fund(this.g.costOf('firewall')),
+        text: 'Mais uma! Volta em DEFESAS que eu quero te apresentar um amigo.',
+        target: () => this.rect('tabs', 0), allow: (x, y, L) => inRect(L.tabs[0], x, y),
+      },
+      {
+        kind: 'do', freeze: true, event: ['place', 'firewall'],
+        text: () => (this.g.placing === 'firewall'
+          ? 'Coloque o Golem perto do caminho: ele bate no chão e queima todo vírus em volta. Dano em área!'
+          : 'Esse é o Golem Firewall. Eu acerto um vírus por vez, ele acerta vários de uma vez só. Toque nele.'),
+        target: () => (this.g.placing === 'firewall' ? this.spotFor('firewall') : this.tile('firewall')),
+        allow: (x, y, L) => inRect(this.tileRect(L, 'firewall'), x, y) || (this.g.placing === 'firewall' && x < L.panel.x),
+      },
+      { kind: 'say', freeze: true, text: 'E não é só a gente: mais pra frente aparecem outros personagens pra defender o servidor. Fica de olho!' },
       { kind: 'say', freeze: true, text: () => `Mandou bem, ${this.name}! Agora é com você: segura os vírus até a última onda. Boa sorte!` },
     ];
   }
