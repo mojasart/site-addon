@@ -17,9 +17,9 @@ import { playMap, PROFILES } from './bot.js';
 import { MAPS } from '../../firewall-defense/src/data/maps.js';
 import { PLAT_TUNE } from '../../firewall-defense/src/data/platinumTuning.js';
 
-export const TARGET = [0.6, 0.15];
+export const TARGET = [0.35, 0.14]; // com 1 vida (PLAT_LIVES): pelo menos ~10% de vitória em todo mapa
 const ITERATIONS = 8;
-const LO = 0.08;
+const LO = 0.01;
 const HI = 4;
 
 if (!isMainThread) {
@@ -103,7 +103,7 @@ if (!isMainThread) {
   const file = `// Gerado por tools/sim/calibrate-platinum.js — não edite à mão.
 // Dificuldade do modo platina em cada mapa (multiplica a quantidade de
 // vírus das ondas e a vida do chefão), calibrada com os bots pra taxa de
-// vitória cair de ${TARGET[0] * 100}% (mapa 1) a ${TARGET[1] * 100}% (mapa ${n}).
+// vitória cair de ${Math.round(TARGET[0] * 100)}% (mapa 1) a ${Math.round(TARGET[1] * 100)}% (mapa ${n}).
 export const PLAT_TUNE = ${JSON.stringify(values)};
 `;
   writeFileSync(new URL('../../firewall-defense/src/data/platinumTuning.js', import.meta.url), file);

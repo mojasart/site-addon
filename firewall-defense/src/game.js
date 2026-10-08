@@ -1,7 +1,7 @@
 import { VIEW_H, PANEL_W, MAX_SPEED, EARLY_BONUS } from './config.js';
 import { MAPS } from './data/maps.js';
 import { ROUNDS } from './data/rounds.js';
-import { PLAT_TIME, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
+import { PLAT_TIME, PLAT_LIVES, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
 import { worth } from './data/enemies.js';
 import { TOWERS, TARGET_MODES } from './data/towers.js';
 import { applyPerks, ROOT_MONEY } from './data/darknet.js';
@@ -64,7 +64,7 @@ export class Game {
   reset() {
     // Acesso Root (Dark Net): dinheiro a mais no começo da fase
     this.money = this.app.debug ? 99999 : this.map.money + (this.app.perks?.root ? ROOT_MONEY : 0);
-    this.lives = this.map.lives;
+    this.lives = this.platinum ? PLAT_LIVES : this.map.lives;
     this.towers = [];
     this.coinTiles = pickCoinTiles(this); // pilhas de bitcoin (seasons 1 e 2)
     this.enemies = [];
@@ -75,6 +75,7 @@ export class Game {
     const k = this.platinum ? platinumScale(this.mapIndex) : 1;
     this.rounds = new RoundManager(this.platinum ? platinumRounds(this.map) : ROUNDS.slice(0, this.map.rounds), {
       count: this.map.pressure * k,
+      minCount: this.platinum ? 0 : 1,
       gap: this.map.gapMul,
       speed: this.map.speedMul,
       hp: this.map.pressure * k, // chefões e worms acompanham a pressão
