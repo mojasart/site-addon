@@ -44,6 +44,10 @@ const NAMES = [
   'adware',
   'duck',
   'shop_cart',
+  // pacotes de café (loja): punhado de grãos, xícara e saco
+  'coffee_beans',
+  'coffee_cup',
+  'coffee_sack',
   'server',
   'server_hurt',
   'coin',
