@@ -13,10 +13,15 @@ import { DARKNET_STARS, COFFEE, mapCoffee, NODE, TREE } from './data/darknet.js'
 // Controla as telas (título → mapas → jogo), a transição entre elas,
 // o progresso salvo e o som.
 export class App {
-  constructor({ debug = false } = {}) {
+  constructor({ debug = false, mute = false } = {}) {
     this.debug = false;
     this.save = loadSave();
     if (debug) this.enableDebug();
+    if (mute) {
+      // ?mute: sem música nem efeitos (dá pra religar nos botões)
+      this.save.music = false;
+      this.save.sfx = false;
+    }
     this.sound = new Sound(this.save);
     this.viewW = MIN_VIEW_W;
     this.pixelScale = 1;
@@ -252,8 +257,8 @@ export class App {
       if (this.fade >= 1) {
         this.scene = this.next();
         this.next = null;
-        // na partida, música de batalha; nos menus, a alegre
-        this.sound.setTheme?.(this.scene instanceof Game ? 'battle' : 'menu');
+        // na partida, a música de batalha da season do mapa; nos menus, a alegre
+        this.sound.setTheme?.(this.scene instanceof Game ? `battle-${this.scene.map.season}` : 'menu');
       }
     } else this.fade = Math.max(0, this.fade - dt * 4);
     this.scene.update(dt);

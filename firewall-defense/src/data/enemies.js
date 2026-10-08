@@ -46,6 +46,7 @@ export const ENEMIES = {
     radius: 14,
     color: '#4b5d73',
     kind: 'spy',
+    sprite: 'spyware',
     stealth: true,
     children: [['v2', 1]],
   },
@@ -135,13 +136,14 @@ export const ENEMIES = {
     radius: 28,
     color: '#ffb02e',
     kind: 'adware',
+    sprite: 'adware',
     boss: true,
     reward: 30,
     children: [['v4', 3]],
     // enquanto está na tela, abre um anúncio a cada `every` s (no máximo `max`
     // ao mesmo tempo); `moving` deles ficam andando de um lado pro outro.
     // Morreu: os anúncios somem (Game.spawnAd / updateAds, render/ads.js)
-    ads: { every: [4, 7], max: 4, moving: 0.1 },
+    ads: { every: [4, 7], max: 2, moving: 0.1 },
     topBar: true,
   },
   ransomware: {

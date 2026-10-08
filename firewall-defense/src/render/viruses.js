@@ -96,6 +96,8 @@ const SPRITE_LOOK = {
   worm: { size: 4.4, foot: 0.34, hop: 0.22 },
   trojan: { size: 2.8, foot: 0.477, hop: 0.3 },
   locker: { size: 2.9, foot: 0.477, hop: 0.22 },
+  spy: { size: 3, foot: 0.477, hop: 0.32 },
+  adware: { size: 2.8, foot: 0.477, hop: 0.2 },
   boss: { size: 3.4, foot: 0.336, hop: 0 },
 };
 const VIRUS_LOOK = { size: 2.9, foot: 0.477, hop: 0.42 };
