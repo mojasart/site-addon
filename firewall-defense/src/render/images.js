@@ -48,6 +48,7 @@ const NAMES = [
   'coffee_beans',
   'coffee_cup',
   'coffee_sack',
+  'energy_bolt', // raio da energia (render/energy.js)
   'server',
   'server_hurt',
   'coin',
