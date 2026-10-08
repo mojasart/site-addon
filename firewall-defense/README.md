@@ -34,7 +34,7 @@ python3 -m http.server 8080
   se chegar), mais vida (maior vida máxima), mais rápido e mais perto.
   O que você comprou **antes de a rodada começar** volta pelo preço cheio (pra mudar de lugar se errou).
 - **INICIAR** começa a primeira rodada; o botão do lado acelera (1x → 2x → 3x).
-- Com o **turno automático** ligado (menu de pausa), a próxima rodada começa sozinha quando o mapa limpa.
+- Com o **turno automático** ligado (menu de pausa), a próxima rodada começa na hora, assim que o mapa limpa.
 - Dá pra **chamar a próxima rodada com outra ainda rolando** (no máximo 2 ao mesmo tempo: a 3 só
   depois de acabar com a 1). Isso dá um **bônus** de até 15% do dinheiro que os vírus da próxima rodada
   valem, que vai diminuindo conforme os vírus da rodada atual morrem (com 1 sobrando, é só $1).
@@ -62,7 +62,7 @@ Tocar num mapa abre a escolha **NORMAL** / **PLATINA** (`src/data/platinum.js`);
 | **Golem Firewall** | $350 | Onda de fogo em volta, queima blindados | Muralha de Fogo (mais alcance e ondas mais rápidas) · Incêndio (vírus pegam fogo: 0,33 de dano/s por até 3 s, mesmo fora do alcance; não acumula nem renova enquanto queima) |
 | **Penguin Linux** | $250 | Suporte: não dá dano, congela os vírus em volta (lentidão) | Criptografia AES · Era do Gelo (mais alcance e congelados ficam vulneráveis: levam dano dobrado) |
 | **Robô NMAP** | $500 | Laser de longo alcance: tiro lento, dano alto, fura blindagem | Feixe Perfurante (o laser atravessa e acerta até 2 vírus em linha) · Varredura Contínua (40% mais rápido) |
-| **Minerador** | $650 | Minera bitcoins que vão direto pro saldo. Nas seasons 1 e 2 só minera **em cima de uma pilha de bitcoin** (ver abaixo) | GPU Extra · Fazenda de Mineração (+$120 a cada rodada nova) |
+| **Minerador** | $650 | Minera bitcoins que vão direto pro saldo. Nas seasons 1 e 2 só minera **em cima de uma pilha de bitcoin** (ver abaixo) | GPU Extra · Toque de Midas (5% dos vírus que entram vêm **dourados**: destruídos, soltam $100) |
 | **Honeypot** | $90 | *Só no caminho.* Isca: não dá dano; os vírus param pra atacar até a vida dela (40) acabar. Dura no máximo 15 s: nas rodadas vai gastando sozinha, e mais rápido com vírus mordendo | — |
 
 ### Pilhas de bitcoin (Minerador)

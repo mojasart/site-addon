@@ -196,6 +196,11 @@ export class Enemy {
     game.stats.pops++;
     if (opts.source) opts.source.pops++;
     game.fx.pop(this.x, this.y - this.r * 0.3, this.def.color, this.r);
+    // vírus dourado (Toque de Midas): solta a moeda dele (os filhos não herdam)
+    if (this.golden) {
+      game.spawnPacket(this.x, this.y - this.r, this.golden, true); // moeda grande
+      game.fx.burst(this.x, this.y - this.r * 0.3, '#ffd23f', 14, 170, 0.45, 4, true);
+    }
     if (this.def.boss) {
       game.shake(this.r > 30 ? 10 : 6);
       game.sound.play('bigpop');

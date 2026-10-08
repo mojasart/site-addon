@@ -4,13 +4,17 @@ import { iconButton, inRect } from '../render/widgets.js';
 import { ICONS } from '../render/sprites.js';
 import { drawCharacter } from '../render/characters.js';
 import { TREE, NODE, formatCoffee } from '../data/darknet.js';
+import { seeded } from '../util.js';
 
 /* ════════════════════════════════════════════════════════════
  *  DARK NET: a árvore de upgrades paga com cafés
  *  Um nó central (Acesso Root) liga os 6 ramos, um por defesa. Tocar num
  *  nó mostra o upgrade no terminal à direita; o botão compra (cafés saem
- *  do saldo e o bônus vale em todas as fases). De cada ramo sai um traço
- *  apagado com "?": é por onde a árvore vai crescer nas próximas fases.
+ *  do saldo e o bônus vale em todas as fases). Só aparecem os nós comprados
+ *  e os vizinhos diretos deles (os que dá pra comprar agora); o resto da
+ *  árvore fica escondido até chegar lá. O grafo não é simétrico: cada ramo
+ *  sai num ângulo e distância próprios e vai virando (semente fixa, sempre
+ *  igual), e os nós flutuam devagar.
  *  A árvore fica num plano "infinito": arrastar move a câmera, roda do
  *  mouse / pinça / botões +- dão zoom (o painel e o título ficam por cima).
  *  Libera com DARKNET_STARS estrelas (data/darknet.js).
@@ -22,9 +26,12 @@ const GREEN = '#3dff9a';
 const COFFEE_TXT = '#ffe0b0';
 const CHARS = '01₿#$%<>/{}';
 const COLS = 64;
-const RADIUS = 150; // distância do centro da árvore até os ramos
-const STEP = 100; // distância entre um nó e o seguinte no mesmo ramo
-const HOME_ZOOM = 0.55; // zoom inicial: a árvore inteira cabe na tela
+const RADIUS = [125, 185]; // distância do centro da árvore até os ramos (sorteada)
+const STEP = [88, 122]; // distância entre um nó e o seguinte no mesmo ramo (sorteada)
+const TURN = 0.55; // quanto cada ramo pode virar a cada nó (radianos, pra cada lado)
+const SEED = 2142; // semente do layout (o grafo sai sempre igual)
+const FLOAT = 5; // quanto os nós flutuam (px no mundo)
+const HOME_ZOOM = [0.45, 1.15]; // zoom inicial: enquadra os nós visíveis, dentro desses limites
 const BRANCH_ORDER = ['hacker', 'firewall', 'pinguim', 'scanner', 'minerador', 'honeypot'];
 const ZOOM_MIN = 0.45;
 const ZOOM_MAX = 2.4;
@@ -48,20 +55,8 @@ export class DarkNetScene {
   layout() {
     const W = this.app.viewW;
     const panel = { x: W - 330, y: 128, w: 300, h: 330 };
-    // nós em coordenadas do mundo: a raiz no (0, 0)
-    const nodes = { root: { x: 0, y: 0, r: 40 } };
-    BRANCH_ORDER.forEach((id, i) => {
-      const a = -Math.PI / 2 + (i * Math.PI * 2) / BRANCH_ORDER.length;
-      nodes[id] = { x: Math.cos(a) * RADIUS, y: Math.sin(a) * RADIUS, r: 32, a };
-    });
-    // os outros nós de cada ramo seguem em linha reta pra fora, um depois do outro
-    for (const n of TREE) {
-      if (nodes[n.id]) continue;
-      const p = nodes[n.parent];
-      nodes[n.id] = { x: p.x + Math.cos(p.a) * STEP, y: p.y + Math.sin(p.a) * STEP, r: 28, a: p.a };
-    }
-    // câmera inicial: raiz no meio do espaço à esquerda do painel
-    const home = { x: (panel.x - 20) / 2 + 10, y: 302, z: HOME_ZOOM };
+    const nodes = this.graph();
+    const home = this.home(nodes, panel);
     if (!this.cam) this.cam = { ...home };
     const zy = VIEW_H - 64;
     return {
@@ -74,6 +69,67 @@ export class DarkNetScene {
       nodes,
       home,
     };
+  }
+
+  // Nós em coordenadas do mundo (a raiz no 0,0), sem simetria: cada ramo sai
+  // num ângulo e distância sorteados e os nós seguintes vão virando um pouco.
+  // Semente fixa: o grafo sai sempre igual. Calculado uma vez só
+  graph() {
+    if (this.nodes) return this.nodes;
+    const rnd = seeded(SEED);
+    const rr = (a, b) => a + rnd() * (b - a);
+    const nodes = { root: { x: 0, y: 0, r: 40, a: 0, ph: 0 } };
+    const slice = (Math.PI * 2) / BRANCH_ORDER.length;
+    BRANCH_ORDER.forEach((id, i) => {
+      const a = -Math.PI / 2 + i * slice + rr(-0.32, 0.32) * slice;
+      const d = rr(RADIUS[0], RADIUS[1]);
+      nodes[id] = { x: Math.cos(a) * d, y: Math.sin(a) * d, r: 32, a, ph: rr(0, Math.PI * 2) };
+    });
+    for (const n of TREE) {
+      if (nodes[n.id]) continue;
+      const p = nodes[n.parent];
+      const a = p.a + rr(-TURN, TURN);
+      const d = rr(STEP[0], STEP[1]);
+      nodes[n.id] = { x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d, r: 28, a, ph: rr(0, Math.PI * 2) };
+    }
+    this.nodes = nodes;
+    return nodes;
+  }
+
+  // Câmera inicial: enquadra os nós visíveis no espaço à esquerda do painel
+  home(nodes, panel) {
+    const box = this.bounds(nodes);
+    const areaW = panel.x - 40;
+    const areaH = VIEW_H - 214; // entre o título e os botões de zoom
+    const fit = Math.min(areaW / (box.x1 - box.x0 + 120), areaH / (box.y1 - box.y0 + 120));
+    const z = Math.min(HOME_ZOOM[1], Math.max(HOME_ZOOM[0], fit));
+    const cx = (box.x0 + box.x1) / 2;
+    const cy = (box.y0 + box.y1) / 2;
+    return { x: 20 + areaW / 2 - cx * z, y: 132 + areaH / 2 - cy * z, z };
+  }
+
+  // Retângulo que contém os nós visíveis (pra câmera)
+  bounds(nodes) {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const n of TREE) {
+      if (!this.visible(n.id)) continue;
+      const p = nodes[n.id];
+      x0 = Math.min(x0, p.x);
+      y0 = Math.min(y0, p.y);
+      x1 = Math.max(x1, p.x);
+      y1 = Math.max(y1, p.y);
+    }
+    return { x0, y0, x1, y1 };
+  }
+
+  // Aparece na árvore? Os comprados e os vizinhos diretos deles (dá pra comprar)
+  visible(id) {
+    return this.state(id) !== 'locked';
+  }
+
+  // Onde o nó está agora: flutuando devagar em volta do lugar dele
+  at(p, t = this.t) {
+    return { x: p.x + Math.sin(t * 0.9 + p.ph) * FLOAT, y: p.y + Math.cos(t * 0.7 + p.ph * 1.3) * FLOAT, r: p.r, a: p.a };
   }
 
   // tela -> mundo
@@ -101,14 +157,7 @@ export class DarkNetScene {
   // Não deixa a árvore sumir de vez: o centro da tela fica perto dela
   clampCam() {
     const c = this.cam;
-    const L = this.layout();
-    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-    for (const p of Object.values(L.nodes)) {
-      x0 = Math.min(x0, p.x);
-      y0 = Math.min(y0, p.y);
-      x1 = Math.max(x1, p.x);
-      y1 = Math.max(y1, p.y);
-    }
+    const { x0, y0, x1, y1 } = this.bounds(this.graph()); // só os visíveis
     const mid = this.toWorld(this.app.viewW / 2, VIEW_H / 2);
     const mx = Math.min(x1 + ROAM, Math.max(x0 - ROAM, mid.x));
     const my = Math.min(y1 + ROAM, Math.max(y0 - ROAM, mid.y));
@@ -144,6 +193,7 @@ export class DarkNetScene {
     const W = this.app.viewW;
     const t = this.t;
     const L = this.layout();
+    if (!this.visible(this.sel)) this.sel = 'root'; // (vendeu e o escolhido sumiu)
     ctx.fillStyle = '#07020f';
     ctx.fillRect(0, 0, W, VIEW_H);
     this.drawRain(ctx, W, t);
@@ -160,7 +210,7 @@ export class DarkNetScene {
     ctx.scale(c.z, c.z);
     this.drawDots(ctx, W);
     this.drawLinks(ctx, L, t);
-    for (const n of TREE) this.drawNode(ctx, n, L.nodes[n.id], t);
+    for (const n of TREE) if (this.visible(n.id)) this.drawNode(ctx, n, this.at(L.nodes[n.id], t), t);
     ctx.restore();
 
     // por cima: faixa escura atrás do título, título, painel e botões
@@ -216,23 +266,19 @@ export class DarkNetScene {
     coffeeLabel(ctx, formatCoffee(this.app.coffee), x, y, 24, COFFEE_TXT); // com fração: os monstros abatidos dão cafés quebrados
   }
 
-  // Ligações: centro → ramos (verde e com dados correndo quando o ramo é
-  // comprado) e, de cada ramo, um traço apagado pra fora com "?" (próxima fase)
-  // Ligações: cada nó com o anterior (verde e com dados correndo quando
-  // comprado) e, na ponta de cada ramo, um traço apagado com "?" (próxima fase)
+  // Ligações entre nós visíveis: verde e com dados correndo quando o nó é
+  // comprado, roxa quando dá pra comprar. Seguem os nós flutuando
   drawLinks(ctx, L, t) {
     ctx.lineCap = 'round';
-    const parents = new Set(TREE.map((n) => n.parent));
     for (const n of TREE) {
-      if (!n.parent) continue;
-      const from = L.nodes[n.parent];
-      const p = L.nodes[n.id];
+      if (!n.parent || !this.visible(n.id)) continue;
+      const from = this.at(L.nodes[n.parent], t);
+      const p = this.at(L.nodes[n.id], t);
       const owned = this.state(n.id) === 'owned';
-      const lit = owned || this.state(n.id) === 'open';
       ctx.lineWidth = owned ? 5 : 3;
-      ctx.strokeStyle = owned ? GREEN : lit ? 'rgba(183,123,255,0.7)' : 'rgba(110,80,160,0.35)';
+      ctx.strokeStyle = owned ? GREEN : 'rgba(183,123,255,0.7)';
       ctx.shadowColor = owned ? GREEN : PURPLE;
-      ctx.shadowBlur = owned || lit ? 10 * this.app.pixelScale * this.cam.z : 0;
+      ctx.shadowBlur = 10 * this.app.pixelScale * this.cam.z;
       ctx.beginPath();
       ctx.moveTo(from.x, from.y);
       ctx.lineTo(p.x, p.y);
@@ -248,30 +294,7 @@ export class DarkNetScene {
           ctx.fill();
         }
       }
-      if (!parents.has(n.id)) this.drawStub(ctx, p);
     }
-  }
-
-  // Próxima fase: traço tracejado pra fora + "?"
-  drawStub(ctx, p) {
-    const ox = p.x + Math.cos(p.a) * 62;
-    const oy = p.y + Math.sin(p.a) * 62;
-    ctx.setLineDash([4, 6]);
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(183,123,255,0.25)';
-    ctx.beginPath();
-    ctx.moveTo(p.x + Math.cos(p.a) * (p.r + 4), p.y + Math.sin(p.a) * (p.r + 4));
-    ctx.lineTo(ox, oy);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.beginPath();
-    ctx.arc(ox, oy, 11, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(30,12,55,0.85)';
-    ctx.fill();
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = 'rgba(183,123,255,0.35)';
-    ctx.stroke();
-    text(ctx, '?', ox, oy + 1, { size: 13, color: 'rgba(200,170,255,0.6)', stroke: null });
   }
 
   drawNode(ctx, n, p, t) {
@@ -415,9 +438,11 @@ export class DarkNetScene {
       if (this.state(this.sel) === 'owned') {
         this.app.refundPerk(this.sel);
         this.app.sound.play('sell');
+        this.homing = true; // sumiram nós: a câmera reenquadra o que sobrou
       } else if (this.app.buyPerk(this.sel)) {
         this.flash[this.sel] = 1;
         this.app.sound.play('upgrade');
+        this.homing = true; // apareceram nós novos: a câmera enquadra tudo
       } else {
         this.shake = 1;
         this.app.sound.play('error');
@@ -459,7 +484,8 @@ export class DarkNetScene {
     const L = this.layout();
     const w = this.toWorld(x, y);
     for (const n of TREE) {
-      const p = L.nodes[n.id];
+      if (!this.visible(n.id)) continue; // escondido: não dá pra tocar
+      const p = this.at(L.nodes[n.id]);
       if (Math.hypot(w.x - p.x, w.y - p.y) <= p.r + 6 / this.cam.z) {
         this.sel = n.id;
         this.app.sound.play('click');

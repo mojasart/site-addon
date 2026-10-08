@@ -197,7 +197,7 @@ function drawUpgrade(ctx, game, tw, up, i, r) {
   else text(ctx, 'BLOQUEADO', r.x + r.w / 2, r.y + r.h - 20, { size: 14, color: '#d8e6ff' });
 }
 
-// Botão da próxima rodada: INICIAR (primeira), contagem (mapa limpo) ou
+// Botão da próxima rodada: INICIAR (primeira) ou
 // chamar já com outra rolando, mostrando o bônus que ganha
 function drawPlayButton(ctx, game, r) {
   const can = game.canCall() && game.state === 'playing';
@@ -219,7 +219,6 @@ function drawPlayButton(ctx, game, r) {
   if (game.platinum && game.rounds.started > 0) label = 'AUTO';
   else if (!game.rounds.canStart) label = 'ÚLTIMA';
   else if (!can) label = 'ESPERE';
-  else if (game.nextIn != null) label = `${Math.ceil(game.nextIn)}s`;
   else if (bonus > 0) label = `+$${bonus}`;
   text(ctx, label, cx, r.y + 44, { size: 18, color: bonus > 0 && can ? GOLD : '#ffffff' });
   ctx.restore();
