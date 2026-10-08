@@ -32,6 +32,7 @@ const TURN = 0.55; // quanto cada ramo pode virar a cada nó (radianos, pra cada
 const SEED = 2142; // semente do layout (o grafo sai sempre igual)
 const FLOAT = 5; // quanto os nós flutuam (px no mundo)
 const HOME_ZOOM = [0.45, 1.15]; // zoom inicial: enquadra os nós visíveis, dentro desses limites
+const FOCUS_ZOOM = 1.4; // tocou num nó: aproxima até esse zoom (se estiver mais longe)
 const BRANCH_ORDER = ['hacker', 'firewall', 'pinguim', 'scanner', 'minerador', 'honeypot'];
 const ZOOM_MIN = 0.45;
 const ZOOM_MAX = 2.4;
@@ -96,16 +97,29 @@ export class DarkNetScene {
     return nodes;
   }
 
-  // Câmera inicial: enquadra os nós visíveis no espaço à esquerda do painel
+  // Espaço livre pra árvore na tela: à esquerda do painel, entre o título e os botões de zoom
+  area(panel) {
+    const w = panel.x - 40;
+    const h = VIEW_H - 214;
+    return { w, h, cx: 20 + w / 2, cy: 132 + h / 2 };
+  }
+
+  // Câmera inicial: enquadra os nós visíveis no espaço livre
   home(nodes, panel) {
     const box = this.bounds(nodes);
-    const areaW = panel.x - 40;
-    const areaH = VIEW_H - 214; // entre o título e os botões de zoom
-    const fit = Math.min(areaW / (box.x1 - box.x0 + 120), areaH / (box.y1 - box.y0 + 120));
+    const a = this.area(panel);
+    const fit = Math.min(a.w / (box.x1 - box.x0 + 120), a.h / (box.y1 - box.y0 + 120));
     const z = Math.min(HOME_ZOOM[1], Math.max(HOME_ZOOM[0], fit));
-    const cx = (box.x0 + box.x1) / 2;
-    const cy = (box.y0 + box.y1) / 2;
-    return { x: 20 + areaW / 2 - cx * z, y: 132 + areaH / 2 - cy * z, z };
+    return { x: a.cx - ((box.x0 + box.x1) / 2) * z, y: a.cy - ((box.y0 + box.y1) / 2) * z, z };
+  }
+
+  // Câmera com o nó no meio do espaço livre, aproximada (nunca afasta)
+  focus(id) {
+    const L = this.layout();
+    const p = L.nodes[id];
+    const a = this.area(L.panel);
+    const z = Math.max(this.cam.z, FOCUS_ZOOM);
+    return { x: a.cx - p.x * z, y: a.cy - p.y * z, z };
   }
 
   // Retângulo que contém os nós visíveis (pra câmera)
@@ -169,10 +183,11 @@ export class DarkNetScene {
     this.t += dt;
     for (const k of Object.keys(this.flash)) this.flash[k] = Math.max(0, this.flash[k] - dt * 1.6);
     this.shake = Math.max(0, this.shake - dt * 3);
-    // botão de centralizar: volta deslizando
+    // câmera deslizando: pro começo (botão de centralizar, homing = true)
+    // ou pra um nó que foi tocado (homing = { x, y, z })
     if (this.homing) {
       const c = this.cam;
-      const h = this.layout().home;
+      const h = this.homing === true ? this.layout().home : this.homing;
       const k = Math.min(1, dt * 8);
       for (const key of ['x', 'y', 'z']) c[key] += (h[key] - c[key]) * k;
       if (Math.abs(c.x - h.x) + Math.abs(c.y - h.y) + Math.abs(c.z - h.z) * 100 < 0.5) {
@@ -439,11 +454,9 @@ export class DarkNetScene {
       if (this.state(this.sel) === 'owned') {
         this.app.refundPerk(this.sel);
         this.app.sound.play('sell');
-        this.homing = true; // sumiram nós: a câmera reenquadra o que sobrou
       } else if (this.app.buyPerk(this.sel)) {
         this.flash[this.sel] = 1;
         this.app.sound.play('upgrade');
-        this.homing = true; // apareceram nós novos: a câmera enquadra tudo
       } else {
         this.shake = 1;
         this.app.sound.play('error');
@@ -489,6 +502,7 @@ export class DarkNetScene {
       const p = this.at(L.nodes[n.id]);
       if (Math.hypot(w.x - p.x, w.y - p.y) <= p.r + 6 / this.cam.z) {
         this.sel = n.id;
+        this.homing = this.focus(n.id); // aproxima e centraliza no nó
         this.app.sound.play('click');
         return;
       }
