@@ -17,7 +17,7 @@ import { playMap, PROFILES } from './bot.js';
 import { MAPS } from '../../firewall-defense/src/data/maps.js';
 import { PLAT_TUNE } from '../../firewall-defense/src/data/platinumTuning.js';
 
-export const TARGET = [0.35, 0.12]; // com 1 vida (PLAT_LIVES): pelo menos ~10% de vitória em todo mapa
+export const TARGET = [0.35, 0.14]; // com 1 vida (PLAT_LIVES): pelo menos ~10% de vitória em todo mapa
 const ITERATIONS = 8;
 const LO = 0.01;
 const HI = 4;
