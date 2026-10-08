@@ -225,7 +225,7 @@ function drawPreview(ctx, game, r) {
     ctx.translate(cx - 9, r.y + 36);
     drawVirusIcon(ctx, type, ENEMIES[type], 9);
     ctx.restore();
-    text(ctx, `×${n}`, cx + 13, r.y + 38, { size: 13, align: 'center' });
+    text(ctx, `${n}`, cx + 13, r.y + 38, { size: 13, align: 'center' });
   });
 }
 
