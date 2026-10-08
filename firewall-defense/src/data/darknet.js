@@ -72,8 +72,8 @@ export const TREE = [
     apply: (s) => { s.extraShotChance = (s.extraShotChance ?? 0) + 0.05; } },
 
   // Golem — A: fogo · B: onda (alcance e velocidade)
-  { id: 'firewall2', tower: 'firewall', name: 'Brasa Viva', desc: 'Cada vírus atingido tem 5% de chance de pegar fogo', cost: 8, parent: 'firewall',
-    apply: (s) => { s.igniteChance = (s.igniteChance ?? 0) + 0.05; } },
+  { id: 'firewall2', tower: 'firewall', name: 'Brasa Viva', desc: 'Cada vírus atingido tem 5% de chance de ser empurrado pra trás', cost: 8, parent: 'firewall',
+    apply: (s) => { s.knockChance = (s.knockChance ?? 0) + 0.05; } },
   { id: 'firewall2b', tower: 'firewall', name: 'Chama Alta', desc: '+30% de dano do fogo', cost: 10, parent: 'firewall2',
     apply: (s) => { s.burnMul = (s.burnMul ?? 1) + 0.3; } },
   { id: 'firewall2c', tower: 'firewall', name: 'Inferno', desc: 'O fogo dura 1s a mais', cost: 12, parent: 'firewall2b',

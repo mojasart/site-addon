@@ -52,7 +52,6 @@ function luckRows(s) {
   if (s.critChance) rows.push(['CRÍTICO', `${pct(s.critChance)} de dano ${num(s.critMul ?? 2)}×`]);
   if (s.extraShotChance) rows.push(['TECLADO EXTRA', `${pct(s.extraShotChance)} de chance`]);
   if (s.executeChance) rows.push(['ZERO-DAY', `${pct(s.executeChance)} de estourar tudo`]);
-  if (s.igniteChance) rows.push(['PEGAR FOGO', `${pct(s.igniteChance)} de chance`]);
   if (s.bigPulseChance) rows.push(['ERUPÇÃO', `${pct(s.bigPulseChance)} de alcance 2×`]);
   if (s.repeatChance) rows.push(['ONDA EXTRA', `${pct(s.repeatChance)} de chance`]);
   if (s.shatterChance) rows.push(['ESTILHAÇO', `${pct(s.shatterChance)} de chance`]);

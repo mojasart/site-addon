@@ -55,7 +55,7 @@ export const TOWERS = {
       { name: 'Muralha de Fogo', desc: 'Mais alcance e ondas mais rápidas', cost: 280, apply: (s) => { s.range += 20; s.fireRate *= 0.8; } },
       // queima: o vírus fica pegando fogo (burn de dano/s por burnTime s), mesmo fora do alcance;
       // não acumula (ver Enemy.ignite)
-      { name: 'Incêndio', desc: 'Vírus pegam fogo: 0,33 de dano/s por até 3s', cost: 500, apply: (s) => { s.burn = 0.33; s.burnTime = 3; } },
+      { name: 'Incêndio', desc: 'Vírus pegam fogo: 0,5 de dano/s por até 3s', cost: 500, apply: (s) => { s.burn = 0.5; s.burnTime = 3; } },
     ],
   },
   pinguim: {

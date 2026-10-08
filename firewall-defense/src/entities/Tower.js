@@ -5,7 +5,6 @@ import { laserOrigin } from '../render/characters.js';
 import { applyPerks } from '../data/darknet.js';
 
 const SWARM_R = 70; // alcance das abelhas da Colmeia
-const IGNITE = { dps: 0.33, time: 3 }; // Brasa Viva: o mesmo fogo do upgrade Incêndio
 const RECHARGE = 0.3; // recarga instantânea (Avalanche, Varredura Dupla): dispara de novo nesse tempo
 
 export class Tower {
@@ -244,11 +243,7 @@ export class Tower {
           const burnExtra = s.burnExtra ?? 0;
           if (s.burn) e.ignite(s.burn * burnMul, s.burnTime + burnExtra, this); // antes do dano: os filhos já nascem pegando fogo
           // bônus de sorte da Dark Net, antes do dano (os filhos já nascem com eles):
-          // Brasa Viva (pega fogo), Tremor de Terra (empurrão), Kernel Gelado (congela)
-          if (!s.burn && chance(s.igniteChance)) {
-            e.ignite(IGNITE.dps * burnMul, IGNITE.time + burnExtra, this);
-            game.fx.spark(e.x, e.y - e.r, '#ffb36b', 7);
-          }
+          // Tremor de Terra e Brasa Viva (empurrão), Kernel Gelado (congela)
           if (chance(s.knockChance) && e.knockBack(28)) game.fx.spark(e.x, e.y - e.r, '#ffb36b', 7);
           if (chance(s.freezeChance) && e.freeze(1)) game.fx.spark(e.x, e.y - e.r, '#c8f4ff', 8);
           if (s.damage) e.takeDamage(s.damage, game, this.opts());
