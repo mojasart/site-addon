@@ -64,7 +64,7 @@ export class DarkNetScene {
     const zy = VIEW_H - 64;
     return {
       back: { x: 18, y: 16, w: 56, h: 56 },
-      secret: { x: 46, y: 116, r: 22 }, // Pato de Borracha: apagadinho embaixo do voltar
+      secret: { x: 46, y: 118, r: 28 }, // Pato de Borracha: fixo na tela, colado na esquerda embaixo do voltar
       panel,
       buy: { x: panel.x + 24, y: panel.y + panel.h - 74, w: panel.w - 48, h: 54 },
       zoomIn: { x: 18, y: zy, w: 46, h: 46, label: '+' },
@@ -344,7 +344,10 @@ export class DarkNetScene {
     ctx.arc(p.x, p.y, p.r - 3, 0, Math.PI * 2);
     ctx.clip();
     if (st === 'locked') ctx.globalAlpha = 0.35;
-    if (n.tower) {
+    if (n.id === 'duck') {
+      ctx.translate(p.x - 2, p.y + p.r * 0.32);
+      drawDuck(ctx, p.r * 0.45, { t });
+    } else if (n.tower) {
       const k = (p.r * 1.7) / 62;
       ctx.translate(p.x, p.y + 16 * k);
       ctx.scale(k, k);
@@ -386,25 +389,10 @@ export class DarkNetScene {
     ctx.restore();
   }
 
-  // Upgrade secreto (Pato de Borracha): quase invisível até alguém tocar;
-  // comprado, fica colorido e com um brilho suave
+  // Pato de Borracha: nó normal (mesmo visual dos outros), mas fixo na tela
+  // e fora da árvore
   drawSecret(ctx, p, t) {
-    const owned = this.state('duck') === 'owned';
-    const sel = this.sel === 'duck';
-    ctx.save();
-    ctx.globalAlpha = owned ? 0.95 : sel ? 0.65 : 0.3 + Math.sin(t * 1.3) * 0.08;
-    if (sel || owned) {
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.lineWidth = sel ? 3 : 2;
-      ctx.strokeStyle = owned ? GREEN : PURPLE;
-      ctx.setLineDash(owned ? [] : [4, 4]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-    ctx.translate(p.x - 2, p.y + 7);
-    drawDuck(ctx, 11, { t, gray: !owned });
-    ctx.restore();
+    this.drawNode(ctx, NODE.duck, p, t);
   }
 
   // Terminal com o upgrade escolhido e o botão de comprar
