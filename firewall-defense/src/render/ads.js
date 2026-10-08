@@ -17,8 +17,11 @@ import { easeOutBack } from '../util.js';
  *  Coordenadas de tela (por cima do mapa e do painel).
  * ════════════════════════════════════════════════════════════ */
 
-export const AD_W = 250;
-export const AD_H = 158;
+const W = 250; // medidas do desenho (antes da escala)
+const H = 158;
+const SCALE = 1.45; // anúncio grande na tela
+export const AD_W = W * SCALE; // tamanho na tela
+export const AD_H = H * SCALE;
 const BAR = 34; // barra de título (com o X)
 
 // Tipos de anúncio: cor da barra, título, chamada, texto, botão e desenho
@@ -34,19 +37,23 @@ export const ADS = [
 
 // X de fechar: no canto da barra de título
 export function adClose(ad) {
-  return { x: ad.x + AD_W - 34, y: ad.y + 3, w: 30, h: 30 };
+  return { x: ad.x + (W - 34) * SCALE, y: ad.y + 3 * SCALE, w: 30 * SCALE, h: 30 * SCALE };
 }
 
 export function drawAds(ctx, game) {
   for (const ad of game.ads) drawAd(ctx, ad, game.anim);
 }
 
-function drawAd(ctx, ad, t) {
-  const def = ADS[ad.type];
+function drawAd(ctx, real, t) {
+  const def = ADS[real.type];
+  const ad = { ...real, x: 0, y: 0 }; // desenha no lugar dele, já escalado
+  ctx.save();
+  ctx.translate(real.x, real.y);
+  ctx.scale(SCALE, SCALE);
   // entra pulando; ao fechar encolhe e some
   const k = ad.closing != null ? Math.max(0, ad.closing / 0.18) : easeOutBack(Math.min(1, ad.t / 0.25));
-  const cx = ad.x + AD_W / 2;
-  const cy = ad.y + AD_H / 2;
+  const cx = ad.x + W / 2;
+  const cy = ad.y + H / 2;
   ctx.save();
   ctx.globalAlpha = ad.closing != null ? k : Math.min(1, ad.t * 6);
   ctx.translate(cx, cy);
@@ -54,38 +61,39 @@ function drawAd(ctx, ad, t) {
   ctx.translate(-cx, -cy);
 
   // sombra + janela
-  rrect(ctx, ad.x, ad.y + 6, AD_W, AD_H, 16);
+  rrect(ctx, ad.x, ad.y + 6, W, H, 16);
   ctx.fillStyle = 'rgba(10,16,40,0.45)';
   ctx.fill();
-  rrect(ctx, ad.x, ad.y, AD_W, AD_H, 16);
+  rrect(ctx, ad.x, ad.y, W, H, 16);
   fillOutline(ctx, '#fffaf0', 4);
   // barra de título colorida, com o título e o X
   ctx.save();
-  rrect(ctx, ad.x, ad.y, AD_W, AD_H, 16);
+  rrect(ctx, ad.x, ad.y, W, H, 16);
   ctx.clip();
   ctx.fillStyle = def.bar;
-  ctx.fillRect(ad.x, ad.y, AD_W, BAR + 2);
+  ctx.fillRect(ad.x, ad.y, W, BAR + 2);
   ctx.restore();
-  rrect(ctx, ad.x, ad.y, AD_W, AD_H, 16);
+  rrect(ctx, ad.x, ad.y, W, H, 16);
   ctx.lineWidth = 4;
   ctx.strokeStyle = OUTLINE;
   ctx.stroke();
   text(ctx, def.title, ad.x + 14, ad.y + BAR / 2 + 2, { size: 15, align: 'left' });
-  if (ad.vx) text(ctx, 'AD', ad.x + AD_W - 52, ad.y + BAR / 2 + 2, { size: 11, color: GOLD }); // os que andam
-  iconButton(ctx, adClose(ad), '#ff5a5a', 'close');
+  if (ad.vx) text(ctx, 'AD', ad.x + W - 52, ad.y + BAR / 2 + 2, { size: 11, color: GOLD }); // os que andam
+  iconButton(ctx, { x: W - 34, y: 3, w: 30, h: 30 }, '#ff5a5a', 'close'); // (o toque usa adClose, já escalado)
 
   // desenho à esquerda, chamada e texto à direita
   ctx.save();
   ctx.translate(ad.x + 40, ad.y + BAR + 46 + Math.sin(t * 5 + ad.seed) * 3);
   drawIcon(ctx, def.icon, t);
   ctx.restore();
-  wrapText(ctx, def.head, ad.x + 160, ad.y + BAR + 20, AD_W - 96, 14, '#2a1840', 2);
-  wrapText(ctx, def.sub, ad.x + 160, ad.y + BAR + 56, AD_W - 96, 11, '#5d6680', 2);
+  wrapText(ctx, def.head, ad.x + 160, ad.y + BAR + 20, W - 96, 14, '#2a1840', 2);
+  wrapText(ctx, def.sub, ad.x + 160, ad.y + BAR + 56, W - 96, 11, '#5d6680', 2);
   // botão chamativo piscando (não faz nada: é só propaganda)
   const blink = Math.sin(t * 8 + ad.seed) > 0;
-  const b = { x: ad.x + 82, y: ad.y + AD_H - 38, w: AD_W - 96, h: 28 };
+  const b = { x: ad.x + 82, y: ad.y + H - 38, w: W - 96, h: 28 };
   button(ctx, b, blink ? '#3fd16b' : '#2fbf6a', { radius: 10, depth: 3 });
   text(ctx, def.cta, b.x + b.w / 2, b.y + 12, { size: 13 });
+  ctx.restore();
   ctx.restore();
 }
 

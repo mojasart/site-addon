@@ -143,7 +143,7 @@ export const ENEMIES = {
     // enquanto está na tela, abre um anúncio a cada `every` s (no máximo `max`
     // ao mesmo tempo); `moving` deles ficam andando de um lado pro outro.
     // Morreu: os anúncios somem (Game.spawnAd / updateAds, render/ads.js)
-    ads: { every: [4, 7], max: 4, moving: 0.1 },
+    ads: { every: [4, 7], max: 2, moving: 0.1 },
     topBar: true,
   },
   ransomware: {
