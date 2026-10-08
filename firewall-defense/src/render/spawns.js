@@ -7,7 +7,7 @@ import { PATH_DEPTH } from './maps/shared.js';
  *  Cada rota ganha, na borda da tela por onde os vírus entram:
  *   - um portal vermelho (rasgo na borda) que pulsa e dá um clarão
  *     toda vez que sai um vírus por ali (game.spawnFlash[k]);
- *   - um sinal de perigo pulsando do lado da entrada: só antes da 1ª
+ *   - um sinal de perigo pulsando na frente da entrada, em cima da rua: só antes da 1ª
  *     onda, depois some (o portal fica pra lembrar de onde vêm).
  *  O portal fica alinhado com o TOPO do caminho elevado (PATH_DEPTH
  *  acima da rota), não com a pegada no chão.
@@ -76,19 +76,14 @@ function portal(ctx, e, t, flash) {
 // Sinal de perigo pulsando do lado da entrada (assets/icons/danger.svg),
 // com um brilho vermelho atrás batendo junto
 function danger(ctx, e, t) {
-  let x;
-  let y;
-  if (e.side === 'left') {
-    x = e.x + 30;
-    // perto do topo o sinal iria pra trás da HUD (vidas/dinheiro): vai embaixo
-    y = e.y - 50 < 100 ? e.y + 50 : e.y - 50;
-  } else if (e.side === 'top') {
-    x = e.x + 50;
-    y = e.y + 30;
-  } else {
-    x = e.x + 50;
-    y = e.y - 30;
-  }
+  // na frente do portal, em cima da rua e centralizado com ela
+  // (e.y da entrada pela lateral já está no topo do caminho elevado)
+  const AHEAD = 48;
+  let x = e.x;
+  let y = e.y;
+  if (e.side === 'left') x += AHEAD;
+  else if (e.side === 'top') y += AHEAD;
+  else y -= AHEAD + PATH_DEPTH;
   const beat = 0.5 + Math.sin(t * 6) * 0.5; // 0 → 1, umas 1 vez por segundo
   ctx.save();
   ctx.translate(x, y);
