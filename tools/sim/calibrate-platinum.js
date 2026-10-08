@@ -103,7 +103,7 @@ if (!isMainThread) {
   const file = `// Gerado por tools/sim/calibrate-platinum.js — não edite à mão.
 // Dificuldade do modo platina em cada mapa (multiplica a quantidade de
 // vírus das ondas e a vida do chefão), calibrada com os bots pra taxa de
-// vitória cair de ${TARGET[0] * 100}% (mapa 1) a ${TARGET[1] * 100}% (mapa ${n}).
+// vitória cair de ${Math.round(TARGET[0] * 100)}% (mapa 1) a ${Math.round(TARGET[1] * 100)}% (mapa ${n}).
 export const PLAT_TUNE = ${JSON.stringify(values)};
 `;
   writeFileSync(new URL('../../firewall-defense/src/data/platinumTuning.js', import.meta.url), file);
