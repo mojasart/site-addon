@@ -39,7 +39,7 @@ python3 -m http.server 8080
   depois de acabar com a 1). Isso dá um **bônus** de até 15% do dinheiro que os vírus da próxima rodada
   valem, que vai diminuindo conforme os vírus da rodada atual morrem (com 1 sobrando, é só $1).
 - Cada camada de vírus estourada dá $1, e cada rodada completa dá um bônus.
-- Ao vencer você ganha de 1 a 3 estrelas (3 = terminou com 90% das vidas ou mais; 2 = pelo menos metade), e o próximo mapa é liberado.
+- Ao vencer você ganha de 1 a 3 estrelas (3 = terminou com 90% das vidas ou mais; 2 = pelo menos 50%), e o próximo mapa é liberado.
   As estrelas do mapa ficam de **bronze** (1), **prata** (2) ou **ouro** (3).
 
 ### Modo platina
@@ -59,10 +59,10 @@ Tocar num mapa abre a escolha **NORMAL** / **PLATINA** (`src/data/platinum.js`);
 | Defesa | Custo | O que faz | Upgrades |
 | --- | --- | --- | --- |
 | **Hacker** | $250 | Arremessa teclados (1 vírus por teclado) | Dedos Rápidos (mais rápido e atravessa 2 vírus) · Exploit Triplo |
-| **Golem Firewall** | $350 | Onda de fogo em volta, queima blindados | Muralha de Fogo (mais alcance e ondas mais rápidas) · Incêndio (vírus pegam fogo: 0,33 de dano/s por até 3 s, mesmo fora do alcance; não acumula nem renova enquanto queima) |
-| **Penguin Linux** | $250 | Suporte: não dá dano, congela os vírus em volta (lentidão) | Criptografia AES · Era do Gelo (mais alcance e congelados ficam vulneráveis: levam dano dobrado) |
-| **Robô NMAP** | $500 | Laser de longo alcance: tiro lento, dano alto, fura blindagem | Feixe Perfurante (o laser atravessa e acerta até 2 vírus em linha) · Varredura Contínua (40% mais rápido) |
-| **Minerador** | $650 | Minera bitcoins que vão direto pro saldo. Nas seasons 1 e 2 só minera **em cima de uma pilha de bitcoin** (ver abaixo) | GPU Extra · Toque de Midas (5% dos vírus que entram vêm **dourados**: destruídos, soltam $100) |
+| **Golem Firewall** | $350 | Onda de fogo em volta, queima blindados | Muralha de Fogo (mais alcance e ondas mais rápidas) · Incêndio (vírus pegam fogo: 500 de dano/s por até 3 s, mesmo fora do alcance; não acumula nem renova enquanto queima) |
+| **Penguin Linux** | $250 | Suporte: não dá dano, congela os vírus em volta (lentidão) | Criptografia AES (75% mais lento por 2,5 s) · Frente Fria (mais alcance e ondas um pouco mais rápidas). Na Dark Net, o Gelo Quebradiço deixa os congelados vulneráveis: levam 5% a mais de dano |
+| **Robô NMAP** | $500 | Laser de longo alcance: tiro lento, dano alto, fura blindagem | Feixe Perfurante (o laser atravessa e acerta até 2 vírus em linha) · Marcar Alvo (o vírus atingido fica marcado por 2 s e leva 25% a mais de dano de todas as defesas) |
+| **Minerador** | $650 | Minera bitcoins que vão direto pro saldo. Nas seasons 1 e 2 só minera **em cima de uma pilha de bitcoin** (ver abaixo) | GPU Extra · Patrocínio (escolhe uma defesa aleatória: cada vírus que ela estourar solta +$1; uma moedinha gira em cima dela). Na Dark Net, o ramo dele tem também Juros, Empréstimo de $250 e Toque de Midas (5% dos vírus vêm **dourados**: destruídos, soltam $100) |
 | **Honeypot** | $90 | *Só no caminho.* Isca: não dá dano; os vírus param pra atacar até a vida dela (40) acabar. Dura no máximo 15 s: nas rodadas vai gastando sozinha, e mais rápido com vírus mordendo | — |
 
 ### Pilhas de bitcoin (Minerador)
@@ -73,7 +73,7 @@ Se a rodada acabar antes de ele soltar todos os bitcoins, os que faltaram saem n
 
 ## Ameaças
 
-Os vírus funcionam como os balões do Bloons: cada camada estourada revela a de baixo.
+Os vírus funcionam como os balões do Bloons: cada camada estourada revela a de baixo. Cada camada tem **1.000 de vida** (`LAYER_HP` em `src/config.js`) e o dano das defesas está na mesma escala (Hacker 1.000 por teclado, Robô NMAP 12.000 por tiro), pra bônus pequenos (+10%) fazerem diferença. O dano que sobra de uma camada passa pra de baixo.
 
 | Ameaça | Detalhe |
 | --- | --- |
@@ -81,8 +81,9 @@ Os vírus funcionam como os balões do Bloons: cada camada estourada revela a de
 | **Worm** | Rápido: vai soltando vírus azuis pelo caminho enquanto está vivo |
 | **Spyware** | Invisível: só aparece (e leva dano) no alcance de um Robô NMAP. Passa reto pelo Honeypot |
 | **Trojan** | Blindado: os teclados do Hacker não furam |
-| **Locker** | Mini-chefão acorrentado (rodadas 15+). Solta 2 Trojans |
-| **Ransomware** | Chefão dirigível (rodadas 20 e 25). Criptografa a defesa mais perto por 5 s (toque nela e pague o resgate pra destravar na hora). Solta 4 Trojans |
+| **Locker** | Mini-chefão acorrentado (rodadas 15+), 135.000 de vida. Solta 2 Trojans |
+| **Adware** | Chefão pop-up (rodada 15, junto com o Locker), 120.000 de vida. Enquanto está na tela, abre um anúncio a cada 4–7 s (até 4 ao mesmo tempo): janelas cômicas que cobrem o jogo e só fecham no X. 10% delas ficam andando de um lado pro outro. Quando ele morre, os anúncios somem. Solta 3 Vírus Amarelos |
+| **Ransomware** | Chefão dirigível (rodadas 20 e 25), 510.000 de vida, numa barra grande no topo da tela. A cada quadrado que anda, com defesa a até 3 quadrados, pode parar tremendo por 0,5s e criptografar as defesas nesse alcance. A chance vale pra partida toda: a 1ª vez é certa, depois cai pra 10%, e a partir da 2ª cai pra 0%, sempre subindo 1% a cada quadrado que ele anda sem criptografar. As defesas criptografadas param até você tocar nelas e pagar $50 de resgate. Solta 4 Trojans |
 
 ## Catálogo de ameaças
 

@@ -6,6 +6,7 @@ import { drawVirusIcon } from './viruses.js';
 import { ENEMIES } from '../data/enemies.js';
 import { drawCoin, drawHeart, ICONS } from './sprites.js';
 import { iconButton } from './widgets.js';
+import { fmt } from '../util.js';
 
 // Posições da interface do jogo (pra desenhar E pra detectar toques).
 // Coordenadas de tela; o painel fica colado na direita.
@@ -24,9 +25,9 @@ export function layout(game) {
     pause: { x: game.mapW - 58, y: 10, w: 48, h: 48 },
     close: { x: px + W - 48, y: 6, w: 40, h: 40 },
     upgrades: [0, 1].map((i) => ({ x: px + 10, y: 64 + i * 98, w: W - 20, h: 90 })),
+    ransom: { x: px + 10, y: 64, w: W - 20, h: 188 }, // no lugar dos upgrades (defesa criptografada)
     target: { x: px + 10, y: 262, w: W - 20, h: 46 },
     sell: { x: px + 10, y: 314, w: W - 20, h: 50 },
-    ransom: { x: px + 10, y: 372, w: W - 20, h: 50 }, // só com a defesa criptografada
     preview: { x: px + 10, y: 390, w: W - 20, h: 66 }, // vírus da próxima rodada
   };
 }
@@ -50,7 +51,8 @@ export function drawHud(ctx, game) {
   ctx.scale(bump, bump);
   drawCoin(ctx, 16.5); // do tamanho do coração de cima
   ctx.restore();
-  text(ctx, `$${game.money}`, 54, 73, { size: 28 + game.coinBump * 4, color: GOLD, align: 'left' });
+  // negativo (Empréstimo da Dark Net) fica vermelho: -$120
+  text(ctx, game.money < 0 ? `-$${-game.money}` : `$${game.money}`, 54, 73, { size: 28 + game.coinBump * 4, color: game.money < 0 ? '#ff7a8a' : GOLD, align: 'left' });
 
   const r = game.rounds;
   if (game.platinum) {
@@ -65,6 +67,49 @@ export function drawHud(ctx, game) {
     text(ctx, `${r.current}/${r.total}`, L.pause.x - 14, 45, { size: 28, align: 'right' });
   }
   iconButton(ctx, L.pause, '#5fb4ff', 'pause');
+  drawBossBars(ctx, game);
+}
+
+// Chefão com topBar (Ransomware): barra grande no topo, no meio do mapa,
+// com o nome, um cadeado e a vida em pontos. Dois ao mesmo tempo: uma
+// embaixo da outra. O rastro claro mostra o dano que acabou de levar.
+const BAR_H = 26;
+function drawBossBars(ctx, game) {
+  const bosses = game.enemies.filter((e) => e.def.topBar && !e.dead);
+  const w = Math.min(380, game.mapW - 400);
+  const x = (game.mapW - w) / 2;
+  bosses.forEach((e, i) => {
+    const y = 12 + i * (BAR_H + 8);
+    const k = Math.max(0, e.hp / e.maxHp);
+    const ghost = Math.max(k, (e.ghostHp ?? e.hp) / e.maxHp);
+    rrect(ctx, x, y + 3, w, BAR_H, 13);
+    ctx.fillStyle = 'rgba(10,6,20,0.45)';
+    ctx.fill();
+    rrect(ctx, x, y, w, BAR_H, 13);
+    fillOutline(ctx, '#2a1840', 3);
+    const iw = w - 6;
+    if (ghost > k) {
+      rrect(ctx, x + 3, y + 3, iw * ghost, BAR_H - 6, 10);
+      ctx.fillStyle = '#ffe0a8';
+      ctx.fill();
+    }
+    if (k > 0) {
+      rrect(ctx, x + 3, y + 3, Math.max(20, iw * k), BAR_H - 6, 10);
+      const g = ctx.createLinearGradient(0, y + 3, 0, y + BAR_H - 3);
+      g.addColorStop(0, '#ff8aa0');
+      g.addColorStop(0.45, '#ff4d6d');
+      g.addColorStop(1, '#c4234a');
+      ctx.fillStyle = g;
+      ctx.fill();
+    }
+    ctx.save();
+    ctx.translate(x + 20, y + BAR_H / 2);
+    if (e.def.ads) text(ctx, 'AD', 0, 1, { size: 12, color: GOLD }); // Adware
+    else ICONS.lock(ctx, 9);
+    ctx.restore();
+    text(ctx, e.def.name.toUpperCase(), x + 36, y + BAR_H / 2 + 1, { size: 14, align: 'left' });
+    text(ctx, `${fmt(Math.ceil(e.hp))} / ${fmt(e.maxHp)}`, x + w - 14, y + BAR_H / 2 + 1, { size: 14, align: 'right' });
+  });
 }
 
 // ── Painel lateral ──────────────────────────────────────────
@@ -98,7 +143,7 @@ function drawShop(ctx, game, L) {
     const def = TOWERS[tile.type];
     const placing = shown === tile.type;
     const cost = game.costOf(tile.type);
-    const affordable = game.money >= cost;
+    const affordable = game.canAfford(cost);
     button(ctx, tile, placing ? '#ffcf4a' : '#2fc8ff', { radius: 14, depth: 5 });
     drawCyberScreen(ctx, tile, game.anim, placing, TOWER_ORDER.indexOf(tile.type));
     ctx.save();
@@ -235,9 +280,10 @@ function drawTowerInfo(ctx, game, L) {
   if (def.attack !== 'farm' && def.damage !== 0) text(ctx, `Estourou ${tw.pops}`, P.x + 14, 50, { size: 13, align: 'left', color: '#bcd0f5' });
   iconButton(ctx, L.close, '#ff5a5a', 'close');
 
-  if (def.upgrades.length) def.upgrades.forEach((up, i) => drawUpgrade(ctx, game, tw, up, i, L.upgrades[i]));
+  if (tw.ransom) drawRansom(ctx, game, tw, L.ransom);
+  else if (def.upgrades.length) def.upgrades.forEach((up, i) => drawUpgrade(ctx, game, tw, up, i, L.upgrades[i]));
 
-  if (def.targeting) {
+  if (def.targeting && !tw.ransom) {
     button(ctx, L.target, '#8a7dff', { radius: 12, depth: 5 });
     const mode = TARGET_MODES.find((m) => m.id === tw.targetMode);
     text(ctx, 'ALVO', L.target.x + L.target.w / 2, L.target.y + 12, { size: 11, color: '#ece9ff' });
@@ -247,19 +293,26 @@ function drawTowerInfo(ctx, game, L) {
   button(ctx, L.sell, '#ff5a5a', { radius: 12, depth: 5 });
   text(ctx, `VENDER $${tw.sellValue}`, L.sell.x + L.sell.w / 2, L.sell.y + 22, { size: 19 });
 
-  // criptografada pelo Ransomware: pagar o resgate destrava na hora
-  if (tw.locked > 0) {
-    const cost = game.ransomCost(tw);
-    button(ctx, L.ransom, game.money >= cost ? '#a35cf0' : '#7d8aa8', { radius: 12, depth: 5 });
-    text(ctx, `RESGATE $${cost}`, L.ransom.x + L.ransom.w / 2, L.ransom.y + 17, { size: 17 });
-    text(ctx, `ou espere ${Math.ceil(tw.locked)}s`, L.ransom.x + L.ransom.w / 2, L.ransom.y + 36, { size: 11, color: '#ece9ff' });
-  }
+}
+
+// Defesa criptografada pelo Ransomware: um botão grande pra pagar o resgate
+function drawRansom(ctx, game, tw, r) {
+  const can = game.canAfford(tw.ransom);
+  button(ctx, r, can ? '#2fbf6a' : '#5d6680', { radius: 14, depth: 5 });
+  const cx = r.x + r.w / 2;
+  ctx.save();
+  ctx.translate(cx, r.y + 38);
+  ICONS.lock(ctx, 16);
+  ctx.restore();
+  text(ctx, 'CRIPTOGRAFADO', cx, r.y + 76, { size: 17, color: '#d6ffe9' });
+  wrapText(ctx, 'Pague o resgate pra ele voltar a funcionar', cx, r.y + 104, r.w - 20, 12, '#ffffff', 2, OUTLINE);
+  text(ctx, `PAGAR $${tw.ransom}`, cx, r.y + r.h - 28, { size: 20, color: can ? GOLD : '#ff7a8a' });
 }
 
 function drawUpgrade(ctx, game, tw, up, i, r) {
   const bought = tw.level > i;
   const next = tw.level === i;
-  const affordable = game.money >= up.cost;
+  const affordable = game.canAfford(up.cost);
   const face = bought ? '#ffcf4a' : next && affordable ? '#3fd16b' : '#7d8fa8';
   button(ctx, r, face, { radius: 14, depth: 5 });
   text(ctx, up.name, r.x + r.w / 2, r.y + 17, { size: up.name.length > 16 ? 14 : 16 });

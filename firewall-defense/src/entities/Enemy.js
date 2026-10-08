@@ -1,5 +1,7 @@
-import { ENEMIES, threat } from '../data/enemies.js';
+import { ENEMIES, threat, lives } from '../data/enemies.js';
+import { LAYER_HP } from '../config.js';
 import { rand, chance } from '../util.js';
+import { TILE } from '../core/grid.js';
 
 const SHATTER_R = 45; // alcance do Estilhaço
 const STICKY = { mul: 0.5, time: 2 }; // Mel Pegajoso: 50% mais lento por 2 s
@@ -21,7 +23,10 @@ export class Enemy {
     this.shatter = 0; // Estilhaço (Dark Net): chance de estilhaçar se estourar no gelo
     this.sticky = false; // Mel Pegajoso (Dark Net): sai lento do Honeypot
     this.slowMul = 1;
-    this.vulnTimer = 0; // vulnerável (Penguin Linux com Era do Gelo): leva dano dobrado
+    this.vulnTimer = 0; // vulnerável (Penguin com Gelo Quebradiço, Dark Net): leva vulnMul de dano
+    this.vulnMul = 1;
+    this.markTimer = 0; // marcado (Robô NMAP com Marcar Alvo): leva markMul de dano
+    this.markMul = 1;
     this.burnTimer = 0; // pegando fogo (Golem com Incêndio): perde burnDps de vida por segundo
     this.burnDps = 0;
     this.burnSource = null;
@@ -30,17 +35,18 @@ export class Enemy {
     this.phase = rand(0, 10); // relógio da animação
     this.dead = false;
     this.speedMul = 1; // dificuldade do mapa (RoundManager)
+    this.quake = 0; // tremendo parado (Ransomware lançando a criptografia)
   }
 
   // Vida dos inimigos de várias camadas (Worm, Locker, Ransomware) muda
   // com a dificuldade do mapa; os vírus comuns têm 1 de vida por camada
   scaleHp(mul) {
-    if (this.def.hp <= 1) return;
-    this.hp = this.maxHp = Math.max(1, Math.round(this.def.hp * mul));
+    if (this.def.hp <= LAYER_HP) return;
+    this.hp = this.maxHp = Math.max(LAYER_HP, Math.round((this.def.hp * mul) / LAYER_HP) * LAYER_HP);
   }
 
   get speed() {
-    if (this.freezeTimer > 0) return 0;
+    if (this.freezeTimer > 0 || this.quake > 0) return 0;
     return this.def.speed * this.speedMul * (this.slowTimer > 0 ? this.slowMul : 1);
   }
 
@@ -53,7 +59,8 @@ export class Enemy {
   // vidas que tira se escapar: o que sobrou dessa camada + todos os filhos.
   // Sempre inteiro (o fogo deixa vida quebrada) e sem contar a vida extra
   get threat() {
-    return Math.ceil(this.hp / this.hpMul - 1e-6) + threat(this.type) - this.def.hp;
+    const unit = this.def.lives ? this.def.hp / this.def.lives : LAYER_HP; // vida que vale 1 vida do jogador
+    return Math.ceil(this.hp / this.hpMul / unit - 1e-6) + threat(this.type) - lives(this.def);
   }
 
   // quanto falta pra chegar na base (usado pra mirar no "primeiro")
@@ -75,7 +82,11 @@ export class Enemy {
     this.slowTimer = Math.max(0, this.slowTimer - dt);
     this.freezeTimer = Math.max(0, this.freezeTimer - dt);
     this.vulnTimer = Math.max(0, this.vulnTimer - dt);
+    this.markTimer = Math.max(0, this.markTimer - dt);
     this.flash = Math.max(0, this.flash - dt);
+    this.quake = Math.max(0, this.quake - dt);
+    // barra do topo: a parte perdida some devagar atrás da vida (rastro do dano)
+    if (this.def.topBar) this.ghostHp = Math.max(this.hp, (this.ghostHp ?? this.hp) - this.maxHp * 0.5 * dt);
     this.phase += dt * (this.slowTimer > 0 ? this.slowMul : 1);
     // vira aos poucos pro lado em que anda (o desenho "gira" na curva)
     this.turn = this.turn == null ? this.face : this.turn + (this.face - this.turn) * Math.min(1, dt * 9);
@@ -88,8 +99,15 @@ export class Enemy {
     // Honeypot no caminho: para e fica mordendo a isca até ela quebrar
     const bait = game.baitAt?.(this);
     if (bait) {
-      // Mel Pegajoso (Dark Net): ao parar no pote, às vezes fica grudado
-      if (this.biting !== bait && chance(bait.stats.stickyChance)) this.sticky = true;
+      // ao parar no pote: Mel Pegajoso (Dark Net) às vezes gruda; Ferrão às vezes tira 1 camada
+      if (this.biting !== bait) {
+        if (chance(bait.stats.stickyChance)) this.sticky = true;
+        if (chance(bait.stats.stingChance)) {
+          game.fx.spark(this.x, this.y - this.r, '#ffd23f', 8);
+          this.takeDamage(LAYER_HP, game, { armored: true, source: bait });
+          if (this.dead) return;
+        }
+      }
       this.biting = bait;
       if (Math.abs(bait.x - this.x) > 4) this.face = bait.x < this.x ? -1 : 1;
       bait.bite(this.biteDps * dt, game);
@@ -108,17 +126,18 @@ export class Enemy {
       return;
     }
     this.place();
+    this.tryRansom(game);
+    // Adware: na tela, de tempos em tempos abre um anúncio (Game.spawnAd)
+    const ads = this.def.ads;
+    if (ads && game.isVisible(this) && (this.adTimer = (this.adTimer ?? rand(1, 2)) - dt) <= 0) {
+      this.adTimer = rand(ads.every[0], ads.every[1]);
+      game.spawnAd(this);
+    }
     // encostou no servidor: já conta como invasão (não passa por cima dele)
     if (game.touchesBase(this)) {
       this.dead = true;
       game.leak(this);
       return;
-    }
-    // Ransomware: de tempos em tempos criptografa a defesa mais perto
-    const lk = this.def.lock;
-    if (lk && (this.lockTimer = (this.lockTimer ?? lk.every / 2) - dt) <= 0) {
-      this.lockTimer = lk.every;
-      game.encryptNear?.(this, lk);
     }
     // Worm: vai soltando vírus pelo caminho enquanto está vivo
     const sp = this.def.spawn;
@@ -132,10 +151,20 @@ export class Enemy {
     }
   }
 
+  // Ransomware: a cada quadrado novo que anda, tenta criptografar (game.rollRansom)
+  tryRansom(game) {
+    if (!this.def.ransom) return;
+    const step = Math.floor(this.dist / TILE);
+    if (this.ransomStep == null) this.ransomStep = step;
+    if (step <= this.ransomStep) return;
+    this.ransomStep = step;
+    game.rollRansom(this);
+  }
+
   // quanto tira da isca por segundo (chefão morde forte)
   get biteDps() {
     if (this.def.boss) return 8;
-    return this.def.hp > 1 ? 2 : 1;
+    return this.def.hp > LAYER_HP ? 2 : 1;
   }
 
   // Congela parado por `time` s (chefão não congela). true se pegou
@@ -160,8 +189,15 @@ export class Enemy {
   }
 
   // Era do Gelo: enquanto durar, cada acerto tira o dobro (vale pro chefão também)
-  weaken(time) {
+  weaken(time, mul = 2) {
+    this.vulnMul = this.vulnTimer > 0 ? Math.max(this.vulnMul, mul) : mul;
     this.vulnTimer = Math.max(this.vulnTimer, time);
+  }
+
+  // Marcar Alvo: por `time` s leva `mul` de dano de todas as defesas (vale pro chefão também)
+  mark(time, mul) {
+    this.markTimer = Math.max(this.markTimer, time);
+    this.markMul = Math.max(this.markMul, mul);
   }
 
   // Incêndio: pega fogo por `time` s. Não acumula: enquanto estiver
@@ -184,7 +220,8 @@ export class Enemy {
       game.sound.play('block');
       return;
     }
-    if (this.vulnTimer > 0 && !opts.overflow) amount *= 2;
+    if (this.vulnTimer > 0 && !opts.overflow) amount *= this.vulnMul;
+    if (this.markTimer > 0 && !opts.overflow) amount *= this.markMul;
     if (!opts.dot) this.flash = 0.08;
     this.hp -= amount;
     if (this.hp <= 0) this.pop(game, -this.hp, opts);
@@ -192,15 +229,19 @@ export class Enemy {
 
   pop(game, overflow, opts) {
     this.dead = true;
+    game.duckRoll?.(this); // Pato de Borracha (Dark Net): às vezes acha um café
     // Estilhaço (Dark Net): estourou no gelo do Penguin → às vezes acerta os vizinhos
     if (this.slowTimer > 0 && chance(this.shatter)) {
       game.fx.spark(this.x, this.y, '#c8f4ff', 12);
       game.fx.burst(this.x, this.y, '#c8f4ff', 10, 200, 0.4, 4);
-      for (const e of game.enemiesInRange(this.x, this.y, SHATTER_R)) if (e !== this) e.takeDamage(1, game, { armored: true });
+      for (const e of game.enemiesInRange(this.x, this.y, SHATTER_R)) if (e !== this) e.takeDamage(LAYER_HP, game, { armored: true });
     }
     game.money += this.def.reward ?? 1;
     game.stats.pops++;
-    if (opts.source) opts.source.pops++;
+    if (opts.source) {
+      opts.source.pops++;
+      game.money += game.sponsorBonus?.(opts.source) ?? 0; // Patrocínio do Minerador
+    }
     game.fx.pop(this.x, this.y - this.r * 0.3, this.def.color, this.r);
     // vírus dourado (Toque de Midas): solta a moeda dele (os filhos não herdam)
     if (this.golden) {
@@ -222,6 +263,9 @@ export class Enemy {
         child.shatter = this.shatter;
         child.slowMul = this.slowMul;
         child.vulnTimer = this.vulnTimer;
+        child.vulnMul = this.vulnMul;
+        child.markTimer = this.markTimer;
+        child.markMul = this.markMul;
         child.burnTimer = this.burnTimer;
         child.burnDps = this.burnDps;
         child.burnSource = this.burnSource;

@@ -20,8 +20,8 @@ export class Projectile {
     this.y = tower.y - 14 + Math.sin(angle) * 16;
     this.vx = Math.cos(angle) * this.speed;
     this.vy = Math.sin(angle) * this.speed;
-    this.crit = chance(s.critChance); // Tecla Crítica (Dark Net): dano dobrado
-    this.damage = s.damage * (this.crit ? 2 : 1);
+    this.crit = chance(s.critChance); // Tecla Crítica (Dark Net): dano dobrado (Exploit Afiado: mais)
+    this.damage = s.damage * (this.crit ? s.critMul ?? 2 : 1);
     this.pierce = s.pierce ?? 1; // quantos vírus atravessa (upgrades podem aumentar)
     this.armored = tower.hitsArmored;
     this.source = tower;
@@ -85,7 +85,7 @@ export class Projectile {
       // Zero-Day (Dark Net): às vezes estoura o vírus inteiro, todas as camadas (chefão não)
       if (reach && !e.def.boss && chance(this.source.stats.executeChance)) {
         game.fx.spark(e.x, e.y - e.r, '#7dffb0', 13);
-        e.takeDamage(1e6, game, opts);
+        e.takeDamage(Infinity, game, opts);
       } else {
         if (this.crit && reach) game.fx.spark(e.x, e.y - e.r);
         e.takeDamage(this.damage, game, opts);

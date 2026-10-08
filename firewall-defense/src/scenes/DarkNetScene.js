@@ -3,8 +3,9 @@ import { rrect, fillOutline, text, setFont, button } from '../render/canvas.js';
 import { iconButton, inRect } from '../render/widgets.js';
 import { ICONS } from '../render/sprites.js';
 import { drawCharacter } from '../render/characters.js';
+import { drawDuck } from '../render/duck.js';
 import { TREE, NODE, COFFEE, formatCoffee } from '../data/darknet.js';
-import { seeded } from '../util.js';
+import { seeded, plural } from '../util.js';
 
 /* ════════════════════════════════════════════════════════════
  *  DARK NET: a árvore de upgrades paga com cafés
@@ -27,16 +28,18 @@ const COFFEE_TXT = '#ffe0b0';
 const CHARS = '01₿#$%<>/{}';
 const COLS = 64;
 const RADIUS = [125, 185]; // distância do centro da árvore até os ramos (sorteada)
-const STEP = [88, 122]; // distância entre um nó e o seguinte no mesmo ramo (sorteada)
-const TURN = 0.55; // quanto cada ramo pode virar a cada nó (radianos, pra cada lado)
-const SEED = 2142; // semente do layout (o grafo sai sempre igual)
+const STEP = [88, 115]; // distância entre um nó e o seguinte no mesmo ramo (sorteada)
+const TURN = 0.25; // quanto cada braço pode virar a cada nó (radianos, pra cada lado)
+const FORK = 0.45; // ramo em Y: quanto cada braço abre pra um lado (radianos)
+const SEED = 1938; // semente do layout (o grafo sai sempre igual)
 const FLOAT = 5; // quanto os nós flutuam (px no mundo)
 const HOME_ZOOM = [0.45, 1.15]; // zoom inicial: enquadra os nós visíveis, dentro desses limites
-const FOCUS_ZOOM = 1.4; // tocou num nó: aproxima até esse zoom (se estiver mais longe)
+const FOCUS_ZOOM = 1.1; // tocou num nó: aproxima até esse zoom (se estiver mais longe)
 const BRANCH_ORDER = ['hacker', 'firewall', 'pinguim', 'scanner', 'minerador', 'honeypot'];
 const ZOOM_MIN = 0.45;
 const ZOOM_MAX = 2.4;
 const ROAM = 450; // quanto dá pra passear além da borda da árvore
+const DUCK_AWAY = { x: 1000, y: 900 }; // Pato de Borracha: bem isolado, pra cima e pra esquerda (a câmera alcança: clampCam)
 const DRAG_SLOP = 8; // até quantos px um toque ainda é toque (e não arrasto)
 const DOT_GAP = 48; // pontinhos do chão, pra sentir o movimento
 
@@ -82,17 +85,26 @@ export class DarkNetScene {
     const nodes = { root: { x: 0, y: 0, r: 40, a: 0, ph: 0 } };
     const slice = (Math.PI * 2) / BRANCH_ORDER.length;
     BRANCH_ORDER.forEach((id, i) => {
-      const a = -Math.PI / 2 + i * slice + rr(-0.32, 0.32) * slice;
+      const a = -Math.PI / 2 + i * slice + rr(-0.22, 0.22) * slice;
       const d = rr(RADIUS[0], RADIUS[1]);
       nodes[id] = { x: Math.cos(a) * d, y: Math.sin(a) * d, r: 32, a, ph: rr(0, Math.PI * 2) };
     });
     for (const n of TREE) {
       if (nodes[n.id]) continue;
       const p = nodes[n.parent];
-      const a = p.a + rr(-TURN, TURN);
+      // irmãos (ramo em Y) abrem pra lados opostos; filho único vai virando
+      const sibs = TREE.filter((m) => m.parent === n.parent);
+      const k = sibs.indexOf(n) - (sibs.length - 1) / 2;
+      const a = sibs.length > 1 ? p.a + k * 2 * FORK + rr(-0.12, 0.12) : p.a + rr(-TURN, TURN);
       const d = rr(STEP[0], STEP[1]);
       nodes[n.id] = { x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d, r: 28, a, ph: rr(0, Math.PI * 2) };
     }
+    // Pato de Borracha (upgrade secreto): solto no mundo, longe dos outros
+    // upgrades; fica fora do enquadramento inicial (bounds só olha a TREE)
+    const ids = Object.keys(nodes);
+    const minX = Math.min(...ids.map((id) => nodes[id].x));
+    const minY = Math.min(...ids.map((id) => nodes[id].y));
+    nodes.duck = { x: minX - DUCK_AWAY.x, y: minY - DUCK_AWAY.y, r: 28, a: 0, ph: 1.7 };
     this.nodes = nodes;
     return nodes;
   }
@@ -136,9 +148,10 @@ export class DarkNetScene {
     return { x0, y0, x1, y1 };
   }
 
-  // Aparece na árvore? Os comprados e os vizinhos diretos deles (dá pra comprar)
-  visible(id) {
-    return this.state(id) !== 'locked';
+  // Aparece na árvore? Todos: os trancados ficam com cadeado e sem revelar
+  // o que fazem (nome e descrição escondidos no painel)
+  visible() {
+    return true;
   }
 
   // Onde o nó está agora: flutuando devagar em volta do lugar dele
@@ -171,7 +184,12 @@ export class DarkNetScene {
   // Não deixa a árvore sumir de vez: o centro da tela fica perto dela
   clampCam() {
     const c = this.cam;
-    const { x0, y0, x1, y1 } = this.bounds(this.graph()); // só os visíveis
+    const nodes = this.graph();
+    let { x0, y0, x1, y1 } = this.bounds(nodes); // só a árvore
+    // o Pato de Borracha fica isolado longe da árvore: a câmera vai até ele
+    // (o ROAM soma em volta, então chega até o meio da tela em cima dele)
+    x0 = Math.min(x0, nodes.duck.x + ROAM);
+    y0 = Math.min(y0, nodes.duck.y + ROAM);
     const mid = this.toWorld(this.app.viewW / 2, VIEW_H / 2);
     const mx = Math.min(x1 + ROAM, Math.max(x0 - ROAM, mid.x));
     const my = Math.min(y1 + ROAM, Math.max(y0 - ROAM, mid.y));
@@ -226,6 +244,7 @@ export class DarkNetScene {
     this.drawDots(ctx, W);
     this.drawLinks(ctx, L, t);
     for (const n of TREE) if (this.visible(n.id)) this.drawNode(ctx, n, this.at(L.nodes[n.id], t), t);
+    this.drawNode(ctx, NODE.duck, this.at(L.nodes.duck, t), t);
     ctx.restore();
 
     // por cima: faixa escura atrás do título, título, painel e botões
@@ -316,14 +335,17 @@ export class DarkNetScene {
 
   drawNode(ctx, n, p, t) {
     const st = this.state(n.id);
+    // Pato de Borracha ainda não comprado: apagado, com cara de indisponível
+    const ghost = n.id === 'duck' && st !== 'owned';
     const selected = this.sel === n.id;
     const canBuy = this.app.canBuyPerk(n.id);
     const pulse = canBuy ? 0.5 + Math.sin(t * 4) * 0.5 : 0;
     ctx.save();
+    if (ghost) ctx.globalAlpha = this.sel === 'duck' ? 0.6 : 0.35;
     // anel: verde comprado, roxo aberto (pulsando se dá pra comprar), cinza trancado
-    const ring = st === 'owned' ? GREEN : st === 'open' ? PURPLE : '#4a3f63';
+    const ring = st === 'owned' ? GREEN : st === 'open' && !ghost ? PURPLE : '#4a3f63';
     ctx.shadowColor = ring;
-    ctx.shadowBlur = (st === 'locked' ? 0 : 14 + pulse * 10 + (this.flash[n.id] ?? 0) * 30) * this.app.pixelScale * this.cam.z;
+    ctx.shadowBlur = (st === 'locked' || ghost ? 0 : 14 + pulse * 10 + (this.flash[n.id] ?? 0) * 30) * this.app.pixelScale * this.cam.z;
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
     ctx.fillStyle = st === 'owned' ? '#0f2a1f' : '#170a2c';
@@ -338,7 +360,10 @@ export class DarkNetScene {
     ctx.arc(p.x, p.y, p.r - 3, 0, Math.PI * 2);
     ctx.clip();
     if (st === 'locked') ctx.globalAlpha = 0.35;
-    if (n.tower) {
+    if (n.id === 'duck') {
+      ctx.translate(p.x - 2, p.y + p.r * 0.32);
+      drawDuck(ctx, p.r * 0.45, { t, gray: ghost });
+    } else if (n.tower) {
       const k = (p.r * 1.7) / 62;
       ctx.translate(p.x, p.y + 16 * k);
       ctx.scale(k, k);
@@ -350,9 +375,10 @@ export class DarkNetScene {
     }
     ctx.restore();
     if (st === 'locked') {
+      // cadeado no meio: ainda não dá pra ver o que é
       ctx.save();
-      ctx.translate(p.x + p.r * 0.55, p.y + p.r * 0.55);
-      ICONS.lock(ctx, 9);
+      ctx.translate(p.x, p.y);
+      ICONS.lock(ctx, p.r * 0.42);
       ctx.restore();
     }
     // selo embaixo: custo ou ✔
@@ -397,19 +423,29 @@ export class DarkNetScene {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = GREEN;
-    ctx.fillText(`> upgrade://${n.id}`, P.x + 18, P.y + 24);
+    // trancado: não revela o que o upgrade faz
+    const hidden = st === 'locked';
+    ctx.fillText(`> upgrade://${hidden ? cipher(n.id, 8, this.t) : n.id}`, P.x + 18, P.y + 24);
 
-    text(ctx, n.name.toUpperCase(), P.x + 18, P.y + 60, { size: 24, color: '#ffffff', align: 'left' });
-    wrap(ctx, n.desc, P.x + 18, P.y + 98, P.w - 36, 17, '#e6d0ff');
+    if (hidden) {
+      // criptografado: nome em caracteres embaralhados que ficam trocando
+      ctx.font = `bold 24px ${MONO}`;
+      ctx.fillStyle = '#b77bff';
+      ctx.fillText(cipher(n.id + '#', 12, this.t), P.x + 18, P.y + 60);
+    } else text(ctx, n.name.toUpperCase(), P.x + 18, P.y + 60, { size: 24, color: '#ffffff', align: 'left' });
+    wrap(ctx, hidden ? 'Upgrade criptografado. Compre o anterior no ramo pra descriptografar o que ele faz.' : n.desc, P.x + 18, P.y + 98, P.w - 36, 17, hidden ? '#9a8bb5' : '#e6d0ff');
 
     // estado (trancado não diz nada: a árvore já mostra o caminho)
     ctx.font = `bold 13px ${MONO}`;
     ctx.textAlign = 'left';
     let status = null;
     const extra = st === 'owned' ? this.app.perkRollbackSet(n.id).length - 1 : 0;
-    if (extra > 0) status = [`> vender leva junto ${extra} upgrade${extra > 1 ? 's' : ''}`, '#ffc62e'];
+    if (extra > 0) status = [`> vender leva junto ${extra} ${plural(extra, 'upgrade', 'upgrades')}`, '#ffc62e'];
     else if (st === 'owned') status = ['> instalado', GREEN];
-    else if (st === 'open' && !can) status = [`> faltam ${formatCoffee(n.cost - this.app.coffee)} café(s)`, '#ffc62e'];
+    else if (st === 'open' && !can) {
+      const miss = n.cost - this.app.coffee;
+      status = [`> ${plural(miss, 'falta', 'faltam')} ${formatCoffee(miss)} ${plural(miss, 'café', 'cafés')}`, '#ffc62e'];
+    }
     else if (st === 'open') status = ['> pronto pra instalar', PURPLE];
     if (status) {
       ctx.fillStyle = status[1];
@@ -510,8 +546,7 @@ export class DarkNetScene {
     if (!d || d.moved || pinched) return;
     const L = this.layout();
     const w = this.toWorld(x, y);
-    for (const n of TREE) {
-      if (!this.visible(n.id)) continue; // escondido: não dá pra tocar
+    for (const n of [...TREE, NODE.duck]) {
       const p = this.at(L.nodes[n.id]);
       if (Math.hypot(w.x - p.x, w.y - p.y) <= p.r + 6 / this.cam.z) {
         this.sel = n.id;
@@ -566,6 +601,20 @@ function coffeeLabel(ctx, value, x, y, size, color, prefix = '') {
   ICONS.coffee(ctx, size * 0.48);
   ctx.restore();
   text(ctx, value, x0 + icon, y, { size, color, align: 'left' });
+}
+
+// Texto "criptografado": len caracteres embaralhados que vão trocando com o
+// tempo (cada posição no seu ritmo; a mesma semente dá sempre o mesmo jeito)
+const CIPHER = '#$%&@*!?<>/{}[]=+~^01ØΣΞ¥';
+function cipher(seed, len, t) {
+  let h = 7;
+  for (const ch of seed) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  let out = '';
+  for (let i = 0; i < len; i++) {
+    const tick = Math.floor(t * (5 + ((h >> i) & 3)) + i * 1.7);
+    out += CIPHER[(h + i * 131 + tick * 17) % CIPHER.length];
+  }
+  return out;
 }
 
 // Texto quebrado em linhas (fonte do jogo)

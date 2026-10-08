@@ -180,6 +180,13 @@ export class LevelSelectScene {
     ctx.restore();
   }
 
+  // Face de botão platinada (aba da season toda platinada): o mesmo metal do
+  // card de mapa, com o brilho passando
+  platinumFace(ctx, f, i) {
+    rrect(ctx, f.x, f.y, f.w, f.h, 14);
+    this.platinumCard(ctx, f, i);
+  }
+
   // Card de mapa com a platina vencida: prata azulado metálico, com faixas
   // de reflexo e um brilho passando devagar (o rrect do card já está no path)
   platinumCard(ctx, c, i) {
@@ -304,6 +311,8 @@ export class LevelSelectScene {
     ctx.save();
     if (!active) ctx.globalAlpha = 0.75;
     button(ctx, r, active ? season.color : '#4a5d92', { radius: 14, depth: 5, pressed: active });
+    // season inteira platinada: botão prata azulado metálico
+    if (open && this.app.seasonPlatinum(s)) this.platinumFace(ctx, { x: r.x, y: r.y + (active ? 4 : 0), w: r.w, h: r.h - 5 }, s);
     const cy = r.y + (r.h - 5) / 2 + (active ? 4 : 0);
     text(ctx, season.name.toUpperCase(), r.x + r.w / 2, cy - 7, { size: 17 });
     if (open) {

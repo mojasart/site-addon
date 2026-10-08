@@ -1,10 +1,10 @@
 import { TOWERS } from '../data/towers.js';
-import { SELL_RATE } from '../config.js';
+import { SELL_RATE, LAYER_HP } from '../config.js';
 import { rand, chance } from '../util.js';
 import { laserOrigin } from '../render/characters.js';
+import { applyPerks } from '../data/darknet.js';
 
 const SWARM_R = 70; // alcance das abelhas da Colmeia
-const IGNITE = { dps: 0.33, time: 3 }; // Brasa Viva: o mesmo fogo do upgrade Incêndio
 const RECHARGE = 0.3; // recarga instantânea (Avalanche, Varredura Dupla): dispara de novo nesse tempo
 
 export class Tower {
@@ -18,6 +18,7 @@ export class Tower {
     this.level = 0;
     this.spent = this.def.cost;
     this.fresh = fresh;
+    this.perks = {}; // nós da Dark Net comprados (Game.place passa os do jogador)
     this.stats = { ...this.def }; // cópia: upgrades mexem aqui, não no original
     this.cooldown = 0.2;
     this.face = 1; // 1 = olhando pra direita, -1 = esquerda
@@ -25,7 +26,7 @@ export class Tower {
     this.pulse = 0;
     this.spawnAnim = 1; // "pulinho" ao ser colocado
     this.stunned = 0; // atordoada por zona eletrificada (segundos)
-    this.locked = 0; // criptografada pelo Ransomware (segundos; o resgate destrava)
+    this.ransom = 0; // criptografada pelo Ransomware: resgate a pagar (0 = livre)
     this.targetMode = this.def.defaultTarget ?? 'first';
     this.hp = this.maxHp = this.def.hp ?? 0; // vida da isca (Honeypot)
     this.dropped = 0;
@@ -40,7 +41,7 @@ export class Tower {
   }
 
   get sellValue() {
-    return this.fresh ? this.spent : Math.floor(this.spent * SELL_RATE);
+    return this.fresh ? this.spent : Math.floor(this.spent * (this.stats.sellRate ?? SELL_RATE)); // Revenda (Dark Net): preço cheio
   }
 
   get hitsArmored() {
@@ -48,11 +49,18 @@ export class Tower {
   }
 
   upgrade() {
-    const up = this.nextUpgrade;
-    up.apply(this.stats);
-    this.spent += up.cost;
+    this.spent += this.nextUpgrade.cost;
     this.level++;
+    this.refresh();
     this.spawnAnim = 1;
+  }
+
+  // Status = base + upgrades até o nível + bônus da Dark Net POR CIMA (upgrade
+  // que troca um valor, tipo s.slow = 0.3, não apaga o bônus de lentidão)
+  refresh() {
+    const s = { ...this.def };
+    for (let i = 0; i < this.level; i++) this.def.upgrades[i].apply(s);
+    this.stats = applyPerks(s, this.type, this.perks);
   }
 
   onRoundStart() {
@@ -65,7 +73,7 @@ export class Tower {
   // moedas que faltaram (ninguém perde bitcoin por rodada curta)
   finishMining(game) {
     const s = this.stats;
-    if (s.attack !== 'farm' || !game.canMine(this)) return;
+    if (s.attack !== 'farm' || this.ransom || !game.canMine(this)) return;
     for (; this.dropped < s.packetsPerRound; this.dropped++) this.mine(game);
     this.attack = 1;
   }
@@ -120,7 +128,7 @@ export class Tower {
     if (chance(this.stats.swarmChance)) {
       game.fx.burst(this.x, this.y, '#ffd23f', 14, 220, 0.6, 3, true);
       game.fx.burst(this.x, this.y, '#2b2118', 8, 200, 0.6, 3, true);
-      for (const e of game.enemiesInRange(this.x, this.y, SWARM_R)) e.takeDamage(1, game, { armored: true, source: this });
+      for (const e of game.enemiesInRange(this.x, this.y, SWARM_R)) e.takeDamage(LAYER_HP, game, { armored: true, source: this });
     }
   }
 
@@ -159,12 +167,9 @@ export class Tower {
     this.spawnAnim = Math.max(0, this.spawnAnim - dt * 3);
     // isca: o tempo corre nas rodadas (antes de começar dá pra posicionar com calma)
     if (s.attack === 'decoy' && game.rounds.active) this.wear(this.decay * dt, game);
+    if (this.ransom) return; // criptografada: parada até pagarem o resgate
     if (this.stunned > 0) {
       this.stunned = Math.max(0, this.stunned - dt);
-      return;
-    }
-    if (this.locked > 0) {
-      this.locked = Math.max(0, this.locked - dt);
       return;
     }
 
@@ -208,10 +213,13 @@ export class Tower {
         const last = hits[hits.length - 1];
         if (lucky && hits.length > (s.pierce ?? 1)) game.fx.spark(last.x, last.y - last.r, '#ffb3c0');
         game.fx.beam(x0, y0, last.x, last.y);
-        // Ping da Morte (Dark Net): às vezes o tiro dá dano triplo
+        // Ping da Morte (Dark Net): às vezes o tiro dá dano triplo (Sobrecarga: quádruplo)
         const triple = chance(s.tripleChance);
         if (triple) game.fx.spark(target.x, target.y - target.r, '#ff6b81', 12);
-        for (const e of hits) e.takeDamage(s.damage * (triple ? 3 : 1), game, this.opts());
+        for (const e of hits) {
+          if (s.markTime) e.mark(s.markTime, s.markMul); // Marcar Alvo: antes do dano (os filhos já nascem marcados)
+          e.takeDamage(s.damage * (triple ? s.tripleMul ?? 3 : 1), game, this.opts());
+        }
         this.fire();
         // Varredura Dupla (Dark Net): às vezes recarrega na hora
         if (chance(s.rechargeChance)) this.cooldown = RECHARGE;
@@ -232,14 +240,13 @@ export class Tower {
         for (const e of targets.slice(0, s.maxTargets)) {
           if (s.slow) e.slow(s.slow, s.slowTime);
           if (s.shatterChance) e.shatter = s.shatterChance; // Estilhaço: vale enquanto estiver no gelo
-          if (s.vulnerable) e.weaken(s.slowTime);
-          if (s.burn) e.ignite(s.burn, s.burnTime, this); // antes do dano: os filhos já nascem pegando fogo
+          if (s.vulnerable) e.weaken(s.slowTime, s.vulnMul ?? 2);
+          // fogo (Chama Alta e Inferno, da Dark Net, deixam mais forte e mais longo)
+          const burnMul = s.burnMul ?? 1;
+          const burnExtra = s.burnExtra ?? 0;
+          if (s.burn) e.ignite(s.burn * burnMul, s.burnTime + burnExtra, this); // antes do dano: os filhos já nascem pegando fogo
           // bônus de sorte da Dark Net, antes do dano (os filhos já nascem com eles):
-          // Brasa Viva (pega fogo), Tremor de Terra (empurrão), Kernel Gelado (congela)
-          if (!s.burn && chance(s.igniteChance)) {
-            e.ignite(IGNITE.dps, IGNITE.time, this);
-            game.fx.spark(e.x, e.y - e.r, '#ffb36b', 7);
-          }
+          // Tremor de Terra e Brasa Viva (empurrão), Kernel Gelado (congela)
           if (chance(s.knockChance) && e.knockBack(28)) game.fx.spark(e.x, e.y - e.r, '#ffb36b', 7);
           if (chance(s.freezeChance) && e.freeze(1)) game.fx.spark(e.x, e.y - e.r, '#c8f4ff', 8);
           if (s.damage) e.takeDamage(s.damage, game, this.opts());
@@ -255,6 +262,7 @@ export class Tower {
         // a isca não ataca: quem faz tudo são os vírus mordendo (bite)
         break;
       case 'farm': {
+        if (s.sponsor) this.updateSponsor(game);
         if (!game.rounds.active || this.dropped >= s.packetsPerRound || !game.canMine(this)) break;
         this.dropTimer -= dt;
         if (this.dropTimer <= 0) {
@@ -266,6 +274,24 @@ export class Tower {
         break;
       }
     }
+  }
+
+  // Patrocínio (2º upgrade do Minerador): escolhe uma defesa que ataca, de
+  // preferência uma que ainda não tem patrocinador; se ela for vendida ou
+  // quebrar, escolhe outra
+  updateSponsor(game) {
+    const t = this.sponsorOf;
+    if (t && !t.dead && game.towers.includes(t)) return;
+    const fighters = game.towers.filter((o) => o !== this && !o.dead && o.def.attack !== 'farm' && o.def.attack !== 'decoy');
+    if (!fighters.length) {
+      this.sponsorOf = null;
+      return;
+    }
+    const count = (o) => game.towers.filter((m) => m.sponsorOf === o).length;
+    const least = Math.min(...fighters.map(count));
+    const pool = fighters.filter((o) => count(o) === least);
+    this.sponsorOf = pool[Math.floor(Math.random() * pool.length)];
+    game.fx.spark(this.sponsorOf.x, this.sponsorOf.y - 40, '#ffd23f', 12);
   }
 
   fire() {

@@ -1,5 +1,6 @@
 import { MAPS } from '../data/maps.js';
-import { VIEW_H, OUTLINE } from '../config.js';
+import { VIEW_H, OUTLINE, LAYER_HP } from '../config.js';
+import { fmt, plural } from '../util.js';
 import { ENEMIES, worth, threat } from '../data/enemies.js';
 import { TOWERS, TOWER_ORDER } from '../data/towers.js';
 import { rrect, fillOutline, cachedSprite } from '../render/canvas.js';
@@ -19,7 +20,7 @@ import { AGES, statsAt, statRows } from '../data/towerInfo.js';
  *  Lista à esquerda e a ficha da escolhida à direita.
  * ════════════════════════════════════════════════════════════ */
 
-const ORDER = ['v1', 'v2', 'v3', 'v4', 'v5', 'worm', 'spyware', 'trojan', 'locker', 'ransomware'];
+const ORDER = ['v1', 'v2', 'v3', 'v4', 'v5', 'worm', 'spyware', 'trojan', 'locker', 'adware', 'ransomware'];
 const TABS = [
   { id: 'threats', label: 'AMEAÇAS', file: 'THREAT_DB.EXE', items: ORDER },
   { id: 'towers', label: 'DEFESAS', file: 'AGENTS_DB.EXE', items: TOWER_ORDER },
@@ -340,7 +341,7 @@ export class CatalogScene {
     ], fx, pr.y + 76);
 
     // o que ele solta
-    const kids = def.children.map(([c, n]) => `${n}× ${ENEMIES[c].name}`).join(', ');
+    const kids = def.children.map(([c, n]) => `${n} ${plural(n, ENEMIES[c].name, namePlural(ENEMIES[c].name))}`).join(', ');
     const drops = def.spawn ? `Solta ${ENEMIES[def.spawn.type].name} a cada ${String(def.spawn.every).replace('.', ',')}s` : kids ? `Ao estourar solta: ${kids}` : 'Não solta nada ao estourar';
     const ly = pr.y + pr.s + 22;
     mono(ctx, '> ARQUIVO', d.x + 16, ly, 14, DIM, 'left', true);
@@ -452,21 +453,31 @@ function wrapMono(ctx, str, x, y, maxW, size, color) {
   if (line) mono(ctx, line, x, yy, size, color, 'left', true);
 }
 
-// Vírus de camadas (vida 1): a vida é o número de camadas até o vermelho.
+// Vírus de camadas (vida LAYER_HP cada): mostra camadas × vida de uma camada.
 // Os outros: a vida muda com a fase, então mostra do mapa mais fácil ao mais difícil.
 function layers(type) {
   const def = ENEMIES[type];
-  const inner = def.children.find(([c]) => ENEMIES[c].hp <= 1);
+  const inner = def.children.find(([c]) => ENEMIES[c].hp <= LAYER_HP);
   return 1 + (inner ? layers(inner[0]) : 0);
+}
+
+// Plural do nome da ameaça: s na última palavra (Trojans, Vírus Amarelos; Vírus fica igual)
+function namePlural(name) {
+  return name.endsWith('s') ? name : `${name}s`;
 }
 
 function hpText(type) {
   const def = ENEMIES[type];
-  if (def.hp <= 1) return `${layers(type)}`;
+  if (def.hp <= LAYER_HP) {
+    const n = layers(type);
+    return n > 1 ? `${n} camadas de ${fmt(LAYER_HP)}` : fmt(LAYER_HP);
+  }
+  // como no jogo (Enemy.scaleHp): arredonda pra camadas inteiras
   const ps = MAPS.map((m) => m.pressure);
-  const lo = Math.max(1, Math.round(def.hp * Math.min(...ps)));
-  const hi = Math.max(1, Math.round(def.hp * Math.max(...ps)));
-  return lo === hi ? `${lo}` : `${lo} - ${hi}`;
+  const at = (p) => Math.max(LAYER_HP, Math.round((def.hp * p) / LAYER_HP) * LAYER_HP);
+  const lo = at(Math.min(...ps));
+  const hi = at(Math.max(...ps));
+  return lo === hi ? fmt(lo) : `${fmt(lo)} - ${fmt(hi)}`;
 }
 
 // Personagem da defesa centrado no ponto atual, com `size` de altura

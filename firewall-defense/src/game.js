@@ -1,10 +1,10 @@
-import { VIEW_H, PANEL_W, MAX_SPEED, EARLY_BONUS } from './config.js';
+import { VIEW_H, PANEL_W, SPEEDS, TURBO_SPEED, DANGER_TIME, EARLY_BONUS } from './config.js';
 import { MAPS } from './data/maps.js';
 import { ROUNDS } from './data/rounds.js';
 import { PLAT_TIME, PLAT_LIVES, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
 import { worth } from './data/enemies.js';
 import { TOWERS, TARGET_MODES } from './data/towers.js';
-import { applyPerks, ROOT_MONEY } from './data/darknet.js';
+import { applyPerks, ROOT_MONEY, DUCK, INTEREST, LOAN } from './data/darknet.js';
 import { fitsTerrain } from './core/terrain.js';
 import { Tower } from './entities/Tower.js';
 import { Projectile } from './entities/Projectile.js';
@@ -22,14 +22,18 @@ import { drawCharacter } from './render/characters.js';
 import { drawEnemy } from './render/viruses.js';
 import { drawProjectile, drawCoin, drawServer } from './render/sprites.js';
 import { drawHazards, drawStunned, drawHazardWarning } from './render/hazards.js';
+import { drawEncrypted, ENCRYPT_FILTER } from './render/ransom.js';
 import { drawSpawns } from './render/spawns.js';
+import { drawDuck } from './render/duck.js';
+import { drawAds, adClose, adSpot, ADS, AD_W, AD_H } from './render/ads.js';
 import { pickCoinTiles, coinTileAt, COIN_SEASONS } from './core/coinTiles.js';
 import { drawCoinTiles, drawNoMine } from './render/coinTiles.js';
 import { rrect, fillOutline, circle, text } from './render/canvas.js';
-import { rand } from './util.js';
+import { rand, chance } from './util.js';
 
 const TOUCH_LIFT = 46; // ao arrastar com o dedo, a defesa aparece acima dele
 const BASE_HIT = 24; // raio da hitbox do servidor (ele ocupa 1 quadrado)
+const CAST_TIME = 0.5; // Ransomware fica parado tremendo esse tempo ao criptografar
 
 // A partida em si (uma fase). Criada pelo App ao escolher um mapa.
 // mode: 'normal' ou 'platinum' (ondas sem parar até o chefão; data/platinum.js)
@@ -91,12 +95,17 @@ export class Game {
     this.selectedTower = null;
     this.banner = null;
     this.hurt = 0;
+    this.duckHop = 0; // pulinho do Pato de Borracha quando acha café
+    this.duckCoffee = 0; // café que ele achou nesta partida
     this.coinBump = 0;
     this.shakeAmt = 0;
     this.endDelay = 0;
     this.overlayTime = 0;
     this.stars = 0;
     this.stats = { pops: 0 };
+    this.ransomOdds = null; // chance do Ransomware criptografar no próximo quadrado (null = ainda não veio)
+    this.ransomLocks = 0; // quantas vezes já criptografou nessa partida
+    this.ads = []; // anúncios do Adware abertos na tela (render/ads.js)
     this.state = 'playing'; // playing | paused | won | lost
     // platina: relógio das ondas, se o chefão já veio e o aliado bloqueado
     this.platTime = 0;
@@ -140,7 +149,10 @@ export class Game {
       this.stars = this.lives >= L * 0.9 ? 3 : this.lives >= L * 0.5 ? 2 : 1;
       if (this.platinum) {
         this.stars = 3; // vencer a platina já vale as 3 (em platina)
+        const hadTurbo = this.app.seasonPlatinum?.(0);
         this.app.recordPlatinum?.(this.map.id);
+        // fechou a platina da Placa-Mãe agora: libera o 5x (aviso na vitória)
+        this.turboUnlocked = !hadTurbo && !!this.app.seasonPlatinum?.(0);
       }
       this.app.recordStars(this.map.id, this.stars);
       this.fx.celebrate(this.viewW, VIEW_H);
@@ -150,7 +162,7 @@ export class Game {
     // cafés novos da partida: o que passou do recorde do mapa e os monstros
     // abatidos (data/darknet.js)
     this.bankKills();
-    this.coffeeGain = (this.app.coffeeEarned ?? 0) - coffeeBefore;
+    this.coffeeGain = (this.app.coffeeEarned ?? 0) - coffeeBefore + this.duckCoffee; // (o do pato já entrou no save durante a partida)
   }
 
   // Monstros abatidos viram cafés: soma no save os desta partida que ainda
@@ -178,6 +190,7 @@ export class Game {
     if (this.state === 'paused') return;
     this.endDelay = Math.max(0, this.endDelay - dt);
     this.hurt = Math.max(0, this.hurt - dt);
+    this.duckHop = Math.max(0, this.duckHop - dt * 2.5);
     this.coinBump = Math.max(0, this.coinBump - dt * 4);
     this.shakeAmt = Math.max(0, this.shakeAmt - dt * 30);
     if (this.banner && (this.banner.time -= dt) <= 0) this.banner = null;
@@ -197,6 +210,7 @@ export class Game {
 
   step(dt) {
     this.callCooldown = Math.max(0, this.callCooldown - dt);
+    this.updateAds(dt);
     if (this.nextIn != null && (this.nextIn -= dt) <= 0) this.startRound();
     if (this.platinum && this.rounds.started > 0) this.platinumStep(dt);
     this.rounds.update(dt, this);
@@ -207,6 +221,7 @@ export class Game {
     for (const p of this.projectiles) p.update(dt, this);
     this.flushSpawns();
     for (const e of this.enemies) if (!e.dead) e.update(dt, this);
+    if (this.speed > 1) this.checkDanger();
     for (const p of this.packets) p.update(dt, this);
     this.hazards.update(dt, this);
     for (let k = 0; k < this.spawnFlash.length; k++) this.spawnFlash[k] = Math.max(0, this.spawnFlash[k] - dt * 4);
@@ -233,7 +248,7 @@ export class Game {
   baitAt(e) {
     if (e.def.stealth && !e.revealed) return null; // escondido, passa reto pela isca
     for (const t of this.towers) {
-      if (t.def.attack !== 'decoy' || t.dead) continue;
+      if (t.def.attack !== 'decoy' || t.dead || t.ransom) continue; // criptografada não segura ninguém
       if (Math.hypot(e.x - t.x, e.y - t.y) < t.r + e.r * 0.8) return t;
     }
     return null;
@@ -244,6 +259,25 @@ export class Game {
   touchesBase(e) {
     const s = this.server;
     return Math.hypot(e.x - s.x, e.y - s.y) < BASE_HIT + e.r * 0.5;
+  }
+
+  // Patrocínio: quanto a mais cada vírus estourado por essa defesa solta
+  // (soma dos Mineradores que patrocinam ela)
+  sponsorBonus(tower) {
+    let v = 0;
+    for (const m of this.towers) if (m.sponsorOf === tower && !m.ransom) v += m.stats.sponsor ?? 0;
+    return v;
+  }
+
+  // Pato de Borracha (upgrade secreto da Dark Net): cada vírus estourado tem
+  // DUCK.chance de render DUCK.coffee café (direto no save)
+  duckRoll(e) {
+    if (!this.app.perks?.duck || !chance(DUCK.chance)) return;
+    this.app.addDuckCoffee?.(DUCK.coffee);
+    this.duckCoffee += DUCK.coffee;
+    this.duckHop = 1;
+    this.fx.spark(e.x, e.y - e.r, '#ffe0b0', 10);
+    this.sound.play('coin');
   }
 
   leak(enemy) {
@@ -354,9 +388,30 @@ export class Game {
     this.startRound();
   }
 
+  // Velocidades do botão: 1x, 2x, 3x e, com a Placa-Mãe toda platinada, 5x
+  get speeds() {
+    return this.app.seasonPlatinum?.(0) ? [...SPEEDS, TURBO_SPEED] : SPEEDS;
+  }
+
   speedPressed() {
-    this.speed = (this.speed % MAX_SPEED) + 1;
+    const list = this.speeds;
+    this.speed = list[(list.indexOf(this.speed) + 1) % list.length];
     this.sound.play('click');
+  }
+
+  // Acelerado e um vírus que faria perder (tira todas as vidas que sobram)
+  // está chegando na base: volta pra 1x pra dar tempo de salvar. Cada vírus
+  // avisa uma vez só (dá pra acelerar de novo)
+  checkDanger() {
+    for (const e of this.enemies) {
+      if (e.dead || e.dangerSeen) continue;
+      if (e.remaining / Math.max(1, e.speed) > DANGER_TIME || e.threat < this.lives) continue;
+      e.dangerSeen = true;
+      this.speed = 1;
+      this.toast = { text: 'PERIGO! Velocidade normal', time: 2.6 };
+      this.sound.play('error');
+      return;
+    }
   }
 
   startRound() {
@@ -369,6 +424,13 @@ export class Game {
       this.money += bonus;
       this.coinBump = 1;
     }
+    // Juros (Dark Net): rende uma parte do dinheiro guardado
+    const interest = this.app.perks?.minerador4 && this.money > 0 ? Math.min(INTEREST.max, Math.floor(this.money * INTEREST.rate)) : 0;
+    if (interest > 0) {
+      this.money += interest;
+      this.coinBump = 1;
+    }
+    const juros = interest > 0 ? `Juros: +$${interest}` : null;
     if (this.platinum) {
       // a partir da 2ª onda, o bônus de rodada vem no começo de cada uma
       const wave = this.rounds.started;
@@ -377,9 +439,9 @@ export class Game {
         this.money += pay;
         this.coinBump = 1;
       }
-      this.showBanner(`ONDA ${wave}`, 0.9, '#bdeeff', 36, pay ? `+$${pay}` : null);
+      this.showBanner(`ONDA ${wave}`, 0.9, '#bdeeff', 36, [pay ? `+$${pay}` : null, juros].filter(Boolean).join(' · ') || null);
     }
-    else this.showBanner(`RODADA ${this.rounds.started}`, 1.1, '#ffffff', 46, bonus > 0 ? `Chamou antes: +$${bonus}` : null);
+    else this.showBanner(`RODADA ${this.rounds.started}`, 1.1, '#ffffff', 46, [bonus > 0 ? `Chamou antes: +$${bonus}` : null, juros].filter(Boolean).join(' · ') || null);
     this.sound.play('round');
   }
 
@@ -399,39 +461,6 @@ export class Game {
       if (!e.def.stealth) continue;
       e.revealed = this.towers.some((t) => t.stats.reveals && !t.dead && Math.hypot(e.x - t.x, e.y - t.y) <= t.stats.range + e.r);
     }
-  }
-
-  // Ransomware: criptografa a defesa mais perto dele (a isca não)
-  encryptNear(e, lock) {
-    let best = null;
-    let bestD = lock.range;
-    for (const t of this.towers) {
-      if (t.dead || t.def.attack === 'decoy' || t.locked > 0) continue;
-      const d = Math.hypot(t.x - e.x, t.y - e.y);
-      if (d < bestD) [best, bestD] = [t, d];
-    }
-    if (!best) return;
-    best.locked = lock.time;
-    this.fx.text(best.x, best.y - 50, 'CRIPTOGRAFADA!', '#d9a8ff', 16);
-    this.sound.play('error');
-  }
-
-  // Resgate pra destravar na hora: 20% do que a defesa custou (mín. $40)
-  ransomCost(tw) {
-    return Math.max(40, Math.round(tw.spent * 0.2));
-  }
-
-  payRansom(tw) {
-    const cost = this.ransomCost(tw);
-    if (this.money < cost) {
-      this.fx.text(tw.x, tw.y - 50, 'Sem dinheiro!', '#ff7a8a', 18);
-      this.sound.play('error');
-      return;
-    }
-    this.money -= cost;
-    tw.locked = 0;
-    this.fx.text(tw.x, tw.y - 50, `-$${cost}`, '#ffd23f', 18);
-    this.sound.play('sell');
   }
 
   // Nota de cada vírus pro modo de mira da defesa (maior = alvo).
@@ -530,20 +559,34 @@ export class Game {
     return this.towers.every((t) => tileKey(...tileOf(t.x, t.y)) !== k);
   }
 
+  // Dá pra pagar? Com o Empréstimo (Dark Net), 1 vez por rodada o dinheiro
+  // pode ficar até LOAN no negativo
+  canAfford(cost) {
+    if (this.money >= cost) return true;
+    return !!this.app.perks?.minerador4b && this.loanRound !== this.rounds.started && this.money - cost >= -LOAN;
+  }
+
+  // Paga (usando o empréstimo da rodada se faltar dinheiro)
+  pay(cost) {
+    if (this.money < cost) this.loanRound = this.rounds.started;
+    this.money -= cost;
+  }
+
   // Preço da defesa com os descontos da Dark Net (GPU de Segunda Mão)
   costOf(type) {
-    return applyPerks({ cost: TOWERS[type].cost }, type, this.app.perks).cost;
+    return applyPerks({ ...TOWERS[type] }, type, this.app.perks).cost;
   }
 
   place(type, x, y) {
     const cost = this.costOf(type);
-    if (this.money < cost || !this.canPlace(type, x, y)) return false;
+    if (!this.canAfford(cost) || !this.canPlace(type, x, y)) return false;
     ({ x, y } = snapToTile(x, y)); // a defesa fica no centro do quadrado
-    this.money -= cost;
+    this.pay(cost);
     const tower = new Tower(type, x, y, !this.rounds.active);
     tower.spent = cost; // vende pelo que pagou
-    // bônus da Dark Net pra essa defesa (por cima dos status base)
-    applyPerks(tower.stats, type, this.app.perks);
+    // bônus da Dark Net pra essa defesa (por cima dos status e dos upgrades)
+    tower.perks = this.app.perks ?? {};
+    tower.refresh();
     if (tower.stats.hp) tower.hp = tower.maxHp = tower.stats.hp;
     if (this.rounds.active) tower.onRoundStart();
     this.towers.push(tower);
@@ -563,15 +606,108 @@ export class Game {
   buyUpgrade(tower) {
     const up = tower.nextUpgrade;
     if (!up) return;
-    if (this.money < up.cost) {
+    if (!this.canAfford(up.cost)) {
       this.fx.text(tower.x, tower.y - 50, 'Sem dinheiro!', '#ff7a8a', 18);
       this.sound.play('error');
       return;
     }
-    this.money -= up.cost;
+    this.pay(up.cost);
     tower.upgrade();
     this.fx.burst(tower.x, tower.y - 10, '#ffd23f', 22, 190, 0.55, 5, true);
     this.sound.play('upgrade');
+  }
+
+  // Adware abre um anúncio num lugar sorteado da tela (sem repetir o último tipo)
+  spawnAd(e) {
+    const cfg = e.def.ads;
+    if (this.ads.filter((a) => a.closing == null).length >= cfg.max) return;
+    let type = Math.floor(Math.random() * ADS.length);
+    if (type === this.lastAd) type = (type + 1) % ADS.length;
+    this.lastAd = type;
+    const speed = 70 + Math.random() * 50;
+    this.ads.push({ type, ...adSpot(this.viewW), t: 0, seed: Math.random() * 10, vx: chance(cfg.moving) ? (chance(0.5) ? speed : -speed) : 0 });
+    this.sound.play('star');
+  }
+
+  // Anúncios: entram pulando, os que andam batem nas bordas; sem Adware vivo, somem
+  updateAds(dt) {
+    if (!this.ads.length) return;
+    const adware = this.enemies.some((e) => e.def.ads && !e.dead);
+    for (const ad of this.ads) {
+      ad.t += dt;
+      if (!adware && ad.closing == null) ad.closing = 0.18;
+      if (ad.closing != null) ad.closing -= dt;
+      if (!ad.vx) continue;
+      ad.x += ad.vx * dt;
+      if (ad.x < 8 || ad.x > this.viewW - AD_W - 8) {
+        ad.vx = -ad.vx;
+        ad.x = Math.max(8, Math.min(this.viewW - AD_W - 8, ad.x));
+      }
+    }
+    this.ads = this.ads.filter((ad) => ad.closing == null || ad.closing > 0);
+  }
+
+  // Toque num anúncio (o de cima primeiro): o X fecha; no resto, o toque morre ali
+  adTap(sx, sy) {
+    for (let i = this.ads.length - 1; i >= 0; i--) {
+      const ad = this.ads[i];
+      if (ad.closing != null || sx < ad.x || sx > ad.x + AD_W || sy < ad.y || sy > ad.y + AD_H) continue;
+      if (inRect(adClose(ad), sx, sy)) {
+        ad.closing = 0.18;
+        this.sound.play('click');
+      }
+      return true;
+    }
+    return false;
+  }
+
+  // Ransomware andou um quadrado: com defesa no alcance, sorteia a chance da
+  // partida (a 1ª é certa; depois cai pra odds[N] e sobe step por quadrado)
+  rollRansom(e) {
+    const rs = e.def.ransom;
+    this.ransomOdds ??= rs.odds[0];
+    if (this.ransomTargets(e).length && chance(this.ransomOdds)) {
+      this.ransomLocks++;
+      this.ransomOdds = rs.odds[Math.min(this.ransomLocks, rs.odds.length - 1)];
+      this.ransom(e);
+    } else this.ransomOdds = Math.min(1, this.ransomOdds + rs.step);
+  }
+
+  // Ransomware: defesas no alcance dele que ainda não estão criptografadas
+  ransomTargets(e) {
+    const R = e.def.ransom.range * TILE;
+    return this.towers.filter((t) => !t.dead && !t.ransom && Math.hypot(t.x - e.x, t.y - e.y) <= R);
+  }
+
+  // Ransomware para e treme um instante (CAST_TIME) e criptografa as defesas
+  // em volta (param até pagar o resgate)
+  ransom(e) {
+    const rs = e.def.ransom;
+    e.quake = CAST_TIME;
+    this.shake(6);
+    this.sound.play('zap');
+    this.fx.ring(e.x, e.y, rs.range * TILE, 'ransom');
+    this.fx.text(e.x, e.y - e.r - 24, 'CRIPTOGRAFADO!', '#3dff9a', 20);
+    for (const t of this.ransomTargets(e)) {
+      t.ransom = rs.price;
+      this.fx.burst(t.x, t.y - 20, '#3dff9a', 12, 140, 0.5, 3);
+    }
+  }
+
+  // Paga o resgate de uma defesa criptografada: ela volta a funcionar
+  payRansom(tower) {
+    if (!tower.ransom) return false;
+    if (!this.canAfford(tower.ransom)) {
+      this.fx.text(tower.x, tower.y - 50, 'Sem dinheiro!', '#ff7a8a', 16);
+      this.sound.play('error');
+      return false;
+    }
+    this.pay(tower.ransom);
+    tower.ransom = 0;
+    tower.spawnAnim = 1;
+    this.fx.burst(tower.x, tower.y - 20, '#ffd23f', 14, 160, 0.5, 4, true);
+    this.sound.play('upgrade');
+    return true;
   }
 
   sell(tower) {
@@ -597,6 +733,7 @@ export class Game {
   pointerDown(sx, sy, type = 'touch') {
     Object.assign(this.pointer, { x: sx, y: sy, down: true, type });
     if (this.state !== 'playing') return this.overlayTap(sx, sy);
+    if (this.adTap(sx, sy)) return; // anúncio por cima: o toque não passa
 
     const L = layout(this);
     if (sx >= L.panel.x) return this.panelTap(sx, sy, L);
@@ -649,8 +786,9 @@ export class Game {
         this.selectedTower = null;
         this.sound.play('click');
       } else if (inRect(L.sell, sx, sy)) this.sell(tw);
-      else if (tw.locked > 0 && inRect(L.ransom, sx, sy)) this.payRansom(tw);
-      else if (tw.def.targeting && inRect(L.target, sx, sy)) {
+      else if (tw.ransom) {
+        if (inRect(L.ransom, sx, sy)) this.payRansom(tw); // criptografada: só o resgate (sem upgrade nem alvo)
+      } else if (tw.def.targeting && inRect(L.target, sx, sy)) {
         const i = TARGET_MODES.findIndex((m) => m.id === tw.targetMode);
         tw.targetMode = TARGET_MODES[(i + 1) % TARGET_MODES.length].id;
         this.sound.play('click');
@@ -671,7 +809,7 @@ export class Game {
         return;
       }
       const toggleOff = this.placing === tile.type;
-      if (!toggleOff && this.money < this.costOf(tile.type)) {
+      if (!toggleOff && !this.canAfford(this.costOf(tile.type))) {
         this.fx.text(tile.x + tile.w / 2 - this.offsetX, tile.y + 30, 'Sem dinheiro!', '#ff7a8a', 16);
         this.sound.play('error');
         // mesmo sem dinheiro dá pra ver os atributos na aba de informações
@@ -780,16 +918,24 @@ export class Game {
     for (const th of things) {
       if (th.tw) {
         this.drawTowerAt(ctx, th.tw);
+        // patrocinada por um Minerador: moedinha girando em cima
+        if (this.sponsorBonus(th.tw)) {
+          ctx.save();
+          ctx.translate(th.tw.x + 16, th.tw.y - 50 + Math.sin(t * 3) * 2);
+          drawCoin(ctx, 7, t * 2);
+          ctx.restore();
+        }
         continue;
       }
       const e = th.e;
       ctx.save();
-      ctx.translate(e.x, e.y);
+      ctx.translate(e.x + (e.quake > 0 ? Math.sin(this.anim * 70) * 4 * Math.min(1, e.quake * 3) : 0), e.y); // treme lançando o Ransomware
       if (e.def.stealth && !e.revealed) ctx.globalAlpha = 0.25; // Spyware escondido: quase transparente
       drawEnemy(ctx, e);
       ctx.restore();
-      if (e.def.boss) drawBossBar(ctx, e);
+      if (e.def.boss && !e.def.topBar) drawBossBar(ctx, e); // (Ransomware: barra no topo, drawBossBars)
       if (e.vulnTimer > 0) drawVulnerable(ctx, e, t);
+      if (e.markTimer > 0) drawMarked(ctx, e, t);
     }
 
     for (const p of this.projectiles) {
@@ -804,7 +950,7 @@ export class Game {
     const g = this.ghost();
     if (g) {
       const def = TOWERS[this.placing];
-      const valid = this.canPlace(this.placing, g.x, g.y) && this.money >= this.costOf(this.placing);
+      const valid = this.canPlace(this.placing, g.x, g.y) && this.canAfford(this.costOf(this.placing));
       drawTileMark(ctx, g.x, g.y, valid);
       if (Number.isFinite(def.range) && def.range > 0) drawRange(ctx, g.x, g.y, def.range, valid);
       else drawRange(ctx, g.x, g.y, def.radius + 8, valid);
@@ -820,6 +966,13 @@ export class Game {
     ctx.restore();
 
     drawHud(ctx, this);
+    // Pato de Borracha boiando no canto de baixo do mapa
+    if (this.app.perks?.duck) {
+      ctx.save();
+      ctx.translate(30, VIEW_H - 24);
+      drawDuck(ctx, 13, { t, hop: this.duckHop });
+      ctx.restore();
+    }
 
     // moedas voando até o contador (por cima do HUD)
     ctx.save();
@@ -834,6 +987,7 @@ export class Game {
 
     drawInfoPanel(ctx, this); // antes do painel: a alça recolhida "entra" embaixo dele
     drawPanel(ctx, this);
+    drawAds(ctx, this); // por cima do mapa e do painel
     if (this.toast) drawToast(ctx, this);
     drawBanner(ctx, this);
     drawOverlay(ctx, this);
@@ -844,11 +998,13 @@ export class Game {
     ctx.save();
     ctx.translate(tw.x, tw.y);
     const idle = tw.def.attack === 'farm' && !this.canMine(tw); // Minerador fora da pilha
+    if (tw.ransom) ctx.filter = ENCRYPT_FILTER; // criptografada: "verde de terminal" e apagada
     drawCharacter(ctx, tw.type, { t: tw.anim, face: tw.face, attack: tw.attack, pulse: tw.pulse, spawn: tw.spawnAnim, level: tw.level, idle });
+    ctx.filter = 'none';
+    if (tw.ransom) drawEncrypted(ctx, this.anim, tw.ransom);
     if (idle) drawNoMine(ctx, 0, 0, this.anim);
     if (tw.def.attack === 'decoy' && tw.hp < tw.maxHp) drawBaitBar(ctx, tw);
     if (tw.stunned > 0) drawStunned(ctx, this.anim);
-    if (tw.locked > 0) drawLocked(ctx, tw, this.anim);
     ctx.restore();
   }
 }
@@ -917,28 +1073,38 @@ function drawBossBar(ctx, e) {
   }
 }
 
+// Mira vermelha girando em volta do vírus marcado (Marcar Alvo do Robô NMAP)
+function drawMarked(ctx, e, t) {
+  const r = e.r + 7 + Math.sin(t * 8) * 1.5;
+  const cy = e.y - e.r * 0.3;
+  ctx.save();
+  ctx.translate(e.x, cy);
+  ctx.rotate(t * 1.5);
+  ctx.globalAlpha = Math.min(1, e.markTimer * 3); // some no fim
+  ctx.lineCap = 'round';
+  for (const [w, color] of [[5, 'rgba(26,16,40,0.85)'], [2.5, '#ff4d6d']]) {
+    ctx.lineWidth = w;
+    ctx.strokeStyle = color;
+    for (let i = 0; i < 4; i++) {
+      const a = (i * Math.PI) / 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, r, a + 0.25, a + Math.PI / 2 - 0.25);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * (r - 6), Math.sin(a) * (r - 6));
+      ctx.lineTo(Math.cos(a) * (r + 5), Math.sin(a) * (r + 5));
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
 // Selinho "x2" em cima do vírus: está vulnerável e leva dano dobrado (Era do Gelo)
 function drawVulnerable(ctx, e, t) {
   const x = e.x - e.r * 0.8;
   const y = e.y - e.r - (e.def.boss ? 30 : 18) + Math.sin(t * 6) * 1.5;
   circle(ctx, x, y, 10);
   fillOutline(ctx, '#3ec5ff', 2.5);
-  text(ctx, 'x2', x, y + 1, { size: 12 });
+  text(ctx, `+${Math.round((e.vulnMul - 1) * 100)}%`, x, y + 1, { size: 9 }); // tudo em % (regra do jogo)
 }
 
-// Defesa criptografada pelo Ransomware: véu roxo e cadeado em cima
-function drawLocked(ctx, tw, t) {
-  circle(ctx, 0, -8, tw.r + 12);
-  ctx.fillStyle = 'rgba(122,60,196,0.35)';
-  ctx.fill();
-  ctx.save();
-  ctx.translate(0, -tw.r - 30 + Math.sin(t * 5) * 2);
-  rrect(ctx, -9, -2, 18, 14, 4);
-  fillOutline(ctx, '#b77cff', 2.5);
-  ctx.beginPath();
-  ctx.arc(0, -2, 6, Math.PI, 0);
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = '#2b2340';
-  ctx.stroke();
-  ctx.restore();
-}

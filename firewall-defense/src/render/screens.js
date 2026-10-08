@@ -7,6 +7,7 @@ import { ENEMIES } from '../data/enemies.js';
 import { easeOutBack, clamp } from '../util.js';
 import { ICONS, drawHeart } from './sprites.js';
 import { formatCoffee } from '../data/darknet.js';
+import { drawDuck } from './duck.js';
 
 // Posições dos botões das telas de pausa/vitória/derrota (desenho e toque)
 export function overlayLayout(game) {
@@ -107,6 +108,7 @@ export function drawOverlay(ctx, game) {
       // vidas que sobraram e cafés novos lado a lado; ameaças contidas embaixo
       drawResults(ctx, cx, 270, game.lives, game.coffeeGain, game.overlayTime);
       text(ctx, `Ameaças contidas: ${game.stats.pops}`, cx, 318, { size: 19, color: GOLD });
+      if (game.turboUnlocked) text(ctx, 'ACELERAR 5x LIBERADO!', cx, 348, { size: 17, color: '#bdeeff' });
     } else {
       const survived = Math.floor(Math.min(game.platTime, 180));
       const lines = game.platinum
@@ -123,6 +125,13 @@ export function drawOverlay(ctx, game) {
         ctx.translate(x, 200 - Math.abs(Math.sin(t * 5 + x)) * 10);
         ctx.scale(1.5, 1.5);
         drawCharacter(ctx, type, { t, face, attack: Math.sin(t * 5 + x) > 0 ? 1 : 0 });
+        ctx.restore();
+      }
+      // Pato de Borracha (upgrade secreto) comemora junto, pulando embaixo do Hacker
+      if (game.app.perks?.duck) {
+        ctx.save();
+        ctx.translate(c.x + 72, 296);
+        drawDuck(ctx, 15, { t, hop: Math.abs(Math.sin(t * 4)) * 0.5 });
         ctx.restore();
       }
     }

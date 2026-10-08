@@ -21,7 +21,7 @@ export const ROUNDS = [
   /* 12 */ [{ type: 'worm', count: 8, gap: 1.2 }, { type: 'v3', count: 25, gap: 0.35, at: 3 }],
   /* 13 */ [{ type: 'v2', count: 80, gap: 0.15 }, { type: 'v4', count: 20, gap: 0.6, at: 5 }],
   /* 14 */ [{ type: 'v5', count: 12, gap: 1 }, { type: 'v3', count: 40, gap: 0.3 }, { type: 'spyware', count: 6, gap: 1.6, at: 4 }],
-  /* 15 */ [{ type: 'locker', count: 1, gap: 0 }, { type: 'v4', count: 25, gap: 0.45, at: 2 }, { type: 'trojan', count: 4, gap: 2, at: 6 }],
+  /* 15 */ [{ type: 'locker', count: 1, gap: 0 }, { type: 'adware', count: 1, gap: 0, at: 4 }, { type: 'v4', count: 25, gap: 0.45, at: 2 }, { type: 'trojan', count: 4, gap: 2, at: 6 }],
   /* 16 */ [{ type: 'v4', count: 45, gap: 0.3 }, { type: 'worm', count: 10, gap: 1, at: 5 }],
   /* 17 */ [{ type: 'v5', count: 35, gap: 0.4 }, { type: 'trojan', count: 10, gap: 1.4, at: 4 }, { type: 'spyware', count: 8, gap: 1.4, at: 2 }],
   /* 18 */ [{ type: 'worm', count: 20, gap: 0.8 }, { type: 'v5', count: 30, gap: 0.4, at: 3 }],

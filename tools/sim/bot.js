@@ -94,6 +94,8 @@ export function playMap(mapIndex, profileName, seed, mode = 'normal') {
   const isPiercer = (t) => t.hitsArmored && (t.def.attack === 'pulse' ? t.stats.damage > 0 : t.def.attack !== 'decoy');
 
   function think() {
+    // Ransomware criptografou defesas: paga o resgate primeiro (parada não ajuda)
+    for (const t of game.towers) if (t.ransom && game.money >= t.ransom) game.payRansom(t);
     for (let guard = 0; guard < 6; guard++) {
       const fighters = game.towers.filter((t) => t.def.attack !== 'farm' && t.def.attack !== 'decoy');
       const piercers = fighters.filter(isPiercer);

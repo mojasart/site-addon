@@ -27,7 +27,7 @@ export const TOWERS = {
     attack: 'projectile',
     projectile: 'keyboard',
     fireRate: 0.95,
-    damage: 1,
+    damage: 1000,
     projectileSpeed: 650,
     canHitArmored: false,
     targeting: true,
@@ -47,7 +47,7 @@ export const TOWERS = {
     attack: 'pulse',
     effect: 'fire',
     fireRate: 1.8, // segundos entre uma onda e outra (golem é lento: bate forte, mas devagar)
-    damage: 1,
+    damage: 1000,
     maxTargets: 10,
     canHitArmored: true,
     sound: 'fire',
@@ -55,7 +55,7 @@ export const TOWERS = {
       { name: 'Muralha de Fogo', desc: 'Mais alcance e ondas mais rápidas', cost: 280, apply: (s) => { s.range += 20; s.fireRate *= 0.8; } },
       // queima: o vírus fica pegando fogo (burn de dano/s por burnTime s), mesmo fora do alcance;
       // não acumula (ver Enemy.ignite)
-      { name: 'Incêndio', desc: 'Vírus pegam fogo: 0,33 de dano/s por até 3s', cost: 500, apply: (s) => { s.burn = 0.33; s.burnTime = 3; } },
+      { name: 'Incêndio', desc: 'Os vírus pegam fogo', cost: 500, apply: (s) => { s.burn = 500; s.burnTime = 3; } },
     ],
   },
   pinguim: {
@@ -71,13 +71,13 @@ export const TOWERS = {
     damage: 0,
     slow: 0.5, // multiplica a velocidade
     slowTime: 1.5,
-    vulnerable: false, // congelados levam dano dobrado (upgrade Era do Gelo)
+    vulnerable: false, // congelados levam vulnMul de dano (Gelo Quebradiço, Dark Net)
     maxTargets: 30,
     canHitArmored: true,
     sound: 'frost',
     upgrades: [
-      { name: 'Criptografia AES', desc: 'Lentidão mais forte e mais longa', cost: 220, apply: (s) => { s.slow = 0.3; s.slowTime = 2.5; } },
-      { name: 'Era do Gelo', desc: 'Mais alcance e congelados levam dano dobrado', cost: 450, apply: (s) => { s.vulnerable = true; s.range += 25; } },
+      { name: 'Criptografia AES', desc: 'Lentidão bem mais forte: 75% mais lento por 2,5s', cost: 220, apply: (s) => { s.slow = 0.25; s.slowTime = 2.5; } },
+      { name: 'Frente Fria', desc: 'Mais alcance e ondas um pouco mais rápidas', cost: 450, apply: (s) => { s.range += 25; s.fireRate *= 0.85; } },
     ],
   },
   scanner: {
@@ -89,8 +89,8 @@ export const TOWERS = {
     range: 300,
     attack: 'beam',
     reveals: true, // deixa o Spyware visível no alcance dele
-    fireRate: 2.5,
-    damage: 3,
+    fireRate: 2.8,
+    damage: 12000, // sniper: tiro lento e pesado (o que mais tira vida de chefão)
     canHitArmored: true,
     targeting: true,
     defaultTarget: 'strong',
@@ -98,7 +98,8 @@ export const TOWERS = {
     upgrades: [
       // o laser segue reto depois do alvo e acerta mais vírus em linha (até pierce no total)
       { name: 'Feixe Perfurante', desc: 'O laser atravessa e acerta até 2 vírus', cost: 350, apply: (s) => { s.pierce = 2; } },
-      { name: 'Varredura Contínua', desc: 'Atira 40% mais rápido', cost: 550, apply: (s) => { s.fireRate *= 0.6; } },
+      // o vírus atingido fica marcado: por markTime s leva markMul de dano de todas as defesas
+      { name: 'Marcar Alvo', desc: 'O vírus atingido fica marcado por 2s e leva 25% a mais de dano de todas as defesas', cost: 550, apply: (s) => { s.markTime = 2; s.markMul = 1.25; } },
     ],
   },
   minerador: {
@@ -113,8 +114,10 @@ export const TOWERS = {
     packetInterval: 3.5,
     upgrades: [
       { name: 'GPU Extra', desc: '6 bitcoins por rodada', cost: 500, apply: (s) => { s.packetsPerRound = 6; } },
-      // cada vírus que entra numa rodada tem goldenChance de vir dourado: destruído, solta goldenValue
-      { name: 'Toque de Midas', desc: '5% dos vírus vêm dourados e soltam $100', cost: 900, apply: (s) => { s.goldenChance = 0.05; s.goldenValue = 100; } },
+      // escolhe uma defesa aleatória (que ataca) pra patrocinar: cada vírus que
+      // ela estourar solta +$`sponsor` (Tower.updateSponsor, Enemy.pop)
+      { name: 'Patrocínio', desc: 'Escolhe uma defesa aleatória: cada vírus que ela estourar solta +$1', cost: 900,
+        apply: (s) => { s.sponsor = 1; } },
     ],
   },
   honeypot: {

@@ -214,6 +214,7 @@ export function enemySprite(type, def, r) {
   return cachedSprite(`e:${type}:${r}`, r * 3.4, (g) => {
     if (def.kind === 'trojan') trojan(g, r, def.color);
     else if (def.kind === 'locker') locker(g, r, def.color);
+    else if (def.kind === 'adware') adware(g, r, def.color);
     else if (def.kind === 'spy') spy(g, r, def.color);
     else blob(g, r, def.color, true);
   });
@@ -350,6 +351,69 @@ function trojan(g, r, color) {
 }
 
 // Locker: mini-chefão acorrentado com cadeado na barriga
+// Adware: janelinha de pop-up com cara de brava (barra de título com o X,
+// olhos de sobrancelha franzida, sorrisão e o selo "AD")
+function adware(g, r, color) {
+  const w = r * 2.1;
+  const h = r * 1.75;
+  const x = -w / 2;
+  const y = -h / 2;
+  rrect(g, x, y, w, h, r * 0.3);
+  fillOutline(g, '#fffaf0', 3.5);
+  // barra de título colorida
+  g.save();
+  rrect(g, x, y, w, h, r * 0.3);
+  g.clip();
+  const bar = g.createLinearGradient(0, y, 0, y + r * 0.55);
+  bar.addColorStop(0, shade(color, 0.3));
+  bar.addColorStop(1, color);
+  g.fillStyle = bar;
+  g.fillRect(x, y, w, r * 0.55);
+  g.restore();
+  rrect(g, x, y, w, h, r * 0.3);
+  g.lineWidth = 3.5;
+  g.strokeStyle = OUTLINE;
+  g.stroke();
+  // X vermelho no canto da barra
+  circle(g, x + w - r * 0.32, y + r * 0.28, r * 0.19);
+  fillOutline(g, '#ff5a5a', 2);
+  g.lineWidth = 2.2;
+  g.strokeStyle = '#ffffff';
+  const cx = x + w - r * 0.32;
+  const cy = y + r * 0.28;
+  const k = r * 0.08;
+  g.beginPath();
+  g.moveTo(cx - k, cy - k);
+  g.lineTo(cx + k, cy + k);
+  g.moveTo(cx + k, cy - k);
+  g.lineTo(cx - k, cy + k);
+  g.stroke();
+  // olhos bravos
+  for (const s of [-1, 1]) {
+    circle(g, s * r * 0.42, r * 0.1, r * 0.22);
+    fillOutline(g, '#ffffff', 2.5);
+    circle(g, s * r * 0.38, r * 0.14, r * 0.1);
+    g.fillStyle = OUTLINE;
+    g.fill();
+    g.lineWidth = 3;
+    g.lineCap = 'round';
+    g.beginPath();
+    g.moveTo(s * r * 0.68, -r * 0.16);
+    g.lineTo(s * r * 0.2, -r * 0.04);
+    g.stroke();
+  }
+  // sorrisão
+  g.beginPath();
+  g.arc(0, r * 0.38, r * 0.4, 0.15 * Math.PI, 0.85 * Math.PI);
+  g.lineWidth = 3;
+  g.strokeStyle = OUTLINE;
+  g.stroke();
+  // selo "AD"
+  rrect(g, x + r * 0.12, y + h - r * 0.5, r * 0.62, r * 0.38, r * 0.1);
+  fillOutline(g, GOLD, 2);
+  text(g, 'AD', x + r * 0.43, y + h - r * 0.3, { size: r * 0.3, color: OUTLINE, stroke: null });
+}
+
 function locker(g, r, color) {
   blob(g, r, color, true);
   g.lineCap = 'round';

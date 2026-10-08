@@ -1,5 +1,5 @@
 import { MIN_VIEW_W, VIEW_H } from './config.js';
-import { MAPS } from './data/maps.js';
+import { MAPS, MAPS_PER_SEASON } from './data/maps.js';
 import { loadSave, writeSave } from './save.js';
 import { Sound } from './audio/Sound.js';
 import { setPixelScale } from './render/canvas.js';
@@ -71,7 +71,13 @@ export class App {
   // (mais os dos monstros abatidos em todas as partidas)
   get coffeeEarned() {
     const maps = MAPS.reduce((sum, m) => sum + mapCoffee(this.save.stars[m.id], this.hasPlatinum(m.id)), 0);
-    return maps + (this.save.kills ?? 0) * COFFEE.perKill;
+    return maps + (this.save.kills ?? 0) * COFFEE.perKill + (this.save.duckCoffee ?? 0);
+  }
+
+  // Café que o Pato de Borracha achou numa partida (upgrade secreto)
+  addDuckCoffee(v) {
+    this.save.duckCoffee = Math.round(((this.save.duckCoffee ?? 0) + v) * 100) / 100;
+    writeSave(this.save);
   }
 
   // Saldo de cafés pra gastar na Dark Net (com 2 casas: os abatidos dão fração)
@@ -155,6 +161,11 @@ export class App {
 
   hasPlatinum(mapId) {
     return !!this.save.platinum?.[mapId];
+  }
+
+  // Todos os mapas da season com a platina vencida?
+  seasonPlatinum(s) {
+    return MAPS.slice(s * MAPS_PER_SEASON, (s + 1) * MAPS_PER_SEASON).every((m) => this.hasPlatinum(m.id));
   }
 
   // Modo platina liberado nesse mapa? (precisa das 3 estrelas)
