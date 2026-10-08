@@ -20,7 +20,7 @@ import { AGES, statsAt, statRows } from '../data/towerInfo.js';
  *  Lista à esquerda e a ficha da escolhida à direita.
  * ════════════════════════════════════════════════════════════ */
 
-const ORDER = ['v1', 'v2', 'v3', 'v4', 'v5', 'worm', 'spyware', 'trojan', 'locker', 'adware', 'ransomware'];
+const ORDER = ['v1', 'v2', 'v3', 'v4', 'v5', 'worm', 'worm2', 'worm3', 'worm4', 'spyware', 'trojan', 'locker', 'adware', 'ransomware'];
 const TABS = [
   { id: 'threats', label: 'AMEAÇAS', file: 'THREAT_DB.EXE', items: ORDER },
   { id: 'towers', label: 'DEFESAS', file: 'AGENTS_DB.EXE', items: TOWER_ORDER },
