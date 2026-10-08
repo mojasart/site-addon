@@ -1,5 +1,6 @@
 import { ENEMIES, threat } from '../data/enemies.js';
 import { rand, chance } from '../util.js';
+import { TILE } from '../core/grid.js';
 
 const SHATTER_R = 45; // alcance do Estilhaço
 const STICKY = { mul: 0.5, time: 2 }; // Mel Pegajoso: 50% mais lento por 2 s
@@ -30,6 +31,7 @@ export class Enemy {
     this.phase = rand(0, 10); // relógio da animação
     this.dead = false;
     this.speedMul = 1; // dificuldade do mapa (RoundManager)
+    this.quake = 0; // tremendo (Ransomware lançando a criptografia)
   }
 
   // Vida dos inimigos de várias camadas (Worm, Locker, Ransomware) muda
@@ -76,6 +78,7 @@ export class Enemy {
     this.freezeTimer = Math.max(0, this.freezeTimer - dt);
     this.vulnTimer = Math.max(0, this.vulnTimer - dt);
     this.flash = Math.max(0, this.flash - dt);
+    this.quake = Math.max(0, this.quake - dt);
     this.phase += dt * (this.slowTimer > 0 ? this.slowMul : 1);
     // vira aos poucos pro lado em que anda (o desenho "gira" na curva)
     this.turn = this.turn == null ? this.face : this.turn + (this.face - this.turn) * Math.min(1, dt * 9);
@@ -108,6 +111,7 @@ export class Enemy {
       return;
     }
     this.place();
+    this.tryRansom(game);
     // encostou no servidor: já conta como invasão (não passa por cima dele)
     if (game.touchesBase(this)) {
       this.dead = true;
@@ -124,6 +128,18 @@ export class Enemy {
       child.place();
       game.spawnEnemy(child);
     }
+  }
+
+  // Ransomware: a cada quadrado novo que anda, se tiver defesa no alcance,
+  // tem a chance de criptografar (game.ransom)
+  tryRansom(game) {
+    const rs = this.def.ransom;
+    if (!rs) return;
+    const step = Math.floor(this.dist / TILE);
+    if (this.ransomStep == null) this.ransomStep = step;
+    if (step <= this.ransomStep) return;
+    this.ransomStep = step;
+    if (game.ransomTargets(this).length && chance(rs.chance)) game.ransom(this);
   }
 
   // quanto tira da isca por segundo (chefão morde forte)

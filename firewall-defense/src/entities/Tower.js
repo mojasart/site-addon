@@ -25,6 +25,7 @@ export class Tower {
     this.pulse = 0;
     this.spawnAnim = 1; // "pulinho" ao ser colocado
     this.stunned = 0; // atordoada por zona eletrificada (segundos)
+    this.ransom = 0; // criptografada pelo Ransomware: resgate a pagar (0 = livre)
     this.targetMode = this.def.defaultTarget ?? 'first';
     this.hp = this.maxHp = this.def.hp ?? 0; // vida da isca (Honeypot)
     this.dropped = 0;
@@ -64,7 +65,7 @@ export class Tower {
   // moedas que faltaram (ninguém perde bitcoin por rodada curta)
   finishMining(game) {
     const s = this.stats;
-    if (s.attack !== 'farm' || !game.canMine(this)) return;
+    if (s.attack !== 'farm' || this.ransom || !game.canMine(this)) return;
     for (; this.dropped < s.packetsPerRound; this.dropped++) this.mine(game);
     this.attack = 1;
   }
@@ -158,6 +159,7 @@ export class Tower {
     this.spawnAnim = Math.max(0, this.spawnAnim - dt * 3);
     // isca: o tempo corre nas rodadas (antes de começar dá pra posicionar com calma)
     if (s.attack === 'decoy' && game.rounds.active) this.wear(this.decay * dt, game);
+    if (this.ransom) return; // criptografada: parada até pagarem o resgate
     if (this.stunned > 0) {
       this.stunned = Math.max(0, this.stunned - dt);
       return;

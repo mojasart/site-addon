@@ -22,6 +22,7 @@ import { drawCharacter } from './render/characters.js';
 import { drawEnemy } from './render/viruses.js';
 import { drawProjectile, drawCoin, drawServer } from './render/sprites.js';
 import { drawHazards, drawStunned, drawHazardWarning } from './render/hazards.js';
+import { drawEncrypted, ENCRYPT_FILTER } from './render/ransom.js';
 import { drawSpawns } from './render/spawns.js';
 import { pickCoinTiles, coinTileAt, COIN_SEASONS } from './core/coinTiles.js';
 import { drawCoinTiles, drawNoMine } from './render/coinTiles.js';
@@ -231,7 +232,7 @@ export class Game {
   // Isca (Honeypot) que o vírus está encostando, se houver
   baitAt(e) {
     for (const t of this.towers) {
-      if (t.def.attack !== 'decoy' || t.dead) continue;
+      if (t.def.attack !== 'decoy' || t.dead || t.ransom) continue; // criptografada não segura ninguém
       if (Math.hypot(e.x - t.x, e.y - t.y) < t.r + e.r * 0.8) return t;
     }
     return null;
@@ -531,6 +532,42 @@ export class Game {
     this.sound.play('upgrade');
   }
 
+  // Ransomware: defesas no alcance dele que ainda não estão criptografadas
+  ransomTargets(e) {
+    const R = e.def.ransom.range * TILE;
+    return this.towers.filter((t) => !t.dead && !t.ransom && Math.hypot(t.x - e.x, t.y - e.y) <= R);
+  }
+
+  // Ransomware treme e criptografa as defesas em volta (param até pagar o resgate)
+  ransom(e) {
+    const rs = e.def.ransom;
+    e.quake = 0.6;
+    this.shake(6);
+    this.sound.play('zap');
+    this.fx.ring(e.x, e.y, rs.range * TILE, 'ransom');
+    this.fx.text(e.x, e.y - e.r - 24, 'CRIPTOGRAFADO!', '#3dff9a', 20);
+    for (const t of this.ransomTargets(e)) {
+      t.ransom = rs.price;
+      this.fx.burst(t.x, t.y - 20, '#3dff9a', 12, 140, 0.5, 3);
+    }
+  }
+
+  // Paga o resgate de uma defesa criptografada: ela volta a funcionar
+  payRansom(tower) {
+    if (!tower.ransom) return false;
+    if (this.money < tower.ransom) {
+      this.fx.text(tower.x, tower.y - 50, 'Sem dinheiro!', '#ff7a8a', 16);
+      this.sound.play('error');
+      return false;
+    }
+    this.money -= tower.ransom;
+    tower.ransom = 0;
+    tower.spawnAnim = 1;
+    this.fx.burst(tower.x, tower.y - 20, '#ffd23f', 14, 160, 0.5, 4, true);
+    this.sound.play('upgrade');
+    return true;
+  }
+
   sell(tower) {
     this.money += tower.sellValue;
     tower.dead = true;
@@ -606,7 +643,9 @@ export class Game {
         this.selectedTower = null;
         this.sound.play('click');
       } else if (inRect(L.sell, sx, sy)) this.sell(tw);
-      else if (tw.def.targeting && inRect(L.target, sx, sy)) {
+      else if (tw.ransom) {
+        if (inRect(L.ransom, sx, sy)) this.payRansom(tw); // criptografada: só o resgate (sem upgrade nem alvo)
+      } else if (tw.def.targeting && inRect(L.target, sx, sy)) {
         const i = TARGET_MODES.findIndex((m) => m.id === tw.targetMode);
         tw.targetMode = TARGET_MODES[(i + 1) % TARGET_MODES.length].id;
         this.sound.play('click');
@@ -740,7 +779,7 @@ export class Game {
       }
       const e = th.e;
       ctx.save();
-      ctx.translate(e.x, e.y);
+      ctx.translate(e.x + (e.quake > 0 ? Math.sin(this.anim * 70) * 4 * Math.min(1, e.quake * 3) : 0), e.y); // treme lançando o Ransomware
       drawEnemy(ctx, e);
       ctx.restore();
       if (e.def.boss) drawBossBar(ctx, e);
@@ -799,7 +838,10 @@ export class Game {
     ctx.save();
     ctx.translate(tw.x, tw.y);
     const idle = tw.def.attack === 'farm' && !this.canMine(tw); // Minerador fora da pilha
+    if (tw.ransom) ctx.filter = ENCRYPT_FILTER; // criptografada: "verde de terminal" e apagada
     drawCharacter(ctx, tw.type, { t: tw.anim, face: tw.face, attack: tw.attack, pulse: tw.pulse, spawn: tw.spawnAnim, level: tw.level, idle });
+    ctx.filter = 'none';
+    if (tw.ransom) drawEncrypted(ctx, this.anim, tw.ransom);
     if (idle) drawNoMine(ctx, 0, 0, this.anim);
     if (tw.def.attack === 'decoy' && tw.hp < tw.maxHp) drawBaitBar(ctx, tw);
     if (tw.stunned > 0) drawStunned(ctx, this.anim);

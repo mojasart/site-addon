@@ -22,6 +22,7 @@ export function layout(game) {
     pause: { x: game.mapW - 58, y: 10, w: 48, h: 48 },
     close: { x: px + W - 48, y: 6, w: 40, h: 40 },
     upgrades: [0, 1].map((i) => ({ x: px + 10, y: 64 + i * 98, w: W - 20, h: 90 })),
+    ransom: { x: px + 10, y: 64, w: W - 20, h: 188 }, // no lugar dos upgrades (defesa criptografada)
     target: { x: px + 10, y: 262, w: W - 20, h: 46 },
     sell: { x: px + 10, y: 314, w: W - 20, h: 50 },
   };
@@ -172,9 +173,10 @@ function drawTowerInfo(ctx, game, L) {
   if (def.attack !== 'farm' && def.damage !== 0) text(ctx, `Estourou ${tw.pops}`, P.x + 14, 50, { size: 13, align: 'left', color: '#bcd0f5' });
   iconButton(ctx, L.close, '#ff5a5a', 'close');
 
-  if (def.upgrades.length) def.upgrades.forEach((up, i) => drawUpgrade(ctx, game, tw, up, i, L.upgrades[i]));
+  if (tw.ransom) drawRansom(ctx, game, tw, L.ransom);
+  else if (def.upgrades.length) def.upgrades.forEach((up, i) => drawUpgrade(ctx, game, tw, up, i, L.upgrades[i]));
 
-  if (def.targeting) {
+  if (def.targeting && !tw.ransom) {
     button(ctx, L.target, '#8a7dff', { radius: 12, depth: 5 });
     const mode = TARGET_MODES.find((m) => m.id === tw.targetMode);
     text(ctx, 'ALVO', L.target.x + L.target.w / 2, L.target.y + 12, { size: 11, color: '#ece9ff' });
@@ -183,6 +185,20 @@ function drawTowerInfo(ctx, game, L) {
 
   button(ctx, L.sell, '#ff5a5a', { radius: 12, depth: 5 });
   text(ctx, `VENDER $${tw.sellValue}`, L.sell.x + L.sell.w / 2, L.sell.y + 22, { size: 19 });
+}
+
+// Defesa criptografada pelo Ransomware: um botão grande pra pagar o resgate
+function drawRansom(ctx, game, tw, r) {
+  const can = game.money >= tw.ransom;
+  button(ctx, r, can ? '#2fbf6a' : '#5d6680', { radius: 14, depth: 5 });
+  const cx = r.x + r.w / 2;
+  ctx.save();
+  ctx.translate(cx, r.y + 38);
+  ICONS.lock(ctx, 16);
+  ctx.restore();
+  text(ctx, 'CRIPTOGRAFADO', cx, r.y + 76, { size: 17, color: '#d6ffe9' });
+  wrapText(ctx, 'Pague o resgate pra ele voltar a funcionar', cx, r.y + 104, r.w - 20, 12, '#ffffff', 2, OUTLINE);
+  text(ctx, `PAGAR $${tw.ransom}`, cx, r.y + r.h - 28, { size: 20, color: can ? GOLD : '#ff7a8a' });
 }
 
 function drawUpgrade(ctx, game, tw, up, i, r) {

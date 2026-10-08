@@ -62,7 +62,7 @@ export const ENEMIES = {
   },
   ransomware: {
     name: 'Ransomware',
-    desc: 'Chefão: solta 4 Trojans quando destruído',
+    desc: 'Chefão: criptografa as defesas perto dele; solta 4 Trojans',
     lore: 'Sequestra o servidor e pede resgate em bitcoin. O chefão final da rede.',
     hp: 340,
     speed: 30,
@@ -73,6 +73,10 @@ export const ENEMIES = {
     boss: true,
     reward: 50,
     children: [['trojan', 4]],
+    // a cada quadrado que anda, com alguma defesa a até `range` quadrados,
+    // tem `chance` de tremer e criptografar as defesas nesse alcance: elas
+    // param até o jogador pagar `price` de resgate em cada uma
+    ransom: { range: 5, chance: 0.2, price: 50 },
   },
 };
 
