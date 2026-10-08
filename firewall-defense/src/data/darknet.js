@@ -44,7 +44,7 @@ export const LOAN = 250; // Empréstimo: até quanto o dinheiro pode ficar negat
 
 export const TREE = [
   { id: 'root', name: 'Acesso Root', desc: `Toda fase começa com +$${ROOT_MONEY}`, cost: 3, parent: null },
-  { id: 'hacker', tower: 'hacker', name: 'Tecla Crítica', desc: 'Cada teclado tem 5% de chance de dar dano dobrado', cost: 5, parent: 'root',
+  { id: 'hacker', tower: 'hacker', name: 'Tecla Crítica', desc: 'Cada teclado tem 5% de chance de dar 200% de dano', cost: 5, parent: 'root',
     apply: (s) => { s.critChance = (s.critChance ?? 0) + 0.05; } },
   { id: 'firewall', tower: 'firewall', name: 'Tremor de Terra', desc: 'Cada vírus atingido pela onda tem 4% de chance de ser empurrado pra trás', cost: 5, parent: 'root',
     apply: (s) => { s.knockChance = (s.knockChance ?? 0) + 0.04; } },
@@ -52,9 +52,9 @@ export const TREE = [
     apply: (s) => { s.freezeChance = (s.freezeChance ?? 0) + 0.03; } },
   { id: 'scanner', tower: 'scanner', name: 'Lente Calibrada', desc: 'O laser tem 8% de chance de atravessar e acertar mais 1 vírus', cost: 5, parent: 'root',
     apply: (s) => { s.pierceChance = (s.pierceChance ?? 0) + 0.08; } },
-  { id: 'minerador', tower: 'minerador', name: 'Overclock', desc: 'Cada bitcoin minerado tem 5% de chance de vir dobrado', cost: 5, parent: 'root',
+  { id: 'minerador', tower: 'minerador', name: 'Overclock', desc: 'Cada bitcoin minerado tem 5% de chance de valer 200%', cost: 5, parent: 'root',
     apply: (s) => { s.doubleChance = (s.doubleChance ?? 0) + 0.05; } },
-  { id: 'honeypot', tower: 'honeypot', name: 'Mel Turbinado', desc: 'Quando quebra, o Honeypot tem 10% de chance de voltar com metade da vida', cost: 5, parent: 'root',
+  { id: 'honeypot', tower: 'honeypot', name: 'Mel Turbinado', desc: 'Quando quebra, o Honeypot tem 10% de chance de voltar com 50% da vida', cost: 5, parent: 'root',
     apply: (s) => { s.reviveChance = (s.reviveChance ?? 0) + 0.1; } },
   // Depois do 1º nó, cada ramo abre em Y: dois braços, cada um um caminho
   // com tema próprio (3 nós em fila). O braço A sai do X2, o B do X3.
@@ -84,7 +84,7 @@ export const TREE = [
     apply: (s) => { s.range = Math.round(s.range * 1.1); } },
   { id: 'firewall3b', tower: 'firewall', name: 'Pulso Rápido', desc: 'Ondas 8% mais rápidas', cost: 10, parent: 'firewall3',
     apply: (s) => { s.fireRate *= 0.92; } },
-  { id: 'firewall3c', tower: 'firewall', name: 'Erupção', desc: 'Cada onda tem 4% de chance de sair com o dobro do alcance', cost: 12, parent: 'firewall3b',
+  { id: 'firewall3c', tower: 'firewall', name: 'Erupção', desc: 'Cada onda tem 4% de chance de sair com 200% do alcance', cost: 12, parent: 'firewall3b',
     apply: (s) => { s.bigPulseChance = (s.bigPulseChance ?? 0) + 0.04; } },
 
   // Penguin Linux — A: gelo profundo · B: tempestade (alcance e velocidade)
@@ -105,11 +105,11 @@ export const TREE = [
     apply: (s) => { s.vulnerable = true; s.vulnMul = (s.vulnMul ?? 1) + 0.05; } },
 
   // Robô NMAP — A: crítico (dano triplo) · B: varredura (velocidade e alcance)
-  { id: 'scanner2', tower: 'scanner', name: 'Ping da Morte', desc: 'Cada tiro tem 5% de chance de dar dano triplo', cost: 8, parent: 'scanner',
+  { id: 'scanner2', tower: 'scanner', name: 'Ping da Morte', desc: 'Cada tiro tem 5% de chance de dar 300% de dano', cost: 8, parent: 'scanner',
     apply: (s) => { s.tripleChance = (s.tripleChance ?? 0) + 0.05; } },
-  { id: 'scanner2b', tower: 'scanner', name: 'Pacote Malformado', desc: '+4% de chance de dano triplo', cost: 10, parent: 'scanner2',
+  { id: 'scanner2b', tower: 'scanner', name: 'Pacote Malformado', desc: '+4% de chance de dar 300% de dano', cost: 10, parent: 'scanner2',
     apply: (s) => { s.tripleChance = (s.tripleChance ?? 0) + 0.04; } },
-  { id: 'scanner2c', tower: 'scanner', name: 'Sobrecarga', desc: 'O dano triplo vira dano quádruplo', cost: 12, parent: 'scanner2b',
+  { id: 'scanner2c', tower: 'scanner', name: 'Sobrecarga', desc: '+100% de dano nesses tiros', cost: 12, parent: 'scanner2b',
     apply: (s) => { s.tripleMul = (s.tripleMul ?? 3) + 1; } },
   { id: 'scanner3', tower: 'scanner', name: 'Clock Turbo', desc: 'Atira 8% mais rápido', cost: 8, parent: 'scanner',
     apply: (s) => { s.fireRate *= 0.92; } },
@@ -125,9 +125,9 @@ export const TREE = [
     apply: (s) => { s.packetsPerRound += 1; } },
   { id: 'minerador2c', tower: 'minerador', name: 'Revenda', desc: 'O Minerador vende pelo preço cheio', cost: 12, parent: 'minerador2b',
     apply: (s) => { s.sellRate = 1; } },
-  { id: 'minerador3', tower: 'minerador', name: 'Bloco Raro', desc: 'Cada bitcoin tem 2% de chance de virar um bloco que vale 5×', cost: 8, parent: 'minerador',
+  { id: 'minerador3', tower: 'minerador', name: 'Bloco Raro', desc: 'Cada bitcoin tem 2% de chance de virar um bloco que vale 500%', cost: 8, parent: 'minerador',
     apply: (s) => { s.goldChance = (s.goldChance ?? 0) + 0.02; } },
-  { id: 'minerador3b', tower: 'minerador', name: 'Veio de Ouro', desc: '+4% de chance de bitcoin dobrado', cost: 10, parent: 'minerador3',
+  { id: 'minerador3b', tower: 'minerador', name: 'Veio de Ouro', desc: '+4% de chance de bitcoin valer 200%', cost: 10, parent: 'minerador3',
     apply: (s) => { s.doubleChance = (s.doubleChance ?? 0) + 0.04; } },
   { id: 'minerador3c', tower: 'minerador', name: 'Hash da Sorte', desc: '+2% de chance de bloco raro', cost: 12, parent: 'minerador3b',
     apply: (s) => { s.goldChance = (s.goldChance ?? 0) + 0.02; } },
@@ -145,7 +145,7 @@ export const TREE = [
     apply: (s) => { s.hp = Math.round(s.hp * 1.2); } },
   { id: 'honeypot2b', tower: 'honeypot', name: 'Mel Cristalizado', desc: '+3s de duração', cost: 10, parent: 'honeypot2',
     apply: (s) => { s.duration += 3; } },
-  { id: 'honeypot2c', tower: 'honeypot', name: 'Mel Eterno', desc: '+10% de chance de voltar com metade da vida', cost: 12, parent: 'honeypot2b',
+  { id: 'honeypot2c', tower: 'honeypot', name: 'Mel Eterno', desc: '+10% de chance de voltar com 50% da vida', cost: 12, parent: 'honeypot2b',
     apply: (s) => { s.reviveChance = (s.reviveChance ?? 0) + 0.1; } },
   { id: 'honeypot3', tower: 'honeypot', name: 'Mel Pegajoso', desc: 'Cada vírus que para no pote tem 8% de chance de sair grudado, 50% mais lento por 2s', cost: 8, parent: 'honeypot',
     apply: (s) => { s.stickyChance = (s.stickyChance ?? 0) + 0.08; } },

@@ -4,7 +4,7 @@
 //  do mesmo jeito que o jogo aplica.
 // ─────────────────────────────────────────────────────────────
 import { TOWERS } from './towers.js';
-import { fmt } from '../util.js';
+import { fmt, plural } from '../util.js';
 
 // Idade de cada nível (os personagens crescem a cada upgrade)
 export const AGES = ['CRIANÇA', 'ADOLESCENTE', 'ADULTO'];
@@ -25,7 +25,7 @@ export const num = (v) => String(Math.round(v * 100) / 100).replace('.', ',');
 export function statRows(s, { armor = false } = {}) {
   const rows = [];
   if (s.attack === 'farm') {
-    rows.push(['RENDA', `${s.packetsPerRound} × $${s.packetValue} por rodada`]);
+    rows.push(['RENDA', `${s.packetsPerRound} ${plural(s.packetsPerRound, 'bitcoin', 'bitcoins')} de $${s.packetValue} por rodada`]);
     if (s.goldenChance) rows.push(['DOURADOS', `${Math.round(s.goldenChance * 100)}% · $${s.goldenValue} cada`]);
     if (s.sponsor) rows.push(['PATROCÍNIO', `+$${s.sponsor} por vírus de 1 defesa`]);
     return [...rows, ...luckRows(s)];
@@ -38,7 +38,7 @@ export function statRows(s, { armor = false } = {}) {
     rows.push(['LENTIDÃO', `-${Math.round((1 - s.slow) * 100)}% por ${num(s.slowTime)}s`]);
     if (s.vulnerable) rows.push(['CONGELADOS', `levam +${Math.round(((s.vulnMul ?? 2) - 1) * 100)}% de dano`]);
   } else {
-    rows.push(['DANO', s.multishot > 1 ? `${fmt(s.damage)} × ${s.multishot} teclados` : fmt(s.damage)]);
+    rows.push(['DANO', s.multishot > 1 ? `${s.multishot} teclados de ${fmt(s.damage)}` : fmt(s.damage)]);
     if (s.pierce > 1) rows.push(['ATRAVESSA', `até ${s.pierce} vírus`]);
     if (s.markTime) rows.push(['MARCA', `+${Math.round((s.markMul - 1) * 100)}% de dano por ${num(s.markTime)}s`]);
     if (s.burn) rows.push(['QUEIMA', `${fmt(s.burn * (s.burnMul ?? 1))}/s por ${num(s.burnTime + (s.burnExtra ?? 0))}s`]);
@@ -52,15 +52,15 @@ export function statRows(s, { armor = false } = {}) {
 function luckRows(s) {
   const pct = (p) => `${Math.round(p * 100)}%`;
   const rows = [];
-  if (s.critChance) rows.push(['CRÍTICO', `${pct(s.critChance)} de dano ${num(s.critMul ?? 2)}×`]);
+  if (s.critChance) rows.push(['CRÍTICO', `${pct(s.critChance)} · ${pct(s.critMul ?? 2)} de dano`]);
   if (s.extraShotChance) rows.push(['TECLADO EXTRA', `${pct(s.extraShotChance)} de chance`]);
   if (s.executeChance) rows.push(['ZERO-DAY', `${pct(s.executeChance)} de estourar tudo`]);
-  if (s.bigPulseChance) rows.push(['ERUPÇÃO', `${pct(s.bigPulseChance)} de alcance 2×`]);
+  if (s.bigPulseChance) rows.push(['ERUPÇÃO', `${pct(s.bigPulseChance)} · 200% do alcance`]);
   if (s.repeatChance) rows.push(['ONDA EXTRA', `${pct(s.repeatChance)} de chance`]);
   if (s.shatterChance) rows.push(['ESTILHAÇO', `${pct(s.shatterChance)} de chance`]);
-  if (s.tripleChance) rows.push([`DANO ${s.tripleMul ?? 3}×`, `${pct(s.tripleChance)} de chance`]);
+  if (s.tripleChance) rows.push(['TIRO FORTE', `${pct(s.tripleChance)} · ${pct(s.tripleMul ?? 3)} de dano`]);
   if (s.rechargeChance) rows.push(['RECARGA', `${pct(s.rechargeChance)} instantânea`]);
-  if (s.goldChance) rows.push(['BLOCO RARO', `${pct(s.goldChance)} de 5×`]);
+  if (s.goldChance) rows.push(['BLOCO RARO', `${pct(s.goldChance)} · vale 500%`]);
   if (s.stickyChance) rows.push(['GRUDAR', `${pct(s.stickyChance)} de sair lento`]);
   if (s.swarmChance) rows.push(['COLMEIA', `${pct(s.swarmChance)} ao quebrar`]);
   if (s.stingChance) rows.push(['FERRÃO', `${pct(s.stingChance)} de -1 camada`]);
@@ -70,7 +70,7 @@ function luckRows(s) {
   if (s.knockChance) rows.push(['EMPURRÃO', `${pct(s.knockChance)} de chance`]);
   if (s.freezeChance) rows.push(['CONGELAR', `${pct(s.freezeChance)} por 1s`]);
   if (s.pierceChance) rows.push(['ATRAVESSAR', `${pct(s.pierceChance)} de +1 vírus`]);
-  if (s.doubleChance) rows.push(['BITCOIN 2×', `${pct(s.doubleChance)} de chance`]);
-  if (s.reviveChance) rows.push(['VOLTAR', `${pct(s.reviveChance)} com meia vida`]);
+  if (s.doubleChance) rows.push(['BITCOIN 200%', `${pct(s.doubleChance)} de chance`]);
+  if (s.reviveChance) rows.push(['VOLTAR', `${pct(s.reviveChance)} com 50% da vida`]);
   return rows;
 }

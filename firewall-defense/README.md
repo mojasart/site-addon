@@ -39,7 +39,7 @@ python3 -m http.server 8080
   depois de acabar com a 1). Isso dá um **bônus** de até 15% do dinheiro que os vírus da próxima rodada
   valem, que vai diminuindo conforme os vírus da rodada atual morrem (com 1 sobrando, é só $1).
 - Cada camada de vírus estourada dá $1, e cada rodada completa dá um bônus.
-- Ao vencer você ganha de 1 a 3 estrelas (3 = terminou com 90% das vidas ou mais; 2 = pelo menos metade), e o próximo mapa é liberado.
+- Ao vencer você ganha de 1 a 3 estrelas (3 = terminou com 90% das vidas ou mais; 2 = pelo menos 50%), e o próximo mapa é liberado.
   As estrelas do mapa ficam de **bronze** (1), **prata** (2) ou **ouro** (3).
 
 ### Modo platina
