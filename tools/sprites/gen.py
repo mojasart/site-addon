@@ -94,6 +94,10 @@ ASSETS = {
                'a rectangular white window body with a bright orange-yellow title bar on top that has a small red round '
                'close button, big angry cartoon eyes and a wide mean toothy grin on the window, a blank gold star '
                'sticker on its corner, two stubby legs and tiny arms waving. '),
+    # Pato de Borracha (upgrade secreto da Dark Net: rubber duck debugging)
+    'duck': ('magenta', 'Side view facing RIGHT: a cute classic glossy yellow rubber duck bath toy sitting, round chubby '
+             'body, small upturned tail on the left, round head with a bright orange beak pointing RIGHT, one big '
+             'friendly cartoon eye with a white shine, a tiny wing on its side, rosy cheek. '),
     # ── Defesas (personagens chibi olhando pra direita) ──
     # versão original (com dardo); a do jogo é editada a partir dela
     'hacker_dart': ('green', 'Full body, chibi proportions (big head, small body), three-quarter view facing and looking to the '
