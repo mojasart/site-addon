@@ -699,16 +699,16 @@ export class Game {
     return this.towers.every((t) => tileKey(...tileOf(t.x, t.y)) !== k);
   }
 
-  // Dá pra pagar? Com o Empréstimo (Dark Net), 1 vez por rodada o dinheiro
+  // Dá pra pagar? Com o Empréstimo (Dark Net), 1 vez por partida o dinheiro
   // pode ficar até LOAN no negativo
   canAfford(cost) {
     if (this.money >= cost) return true;
-    return !!this.app.perks?.minerador4b && !this.bounty && this.loanRound !== this.rounds.started && this.money - cost >= -LOAN;
+    return !!this.app.perks?.minerador4b && !this.bounty && !this.loanUsed && this.money - cost >= -LOAN;
   }
 
-  // Paga (usando o empréstimo da rodada se faltar dinheiro)
+  // Paga (usando o empréstimo da partida se faltar dinheiro)
   pay(cost) {
-    if (this.money < cost) this.loanRound = this.rounds.started;
+    if (this.money < cost) this.loanUsed = true;
     this.money -= cost;
   }
 
