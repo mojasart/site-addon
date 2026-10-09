@@ -74,7 +74,7 @@ export function drawHud(ctx, game) {
 
   const r = game.rounds;
   if (game.bounty) {
-    // Bug Bounty: relógio dos 90 s (pisca vermelho nos últimos 10)
+    // Bug Bounty: relógio dos 5 minutos (pisca vermelho nos últimos 10)
     const left = Math.ceil(game.bountyLeft);
     const clock = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
     const hurry = game.rounds.started > 0 && left <= 10 && Math.sin(t * 10) > 0;

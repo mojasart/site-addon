@@ -18,6 +18,27 @@ import { TREE } from '../../firewall-defense/src/data/darknet.js';
 // Árvore inteira da Dark Net (o Pato só dá café, não muda a partida)
 export const ALL_PERKS = Object.fromEntries(TREE.map((n) => [n.id, true]));
 
+// Upgrades da Dark Net que um jogador com `coffee` cafés compraria jogando
+// com esse perfil: o Acesso Root e depois o galho da defesa que o perfil
+// mais usa, depois o da 2ª..., respeitando os pré-requisitos e sem passar do
+// café. `skip`: defesas que não servem (ex.: Minerador no Bug Bounty)
+export function perksFor(profileName, coffee, skip = []) {
+  const owned = {};
+  let left = coffee;
+  const buy = (n) => {
+    if (owned[n.id] || n.cost > left || (n.parent && !owned[n.parent])) return;
+    owned[n.id] = true;
+    left -= n.cost;
+  };
+  buy(TREE.find((n) => n.id === 'root'));
+  const order = Object.entries(PROFILES[profileName].w)
+    .filter(([t]) => !skip.includes(t))
+    .sort((a, b) => b[1] - a[1])
+    .map(([t]) => t);
+  for (const tower of order) for (const n of TREE) if (n.tower === tower) buy(n);
+  return owned;
+}
+
 // peso de cada defesa na hora de escolher o que colocar, chance de preferir
 // upgrade a uma defesa nova, e quantos lugares bons ele considera (variação)
 export const PROFILES = {
@@ -190,6 +211,7 @@ export function playMap(mapIndex, profileName, seed, mode = 'normal', perks = nu
     waves: game.rounds.started,
     lives: game.lives,
     towers: game.towers.length,
+    ratio: game.bounty ? game.bountyRatio : null, // Bug Bounty: % das camadas estouradas
     leaked,
   };
 }

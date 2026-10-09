@@ -137,7 +137,7 @@ function makeMap(season, s, k, bounty = false) {
     name: bounty ? 'Bug Bounty' : `${season.name} ${k + 1}`,
     difficulty: label(d),
     d,
-    desc: bounty ? 'estoure o máximo de vírus em 90 s' : describe(gen, season),
+    desc: bounty ? '5 min com orçamento fixo: vírus não dão dinheiro' : describe(gen, season),
     theme: season.theme,
     rounds: Math.round(lerp(season.rounds[0], season.rounds[1], ks)),
     money: round5(lerp(DIFF.money[0], DIFF.money[1], d)),

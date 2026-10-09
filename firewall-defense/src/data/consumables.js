@@ -24,6 +24,7 @@ export const CONSUMABLES = [
     cost: 2,
     color: '#ffc62e',
     use(game) {
+      if (game.bounty) return false; // Bug Bounty: só o orçamento
       game.money += CASH;
       game.coinBump = 1;
       return true;
