@@ -97,9 +97,14 @@ export class Enemy {
       this.takeDamage(this.burnDps * dt, game, { armored: true, source: this.burnSource, dot: true });
       if (this.dead) return;
     }
-    // Honeypot no caminho: para e fica mordendo a isca até ela quebrar
+    // Honeypot no caminho: para e fica mordendo a isca até ela quebrar.
+    // Chefão não para: esmaga a isca na hora e segue
     const bait = game.baitAt?.(this);
-    if (bait) {
+    if (bait && this.def.boss) {
+      bait.wear(Infinity, game, true);
+      game.fx.text(bait.x, bait.y - 44, 'ESMAGADO!', '#ff7a8a', 18);
+      game.shake?.(4);
+    } else if (bait) {
       // ao parar no pote: Mel Pegajoso (Dark Net) às vezes gruda; Ferrão às vezes tira 1 camada
       if (this.biting !== bait) {
         if (chance(bait.stats.stickyChance)) this.sticky = true;

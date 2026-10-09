@@ -113,12 +113,13 @@ export class Tower {
     return this.maxHp / this.stats.duration;
   }
 
-  wear(amount, game) {
+  // noRevive: quebra de vez (chefão esmagando a isca: sem o Mel Turbinado)
+  wear(amount, game, noRevive = false) {
     if (this.dead) return;
     this.hp -= amount;
     if (this.hp > 0) return;
     // Mel Turbinado (Dark Net): às vezes volta com metade da vida
-    if (chance(this.stats.reviveChance)) {
+    if (!noRevive && chance(this.stats.reviveChance)) {
       this.hp = this.maxHp / 2;
       this.spawnAnim = 1;
       game.fx.spark(this.x, this.y - 24);
