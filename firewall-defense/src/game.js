@@ -49,6 +49,10 @@ const WIN_DELAY = 0.5; // limpou a última rodada: espera o último vírus estou
 // A partida em si (uma fase). Criada pelo App ao escolher um mapa.
 // mode: 'normal', 'platinum' (ondas sem parar até o chefão; data/platinum.js)
 // ou 'bounty' (sala do Bug Bounty: mapIndex = season; data/bounty.js)
+const COIN_MERGE = 40; // moedas de vírus mais perto que isso viram uma só (px)
+const COIN_MAX = 30; // máximo de moedas no chão (daí pra frente juntam na mais perto)
+const COIN_TAP = 14; // folga do toque em volta da moeda (px)
+
 export class Game {
   constructor(app, mapIndex, mode = 'normal') {
     this.app = app;
@@ -577,17 +581,51 @@ export class Game {
   }
 
   // Dinheiro de um vírus estourado (Bug Bounty não dá; platina dá PLAT_REWARD
-  // vezes mais, guardando o quebrado pra próxima)
-  earnPop(reward) {
+  // vezes mais, guardando o quebrado pra próxima). Com a posição (x, y), cai
+  // uma moeda no chão ali (dropCoin); sem ela, entra direto na carteira
+  earnPop(reward, x, y) {
     if (this.bounty) return;
-    if (!this.platinum) {
-      this.money += reward;
+    let value = reward;
+    if (this.platinum) {
+      this.popCents = (this.popCents ?? 0) + reward * PLAT_REWARD;
+      value = Math.floor(this.popCents);
+      this.popCents -= value;
+    }
+    if (value <= 0) return;
+    if (x == null) this.money += value;
+    else this.dropCoin(x, y, value);
+  }
+
+  // Moeda de vírus no chão (entities/Packet.js): fica até o jogador tocar
+  // ou DROP_WAIT s. Pra não encher o mapa, junta com uma que ainda está no
+  // chão a menos de COIN_MERGE px (soma o valor e ela cresce); com
+  // COIN_MAX moedas no chão, junta com a mais perto, esteja onde estiver
+  dropCoin(x, y, value) {
+    const ground = this.packets.filter((p) => p.drop && p.state !== 'flying');
+    let into = null;
+    let best = Infinity;
+    for (const p of ground) {
+      const d = Math.hypot(p.toX - x, p.toY - y);
+      if (d < best) [best, into] = [d, p];
+    }
+    if (into && (best < COIN_MERGE || ground.length >= COIN_MAX)) {
+      into.value += value;
+      into.bump = 1;
       return;
     }
-    this.popCents = (this.popCents ?? 0) + reward * PLAT_REWARD;
-    const whole = Math.floor(this.popCents);
-    this.money += whole;
-    this.popCents -= whole;
+    this.packets.push(new Packet(x, y, value, false, true));
+  }
+
+  // Toque no mapa: recolhe as moedas do chão em volta (x, y do mapa)
+  tapCoins(x, y) {
+    let got = false;
+    for (const p of this.packets) {
+      if (!p.drop || p.state === 'flying' || Math.hypot(p.x - x, p.y - y) > p.size + COIN_TAP) continue;
+      p.collect();
+      got = true;
+    }
+    if (got) this.sound.play('click');
+    return got;
   }
 
   // Ainda tem vírus vivo no mapa (conta quem não segura a onda, como a Cicada)
@@ -1068,6 +1106,8 @@ export class Game {
     if (info?.open && inRect(info.card, sx, sy)) return;
 
     const mx = sx - this.offsetX;
+    // moeda no chão: o toque recolhe (antes de bater em vírus ou escolher defesa)
+    if (!this.placing && this.tapCoins(mx, sy)) return;
     if (this.placing) {
       // decide no pointerUp: toque rápido coloca ali, arrastar ajusta a posição
       this.drag = { type: this.placing, x: sx, y: sy, moved: false, fromMap: true };
@@ -1355,6 +1395,8 @@ export class Game {
 
     // armadilhas ficam no chão, embaixo dos vírus
     for (const tw of this.towers) if (tw.def.onPath) this.drawTowerAt(ctx, tw);
+    // moedas dos vírus no chão (as que já voam pra carteira vão por cima do HUD)
+    for (const p of this.packets) if (p.drop && p.state !== 'flying') this.drawPacket(ctx, p);
 
     // vírus e defesas ordenados pela altura (quem está mais embaixo fica na frente)
     const things = [
@@ -1425,12 +1467,7 @@ export class Game {
     // moedas voando até o contador (por cima do HUD)
     ctx.save();
     ctx.translate(this.offsetX, 0);
-    for (const p of this.packets) {
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      drawCoin(ctx, (p.state === 'flying' ? 11 : 13) * (p.big ? 1.5 : 1), p.spin);
-      ctx.restore();
-    }
+    for (const p of this.packets) if (!p.drop || p.state === 'flying') this.drawPacket(ctx, p);
     ctx.restore();
 
     drawInfoPanel(ctx, this); // antes do painel: a alça recolhida "entra" embaixo dele
@@ -1442,6 +1479,23 @@ export class Game {
     drawBanner(ctx, this);
     drawOverlay(ctx, this);
     this.fx.drawConfetti(ctx);
+  }
+
+  // Moeda (minerada ou de vírus): no chão gira devagar, com sombra e um
+  // pulinho quando junta outra; voando pra carteira fica menor
+  drawPacket(ctx, p) {
+    const r = p.state === 'flying' ? Math.min(11, p.size) : p.size;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    if (p.drop && p.state === 'resting') {
+      ctx.fillStyle = 'rgba(10,20,30,0.25)';
+      ctx.beginPath();
+      ctx.ellipse(0, r * 0.95, r * 0.8, r * 0.25, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.translate(0, -Math.sin(p.bump * Math.PI) * 6);
+    }
+    drawCoin(ctx, r, p.spin);
+    ctx.restore();
   }
 
   drawTowerAt(ctx, tw) {
