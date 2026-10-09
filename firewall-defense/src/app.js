@@ -2,7 +2,8 @@ import { MIN_VIEW_W, VIEW_H, DEBUG, ENERGY } from './config.js';
 import { MAPS, MAPS_PER_SEASON, BOUNTY_MAPS } from './data/maps.js';
 import { loadSave, writeSave, pauseSaving } from './save.js';
 import { Sound } from './audio/Sound.js';
-import { setPixelScale } from './render/canvas.js';
+import { setPixelScale, rrect, fillOutline, text } from './render/canvas.js';
+import { buy as payBuy, syncPurchases, payEnabled } from './pay.js';
 import { TitleScene } from './scenes/TitleScene.js';
 import { LevelSelectScene } from './scenes/LevelSelectScene.js';
 import { Game } from './game.js';
@@ -49,6 +50,44 @@ export class App {
     this.scene = new TitleScene(this);
     this.next = null; // próxima cena (durante o fade)
     this.fade = 1; // começa escuro e clareia
+    // compras com dinheiro de verdade: entrega as aprovadas (e avisa a volta
+    // do pagamento: ?compra=ok / pendente / falhou)
+    this.payNotice = null;
+    if (payEnabled()) this.refreshPurchases(new URLSearchParams(location.search).get('compra'));
+  }
+
+  // ── Compras (src/pay.js) ──
+  // Aviso no topo da tela (por cima de qualquer cena)
+  notify(text, time = 3.2, color = '#3dff9a') {
+    this.payNotice = { text, time, color };
+  }
+
+  // Voltou do pagamento (status) ou abriu o jogo: busca e entrega as compras
+  async refreshPurchases(status = null) {
+    if (status) history.replaceState(null, '', location.pathname + location.search.replace(/[?&]compra=[^&]*/, '').replace(/^&/, '?'));
+    if (status === 'pendente') this.notify('Pagamento em análise: os cafés chegam quando ele for aprovado', 4, '#ffd23f');
+    if (status === 'falhou') this.notify('O pagamento não foi concluído', 3, '#ff7a8a');
+    // o aviso do Mercado Pago pode chegar uns segundos depois da volta: tenta de novo
+    for (let tries = status === 'ok' ? 4 : 1; tries > 0; tries--) {
+      const got = await syncPurchases(this);
+      if (got.length) {
+        this.notify(`COMPRA CONFIRMADA: ${got.join(' · ')}`, 4);
+        this.sound.play('upgrade');
+        return;
+      }
+      if (tries > 1) await new Promise((r) => setTimeout(r, 2500));
+    }
+    if (status === 'ok') this.notify('Pagamento recebido! Se os cafés não aparecerem, abra o jogo de novo em alguns minutos', 5, '#ffd23f');
+  }
+
+  // Abre o pagamento de um pacote de café ou do VIP
+  async buy(product) {
+    if (this.buying) return;
+    this.buying = true;
+    this.notify('Abrindo o pagamento...', 6, '#d8e6ff');
+    const ok = await payBuy(this, product);
+    this.buying = false;
+    if (!ok) this.notify('Não deu pra abrir o pagamento. Confira a internet e tente de novo', 3.5, '#ff7a8a');
   }
 
   // Saves de antes das salas do Bug Bounty: as fases 10, 20, 30 e 40 eram
@@ -525,6 +564,7 @@ export class App {
 
   update(dt) {
     if (this.energyUI) this.energyUI.t += dt;
+    if (this.payNotice && (this.payNotice.time -= dt) <= 0) this.payNotice = null;
     if (this.next) {
       this.fade = Math.min(1, this.fade + dt * 5);
       if (this.fade >= 1) {
@@ -553,6 +593,20 @@ export class App {
       ctx.fillRect(0, 0, this.viewW, VIEW_H);
     }
     if (this.energyUI) drawEnergyModal(ctx, this); // por cima de tudo
+    if (this.payNotice) this.drawPayNotice(ctx);
+  }
+
+  // Aviso das compras, no topo e por cima de tudo
+  drawPayNotice(ctx) {
+    const n = this.payNotice;
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, n.time * 3);
+    ctx.font = '16px sans-serif';
+    const w = Math.min(this.viewW - 40, ctx.measureText(n.text).width * 1.1 + 60);
+    rrect(ctx, this.viewW / 2 - w / 2, 84, w, 40, 20);
+    fillOutline(ctx, 'rgba(10,20,40,0.92)', 3);
+    text(ctx, n.text, this.viewW / 2, 105, { size: 15, color: n.color });
+    ctx.restore();
   }
 
   // ── input ──

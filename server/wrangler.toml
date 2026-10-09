@@ -1,0 +1,16 @@
+# Servidor de compras do Firewall Defense (Cloudflare Workers). Ver server/README.md
+name = "firewall-defense-pay"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+# pra onde o jogador volta depois de pagar (o jogo lê ?compra=ok)
+SITE_URL = "https://mojasart.github.io/site-addon/"
+# quem pode chamar o servidor (o site do jogo e o servidor de teste local), separado por vírgula
+ALLOW_ORIGIN = "https://mojasart.github.io,http://localhost:10001"
+
+# compras aprovadas. Crie com: npx wrangler kv namespace create PURCHASES
+# e cole o id que ele mostrar aqui
+[[kv_namespaces]]
+binding = "PURCHASES"
+id = "COLE_AQUI_O_ID_DO_KV"
