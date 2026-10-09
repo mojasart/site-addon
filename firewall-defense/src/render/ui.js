@@ -284,30 +284,35 @@ export const roleFont = (px) => `bold ${px}px "Courier New", ui-monospace, Menlo
 function drawRoleTag(ctx, tile) {
   const def = TOWERS[tile.type];
   if (!def) return;
-  // [NOME] em 11px; comprido: fonte menor, depois sem colchetes e, no fim,
-  // a fonte estreita (aperta na horizontal) pra caber no card
+  // [NOME] em 11px; nome comprido (GOLEM FIREWALL, PENGUIN LINUX) quebra em
+  // 2 linhas: [GOLEM / FIREWALL]
   const name = def.name.toUpperCase();
   const room = tile.w - 8;
   ctx.save();
-  let label = `[${name}]`;
-  let px = 11;
-  ctx.font = roleFont(px);
-  while (px > 9 && ctx.measureText(label).width > room) ctx.font = roleFont(--px);
-  if (ctx.measureText(label).width > room) label = name;
-  const squeeze = Math.min(1, room / ctx.measureText(label).width);
+  ctx.font = roleFont(11);
+  let lines = [`[${name}]`];
+  if (ctx.measureText(lines[0]).width > room) ctx.font = roleFont(10); // quase cabe ([ROBÔ NMAP])
+  const words = name.split(' ');
+  if (ctx.measureText(lines[0]).width > room && words.length > 1) {
+    ctx.font = roleFont(11);
+    const half = Math.ceil(words.length / 2);
+    lines = [`[${words.slice(0, half).join(' ')}`, `${words.slice(half).join(' ')}]`];
+  }
+  const widest = Math.max(...lines.map((l) => ctx.measureText(l).width));
+  const squeeze = Math.min(1, room / widest); // (ainda não coube: aperta na horizontal)
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = ROLE_GREEN;
   ctx.shadowColor = ROLE_GREEN;
   ctx.shadowBlur = 6;
-  ctx.translate(tile.x + tile.w / 2, tile.y + 14);
+  ctx.translate(tile.x + tile.w / 2, tile.y + (lines.length > 1 ? 9 : 14));
   ctx.scale(squeeze, 1);
-  ctx.fillText(label, 0, 0);
+  lines.forEach((l, i) => ctx.fillText(l, 0, i * 12));
   ctx.restore();
   // escudinho: fura blindagem (Trojan)
   if (def.canHitArmored && def.attack !== 'decoy' && def.effect !== 'frost') {
     ctx.save();
-    ctx.translate(tile.x + tile.w - 13, tile.y + 30);
+    ctx.translate(tile.x + tile.w - 13, tile.y + (lines.length > 1 ? 38 : 30)); // (nome em 2 linhas: mais pra baixo)
     ctx.beginPath();
     ctx.moveTo(0, -7);
     ctx.lineTo(6, -4.5);
