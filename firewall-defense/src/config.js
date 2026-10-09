@@ -32,6 +32,9 @@ export const ENERGY = { max: 10, regenMin: 12, ad: 5, adTime: 5 }; // ad: energi
 export const SELL_RATE = 0.7; // vender devolve 70% do que foi gasto
 export const SPEEDS = [1, 2, 3]; // botão de acelerar: 1x → 2x → 3x
 export const TURBO_SPEED = 5; // a mais no fim da lista com a Placa-Mãe (season 1) toda platinada
+// Toque do jogador num vírus: dano em 1 vírus por toque (o mais perto do
+// dedo). Spyware escondido não leva; folga em px em volta do vírus pra acertar
+export const TAP = { damage: 500, slackTouch: 14, slackMouse: 6 };
 export const DANGER_TILES = 3; // acelerado: volta pra 1x quando um vírus que faz perder está a menos disso (quadrados de caminho) da base
 // Primeiras ondas do modo normal: a pressão do mapa corta a quantidade de vírus
 // (0,2 a 0,5) e elas vinham quase vazias. A 1ª onda vem com `mul` da quantidade

@@ -1,4 +1,4 @@
-import { VIEW_H, PANEL_W, SPEEDS, TURBO_SPEED, DANGER_TILES, EARLY_BONUS, EARLY_WAVES } from './config.js';
+import { VIEW_H, PANEL_W, SPEEDS, TURBO_SPEED, DANGER_TILES, TAP, EARLY_BONUS, EARLY_WAVES } from './config.js';
 import { MAPS, BOUNTY_MAPS } from './data/maps.js';
 import { roundsFor } from './data/rounds.js';
 import { PLAT_WAVES, PLAT_LIVES, PLAT_WARMUP, PLAT_REWARD, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
@@ -1067,6 +1067,7 @@ export class Game {
       this.drag = { type: this.placing, x: sx, y: sy, moved: false, fromMap: true };
       return;
     }
+    if (this.tapEnemy(mx, sy, type)) return; // tocou num vírus: bate nele
     this.inspect = null; // tocar no mapa fecha a defesa que estava só sendo olhada
     const tw = this.towerAt(mx, sy);
     if (tw) this.sound.play('click');
@@ -1080,6 +1081,29 @@ export class Game {
     this.toast = null;
     this.pause();
     this.app.go(() => new CatalogScene(this.app, { returnTo: this, select: type }));
+  }
+
+  // Toque do jogador num vírus: TAP.damage no mais perto do dedo (só 1 por
+  // toque). Spyware escondido não conta (isVisible); quem voa é tocado onde
+  // aparece, lá no alto. Protegido pela aura da Cicada não leva (takeDamage)
+  tapEnemy(x, y, type) {
+    const slack = type === 'mouse' ? TAP.slackMouse : TAP.slackTouch;
+    let best = null;
+    let bestD = Infinity;
+    for (const e of this.enemies) {
+      if (e.dead || !this.isVisible(e)) continue;
+      const cy = e.y - (e.def.flying ? 30 : e.r * 0.3); // centro de onde ele é desenhado
+      const d = Math.hypot(e.x - x, cy - y);
+      if (d <= e.r + slack && d < bestD) {
+        best = e;
+        bestD = d;
+      }
+    }
+    if (!best) return false;
+    best.takeDamage(TAP.damage, this, { armored: true });
+    this.fx.spark(x, y, '#ffffff', 10);
+    this.sound.play('tap');
+    return true;
   }
 
   overlayTap(sx, sy) {
