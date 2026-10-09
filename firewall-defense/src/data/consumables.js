@@ -14,7 +14,7 @@
 // ─────────────────────────────────────────────────────────────
 export const CASH = 300; // Bitcoin Extra: dinheiro na hora
 export const FREEZE_TIME = 5; // Congelar Tudo: segundos parados (chefão só fica lento)
-export const BACKUP_LIVES = 5; // Backup: vidas a mais (na platina, +1)
+export const BACKUP_LIVES = 5; // Backup: vidas a mais (na platina não dá pra usar item)
 
 export const CONSUMABLES = [
   {
@@ -62,11 +62,11 @@ export const CONSUMABLES = [
   {
     id: 'lives',
     name: 'Backup',
-    desc: `+${BACKUP_LIVES} vidas (na platina, +1)`,
+    desc: `+${BACKUP_LIVES} vidas`,
     cost: 4,
     color: '#ff6f8a',
     use(game) {
-      game.lives += game.platinum ? 1 : BACKUP_LIVES;
+      game.lives += BACKUP_LIVES;
       game.hurt = 0;
       return true;
     },

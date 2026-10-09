@@ -59,15 +59,19 @@ export function drawEnergyBadge(ctx, app, x, y) {
   rrect(ctx, x, y, w, h, h / 2);
   fillOutline(ctx, '#1b2550', 3);
 
-  // quantidade: "9" grande e "/10" menor
-  const nx = x + 46;
+  // quantidade: "9" grande e "/10" menor. Cheia (sem a caixinha do relógio):
+  // centralizada no espaço depois do raio
   const cy = y + h / 2 + 1;
   const count = inf ? '∞' : String(e);
+  const max = inf ? '' : `/${ENERGY.max}`;
+  setFont(ctx, 24);
+  const cw = ctx.measureText(count).width;
+  setFont(ctx, 14);
+  const tw = cw + (max ? 2 + ctx.measureText(max).width : 0);
+  const boxed = app.vip || !full; // tem a caixinha à direita
+  const nx = boxed ? x + 46 : x + 40 + (w - 40 - tw) / 2;
   text(ctx, count, nx, cy, { size: 24, align: 'left', color: empty ? '#ff7a8a' : '#ffffff' });
-  if (!inf) {
-    setFont(ctx, 24);
-    text(ctx, `/${ENERGY.max}`, nx + ctx.measureText(count).width + 2, cy + 3, { size: 14, align: 'left', color: '#9fb2d8' });
-  }
+  if (max) text(ctx, max, nx + cw + 2, cy + 3, { size: 14, align: 'left', color: '#9fb2d8' });
 
   // caixinha do tempo (enche enquanto a próxima energia carrega)
   const bw = 66;
