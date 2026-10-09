@@ -156,6 +156,14 @@ ASSETS = {
                   'gold coins, some stacked in short towers, some lying flat, each with an embossed orange "₿". '),
     'vip': ('green', 'A VIP badge icon: a chunky shiny golden crown on top of a rounded purple shield with a big bold '
             'white "VIP", small cyan gems on the crown and a red ribbon banner under the shield. '),
+    # infinito do contador de energia (energia ilimitada), par do raio
+    'energy_infinity': ('magenta', 'A chunky glossy cartoon INFINITY symbol (a thick horizontal figure-eight loop, ∞) for an '
+                        'unlimited-energy counter, matching a golden lightning bolt energy icon, like the icons of Clash '
+                        'Royale and Brawl Stars, front view, perfectly horizontal and symmetric: a thick rounded tube, '
+                        'bright golden-yellow on top fading to warm orange at the bottom, a big soft white glossy highlight '
+                        'along the upper edges of both loops, a thick dark navy outline around the outside and around both '
+                        'inner holes (the two holes must be empty, showing the background). Simple, bold, readable as a '
+                        'tiny game HUD icon. '),
     # raio do contador de energia (tela de mapas e janela SEM ENERGIA)
     'energy_bolt': ('magenta', 'A chunky glossy cartoon lightning bolt icon for an energy meter, like the energy '
                     'icons of Clash Royale and Brawl Stars, front view, slightly tilted to the right: one thick zig-zag '
@@ -279,7 +287,7 @@ ASSETS['minerador_kid_attack'] = ('magenta', AGE.format(age=KID, desc=(
     '(exactly one metal head, at the lower end, striking the ground; nothing on his shoulder).')), 'minerador_pickaxe_attack')
 
 # estas usam o visual "3D de jogo mobile"; o resto é desenho animado 2D
-LOOK_3D_ASSETS = {'server', 'server_hurt', 'coin', 'heart', 'shop_cart', 'energy_bolt'}
+LOOK_3D_ASSETS = {'server', 'server_hurt', 'coin', 'heart', 'shop_cart', 'energy_bolt', 'energy_infinity'}
 
 
 def load_key():
