@@ -43,6 +43,7 @@ export function formatCoffee(v) {
 export const ROOT_MONEY = 75; // Acesso Root: dinheiro a mais no começo de cada fase
 export const INTEREST = { rate: 0.05, max: 150 }; // Juros: % do dinheiro guardado no começo de cada rodada
 export const LOAN = 250; // Empréstimo: até quanto o dinheiro pode ficar negativo (1 vez por partida)
+export const BULK_DISCOUNT = 0.05; // Atacadão: todas as defesas custam isso a menos
 
 export const TREE = [
   { id: 'root', name: 'Acesso Root', desc: `Toda fase começa com +$${ROOT_MONEY}`, cost: 3, parent: null },
@@ -188,6 +189,13 @@ export const TREE = [
     apply: (s) => { s.splashChance += 0.08; } },
   { id: 'tap3c', tower: 'tap', name: 'Choque Estático', desc: 'Cada toque tem 5% de chance de deixar o vírus 50% mais lento por 2s', cost: 12, parent: 'tap3b',
     apply: (s) => { s.slowChance += 0.05; } },
+
+  // Minerador — fim da linha da economia (GPU de Segunda Mão → Mineração
+  // Paralela → Revenda). Fica no fim da lista pra não mexer na posição dos
+  // outros nós no grafo (DarkNetScene sorteia na ordem da lista). O desconto
+  // vale no preço de colocar qualquer defesa (Game.costOf)
+  { id: 'minerador2d', tower: 'minerador', name: 'Atacadão', desc: `Todas as defesas custam ${BULK_DISCOUNT * 100}% menos`, cost: 15, parent: 'minerador2c',
+    apply: () => {} },
 ];
 
 // Upgrade secreto: fora da árvore, apagadinho no canto de cima da Dark Net.
