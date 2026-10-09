@@ -28,16 +28,17 @@ const GREEN = '#3dff9a';
 const COFFEE_TXT = '#ffe0b0';
 const CHARS = '01₿#$%<>/{}';
 const COLS = 64;
-const RADIUS = [170, 220]; // distância do centro da árvore até os ramos (sorteada)
-const STEP = [88, 115]; // distância entre um nó e o seguinte no mesmo ramo (sorteada)
+const RADIUS = [250, 300]; // distância do centro da árvore até os ramos (sorteada)
+const STEP = [125, 150]; // distância entre um nó e o seguinte no mesmo ramo (sorteada)
+const MIN_GAP = 130; // distância mínima entre dois nós quaisquer (graph: afasta os que ficaram perto)
 const TURN = 0.25; // quanto cada braço pode virar a cada nó (radianos, pra cada lado)
 const FORK = 0.45; // ramo em Y: quanto cada braço abre pra um lado (radianos)
 const SEED = 938; // semente do layout (o grafo sai sempre igual; escolhida pra nenhum nó encostar no outro)
 const FLOAT = 5; // quanto os nós flutuam (px no mundo)
-const HOME_ZOOM = [0.45, 1.15]; // zoom inicial: enquadra os nós visíveis, dentro desses limites
+const HOME_ZOOM = [0.38, 1.15]; // zoom inicial: enquadra os nós visíveis, dentro desses limites
 const FOCUS_ZOOM = 1.1; // tocou num nó: aproxima até esse zoom (se estiver mais longe)
 const BRANCH_ORDER = ['hacker', 'firewall', 'pinguim', 'scanner', 'minerador', 'honeypot', 'executivo', 'tap'];
-const ZOOM_MIN = 0.45;
+const ZOOM_MIN = 0.25; // (dá pra afastar até ver a árvore quase inteira)
 const ZOOM_MAX = 2.4;
 const ROAM = 450; // quanto dá pra passear além da borda da árvore
 const DUCK_AWAY = { x: 1000, y: 900 }; // Pato de Borracha: bem isolado, pra cima e pra esquerda (a câmera alcança: clampCam)
@@ -102,6 +103,31 @@ export class DarkNetScene {
       const a = sibs.length > 1 ? p.a + k * 2 * FORK + rr(-0.12, 0.12) : p.a + rr(-TURN, TURN);
       const d = rr(STEP[0], STEP[1]);
       nodes[n.id] = { x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d, r: 28, a, ph: rr(0, Math.PI * 2) };
+    }
+    // afasta os nós que ficaram perto demais (de ramos vizinhos que se
+    // cruzaram): empurra os dois pra lados opostos, a raiz fica parada
+    const list = TREE.map((n) => nodes[n.id]).filter(Boolean);
+    for (let it = 0; it < 80; it++) {
+      let moved = false;
+      for (let i = 0; i < list.length; i++) {
+        for (let j = i + 1; j < list.length; j++) {
+          const a = list[i];
+          const b = list[j];
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const d = Math.hypot(dx, dy) || 1;
+          if (d >= MIN_GAP) continue;
+          const push = (MIN_GAP - d) / 2 + 0.5;
+          const ka = a === nodes.root ? 0 : b === nodes.root ? 2 : 1;
+          const kb = 2 - ka;
+          a.x -= (dx / d) * push * ka;
+          a.y -= (dy / d) * push * ka;
+          b.x += (dx / d) * push * kb;
+          b.y += (dy / d) * push * kb;
+          moved = true;
+        }
+      }
+      if (!moved) break;
     }
     // Pato de Borracha (upgrade secreto): solto no mundo, longe dos outros
     // upgrades; fica fora do enquadramento inicial (bounds só olha a TREE)
