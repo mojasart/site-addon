@@ -108,14 +108,15 @@ export class App {
   }
 
   // Modo debug (?debug na URL ou tocando no worm da tela inicial): todos os
-  // mapas, platinas e salas liberados (sem estrelas feitas) e DEBUG.coffee
-  // cafés; o dinheiro da fase é o normal. Usa uma cópia do save que não é
+  // mapas, platinas e salas liberados (sem estrelas feitas), DEBUG.coffee
+  // cafés e DEBUG.items de cada consumível; o dinheiro da fase é o normal. Usa uma cópia do save que não é
   // gravada: o progresso de verdade volta ao recarregar a página
   enableDebug() {
     if (this.debug) return;
     this.debug = true;
     pauseSaving();
     this.save = structuredClone(this.save);
+    this.save.inventory = Object.fromEntries(CONSUMABLES.map((c) => [c.id, DEBUG.items]));
   }
 
   get game() {

@@ -52,7 +52,7 @@ export const GOLD = '#ffd23f';
 export const SKIN = '#f6c9a0';
 
 // Modo debug (?debug ou tocar no worm da tela inicial): cafés da Dark Net
-export const DEBUG = { coffee: 9999999 };
+export const DEBUG = { coffee: 9999999, items: 999 }; // modo debug: cafés e quantos de cada consumível
 // Compras com dinheiro de verdade (src/pay.js): endereço do servidor de
 // compras (server/, Cloudflare Worker). Vazio = loja "EM BREVE", sem vender
 export const PAY = { api: 'https://firewall-defense-pay.firewall-defense.workers.dev' };
