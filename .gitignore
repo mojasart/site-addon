@@ -1,3 +1,8 @@
 .env
 tools/sprites/raw/
 __pycache__/
+
+# servidor de compras (server/): dependências, cache e segredos locais do wrangler
+server/node_modules/
+server/.wrangler/
+server/.dev.vars

@@ -7,6 +7,7 @@ import { drawItemIcon } from '../render/consumables.js';
 import { CONSUMABLES, COFFEE_PACKS, ITEM, VIP } from '../data/consumables.js';
 import { drawBolt } from '../render/energy.js';
 import { formatCoffee } from '../data/darknet.js';
+import { payEnabled } from '../pay.js';
 
 /* ════════════════════════════════════════════════════════════
  *  LOJA DE CONSUMÍVEIS
@@ -15,8 +16,9 @@ import { formatCoffee } from '../data/darknet.js';
  *  "arquivo" à venda (> congelar_tudo.exe) pago com café; vai pro
  *  inventário e é usado na partida (aba de itens do painel). À direita, o
  *  brinde do dia (1 item de graça por dia assistindo um anúncio: app.js
- *  freeOffer) e a pasta dos pacotes de café com dinheiro de verdade, ainda
- *  "EM BREVE" (falta o meio de pagamento: não vendem nem pedem nada).
+ *  freeOffer) e a pasta dos pacotes de café com dinheiro de verdade: com o
+ *  servidor de compras configurado (PAY.api) tocar abre o pagamento do
+ *  Mercado Pago (src/pay.js); sem ele, "EM BREVE" (não vende nem pede nada).
  * ════════════════════════════════════════════════════════════ */
 
 const MONO = '"Courier New", ui-monospace, Menlo, Consolas, monospace';
@@ -291,12 +293,12 @@ export class ShopScene {
     }
   }
 
-  // Pasta dos pacotes de café (dinheiro de verdade): ainda "EM BREVE"
+  // Pasta dos pacotes de café (dinheiro de verdade; sem servidor de compras, "EM BREVE")
   drawPacks(ctx, L) {
     const s = L.side;
     mono(ctx, '> pacotes_cafe/', s.x, s.y + 8, 15, GREEN);
     // pisca como cursor: ainda não vende
-    if (Math.sin(this.t * 4) > -0.3) mono(ctx, '[EM BREVE]', s.x + s.w, s.y + 8, 11, DIM, 'right');
+    if (!payEnabled() && Math.sin(this.t * 4) > -0.3) mono(ctx, '[EM BREVE]', s.x + s.w, s.y + 8, 11, DIM, 'right');
     for (const p of L.packs) {
       const { pack } = p;
       ctx.strokeStyle = DIM;
@@ -387,16 +389,27 @@ export class ShopScene {
       this.app.sound.play(this.app.watchAdForFree() ? 'click' : 'error');
       return;
     }
-    // VIP: ainda não vende (no modo debug ativa, pra testar)
+    // VIP: abre o pagamento (sem servidor de compras, no modo debug ativa pra testar)
     if (inRect(L.vip, x, y)) {
-      if (this.app.debug && this.app.grantVip()) {
+      if (this.app.vip) this.app.sound.play('error');
+      else if (payEnabled()) {
+        this.flash.vip = 1;
+        this.app.sound.play('click');
+        this.app.buy('vip');
+      } else if (this.app.debug && this.app.grantVip()) {
         this.flash.vip = 1;
         this.app.sound.play('upgrade');
       } else this.app.sound.play('error');
       return;
     }
-    // pacote de café: ainda não vende (só avisa)
-    if (L.packs.some((p) => inRect(p, x, y))) this.app.sound.play('error');
+    // pacote de café: abre o pagamento (sem servidor de compras, só avisa)
+    const pack = L.packs.find((p) => inRect(p, x, y));
+    if (pack) {
+      if (payEnabled()) {
+        this.app.sound.play('click');
+        this.app.buy(pack.pack.id);
+      } else this.app.sound.play('error');
+    }
   }
 
   key(k) {

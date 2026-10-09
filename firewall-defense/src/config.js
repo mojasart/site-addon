@@ -49,3 +49,6 @@ export const SKIN = '#f6c9a0';
 
 // Modo debug (?debug ou tocar no worm da tela inicial): dinheiro em cada fase e cafés da Dark Net
 export const DEBUG = { money: 99999999, coffee: 9999999 };
+// Compras com dinheiro de verdade (src/pay.js): endereço do servidor de
+// compras (server/, Cloudflare Worker). Vazio = loja "EM BREVE", sem vender
+export const PAY = { api: '' };
