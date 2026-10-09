@@ -1,4 +1,5 @@
 import { VIEW_H, PANEL_W, OUTLINE, GOLD } from '../config.js';
+import { PLAT_WAVES } from '../data/platinum.js';
 import { comboMul } from '../data/bounty.js';
 import { TOWERS, TOWER_ORDER, TARGET_MODES } from '../data/towers.js';
 import { rrect, circle, fillOutline, text, setFont, button } from './canvas.js';
@@ -80,12 +81,10 @@ export function drawHud(ctx, game) {
     text(ctx, 'BUG BOUNTY', L.pause.x - 14, 20, { size: 14, align: 'right', color: '#ffe07a' });
     text(ctx, clock, L.pause.x - 14, 45, { size: 28, align: 'right', color: hurry ? '#ff7a8a' : '#ffffff' });
   } else if (game.platinum) {
-    // platina: relógio até o chefão (pisca vermelho no fim)
-    const left = Math.ceil(game.platLeft);
-    const clock = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
-    const hurry = !game.bossCalled && left <= 10 && Math.sin(t * 10) > 0;
+    // platina: onda atual / PLAT_WAVES (pisca vermelho nas últimas 3)
+    const hurry = !game.bossCalled && game.platLeft < 3 && Math.sin(t * 10) > 0;
     text(ctx, 'PLATINA', L.pause.x - 14, 20, { size: 14, align: 'right', color: '#bdeeff' });
-    text(ctx, game.bossCalled ? 'CHEFÃO' : clock, L.pause.x - 14, 45, { size: 28, align: 'right', color: game.bossCalled || hurry ? '#ff7a8a' : '#ffffff' });
+    text(ctx, game.bossCalled ? 'CHEFÃO' : `${r.current}/${PLAT_WAVES}`, L.pause.x - 14, 45, { size: 28, align: 'right', color: game.bossCalled || hurry ? '#ff7a8a' : '#ffffff' });
   } else {
     text(ctx, 'RODADA', L.pause.x - 14, 20, { size: 14, align: 'right', color: '#e3f6ff' });
     text(ctx, `${r.current}/${r.total}`, L.pause.x - 14, 45, { size: 28, align: 'right' });

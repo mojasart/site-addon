@@ -1,4 +1,5 @@
 import { VIEW_H, GOLD } from '../config.js';
+import { PLAT_WAVES } from '../data/platinum.js';
 import { rrect, fillOutline, text, setFont } from './canvas.js';
 import { bigButton, iconButton, stars, ribbon, starTier, volumeSlider } from './widgets.js';
 import { drawEnemy } from './viruses.js';
@@ -123,9 +124,8 @@ export function drawOverlay(ctx, game) {
       text(ctx, `Ameaças contidas: ${game.stats.pops}`, cx, 318, { size: 19, color: GOLD });
       if (game.turboUnlocked) text(ctx, 'ACELERAR 5x LIBERADO!', cx, 348, { size: 17, color: '#bdeeff' });
     } else {
-      const survived = Math.floor(Math.min(game.platTime, 180));
       const lines = game.platinum
-        ? [game.bossCalled ? 'O chefão invadiu o servidor.' : `Os vírus venceram em ${Math.floor(survived / 60)}:${String(survived % 60).padStart(2, '0')}.`, 'Tente outras defesas ou upgrades!']
+        ? [game.bossCalled ? 'O chefão invadiu o servidor.' : `Os vírus venceram na onda ${game.rounds.current}/${PLAT_WAVES}.`, 'Tente outras defesas ou upgrades!']
         : [`Os vírus venceram na rodada ${game.rounds.current}.`, 'Tente outras defesas ou upgrades!'];
       text(ctx, lines[0], cx, 262, { size: 24 });
       text(ctx, lines[1], cx, 296, { size: 18, color: '#d8e6ff' });

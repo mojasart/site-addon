@@ -46,9 +46,10 @@ python3 -m http.server 8080
 
 Tocar num mapa abre a escolha **NORMAL** / **PLATINA** (`src/data/platinum.js`); a platina só libera com **3 estrelas** (antes disso aparece trancada):
 
-- As ondas vêm **uma atrás da outra**, sem esperar o mapa limpar, por **3 minutos** (o relógio fica no HUD).
+- São **50 ondas** em todo mapa, **uma atrás da outra**, sem esperar o mapa limpar (o HUD mostra a onda: 12/50).
+  Depois das rodadas do mapa, as ondas repetem as últimas, **cada uma 6% mais cheia** que a anterior.
   O bônus de cada onda vem quando ela começa.
-- Aos 3:00 vem o **chefão** (Locker nos mapas 1–5 da season, Ransomware nos 6–10 e Ransomware com
+- Depois da 50ª vem o **chefão** (Locker nos mapas 1–5 da season, Ransomware nos 6–10 e Ransomware com
   Lockers nos 11–15). Derrotou, ganhou a platina: as estrelas do mapa ficam **azul-gelo** e o
   card da fase vira **prata azulado metálico**.
 - Cada mapa tem um **aliado bloqueado** (sorteado pelo mapa, sempre o mesmo). Ele só aparece dentro

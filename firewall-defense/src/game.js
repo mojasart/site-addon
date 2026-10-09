@@ -1,7 +1,7 @@
 import { VIEW_H, PANEL_W, SPEEDS, TURBO_SPEED, DANGER_TILES, EARLY_BONUS, EARLY_WAVES, DEBUG } from './config.js';
 import { MAPS, BOUNTY_MAPS } from './data/maps.js';
 import { roundsFor } from './data/rounds.js';
-import { PLAT_TIME, PLAT_LIVES, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
+import { PLAT_WAVES, PLAT_LIVES, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
 import { worth, ENEMIES } from './data/enemies.js';
 import { BOUNTY, bountyRound, layers, comboMul, bountyStars } from './data/bounty.js';
 import { TOWERS, TARGET_MODES } from './data/towers.js';
@@ -95,7 +95,8 @@ export class Game {
       count: this.bounty ? 1 : this.map.pressure * k, // Bug Bounty: a quantidade já vem pronta
       minCount: this.platinum ? 0 : 1,
       early: this.platinum || this.bounty ? null : EARLY_WAVES, // modo normal: primeiras ondas mais cheias
-      gap: this.map.gapMul,
+      // platina: a dificuldade k enche as ondas sem esticar elas (intervalo ÷ k)
+      gap: this.map.gapMul / (this.platinum ? Math.max(1, k) : 1),
       speed: this.map.speedMul,
       hp: this.map.pressure * k, // chefões e worms acompanham a pressão
     });
@@ -140,7 +141,7 @@ export class Game {
     this.lockedTowers = this.mapIndex === 0 && this.mode === 'normal' ? new Set(TUTORIAL_LOCKED) : null;
     this.tutorial = Tutorial.wanted(this) ? new Tutorial(this) : null;
     if (this.platinum) {
-      this.showBanner('MODO PLATINA', 3, '#bdeeff', 46, `${TOWERS[this.blocked].name} bloqueado · chefão em 3:00`);
+      this.showBanner('MODO PLATINA', 3, '#bdeeff', 46, `${TOWERS[this.blocked].name} bloqueado · chefão depois da onda ${PLAT_WAVES}`);
       return;
     }
     if (this.bounty) {
@@ -385,15 +386,13 @@ export class Game {
     if (this.bossCalled) return;
     const r = this.rounds;
     this.platTime += dt;
-    if (this.platTime >= PLAT_TIME || !r.canStart) {
-      this.callBoss();
-      return;
-    }
     if (r.pending[r.started - 1] > 0) return; // a última onda ainda está entrando
     this.waveGap = (this.waveGap ?? WAVE_GAP) - dt;
     if (this.waveGap <= 0) {
       this.waveGap = null;
-      this.startRound();
+      // acabaram as PLAT_WAVES ondas: vem o chefão
+      if (r.canStart) this.startRound();
+      else this.callBoss();
     }
   }
 
@@ -406,9 +405,9 @@ export class Game {
     this.sound.play('round');
   }
 
-  // Segundos que faltam pro chefão (modo platina)
+  // Ondas que faltam pro chefão (modo platina)
   get platLeft() {
-    return Math.max(0, PLAT_TIME - this.platTime);
+    return Math.max(0, PLAT_WAVES - this.rounds.started);
   }
 
   onRoundEnd(n) {
