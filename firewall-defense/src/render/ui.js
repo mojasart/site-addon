@@ -313,9 +313,10 @@ function drawShop(ctx, game, L) {
     ctx.beginPath();
     rrect(ctx, tile.x + 2, tile.y + 2, tile.w - 4, tile.h - 8, 12);
     ctx.clip();
-    const k = Math.min(1, tile.h / 108); // card menor (muitas defesas): personagem menor
-    ctx.translate(tile.x + tile.w / 2, tile.y + 56 * k);
-    ctx.scale(0.8 * k, 0.8 * k);
+    // personagem entre a faixa do nome e o preço (cardArt)
+    const art = cardArt(tile);
+    ctx.translate(tile.x + tile.w / 2, art.y);
+    ctx.scale(art.s, art.s);
     drawCharacter(ctx, tile.type, { t: game.anim + tile.x * 0.01, face: 1, level: 0 });
     ctx.restore();
     const blocked = game.isLocked?.(tile.type) ?? game.blocked === tile.type;
@@ -427,33 +428,72 @@ export const ROLE = {
 export const ROLE_GREEN = '#3dff9a';
 export const roleFont = (px) => `bold ${px}px "Courier New", ui-monospace, Menlo, Consolas, monospace`;
 
-function drawRoleTag(ctx, tile) {
-  const def = TOWERS[tile.type];
-  if (!def) return;
-  // [NOME] em 10px, com folga das bordas do card; nome comprido (GOLEM
-  // FIREWALL, PINGUIM LINUX) quebra em 2 linhas: [GOLEM / FIREWALL]
-  const name = def.name.toUpperCase();
-  const room = tile.w - 20;
+// Etiqueta [NOME] dos cards da loja. Todas com o MESMO tamanho de letra: o
+// maior (até TAG.maxPx) em que todos os nomes cabem com TAG.pad de folga
+// de cada borda; nome comprido de 2 palavras quebra em 2 linhas
+// ([GOLEM / FIREWALL]). O nome fica numa faixa fixa no topo do card (2
+// linhas de altura; 1 linha fica no meio dela) e o personagem vai embaixo
+// dela, sem encostar (cardArt)
+const TAG = { pad: 10, top: 6, line: 10, maxPx: 10, minPx: 7 };
+let tagCache = null;
+
+function roleTags(ctx, room) {
+  if (tagCache?.room === room) return tagCache;
+  const halves = (name) => {
+    const w = name.split(' ');
+    const half = Math.ceil(w.length / 2);
+    return [`[${w.slice(0, half).join(' ')}`, `${w.slice(half).join(' ')}]`];
+  };
+  const fits = (l) => ctx.measureText(l).width <= room;
   ctx.save();
-  ctx.font = roleFont(10);
-  let lines = [`[${name}]`];
-  if (ctx.measureText(lines[0]).width > room) ctx.font = roleFont(9); // quase cabe ([ROBÔ NMAP])
-  const words = name.split(' ');
-  if (ctx.measureText(lines[0]).width > room && words.length > 1) {
-    ctx.font = roleFont(10);
-    const half = Math.ceil(words.length / 2);
-    lines = [`[${words.slice(0, half).join(' ')}`, `${words.slice(half).join(' ')}]`];
+  let px = TAG.maxPx;
+  let lines = {};
+  for (; px > TAG.minPx; px--) {
+    ctx.font = roleFont(px);
+    lines = {};
+    for (const type of TOWER_ORDER) {
+      const name = TOWERS[type].name.toUpperCase();
+      if (fits(`[${name}]`)) lines[type] = [`[${name}]`];
+      else if (name.includes(' ') && halves(name).every(fits)) lines[type] = halves(name);
+    }
+    if (TOWER_ORDER.every((type) => lines[type])) break;
   }
+  ctx.restore();
+  tagCache = { room, px, lines };
+  return tagCache;
+}
+
+// Onde vai o personagem no card: centralizado entre a faixa do nome e o
+// preço, do tamanho que couber (no máximo 0,8). Na loja ele aparece criança
+// (nível 0): do topo da cabeça aos pés vai de -ART.top a +ART.bottom
+const ART = { top: 34, bottom: 15, max: 0.8 }; // (top: com a chaminha da Golem e o cabelo)
+function cardArt(tile) {
+  const top = tile.y + TAG.top + TAG.line * 2 + 3; // embaixo da faixa do nome, com folga
+  const bottom = tile.y + tile.h - 24; // em cima do preço
+  const s = Math.min(ART.max, (bottom - top) / (ART.top + ART.bottom));
+  return { s, y: (top + bottom) / 2 + ((ART.top - ART.bottom) / 2) * s };
+}
+
+function drawRoleTag(ctx, tile) {
+  if (!TOWERS[tile.type]) return;
+  const room = tile.w - TAG.pad * 2;
+  const tags = roleTags(ctx, room);
+  const name = TOWERS[tile.type].name.toUpperCase();
+  const lines = tags.lines[tile.type] ?? [`[${name}]`];
+  ctx.save();
+  ctx.font = roleFont(tags.px);
   const widest = Math.max(...lines.map((l) => ctx.measureText(l).width));
-  const squeeze = Math.min(1, room / widest); // (ainda não coube: aperta na horizontal)
+  const squeeze = Math.min(1, room / widest); // (nem na menor letra coube: aperta na horizontal)
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = ROLE_GREEN;
   ctx.shadowColor = ROLE_GREEN;
   ctx.shadowBlur = 6;
-  ctx.translate(tile.x + tile.w / 2, tile.y + (lines.length > 1 ? 10 : 14));
+  // 2 linhas enchem a faixa; 1 linha fica no meio dela
+  const first = tile.y + TAG.top + TAG.line * (lines.length > 1 ? 0.5 : 1);
+  ctx.translate(tile.x + tile.w / 2, first);
   ctx.scale(squeeze, 1);
-  lines.forEach((l, i) => ctx.fillText(l, 0, i * 11));
+  lines.forEach((l, i) => ctx.fillText(l, 0, i * TAG.line));
   ctx.restore();
 }
 
