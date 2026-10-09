@@ -89,7 +89,7 @@ export const TREE = [
   { id: 'firewall3c', tower: 'firewall', name: 'Erupção', desc: 'Cada onda tem 4% de chance de sair com 200% do alcance', cost: 12, parent: 'firewall3b',
     apply: (s) => { s.bigPulseChance = (s.bigPulseChance ?? 0) + 0.04; } },
 
-  // Penguin Linux — A: gelo profundo · B: tempestade (alcance e velocidade)
+  // Pinguim Linux — A: gelo profundo · B: tempestade (alcance e velocidade)
   { id: 'pinguim2', tower: 'pinguim', name: 'Frio Intenso', desc: 'A lentidão fica 6% mais forte', cost: 8, parent: 'pinguim',
     apply: (s) => { if (s.slow) s.slow *= 0.94; } },
   { id: 'pinguim2b', tower: 'pinguim', name: 'Inverno Longo', desc: 'A lentidão dura 0,3s a mais', cost: 10, parent: 'pinguim2',
@@ -102,7 +102,7 @@ export const TREE = [
     apply: (s) => { s.fireRate *= 0.95; } },
   { id: 'pinguim3c', tower: 'pinguim', name: 'Avalanche', desc: 'Cada onda tem 4% de chance de vir outra logo em seguida', cost: 12, parent: 'pinguim3b',
     apply: (s) => { s.repeatChance = (s.repeatChance ?? 0) + 0.04; } },
-  // vírus no gelo do Penguin ficam vulneráveis: levam vulnMul de dano de todas as defesas
+  // vírus no gelo do Pinguim ficam vulneráveis: levam vulnMul de dano de todas as defesas
   { id: 'pinguim4', tower: 'pinguim', name: 'Gelo Quebradiço', desc: 'Vírus congelados ficam vulneráveis e levam 5% a mais de dano de todas as defesas', cost: 10, parent: 'pinguim',
     apply: (s) => { s.vulnerable = true; s.vulnMul = (s.vulnMul ?? 1) + 0.05; } },
 

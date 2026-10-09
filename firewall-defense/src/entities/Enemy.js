@@ -23,7 +23,7 @@ export class Enemy {
     this.shatter = 0; // Estilhaço (Dark Net): chance de estilhaçar se estourar no gelo
     this.sticky = false; // Mel Pegajoso (Dark Net): sai lento do Honeypot
     this.slowMul = 1;
-    this.vulnTimer = 0; // vulnerável (Penguin com Gelo Quebradiço, Dark Net): leva vulnMul de dano
+    this.vulnTimer = 0; // vulnerável (Pinguim com Gelo Quebradiço, Dark Net): leva vulnMul de dano
     this.vulnMul = 1;
     this.markTimer = 0; // marcado (Robô NMAP com Marcar Alvo): leva markMul de dano
     this.markMul = 1;
@@ -236,7 +236,7 @@ export class Enemy {
   pop(game, overflow, opts) {
     this.dead = true;
     game.duckRoll?.(this); // Pato de Borracha (Dark Net): às vezes acha um café
-    // Estilhaço (Dark Net): estourou no gelo do Penguin → às vezes acerta os vizinhos
+    // Estilhaço (Dark Net): estourou no gelo do Pinguim → às vezes acerta os vizinhos
     if (this.slowTimer > 0 && chance(this.shatter)) {
       game.fx.spark(this.x, this.y, '#c8f4ff', 12);
       game.fx.burst(this.x, this.y, '#c8f4ff', 10, 200, 0.4, 4);

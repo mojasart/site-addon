@@ -291,7 +291,7 @@ function drawRoleTag(ctx, tile) {
   const def = TOWERS[tile.type];
   if (!def) return;
   // [NOME] em 10px, com folga das bordas do card; nome comprido (GOLEM
-  // FIREWALL, PENGUIN LINUX) quebra em 2 linhas: [GOLEM / FIREWALL]
+  // FIREWALL, PINGUIM LINUX) quebra em 2 linhas: [GOLEM / FIREWALL]
   const name = def.name.toUpperCase();
   const room = tile.w - 20;
   ctx.save();
