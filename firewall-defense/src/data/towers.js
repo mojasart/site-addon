@@ -161,6 +161,10 @@ export const TOWERS = {
 
 export const TOWER_ORDER = ['hacker', 'firewall', 'pinguim', 'scanner', 'minerador', 'honeypot', 'executivo'];
 
+// Cada nível de upgrade comprado aumenta o alcance da defesa em 5% (por cima
+// do que o upgrade já faz; vale pra todas as que têm alcance: Tower.refresh)
+export const LEVEL_RANGE = 0.05;
+
 // Comandantes por fase (Executivo)
 export const COMMANDER_MAX = 3;
 // Poder do Executivo: as defesas que atacam no raio de um Executivo ficam

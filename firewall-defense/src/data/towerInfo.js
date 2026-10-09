@@ -34,7 +34,7 @@ export function statRows(s, { armor = false } = {}) {
     const pct = (p) => `${Math.round(p * 100)}%`;
     rows.push(
       ['ACELERA', `+${pct(s.haste)} nas defesas em volta`],
-      ['ALCANCE', `${s.range}`],
+      ['ALCANCE', `${Math.round(s.range)}`],
       ['BURNOUT', `+${pct(BURNOUT.haste)} no raio por ${BURNOUT.time + (s.burnoutExtra ?? 0)}s`],
       ['RECARGA', `${BURNOUT.cooldown - (s.burnoutFaster ?? 0)}s`],
       ['LIMITE', `${COMMANDER_MAX} comandantes por fase`],
@@ -54,7 +54,7 @@ export function statRows(s, { armor = false } = {}) {
     if (s.markTime) rows.push(['MARCA', `+${Math.round((s.markMul - 1) * 100)}% de dano por ${num(s.markTime)}s`]);
     if (s.burn) rows.push(['QUEIMA', `${fmt(s.burn * (s.burnMul ?? 1))}/s por ${num(s.burnTime + (s.burnExtra ?? 0))}s`]);
   }
-  rows.push(['ALCANCE', `${s.range}`], ['RECARGA', `${num(s.fireRate)}s`]);
+  rows.push(['ALCANCE', `${Math.round(s.range)}`], ['RECARGA', `${num(s.fireRate)}s`]);
   if (s.attack === 'pulse') rows.push(['VOADORES', 'não pega']); // a onda corre pelo chão (Bug)
   if (armor) rows.push(['BLINDADOS', s.canHitArmored ? 'fura' : 'não fura']);
   return [...rows, ...luckRows(s)];
