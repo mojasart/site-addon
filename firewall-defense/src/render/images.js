@@ -41,6 +41,8 @@ const NAMES = [
   'locker',
   'ransomware',
   'spyware',
+  'cicada', // Cicada 3301 (e a pose da aura pulsando)
+  'cicada_aura',
   'adware',
   'duck',
   'shop_cart',

@@ -1314,7 +1314,7 @@ function drawShielded(ctx, e, t) {
 function drawBossBar(ctx, e) {
   const w = e.r * 2;
   const x = e.x - w / 2;
-  const y = e.y - e.r - 34 - (e.def.flying ? 48 : 0); // quem voa tem a barra mais alta
+  const y = e.y - e.r - 34 - (e.def.flying ? 80 : 0); // quem voa tem a barra mais alta (acima das asas)
   rrect(ctx, x, y, w, 12, 6);
   fillOutline(ctx, '#2a1840', 3);
   const k = Math.max(0, e.hp / (e.maxHp ?? e.def.hp));

@@ -79,6 +79,7 @@ export class Enemy {
   }
 
   update(dt, game) {
+    if (this.def.aura) this.auraT = (this.auraT ?? 0) + dt; // pulso da aura (render/viruses.js)
     this.slowTimer = Math.max(0, this.slowTimer - dt);
     this.freezeTimer = Math.max(0, this.freezeTimer - dt);
     this.vulnTimer = Math.max(0, this.vulnTimer - dt);

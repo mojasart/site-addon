@@ -102,7 +102,7 @@ const SPRITE_LOOK = {
   spy: { size: 3, foot: 0.477, hop: 0.32 },
   adware: { size: 2.8, foot: 0.477, hop: 0.2 },
   boss: { size: 3.4, foot: 0.336, hop: 0 },
-  cicada: { size: 3.2, foot: 0.5, hop: 0, float: 30 }, // Cicada 3301: voa bem acima da sombra
+  cicada: { size: 5.2, foot: 0.5, hop: 0, float: 30 }, // Cicada 3301: voa bem acima da sombra (o quadro sobra por causa das asas)
 };
 const VIRUS_LOOK = { size: 2.9, foot: 0.477, hop: 0.42 };
 
@@ -144,15 +144,17 @@ function drawSpriteEnemy(ctx, e) {
   ctx.rotate(Math.sign(turn || 1) * lean); // balança pra frente e pra trás
   ctx.scale(flip * sx, sy); // escala ancorada nos pés
   const dy = -size * look.foot;
+  // Cicada 3301: no pulso da aura troca pra pose "ativando" (olhos verdes)
+  const sprite = def.aura && auraPulse(e) > 0 && hasImage(`${def.sprite}_aura`) ? `${def.sprite}_aura` : def.sprite;
   if (e.golden) ctx.filter = GOLD_FILTER;
-  drawImage(ctx, def.sprite, size, 0, dy, def.tint);
+  drawImage(ctx, sprite, size, 0, dy, def.tint);
   ctx.filter = 'none';
   if (e.flash > 0) {
     // acerto: pisca mais claro
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = 0.6;
     if (e.golden) ctx.filter = GOLD_FILTER;
-    drawImage(ctx, def.sprite, size, 0, dy, def.tint);
+    drawImage(ctx, sprite, size, 0, dy, def.tint);
     ctx.filter = 'none';
   }
   ctx.restore();
@@ -639,19 +641,29 @@ function cicada(g, r, flap) {
 // tracejada girando e caracteres cifrados correndo em volta. Desenhada na
 // origem da Cicada (centro do chão), antes dela
 const AURA_CHARS = '3301ᚠᚢᚦᚩᚱᚳ01$#';
+export const AURA_PULSE = 3.301; // a cada quantos segundos a Cicada "ativa" a aura
+const PULSE_TIME = 0.7; // quanto dura o pulso
+
+// 0 fora do pulso; no pulso sobe até 1 e volta (pra animar a aura e a pose)
+export function auraPulse(e) {
+  const k = (e.auraT ?? 0) % AURA_PULSE;
+  return k < PULSE_TIME ? Math.sin((k / PULSE_TIME) * Math.PI) : 0;
+}
+
 export function drawAura(ctx, e, t) {
-  const R = e.def.aura;
-  const pulse = 0.5 + Math.sin(t * 2.5) * 0.5;
+  const p = auraPulse(e);
+  const R = e.def.aura * (1 + 0.08 * p);
+  const pulse = Math.max(p, 0.5 + Math.sin(t * 2.5) * 0.5 * (1 - p));
   ctx.save();
   const g = ctx.createRadialGradient(0, 0, R * 0.2, 0, 0, R);
   g.addColorStop(0, 'rgba(61,255,154,0.06)');
-  g.addColorStop(1, `rgba(61,255,154,${0.2 + 0.08 * pulse})`);
+  g.addColorStop(1, `rgba(61,255,154,${0.2 + 0.08 * pulse + 0.15 * p})`);
   ctx.fillStyle = g;
   circle(ctx, 0, 0, R);
   ctx.fill();
   ctx.setLineDash([10, 8]);
   ctx.lineDashOffset = -t * 30;
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 3 + 2 * p;
   ctx.strokeStyle = `rgba(61,255,154,${0.7 + 0.3 * pulse})`;
   ctx.stroke();
   ctx.setLineDash([]);
