@@ -7,9 +7,14 @@
 const midi = (m) => 440 * 2 ** ((m - 69) / 12);
 
 // Intervalo mínimo entre repetições do mesmo som (evita barulheira em massa)
-const MIN_GAP = { pop: 0.035, throw: 0.06, laser: 0.07, fire: 0.12, frost: 0.18, coin: 0.05, block: 0.12, zap: 0.3 };
+const MIN_GAP = { tap: 0.03, pop: 0.035, throw: 0.06, laser: 0.07, fire: 0.12, frost: 0.18, coin: 0.05, block: 0.12, zap: 0.3 };
 
 const SFX = {
+  // tapa do jogador num vírus: estalo curto e seco
+  tap(s) {
+    s.tone({ type: 'square', freq: 420, to: 180, dur: 0.05, vol: 0.07 });
+    s.noise({ dur: 0.04, vol: 0.12, filter: 'bandpass', freq: 1800, q: 1.2 });
+  },
   pop(s) {
     const f = 520 + Math.random() * 380;
     s.tone({ type: 'sine', freq: f * 1.9, to: f * 0.55, dur: 0.07, vol: 0.22 });
