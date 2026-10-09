@@ -63,7 +63,7 @@ Tocar num mapa abre a escolha **NORMAL** / **PLATINA** (`src/data/platinum.js`);
 | --- | --- | --- | --- |
 | **Hacker** | $250 | Arremessa teclados (1 vírus por teclado) | Dedos Rápidos (30% mais rápido) · Exploit Triplo |
 | **Golem Firewall** | $350 | Onda de fogo em volta, queima blindados | Muralha de Fogo (mais alcance e ondas mais rápidas) · Incêndio (vírus pegam fogo: 500 de dano/s por até 3 s, mesmo fora do alcance; não acumula nem renova enquanto queima) |
-| **Penguin Linux** | $250 | Suporte: não dá dano, congela os vírus em volta (lentidão) | Criptografia AES (75% mais lento por 2,5 s) · Frente Fria (mais alcance e ondas um pouco mais rápidas). Na Dark Net, o Gelo Quebradiço deixa os congelados vulneráveis: levam 5% a mais de dano |
+| **Pinguim Linux** | $250 | Suporte: não dá dano, congela os vírus em volta (lentidão) | Criptografia AES (lentidão 40% mais forte: 50% → 70%) · Cold Reboot (mais alcance e ondas um pouco mais rápidas). Na Dark Net, o Gelo Quebradiço deixa os congelados vulneráveis: levam 5% a mais de dano |
 | **Robô NMAP** | $500 | Laser de longo alcance: tiro lento, dano alto, fura blindagem | Feixe Perfurante (o laser atravessa e acerta até 2 vírus em linha) · Marcar Alvo (o vírus atingido fica marcado por 2 s e leva 25% a mais de dano de todas as defesas) |
 | **Minerador** | $650 | Minera bitcoins que vão direto pro saldo. Nas seasons 1 e 2 só minera **em cima de uma pilha de bitcoin** (ver abaixo) | GPU Extra · Patrocínio (escolhe uma defesa aleatória: cada vírus que ela estourar solta +$1; uma moedinha gira em cima dela). Na Dark Net, o ramo dele tem também Juros, Empréstimo de $250 e Toque de Midas (5% dos vírus vêm **dourados**: destruídos, soltam $100) |
 | **Honeypot** | $90 | *Só no caminho.* Isca: não dá dano; os vírus param pra atacar até a vida dela (40) acabar. Dura no máximo 15 s: nas rodadas vai gastando sozinha, e mais rápido com vírus mordendo | — |
@@ -106,7 +106,7 @@ A árvore começa num nó central, que abre um ramo por defesa. Cada nó é um b
 | Acesso Root (centro) | toda fase começa com +$75; libera os ramos | 3 cafés |
 | Teclado Mecânico | Hacker ataca 10% mais rápido | 5 cafés |
 | Tijolo Refratário | Golem Firewall com +15% de alcance | 5 cafés |
-| Kernel Gelado | lentidão do Penguin Linux dura +0,5 s | 5 cafés |
+| Kernel Gelado | lentidão do Pinguim Linux dura +0,5 s | 5 cafés |
 | Lente Calibrada | Robô NMAP com +1 de dano | 5 cafés |
 | Overclock | cada bitcoin minerado vale +$5 | 5 cafés |
 | Mel Turbinado | Honeypot com +50% de vida | 5 cafés |
