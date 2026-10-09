@@ -16,7 +16,7 @@ const DIFF_COLOR = { 'FÁCIL': '#3fd16b', 'MÉDIO': '#ffd23f', 'DIFÍCIL': '#ff4
 const TIERS = [
   { min: 90, name: 'FÁCIL', color: '#3fd16b' },
   { min: 65, name: 'MÉDIO', color: '#ffd23f' },
-  { min: 45, name: 'HARD', color: '#ff4d5e' },
+  { min: 45, name: 'DIFÍCIL', color: '#ff4d5e' },
   { min: 25, name: 'MUITO DIFÍCIL', color: '#e0399a' },
   { min: 0, name: 'INSANO', color: '#a259ff' },
 ];
