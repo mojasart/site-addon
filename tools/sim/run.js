@@ -38,7 +38,6 @@ if (!isMainThread) {
   const [m0, m1] = opt('maps', `1-${MAPS.length}`).split('-').map(Number);
   const jobs = [];
   for (let m = m0 - 1; m <= (m1 || m0) - 1; m++) {
-    if (MAPS[m].bounty) continue; // Bug Bounty não tem vitória/derrota de bot
     for (const profile of Object.keys(PROFILES)) for (let s = 1; s <= seeds; s++) jobs.push({ map: m, profile, seed: s, mode, perks });
   }
 
@@ -60,10 +59,6 @@ if (!isMainThread) {
 
   const rows = [];
   for (let m = m0 - 1; m <= (m1 || m0) - 1; m++) {
-    if (MAPS[m].bounty) {
-      rows.push({ map: m + 1, id: MAPS[m].id, rate: null, bounty: true });
-      continue;
-    }
     const rs = results.filter((r) => r.map === m);
     const wins = rs.filter((r) => r.won).length;
     const byProfile = Object.keys(PROFILES).map((p) => {
@@ -74,10 +69,6 @@ if (!isMainThread) {
     rows.push({ map: m + 1, id: MAPS[m].id, rate: wins / rs.length, wins, n: rs.length, avgRound, total: MAPS[m].rounds, byProfile });
   }
   for (const r of rows) {
-    if (r.bounty) {
-      console.log(`${String(r.map).padStart(2)} ${r.id.padEnd(18)} (Bug Bounty: pulado)`);
-      continue;
-    }
     const bar = '█'.repeat(Math.round(r.rate * 20)).padEnd(20, '·');
     console.log(
       `${String(r.map).padStart(2)} ${r.id.padEnd(18)} ${bar} ${(r.rate * 100).toFixed(0).padStart(3)}%  ` +

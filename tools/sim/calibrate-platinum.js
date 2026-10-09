@@ -13,7 +13,6 @@
 //  Os bots jogam com TODOS os upgrades da Dark Net (bot.js, ALL_PERKS):
 //  quem chega na platina já tem vários, e ela tem que ser difícil mesmo
 //  assim. k nunca fica abaixo de LO (senão a fase quase não tem vírus).
-//  As fases Bug Bounty não têm platina e ficam de fora.
 // ─────────────────────────────────────────────────────────────
 import { Worker, isMainThread, parentPort } from 'node:worker_threads';
 import { availableParallelism } from 'node:os';
@@ -38,8 +37,7 @@ if (!isMainThread) {
   const mi = process.argv.indexOf('--maps');
   const pick = mi >= 0 ? new Set(process.argv[mi + 1].split(',').map((x) => Number(x) - 1)) : null;
   const n = MAPS.length;
-  // Bug Bounty fica de fora (não tem platina)
-  const only = new Set(MAPS.map((m, i) => i).filter((i) => !MAPS[i].bounty && (!pick || pick.has(i))));
+  const only = new Set(MAPS.map((m, i) => i).filter((i) => !pick || pick.has(i)));
   const target = (m) => TARGET[0] + (TARGET[1] - TARGET[0]) * (m / (n - 1));
   const lo = Array(n).fill(LO);
   const hi = Array(n).fill(HI);

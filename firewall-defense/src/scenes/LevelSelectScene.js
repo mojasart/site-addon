@@ -1,5 +1,5 @@
 import { VIEW_H, OUTLINE, GOLD } from '../config.js';
-import { MAPS, SEASONS, MAPS_PER_SEASON } from '../data/maps.js';
+import { MAPS, SEASONS, MAPS_PER_SEASON, BOUNTY_MAPS } from '../data/maps.js';
 import { renderThumb } from '../render/maps/index.js';
 import { rrect, fillOutline, text, button, setFont } from '../render/canvas.js';
 import { iconButton, inRect, stars, ribbon, bigButton, starTier, volumeSlider, sliderValue } from '../render/widgets.js';
@@ -24,6 +24,8 @@ const tierOf = (rate) => TIERS.find((t) => rate >= t.min);
 // Os mapas abrem em sequência: vencer um libera o próximo.
 // Tocar num mapa abre a escolha NORMAL / PLATINA; a platina só libera com
 // 3 estrelas (antes disso aparece trancada). Platina vencida: estrelas azul-gelo e o card de platina.
+// Embaixo da grade, a sala do Bug Bounty da season: abre com as 15 fases
+// platinadas (antes disso fica trancada, mostrando quantas faltam).
 // (O aliado bloqueado só aparece dentro da partida.)
 // No canto de cima: o saldo de cafés, a Dark Net (libera com
 // DARKNET_STARS estrelas; antes disso fica trancada), o catálogo e as
@@ -51,12 +53,12 @@ export class LevelSelectScene {
     const tabW = Math.min(250, (W - 200) / SEASONS.length - 12);
     const tabs0 = (W - (SEASONS.length * tabW + (SEASONS.length - 1) * 12)) / 2;
     const cols = 5;
-    const gap = 12;
+    const gap = 10;
     const gw = Math.min(W - 60, 900);
     const tw = (gw - gap * (cols - 1)) / cols;
-    const th = 112;
+    const th = 100; // (a grade + a barra do Bug Bounty cabem nos 540 de altura)
     const gx = (W - gw) / 2;
-    const gy = 160;
+    const gy = 152;
     const card = { x: W / 2 - 240, y: 110, w: 480, h: 330 };
     return {
       modal: {
@@ -80,17 +82,21 @@ export class LevelSelectScene {
         w: tw,
         h: th,
       })),
+      // sala do Bug Bounty da season, embaixo da grade
+      bounty: { x: W / 2 - Math.min(gw, 600) / 2, y: gy + 3 * (th + gap) + 2, w: Math.min(gw, 600), h: 56 },
     };
   }
 
+  // Miniatura de um mapa (i: índice em MAPS; 'b0'..'b2': sala do Bug Bounty
+  // da season). Uma por tamanho: o cache zera quando muda
   thumb(i, w, h) {
     const key = `${w}x${h}@${this.app.pixelScale}`;
-    if (key !== this.thumbKey) {
-      this.thumbs = {};
-      this.thumbKey = key;
-    }
-    this.thumbs[i] ??= renderThumb(MAPS[i], w, h, this.app.pixelScale);
-    return this.thumbs[i];
+    if (key !== this.thumbKey) this.thumbs = {};
+    this.thumbKey = key;
+    const id = `${i}:${w}x${h}`;
+    const map = typeof i === 'string' ? BOUNTY_MAPS[+i.slice(1)] : MAPS[i];
+    this.thumbs[id] ??= renderThumb(map, w, h, this.app.pixelScale);
+    return this.thumbs[id];
   }
 
   seasonStars(s) {
@@ -103,6 +109,7 @@ export class LevelSelectScene {
     this.t += dt;
     this.wiggle.t = Math.max(0, this.wiggle.t - dt);
     this.darkWiggle = Math.max(0, this.darkWiggle - dt);
+    this.bountyWiggle = Math.max(0, (this.bountyWiggle ?? 0) - dt);
     if (this.toast && (this.toast.time -= dt) <= 0) this.toast = null;
   }
 
@@ -141,6 +148,7 @@ export class LevelSelectScene {
 
     SEASONS.forEach((season, s) => this.drawTab(ctx, L.tabs[s], season, s));
     L.tiles.forEach((tile, k) => this.drawTile(ctx, tile, this.season * MAPS_PER_SEASON + k));
+    this.drawBounty(ctx, L.bounty, this.season);
     if (this.pick >= 0) this.drawModePicker(ctx, L.modal, this.pick);
     if (this.settings) this.drawSettings(ctx, L.modal);
     if (this.toast) this.drawToast(ctx, W / 2, 118);
@@ -351,7 +359,7 @@ export class LevelSelectScene {
 
     // miniatura do mapa
     const tw = c.w - 12;
-    const th = 66;
+    const th = c.h - 46;
     ctx.save();
     rrect(ctx, c.x + 6, c.y + 6, tw, th, 11);
     ctx.clip();
@@ -373,16 +381,8 @@ export class LevelSelectScene {
     // bolinha de dificuldade à direita das estrelas:
     // pela % de bots que venceram; sem dados, a dificuldade do mapa
     const rate = BOT_WIN.normal[i];
-    if (!map.bounty) diffDot(ctx, cx + 58, sy - 2, rate != null ? tierOf(rate).color : DIFF_COLOR[map.difficulty], 7);
+    diffDot(ctx, cx + 58, sy - 2, rate != null ? tierOf(rate).color : DIFF_COLOR[map.difficulty], 7);
     stars(ctx, cx, sy, got, 9, 22, null, starTier(got, plat));
-    if (map.bounty) {
-      // selo de fase bônus em cima da miniatura (e o recorde de pontos)
-      rrect(ctx, c.x + c.w - 98, c.y + 10, 88, 22, 11);
-      fillOutline(ctx, '#ffd23f', 2);
-      text(ctx, 'BUG BOUNTY', c.x + c.w - 54, c.y + 21, { size: 12, color: OUTLINE, stroke: null });
-      const best = this.app.bountyBest?.(map.id) ?? 0;
-      if (best) text(ctx, `recorde ${best}`, cx, sy - 20, { size: 11, color: '#ffe07a' });
-    }
     if (!unlocked) {
       rrect(ctx, c.x, c.y, c.w, c.h, 16);
       ctx.fillStyle = 'rgba(15,22,48,0.72)';
@@ -390,6 +390,53 @@ export class LevelSelectScene {
       ctx.save();
       ctx.translate(cx, c.y + c.h / 2 - 4);
       ICONS.lock(ctx, 18);
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  // Sala do Bug Bounty da season (barra embaixo da grade): aberta (dourada,
+  // com estrelas e recorde) ou trancada (cadeado e quantas fases faltam platinar)
+  drawBounty(ctx, r, s) {
+    const map = BOUNTY_MAPS[s];
+    const open = this.app.bountyOpen(s);
+    const got = this.app.save.stars[map.id] ?? 0;
+    ctx.save();
+    let dx = 0;
+    if (this.bountyWiggle > 0) dx = Math.sin(this.bountyWiggle * 60) * 5 * this.bountyWiggle * 3;
+    const k = this.pressed === 'bounty' ? 0.97 : 1;
+    ctx.translate(r.x + r.w / 2 + dx, r.y + r.h / 2);
+    ctx.scale(k, k);
+    ctx.translate(-(r.x + r.w / 2), -(r.y + r.h / 2));
+    button(ctx, r, open ? '#ffb020' : '#4a5d92', { radius: 16, depth: 5 });
+    const h = r.h - 5;
+    const cy = r.y + h / 2;
+    // miniatura da sala à esquerda
+    const tw = 84;
+    const th = h - 12;
+    ctx.save();
+    rrect(ctx, r.x + 6, r.y + 6, tw, th, 8);
+    ctx.clip();
+    ctx.drawImage(this.thumb(`b${s}`, tw, th), r.x + 6, r.y + 6, tw, th);
+    ctx.restore();
+    rrect(ctx, r.x + 6, r.y + 6, tw, th, 8);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = OUTLINE;
+    ctx.stroke();
+    text(ctx, 'BUG BOUNTY', r.x + tw + 18, cy + 1, { size: 22, align: 'left' });
+    const rx = r.x + r.w - 16; // coluna da direita
+    if (open) {
+      stars(ctx, rx - 150, cy, got, 9, 22, null, starTier(got, false));
+      const best = this.app.bountyBest(map.id);
+      text(ctx, '+1 café por estrela', rx, cy - (best ? 8 : 0), { size: 13, align: 'right', color: '#fff3c4' });
+      if (best) text(ctx, `recorde ${best}`, rx, cy + 10, { size: 12, align: 'right', color: '#fff3c4' });
+    } else {
+      const n = this.app.seasonPlatinumCount(s);
+      text(ctx, `Platine a season (${n}/${MAPS_PER_SEASON})`, rx, cy + 1, { size: 15, align: 'right', color: '#d8e6ff' });
+      ctx.save();
+      setFont(ctx, 15);
+      ctx.translate(rx - ctx.measureText(`Platine a season (${n}/${MAPS_PER_SEASON})`).width - 16, cy);
+      ICONS.lock(ctx, 9);
       ctx.restore();
     }
     ctx.restore();
@@ -462,6 +509,15 @@ export class LevelSelectScene {
       this.season = s;
       this.app.sound.play('click');
     });
+    if (inRect(L.bounty, x, y)) {
+      if (this.app.bountyOpen(this.season)) this.pressed = 'bounty';
+      else {
+        this.bountyWiggle = 0.35;
+        this.app.sound.play('error');
+        this.toast = { text: 'BUG BOUNTY: platine todas as fases da season pra liberar', time: 2.6 };
+      }
+      return;
+    }
     L.tiles.forEach((c, k) => {
       if (!inRect(c, x, y)) return;
       const i = this.season * MAPS_PER_SEASON + k;
@@ -485,15 +541,14 @@ export class LevelSelectScene {
     }
     const i = this.pressed;
     this.pressed = -1;
+    // sala do Bug Bounty: entra direto (mapIndex = season)
+    if (i === 'bounty') {
+      if (inRect(this.layout().bounty, x, y)) this.launch(this.season, 'bounty');
+      return;
+    }
     if (i < 0) return;
     const tile = this.layout().tiles[i - this.season * MAPS_PER_SEASON];
     if (!tile || !inRect(tile, x, y)) return;
-    // Bug Bounty não tem platina: entra direto
-    if (MAPS[i].bounty) {
-      if (this.app.isUnlocked(i)) this.launch(i, 'normal');
-      else this.app.sound.play('error');
-      return;
-    }
     this.app.sound.play('click');
     // sempre pergunta o modo (sem 3 estrelas, a platina aparece trancada)
     this.pick = i;

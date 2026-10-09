@@ -1,5 +1,5 @@
 import { MIN_VIEW_W, VIEW_H, DEBUG, ENERGY } from './config.js';
-import { MAPS, MAPS_PER_SEASON } from './data/maps.js';
+import { MAPS, MAPS_PER_SEASON, BOUNTY_MAPS } from './data/maps.js';
 import { loadSave, writeSave, pauseSaving } from './save.js';
 import { Sound } from './audio/Sound.js';
 import { setPixelScale } from './render/canvas.js';
@@ -29,6 +29,7 @@ export class App {
     configAds(); // pré-carrega os anúncios com recompensa do Google
     this.debug = false;
     this.save = loadSave();
+    this.migrateBounty();
     if (debug) this.enableDebug();
     // saves antigos: música/efeitos desligados viram volume 0
     if (this.save.music === false) this.save.musicVol = 0;
@@ -46,6 +47,23 @@ export class App {
     this.scene = new TitleScene(this);
     this.next = null; // próxima cena (durante o fade)
     this.fade = 1; // começa escuro e clareia
+  }
+
+  // Saves de antes das salas do Bug Bounty: as fases 10, 20, 30 e 40 eram
+  // Bug Bounty e viraram fases normais. As estrelas delas saem (senão
+  // contariam como fase vencida), mas os cafés que davam (2/4/6) ficam
+  migrateBounty() {
+    const s = this.save;
+    if (s.bountyRooms) return;
+    let coffee = 0;
+    for (const id of ['placa-mae-10', 'data-center-5', 'data-center-15', 'cabo-submarino-10']) {
+      coffee += [0, 2, 4, 6][s.stars[id] ?? 0] ?? 0;
+      delete s.stars[id];
+      if (s.bounty) delete s.bounty[id];
+    }
+    s.legacyBountyCoffee = coffee;
+    s.bountyRooms = true;
+    writeSave(s);
   }
 
   // Modo debug (?debug na URL ou tocando no worm da tela inicial): todos os
@@ -214,8 +232,9 @@ export class App {
   // Cafés ganhos até agora (pelo recorde de cada mapa: data/darknet.js)
   // (mais os dos monstros abatidos em todas as partidas)
   get coffeeEarned() {
-    const maps = MAPS.reduce((sum, m) => sum + mapCoffee(this.save.stars[m.id], this.hasPlatinum(m.id), m.bounty), 0);
-    return maps + (this.save.kills ?? 0) * COFFEE.perKill + (this.save.duckCoffee ?? 0);
+    const maps = MAPS.reduce((sum, m) => sum + mapCoffee(this.save.stars[m.id], this.hasPlatinum(m.id)), 0);
+    const bounty = BOUNTY_MAPS.reduce((sum, m) => sum + mapCoffee(this.save.stars[m.id], false, true), 0) + (this.save.legacyBountyCoffee ?? 0);
+    return maps + bounty + (this.save.kills ?? 0) * COFFEE.perKill + (this.save.duckCoffee ?? 0);
   }
 
   // Café que o Pato de Borracha achou numa partida (upgrade secreto)
@@ -393,7 +412,17 @@ export class App {
 
   // Todos os mapas da season com a platina vencida?
   seasonPlatinum(s) {
-    return MAPS.slice(s * MAPS_PER_SEASON, (s + 1) * MAPS_PER_SEASON).every((m) => m.bounty || this.hasPlatinum(m.id)); // Bug Bounty não tem platina
+    return MAPS.slice(s * MAPS_PER_SEASON, (s + 1) * MAPS_PER_SEASON).every((m) => this.hasPlatinum(m.id));
+  }
+
+  // Quantas fases da season já têm a platina vencida
+  seasonPlatinumCount(s) {
+    return MAPS.slice(s * MAPS_PER_SEASON, (s + 1) * MAPS_PER_SEASON).filter((m) => this.hasPlatinum(m.id)).length;
+  }
+
+  // Sala do Bug Bounty da season: abre com a season inteira platinada
+  bountyOpen(s) {
+    return this.debug || this.seasonPlatinum(s);
   }
 
   // Modo platina liberado nesse mapa? (precisa das 3 estrelas)
@@ -407,14 +436,15 @@ export class App {
     writeSave(this.save);
   }
 
-  // O Bug Bounty não trava a progressão: o mapa depois dele abre junto com ele
+  // Abre vencendo o anterior (ou se já foi vencido: saves de quando as
+  // fases 10, 20, 30 e 40 eram Bug Bounty e não travavam a seguinte)
   isUnlocked(i) {
     if (this.debug || i === 0) return true;
-    const prev = MAPS[i - 1];
-    return prev.bounty ? this.isUnlocked(i - 1) : (this.save.stars[prev.id] ?? 0) > 0;
+    const stars = (m) => this.save.stars[m.id] ?? 0;
+    return stars(MAPS[i - 1]) > 0 || stars(MAPS[i]) > 0;
   }
 
-  // Recorde de pontos de um Bug Bounty
+  // Recorde de pontos de uma sala do Bug Bounty
   bountyBest(mapId) {
     return this.save.bounty?.[mapId] ?? 0;
   }
