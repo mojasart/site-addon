@@ -42,12 +42,15 @@ export const ENEMIES = {
     children: [],
   },
   // Minichefão: bem lento, voa e protege quem está perto. Vem várias vezes
-  // na partida (data/rounds.js)
+  // na partida (data/rounds.js). Não segura a onda (lingers): sobrando só
+  // ele, a rodada acaba e a próxima pode vir; ele fica pra trás, atrapalhando,
+  // e com a mira em PRIMEIRO as defesas nem olham pra ele (tem que trocar
+  // pra MAIS FORTE / MAIS VIDA). A vitória só sai com ele morto
   cicada: {
     name: 'Cicada 3301',
-    desc: 'Minichefão que voa: os vírus dentro da aura de criptografia dela não levam dano',
+    desc: 'Minichefão que voa: os vírus dentro da aura dela não levam dano. Fica pra trás: mire em MAIS VIDA',
     lore: 'O enigma mais famoso da internet: só os mais inteligentes decifram. Quem anda perto dela fica criptografado e nenhuma defesa consegue tocar.',
-    hp: 40 * LAYER_HP,
+    hp: 80 * LAYER_HP,
     lives: 20,
     speed: 26,
     radius: 22,
@@ -57,6 +60,7 @@ export const ENEMIES = {
     boss: true,
     flying: true,
     aura: 125, // raio da aura de criptografia (px)
+    lingers: true, // não conta pro fim da rodada (RoundManager)
     reward: 15,
     children: [],
   },
