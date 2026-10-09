@@ -160,10 +160,12 @@ function drawPowerButton(ctx, game, r, o) {
   text(ctx, o.label, cx, r.y + r.h - 6, { size: o.label.length > 5 ? 12 : 16, color: o.labelColor ?? '#ffffff' });
 }
 
-// Chama do BURNOUT (centro na origem)
+// Chama do BURNOUT (centro na origem): a sprite burnout (chama cansada com o
+// 💢), cinza recarregando; sem ela, a chama desenhada
 function drawFlame(ctx, t, lit, on) {
   const s = 1 + (on ? Math.sin(t * 18) * 0.08 : 0);
   ctx.scale(s, s);
+  if (drawImage(ctx, 'burnout', 46, 0, 1, lit ? null : 'grayscale(1) brightness(0.8)')) return;
   ctx.beginPath();
   ctx.moveTo(0, -17);
   ctx.bezierCurveTo(9, -6, 12, 2, 10, 7);
