@@ -10,8 +10,9 @@ import { ENEMIES } from './enemies.js';
 //              mais dinheiro nenhum: vírus estourado não dá bitcoin, o
 //              Minerador fica bloqueado e Juros, Empréstimo, Acesso Root e o
 //              Bitcoin Extra não valem. Vender defesa devolve parte do gasto.
-//              O orçamento é o menor em que pelo menos 5% dos bots (com todos
-//              os upgrades da Dark Net) fazem 3 estrelas: tools/sim/bounty-budget.js
+//              O orçamento é o menor em que pelo menos 5% dos bots (com até
+//              100 cafés de upgrades da Dark Net) fazem 3 estrelas:
+//              tools/sim/bounty-budget.js
 //    pontos  → cada camada estourada vale o `reward` do vírus × combo
 //    combo   → sobe a cada COMBO_STEP estouros seguidos sem deixar escapar
 //    estrelas→ pela % das camadas estouradas (do que entrou no mapa); cada
@@ -19,7 +20,7 @@ import { ENEMIES } from './enemies.js';
 // ─────────────────────────────────────────────────────────────
 export const BOUNTY = {
   time: 300, // segundos depois de apertar INICIAR (5 minutos)
-  budget: [2000, 3250, 3000], // dinheiro da partida inteira, por season (calibrado com bots)
+  budget: [2500, 4250, 3250], // dinheiro da partida inteira, por season (calibrado com bots)
   tiers: [0.4, 0.65, 0.85], // % das camadas estouradas pra 1, 2 e 3 estrelas
   comboStep: 20, // a cada 20 estouros seguidos o multiplicador sobe 0,5
   comboMax: 3,

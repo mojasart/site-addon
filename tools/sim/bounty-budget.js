@@ -7,26 +7,27 @@
 //
 //  No Bug Bounty a partida tem só o orçamento (vírus não dão dinheiro). Pra
 //  cada sala (uma por season) testa orçamentos de STEP em STEP e acha o
-//  MENOR em que pelo menos MIN_RATE dos bots fazem STARS estrelas. Os
-//  bots jogam com todos os upgrades da Dark Net: o Bug Bounty só abre com a
-//  season inteira platinada.
+//  MENOR em que pelo menos MIN_RATE dos bots fazem STARS estrelas. Cada
+//  bot tem os upgrades da Dark Net que um jogador compraria com até
+//  MAX_COFFEE cafés jogando no estilo dele (bot.js perksFor).
 // ─────────────────────────────────────────────────────────────
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import { availableParallelism } from 'node:os';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { playMap, PROFILES, ALL_PERKS } from './bot.js';
+import { playMap, PROFILES, perksFor } from './bot.js';
 import { BOUNTY, bountyStars } from '../../firewall-defense/src/data/bounty.js';
 import { BOUNTY_MAPS } from '../../firewall-defense/src/data/maps.js';
 
 const MIN_RATE = 0.05;
 const STARS = 3; // estrelas que contam como "passou"
+const MAX_COFFEE = 100; // cafés gastos na Dark Net, no máximo
 const STEP = 250;
-const MAX = 12000;
+const MAX = 16000;
 
 if (!isMainThread) {
   for (const job of workerData.jobs) {
     BOUNTY.budget[job.season] = job.budget;
-    const r = playMap(job.season, job.profile, job.seed, 'bounty', ALL_PERKS);
+    const r = playMap(job.season, job.profile, job.seed, 'bounty', perksFor(job.profile, MAX_COFFEE, ['minerador']));
     parentPort.postMessage({ ...job, won: bountyStars(r.ratio ?? 0) >= STARS, ratio: r.ratio });
   }
   parentPort.postMessage({ done: true });
