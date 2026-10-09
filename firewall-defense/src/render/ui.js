@@ -391,8 +391,11 @@ function drawTowerInfo(ctx, game, L) {
     text(ctx, mode.label, L.target.x + L.target.w / 2, L.target.y + 29, { size: 17 });
   }
 
-  button(ctx, L.sell, '#ff5a5a', { radius: 12, depth: 5 });
-  text(ctx, `VENDER $${tw.sellValue}`, L.sell.x + L.sell.w / 2, L.sell.y + 22, { size: 19 });
+  // (o Honeypot não vende)
+  if (!def.noSell) {
+    button(ctx, L.sell, '#ff5a5a', { radius: 12, depth: 5 });
+    text(ctx, `VENDER $${tw.sellValue}`, L.sell.x + L.sell.w / 2, L.sell.y + 22, { size: 19 });
+  }
 
 }
 

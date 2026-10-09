@@ -891,6 +891,7 @@ export class Game {
   }
 
   sell(tower) {
+    if (tower.def.noSell) return; // Honeypot não vende
     this.money += tower.sellValue;
     tower.dead = true;
     this.towers = this.towers.filter((t) => t !== tower);
