@@ -32,9 +32,11 @@ export function blockedAlly(map) {
 }
 
 // As rodadas do mapa em sequência; se acabarem antes do tempo, repete as
-// últimas 4 (as mais fortes)
+// últimas 4 (as mais fortes). Com o Robô NMAP bloqueado não vem Spyware:
+// só ele revela o Spyware, e com 1 vida seria derrota certa
 export function platinumRounds(map) {
-  const base = ROUNDS.slice(0, map.rounds);
+  const noSpy = blockedAlly(map) === 'scanner';
+  const base = ROUNDS.slice(0, map.rounds).map((round) => (noSpy ? round.filter((g) => g.type !== 'spyware') : round));
   const tail = base.slice(-4);
   const out = [...base];
   while (out.length < MAX_WAVES) out.push(...tail);

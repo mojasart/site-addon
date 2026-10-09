@@ -9,34 +9,41 @@
 //  das ondas e a vida do chefão) que faz a taxa de vitória dos bots bater
 //  na curva-alvo: TARGET[0] no 1º mapa caindo em linha reta até TARGET[1]
 //  no último. Grava em firewall-defense/src/data/platinumTuning.js.
+//
+//  Os bots jogam com TODOS os upgrades da Dark Net (bot.js, ALL_PERKS):
+//  quem chega na platina já tem vários, e ela tem que ser difícil mesmo
+//  assim. k nunca fica abaixo de LO (senão a fase quase não tem vírus).
+//  As fases Bug Bounty não têm platina e ficam de fora.
 // ─────────────────────────────────────────────────────────────
 import { Worker, isMainThread, parentPort } from 'node:worker_threads';
 import { availableParallelism } from 'node:os';
 import { writeFileSync } from 'node:fs';
-import { playMap, PROFILES } from './bot.js';
+import { playMap, PROFILES, ALL_PERKS } from './bot.js';
 import { MAPS } from '../../firewall-defense/src/data/maps.js';
 import { PLAT_TUNE } from '../../firewall-defense/src/data/platinumTuning.js';
 
-export const TARGET = [0.35, 0.14]; // com 1 vida (PLAT_LIVES): pelo menos ~10% de vitória em todo mapa
+export const TARGET = [0.2, 0.06]; // bots com todos os upgrades, 1 vida (PLAT_LIVES)
 const ITERATIONS = 8;
-const LO = 0.01;
+const LO = 0.6;
 const HI = 4;
 
 if (!isMainThread) {
   parentPort.on('message', (job) => {
     if (job.stop) return process.exit(0);
     PLAT_TUNE[job.map] = job.k;
-    parentPort.postMessage({ ...job, ...playMap(job.map, job.profile, job.seed, 'platinum') });
+    parentPort.postMessage({ ...job, ...playMap(job.map, job.profile, job.seed, 'platinum', ALL_PERKS) });
   });
 } else {
   const refine = process.argv.includes('--refine');
   const mi = process.argv.indexOf('--maps');
-  const only = mi >= 0 ? new Set(process.argv[mi + 1].split(',').map((x) => Number(x) - 1)) : null;
+  const pick = mi >= 0 ? new Set(process.argv[mi + 1].split(',').map((x) => Number(x) - 1)) : null;
   const n = MAPS.length;
+  // Bug Bounty fica de fora (não tem platina)
+  const only = new Set(MAPS.map((m, i) => i).filter((i) => !MAPS[i].bounty && (!pick || pick.has(i))));
   const target = (m) => TARGET[0] + (TARGET[1] - TARGET[0]) * (m / (n - 1));
   const lo = Array(n).fill(LO);
   const hi = Array(n).fill(HI);
-  const cur = refine ? [...PLAT_TUNE] : Array(n).fill(Math.sqrt(LO * HI));
+  const cur = refine ? PLAT_TUNE.map((k) => Math.max(LO, k)) : Array(n).fill(Math.sqrt(LO * HI));
   const best = PLAT_TUNE.map((k) => ({ err: Infinity, k, rate: NaN }));
 
   const workers = Array.from({ length: Math.min(availableParallelism(), 16) }, () => new Worker(new URL(import.meta.url)));
@@ -70,22 +77,24 @@ if (!isMainThread) {
     const seeds = refine ? 8 : it < 4 ? 4 : 6;
     const jobs = [];
     for (let m = 0; m < n; m++) {
-      if (only && !only.has(m)) continue;
+      if (!only.has(m)) continue;
       for (const profile of Object.keys(PROFILES)) for (let s = 1; s <= seeds; s++) jobs.push({ map: m, profile, seed: s + it * 100, k: cur[m] });
     }
     const t0 = Date.now();
     const res = await runAll(jobs);
     let line = '';
     for (let m = 0; m < n; m++) {
-      if (only && !only.has(m)) {
+      if (!only.has(m)) {
         best[m] = { err: 0, k: PLAT_TUNE[m], rate: NaN };
         continue;
       }
       const rs = res.filter((r) => r.map === m);
       const rate = rs.filter((r) => r.won).length / rs.length;
       const err = Math.abs(rate - target(m));
-      // empate no erro: fica com o mais difícil que ainda tem vitória
-      if (err < best[m].err || (err === best[m].err && rate > 0 && cur[m] > best[m].k)) best[m] = { err, k: cur[m], rate };
+      // empate no erro: fica com o mais difícil que ainda tem vitória; sem
+      // vitória nenhuma, com o mais fácil (que acaba sendo o piso LO)
+      const tie = err === best[m].err && (rate > 0 ? cur[m] > best[m].k : cur[m] < best[m].k);
+      if (err < best[m].err || tie) best[m] = { err, k: cur[m], rate };
       if (refine) {
         cur[m] = Math.min(HI, Math.max(LO, cur[m] * Math.min(1.3, Math.max(0.77, Math.exp(1.4 * (rate - target(m)))))));
       } else {
@@ -102,8 +111,8 @@ if (!isMainThread) {
   const values = best.map((b) => +b.k.toFixed(3));
   const file = `// Gerado por tools/sim/calibrate-platinum.js — não edite à mão.
 // Dificuldade do modo platina em cada mapa (multiplica a quantidade de
-// vírus das ondas e a vida do chefão), calibrada com os bots pra taxa de
-// vitória cair de ${Math.round(TARGET[0] * 100)}% (mapa 1) a ${Math.round(TARGET[1] * 100)}% (mapa ${n}).
+// vírus das ondas e a vida do chefão), calibrada com bots com todos os
+// upgrades da Dark Net pra taxa de vitória cair de ${Math.round(TARGET[0] * 100)}% (mapa 1) a ${Math.round(TARGET[1] * 100)}% (mapa ${n}).
 export const PLAT_TUNE = ${JSON.stringify(values)};
 `;
   writeFileSync(new URL('../../firewall-defense/src/data/platinumTuning.js', import.meta.url), file);

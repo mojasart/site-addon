@@ -6,6 +6,7 @@
 //    node tools/sim/run.js --maps 1-15     → só alguns mapas (números 1..45)
 //    node tools/sim/run.js --json out.json → salva o resultado
 //    node tools/sim/run.js --platinum      → joga o modo platina (data/platinum.js)
+//    node tools/sim/run.js --perks         → bots com todos os upgrades da Dark Net
 //    node tools/sim/run.js --save          → grava a % de vitória de cada mapa em
 //                                            data/botStats.js (aparece no card da fase)
 //
@@ -16,12 +17,12 @@ import { Worker, isMainThread, parentPort, workerData } from 'node:worker_thread
 import { availableParallelism } from 'node:os';
 import { writeFileSync } from 'node:fs';
 import { BOT_WIN } from '../../firewall-defense/src/data/botStats.js';
-import { playMap, PROFILES } from './bot.js';
+import { playMap, PROFILES, ALL_PERKS } from './bot.js';
 import { MAPS } from '../../firewall-defense/src/data/maps.js';
 
 if (!isMainThread) {
   for (const job of workerData.jobs) {
-    const r = playMap(job.map, job.profile, job.seed, job.mode);
+    const r = playMap(job.map, job.profile, job.seed, job.mode, job.perks ? ALL_PERKS : null);
     parentPort.postMessage({ ...job, ...r });
   }
   parentPort.postMessage({ done: true });
@@ -33,11 +34,12 @@ if (!isMainThread) {
   };
   const seeds = Number(opt('seeds', 6));
   const mode = args.includes('--platinum') ? 'platinum' : 'normal';
+  const perks = args.includes('--perks');
   const [m0, m1] = opt('maps', `1-${MAPS.length}`).split('-').map(Number);
   const jobs = [];
   for (let m = m0 - 1; m <= (m1 || m0) - 1; m++) {
     if (MAPS[m].bounty) continue; // Bug Bounty não tem vitória/derrota de bot
-    for (const profile of Object.keys(PROFILES)) for (let s = 1; s <= seeds; s++) jobs.push({ map: m, profile, seed: s, mode });
+    for (const profile of Object.keys(PROFILES)) for (let s = 1; s <= seeds; s++) jobs.push({ map: m, profile, seed: s, mode, perks });
   }
 
   const nWorkers = Math.min(availableParallelism(), 16, jobs.length);
