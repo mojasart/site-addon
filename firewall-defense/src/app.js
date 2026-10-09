@@ -13,6 +13,7 @@ import { NameScene } from './scenes/NameScene.js';
 import { ITEM, CONSUMABLES } from './data/consumables.js';
 import { drawEnergyModal, energyLayout } from './render/energy.js';
 import { inRect } from './render/widgets.js';
+import { configAds, showRewarded } from './ads.js';
 import { DARKNET_STARS, COFFEE, mapCoffee, NODE, TREE } from './data/darknet.js';
 
 // Controla as telas (título → mapas → jogo), a transição entre elas,
@@ -25,6 +26,7 @@ function today() {
 
 export class App {
   constructor({ debug = false, mute = false } = {}) {
+    configAds(); // pré-carrega os anúncios com recompensa do Google
     this.debug = false;
     this.save = loadSave();
     if (debug) this.enableDebug();
@@ -144,11 +146,42 @@ export class App {
     return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1) - now;
   }
 
-  // Abre o anúncio; no fim dele o brinde vai pro inventário (energyTap)
+  // Abre o anúncio; no fim dele o brinde vai pro inventário
   watchAdForFree() {
     if (this.energyUI || this.freeOffer.claimed) return false;
-    this.energyUI = { mode: 'ad', t: 0, reward: this.freeOffer.id };
+    this.watchAd(this.freeOffer.id, null);
     return true;
+  }
+
+  // Anúncio com recompensa: o do Google (ads.js); sem anúncio disponível,
+  // o simulado do jogo (energyUI 'ad'). reward = id do brinde da loja, ou
+  // null pras energias; pending = partida que ia começar
+  watchAd(reward, pending) {
+    this.energyUI = { mode: 'loading', t: 0, reward, pending };
+    showRewarded(reward ? 'brinde_do_dia' : 'energia', {
+      beforeAd: () => this.sound.suspend(),
+      afterAd: () => this.sound.resume(),
+      done: (result) => {
+        const ui = this.energyUI;
+        if (ui?.mode !== 'loading') return;
+        if (result === 'viewed') this.grantAd(ui);
+        else if (result === 'dismissed') {
+          // fechou antes do fim: não ganha (a janela de energia volta, com o aviso)
+          this.energyUI = reward ? null : { mode: 'empty', t: 1, pending, note: 'Assista até o fim pra ganhar' };
+          this.sound.play('error');
+        } else this.energyUI = { mode: 'ad', t: 0, reward, pending };
+      },
+    });
+  }
+
+  // Assistiu até o fim: energias (ou o brinde) e segue pra partida, se tinha
+  grantAd(ui) {
+    if (ui.reward) this.claimFreeItem();
+    else this.addEnergy(ENERGY.ad);
+    this.sound.play('upgrade');
+    this.energyUI = null;
+    if (ui.reward) this.scene.rewarded?.(ui.reward);
+    if (ui.pending) this.startMap(ui.pending.i, ui.pending.mode);
   }
 
   claimFreeItem() {
@@ -339,22 +372,15 @@ export class App {
     const ui = this.energyUI;
     const L = energyLayout(this);
     if (ui.mode === 'ad') {
-      // anúncio: só fecha depois da contagem, pegando as energias (ou o
-      // brinde do dia da loja)
-      if (ui.t >= ENERGY.adTime && inRect(L.skip, x, y)) {
-        if (ui.reward) this.claimFreeItem();
-        else this.addEnergy(ENERGY.ad);
-        this.sound.play('upgrade');
-        const p = ui.pending;
-        this.energyUI = null;
-        if (ui.reward) this.scene.rewarded?.(ui.reward);
-        if (p) this.startMap(p.i, p.mode); // segue pra partida que ia começar
-      }
+      // anúncio simulado: só fecha depois da contagem, pegando as energias
+      // (ou o brinde do dia da loja)
+      if (ui.t >= ENERGY.adTime && inRect(L.skip, x, y)) this.grantAd(ui);
       return;
     }
+    if (ui.mode === 'loading') return; // esperando o anúncio do Google
     if (inRect(L.watch, x, y)) {
-      this.energyUI = { mode: 'ad', t: 0, pending: ui.pending };
       this.sound.play('click');
+      this.watchAd(null, ui.pending);
     } else if (inRect(L.close, x, y) || !inRect(L.card, x, y)) {
       this.energyUI = null;
       this.sound.play('click');
@@ -515,7 +541,7 @@ export class App {
   key(k) {
     this.sound.unlock();
     if (this.energyUI) {
-      if (k === 'Escape' && this.energyUI.mode !== 'ad') this.energyUI = null;
+      if (k === 'Escape' && this.energyUI.mode === 'empty') this.energyUI = null;
       return;
     }
     if (!this.next) this.scene.key?.(k);

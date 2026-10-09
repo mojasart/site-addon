@@ -111,6 +111,7 @@ export function energyLayout(app) {
 export function drawEnergyModal(ctx, app) {
   const ui = app.energyUI;
   if (ui.mode === 'ad') return drawAd(ctx, app, ui);
+  if (ui.mode === 'loading') return drawLoading(ctx, app, ui);
   const W = app.viewW;
   const L = energyLayout(app);
   const c = L.card;
@@ -136,9 +137,30 @@ export function drawEnergyModal(ctx, app) {
   drawBolt(ctx, 34, true);
   ctx.restore();
   text(ctx, `0/${ENERGY.max} energias`, W / 2, c.y + 158, { size: 22 });
-  text(ctx, `A próxima volta em ${clock(app.energyNextMs())}`, W / 2, c.y + 190, { size: 16, color: '#d8e6ff' });
+  // fechou o anúncio antes do fim: avisa no lugar do relógio
+  if (ui.note) text(ctx, ui.note, W / 2, c.y + 190, { size: 16, color: '#ffb35c' });
+  else text(ctx, `A próxima volta em ${clock(app.energyNextMs())}`, W / 2, c.y + 190, { size: 16, color: '#d8e6ff' });
   bigButton(ctx, L.watch, '#3fd16b', `ASSISTIR ANÚNCIO  +${ENERGY.ad}`, { icon: 'play', size: 21 });
   ctx.restore();
+}
+
+// Esperando o anúncio do Google: tela escura com "carregando" girando
+function drawLoading(ctx, app, ui) {
+  const W = app.viewW;
+  ctx.fillStyle = `rgba(5,7,15,${Math.min(0.9, ui.t * 4)})`;
+  ctx.fillRect(0, 0, W, VIEW_H);
+  ctx.save();
+  ctx.translate(W / 2, VIEW_H / 2 - 20);
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2 + ui.t * 6;
+    ctx.globalAlpha = 0.25 + 0.75 * (((i + Math.floor(ui.t * 8)) % 8) / 7);
+    ctx.beginPath();
+    ctx.arc(Math.cos(a) * 22, Math.sin(a) * 22, 5, 0, Math.PI * 2);
+    ctx.fillStyle = GOLD;
+    ctx.fill();
+  }
+  ctx.restore();
+  text(ctx, 'Carregando anúncio...', W / 2, VIEW_H / 2 + 34, { size: 18, color: '#d8e6ff' });
 }
 
 // Anúncio simulado: tela cheia com uma propaganda e a contagem; no fim,
