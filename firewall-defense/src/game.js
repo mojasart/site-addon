@@ -155,6 +155,13 @@ export class Game {
     this.showBanner(this.map.name, 2.6, '#ffffff', 46, special ? this.map.desc : 'Arraste as defesas pro mapa!');
   }
 
+  // Estrelas que a partida daria se vencesse com a vida de agora: 3 com 90%
+  // das vidas ou mais, 2 com pelo menos metade, 1 com menos (cor da vida no HUD)
+  get starsNow() {
+    const L = this.map.lives;
+    return this.lives >= L * 0.9 ? 3 : this.lives >= L * 0.5 ? 2 : 1;
+  }
+
   pause() {
     if (this.state !== 'playing') return;
     this.state = 'paused';
@@ -178,9 +185,8 @@ export class Game {
     this.drag = null;
     const coffeeBefore = this.app.coffeeEarned ?? 0;
     if (won) {
-      const L = this.map.lives;
       // 3 estrelas com 90% das vidas ou mais, 2 com pelo menos metade, 1 com menos
-      this.stars = this.bounty ? bountyStars(this.bountyRatio) : this.lives >= L * 0.9 ? 3 : this.lives >= L * 0.5 ? 2 : 1;
+      this.stars = this.bounty ? bountyStars(this.bountyRatio) : this.starsNow;
       if (this.platinum) {
         this.stars = 3; // vencer a platina já vale as 3 (em platina)
         const hadTurbo = this.app.seasonPlatinum?.(0);
@@ -637,7 +643,7 @@ export class Game {
   spawnEnemy(enemy) {
     this.newEnemies.push(enemy);
     // ameaça nova entra no catálogo (e avisa no topo da tela)
-    if (this.app.discover?.(enemy.type)) this.toast = { text: `NOVA AMEAÇA NO CATÁLOGO: ${enemy.def.name.toUpperCase()}`, time: 3 };
+    if (this.app.discover?.(enemy.type)) this.toast = { text: `NOVA AMEAÇA NO CATÁLOGO: ${enemy.def.name.toUpperCase()}`, time: 5, total: 5, threat: enemy.type };
   }
 
   spawnProjectile(tower, angle, target = null) {
@@ -932,6 +938,7 @@ export class Game {
     if (this.state !== 'playing') return this.overlayTap(sx, sy);
     if (this.tutorial?.tap(sx, sy)) return; // tutorial: fala continua; fora do alvo não passa
     if (this.adTap(sx, sy)) return; // anúncio por cima: o toque não passa
+    if (this.toast?.threat && this.toastInfo && inRect(this.toastInfo, sx, sy)) return this.openThreat(this.toast.threat);
 
     const L = layout(this);
     if (sx >= L.panel.x) return this.panelTap(sx, sy, L);
@@ -952,6 +959,14 @@ export class Game {
     if (tw) this.sound.play('click');
     this.selectedTower = tw;
     if (tw) this.tutorial?.on('select', tw.type);
+  }
+
+  // "i" do aviso de vírus novo: pausa e abre o catálogo na ficha dele (o
+  // voltar do catálogo traz a partida pausada)
+  openThreat(type) {
+    this.toast = null;
+    this.pause();
+    this.app.go(() => new CatalogScene(this.app, { returnTo: this, select: type }));
   }
 
   overlayTap(sx, sy) {
@@ -1298,9 +1313,11 @@ function drawTileMark(ctx, x, y, valid) {
 // Aviso no topo (nova ameaça, perigo...): no meio da tela, colado em cima
 // (ou logo abaixo das barras de chefão), do tamanho do texto
 function drawToast(ctx, game) {
-  const a = Math.min(1, game.toast.time * 2, (3 - game.toast.time) * 4);
+  const toast = game.toast;
+  const a = Math.min(1, toast.time * 2, ((toast.total ?? 3) - toast.time) * 4);
   setFont(ctx, 14);
-  const w = ctx.measureText(game.toast.text).width + 44;
+  const info = !!toast.threat; // vírus novo: "i" no canto direito abre o catálogo
+  const w = ctx.measureText(toast.text).width + 44 + (info ? 30 : 0);
   const y = Math.max(8, bossBarsBottom(game) + 6);
   // no meio da tela, mas sem passar por cima do contador de rodada (direita do mapa)
   const x = Math.min(game.viewW / 2 - w / 2, game.mapW - 150 - w);
@@ -1313,7 +1330,24 @@ function drawToast(ctx, game) {
   ctx.lineWidth = 2;
   rrect(ctx, x + 4, y + 4, w - 8, 26, 13);
   ctx.stroke();
-  text(ctx, game.toast.text, cx, y + 18, { size: 14, color: '#3dff9a' });
+  text(ctx, toast.text, cx - (info ? 15 : 0), y + 18, { size: 14, color: '#3dff9a' });
+  if (info) {
+    // "i" pulsando: toque pra ver o vírus no catálogo
+    const ix = x + w - 22;
+    const iy = y + 17;
+    const p = 1 + Math.sin(game.anim * 6) * 0.12;
+    ctx.save();
+    ctx.translate(ix, iy);
+    ctx.scale(p, p);
+    ctx.shadowColor = '#3dff9a';
+    ctx.shadowBlur = 8 + 6 * Math.sin(game.anim * 6);
+    circle(ctx, 0, 0, 11);
+    fillOutline(ctx, '#3dff9a', 2.5);
+    ctx.shadowBlur = 0;
+    text(ctx, 'i', 0, 1, { size: 15, color: '#0b2416', stroke: null });
+    ctx.restore();
+    game.toastInfo = { x: ix - 16, y: iy - 16, w: 32, h: 32 };
+  } else game.toastInfo = null;
   ctx.restore();
 }
 

@@ -43,6 +43,9 @@ export function layout(game) {
   };
 }
 
+// Cor da vida no HUD pelas estrelas que a partida daria (Game.starsNow)
+const STAR_COLOR = { 3: GOLD, 2: '#dfe7f2', 1: '#e39a5f' };
+
 // ── HUD em cima do mapa ─────────────────────────────────────
 export function drawHud(ctx, game) {
   const L = layout(game);
@@ -60,7 +63,9 @@ export function drawHud(ctx, game) {
     ctx.scale(beat, beat);
     drawHeart(ctx, 15);
     ctx.restore();
-    text(ctx, String(Math.max(0, game.lives)), 54, 32, { size: 28, align: 'left' });
+    // cor das estrelas que daria vencendo agora: dourado (3), prata (2), bronze (1)
+    const color = game.platinum ? '#ffffff' : STAR_COLOR[game.starsNow];
+    text(ctx, String(Math.max(0, game.lives)), 54, 32, { size: 28, align: 'left', color });
   }
 
   ctx.save();

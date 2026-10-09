@@ -38,13 +38,15 @@ const BG = '#03130a';
 const RED = '#ff5a6a';
 
 export class CatalogScene {
-  // returnTo: partida pausada pra onde o voltar leva (aberto pelo menu de pausa)
-  constructor(app, { returnTo = null } = {}) {
+  // returnTo: partida pausada pra onde o voltar leva (aberto pelo menu de
+  // pausa ou pelo "i" do aviso de vírus novo); select: abre na ficha desse vírus
+  constructor(app, { returnTo = null, select = null } = {}) {
     this.app = app;
     this.returnTo = returnTo;
     this.t = 0;
     this.tab = 0;
     this.sel = [Math.max(0, ORDER.findIndex((k) => app.hasSeen(k))), 0, 0]; // um por aba
+    if (select && ORDER.includes(select)) this.sel[0] = ORDER.indexOf(select);
     this.level = null; // idade escolhida na ficha da defesa (null = vai alternando)
     this.typed = 0; // letras já "digitadas" da frase da ficha
   }
