@@ -70,14 +70,15 @@ export const TOWERS = {
     fireRate: 2,
     damage: 0,
     slow: 0.5, // multiplica a velocidade
-    slowTime: 1.5,
+    slowTime: 1.5, // lento só enquanto a onda de gelo está ativa (os upgrades não esticam)
     vulnerable: false, // congelados levam vulnMul de dano (Gelo Quebradiço, Dark Net)
     maxTargets: 30,
     canHitArmored: true,
     sound: 'frost',
     upgrades: [
-      { name: 'Criptografia AES', desc: 'Lentidão bem mais forte: 75% mais lento por 2,5s', cost: 220, apply: (s) => { s.slow = 0.25; s.slowTime = 2.5; } },
-      { name: 'Frente Fria', desc: 'Mais alcance e ondas um pouco mais rápidas', cost: 450, apply: (s) => { s.range += 25; s.fireRate *= 0.85; } },
+      // lentidão 40% mais forte: os 50% da base viram 70% (slow 0,5 → 0,3)
+      { name: 'Criptografia AES', desc: 'Lentidão mais forte', cost: 220, apply: (s) => { s.slow = 1 - (1 - s.slow) * 1.4; } },
+      { name: 'Cold Reboot', desc: 'Mais alcance e ondas um pouco mais rápidas', cost: 450, apply: (s) => { s.range += 25; s.fireRate *= 0.85; } },
     ],
   },
   scanner: {
