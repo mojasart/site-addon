@@ -76,7 +76,8 @@ export class Projectile {
       return;
     }
     for (const e of game.enemies) {
-      if (e.dead || this.hit.has(e)) continue;
+      // Spyware escondido (sem Robô NMAP por perto): o teclado passa reto
+      if (e.dead || this.hit.has(e) || !game.isVisible(e)) continue;
       const rr = e.r + this.r;
       if ((e.x - this.x) ** 2 + (e.y - this.y) ** 2 >= rr * rr) continue;
       this.hit.add(e);
