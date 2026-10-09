@@ -10,14 +10,15 @@ import { drawEnergyBadge } from '../render/energy.js';
 import { DarkNetUnlock } from '../render/darknetUnlock.js';
 import { writeSave } from '../save.js';
 
-const DIFF_COLOR = { 'FÁCIL': '#3fd16b', 'MÉDIO': '#ff9a2e', 'DIFÍCIL': '#ff5a6a', 'EXTREMO': '#b65cff' };
-// Dificuldade pela % de partidas de bots que venceram o mapa (data/botStats.js)
+const DIFF_COLOR = { 'FÁCIL': '#3fd16b', 'MÉDIO': '#ffd23f', 'DIFÍCIL': '#ff4d5e', 'EXTREMO': '#a259ff' };
+// Dificuldade pela % de partidas de bots que venceram o mapa (data/botStats.js):
+// verde, amarelo, vermelho, magenta e roxo
 const TIERS = [
   { min: 90, name: 'FÁCIL', color: '#3fd16b' },
   { min: 65, name: 'MÉDIO', color: '#ffd23f' },
-  { min: 45, name: 'HARD', color: '#ff9a2e' },
-  { min: 25, name: 'MUITO DIFÍCIL', color: '#ff4d5e' },
-  { min: 0, name: 'INSANO', color: '#9b1626' },
+  { min: 45, name: 'DIFÍCIL', color: '#ff4d5e' },
+  { min: 25, name: 'MUITO DIFÍCIL', color: '#e0399a' },
+  { min: 0, name: 'INSANO', color: '#a259ff' },
 ];
 const tierOf = (rate) => TIERS.find((t) => rate >= t.min);
 
