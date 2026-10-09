@@ -4,12 +4,19 @@
 //  A cada meio segundo de jogo o bot gasta o dinheiro: coloca defesas onde
 //  elas cobrem mais caminho ou compra upgrades, conforme o perfil. Cada
 //  perfil tem um estilo e o `seed` dá a variação entre partidas.
+//
+//  `perks`: upgrades da Dark Net que o bot tem (como app.perks no jogo).
+//  ALL_PERKS = a árvore inteira, o jogador mais forte possível.
 // ─────────────────────────────────────────────────────────────
 import { Game } from '../../firewall-defense/src/game.js';
 import { TOWERS } from '../../firewall-defense/src/data/towers.js';
 import { MIN_VIEW_W } from '../../firewall-defense/src/config.js';
 import { COLS, ROWS, tileCenter } from '../../firewall-defense/src/core/grid.js';
 import { seeded } from '../../firewall-defense/src/util.js';
+import { TREE } from '../../firewall-defense/src/data/darknet.js';
+
+// Árvore inteira da Dark Net (o Pato só dá café, não muda a partida)
+export const ALL_PERKS = Object.fromEntries(TREE.map((n) => [n.id, true]));
 
 // peso de cada defesa na hora de escolher o que colocar, chance de preferir
 // upgrade a uma defesa nova, e quantos lugares bons ele considera (variação)
@@ -23,7 +30,7 @@ export const PROFILES = {
 
 const SPEED_LIMIT = 2400; // segundos de jogo (só pra não travar)
 
-export function playMap(mapIndex, profileName, seed, mode = 'normal') {
+export function playMap(mapIndex, profileName, seed, mode = 'normal', perks = null) {
   const profile = PROFILES[profileName];
   const rnd = seeded(seed * 9973 + mapIndex * 31 + 7);
   const app = {
@@ -31,6 +38,7 @@ export function playMap(mapIndex, profileName, seed, mode = 'normal') {
     viewW: MIN_VIEW_W, // tela mais estreita: o mapa ocupa tudo
     debug: false,
     pixelScale: 1,
+    perks: perks ?? {},
     recordStars() {},
   };
   const game = new Game(app, mapIndex, mode);
@@ -93,6 +101,22 @@ export function playMap(mapIndex, profileName, seed, mode = 'normal') {
   }
   const isPiercer = (t) => t.hitsArmored && (t.def.attack === 'pulse' ? t.stats.damage > 0 : t.def.attack !== 'decoy');
 
+  // Platina (1 vida: qualquer vazamento perde) pede um jogo mais cuidadoso:
+  // as 3 primeiras defesas dão dano, e com Spyware chegando tem um Robô NMAP
+  const DAMAGE = { hacker: 1, firewall: 1, scanner: 1 };
+  function spySoon() {
+    const r = game.rounds;
+    for (let k = r.started; k < Math.min(r.total, r.started + 3); k++) if (r.rounds[k].some((g) => g.type === 'spyware')) return true;
+    return false;
+  }
+  function platinumPick() {
+    if (!game.platinum) return null;
+    const hitters = game.towers.filter((t) => DAMAGE[t.type]);
+    if (hitters.length < 3) return pickWeighted(DAMAGE);
+    if (spySoon() && !game.isLocked('scanner') && !game.towers.some((t) => t.type === 'scanner')) return 'scanner';
+    return null;
+  }
+
   function think() {
     // Ransomware criptografou defesas: paga o resgate primeiro (parada não ajuda)
     for (const t of game.towers) if (t.ransom && game.money >= t.ransom) game.payRansom(t);
@@ -114,6 +138,7 @@ export function playMap(mapIndex, profileName, seed, mode = 'normal') {
       if (profile.eco && miners < 1 && game.towers.length >= 2) type = 'minerador';
       else if (profile.eco && miners < 2 && game.towers.length >= 8) type = 'minerador';
       else type = pickWeighted(profile.w);
+      type = platinumPick() ?? type;
       // blindados chegando: garante quem fura blindagem (Golem ou Robô NMAP)
       if (needPierce) type = game.blocked === 'firewall' ? 'scanner' : game.blocked === 'scanner' ? 'firewall' : rnd() < 0.5 ? 'firewall' : 'scanner';
       if (game.isLocked(type)) type = pickWeighted(profile.w); // aliado bloqueado (platina) ou fora do tutorial (1-1)
@@ -127,6 +152,14 @@ export function playMap(mapIndex, profileName, seed, mode = 'normal') {
       game.place(type, spot.x, spot.y);
     }
   }
+
+  // qual vírus vazou primeiro (diagnóstico: o que faz o bot perder)
+  let leaked = null;
+  const leak = game.leak.bind(game);
+  game.leak = (e) => {
+    leaked ??= e.type;
+    return leak(e);
+  };
 
   game.playPressed();
   const dt = 1 / 60;
@@ -146,6 +179,7 @@ export function playMap(mapIndex, profileName, seed, mode = 'normal') {
     waves: game.rounds.started,
     lives: game.lives,
     towers: game.towers.length,
+    leaked,
   };
 }
 
