@@ -1,5 +1,7 @@
 import { Enemy } from '../entities/Enemy.js';
 
+const FINALE_DELAY = 2.5; // segundos entre o fim da última onda e o miniboss (e entre dois minibosses)
+
 // Controla as rodadas: os vírus entram conforme a lista de data/rounds.js.
 // Dá pra chamar a próxima rodada com outra ainda rolando (as filas se somam);
 // cada rodada acaba quando tudo dela já entrou e morreu (filhos contam junto).
@@ -89,9 +91,21 @@ export class RoundManager {
     if (!this.canStart) return false;
     const round = this.started++;
     let n = 0;
+    let end = this.time; // quando entra o último vírus da onda (sem o miniboss)
     for (const g of this.rounds[round]) {
-      for (let i = 0; i < g.count; i++, n++) this.queue.push({ type: g.type, t: this.time + (g.at ?? 0) + i * g.gap, round, hp: g.hp });
+      if (g.finale) continue;
+      for (let i = 0; i < g.count; i++, n++) {
+        const t = this.time + (g.at ?? 0) + i * g.gap;
+        end = Math.max(end, t);
+        this.queue.push({ type: g.type, t, round, hp: g.hp });
+      }
     }
+    // miniboss do fim da fase (data/rounds.js finaleFor): 1 só, depois de
+    // todo mundo, com a vida multiplicada
+    this.rounds[round].filter((g) => g.finale).forEach((g, j) => {
+      n++;
+      this.queue.push({ type: g.type, t: end + FINALE_DELAY + j * FINALE_DELAY, round, hp: (g.hp ?? this.mod.hp) * (g.hpMul ?? 1) });
+    });
     this.pending[round] = n;
     this.queue.sort((a, b) => a.t - b.t);
     return true;
