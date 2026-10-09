@@ -38,7 +38,7 @@ export const DANGER_TILES = 3; // acelerado: volta pra 1x quando um vírus que f
 // original (no máximo `max` × a pressão do mapa, senão os mapas de pressão
 // baixa quebram cedo), caindo até a pressão do mapa na onda `waves` + 1
 export const EARLY_WAVES = { mul: 0.7, waves: 12, max: 2.5 };
-export const EARLY_BONUS = 0.15; // chamar com outra rodada rolando: até 15% do valor da próxima (cai conforme a rodada atual acaba)
+export const EARLY_BONUS = 0.75; // chamar com outra rodada rolando: até 75% do valor da próxima (cai conforme a rodada atual acaba)
 
 export const FONT = '"Lilita One", "Arial Rounded MT Bold", "Arial Black", system-ui, sans-serif';
 

@@ -22,7 +22,8 @@ import { Enemy } from '../entities/Enemy.js';
  *  Terminou: save.tutorialDone = true (só registro: ele aparece de novo).
  * ════════════════════════════════════════════════════════════ */
 
-export const TUTORIAL_LOCKED = ['pinguim', 'scanner', 'minerador']; // na 1-1 só Hacker, Golem e Honeypot
+export const TUTORIAL_LOCKED = ['pinguim', 'scanner', 'minerador']; // na 1-1 só Hacker, Golem e Honeypot (o Minerador libera na aula dele)
+const MINER_GIFT = 650; // bitcoins de presente na aula do Minerador (o preço dele)
 // enxurrada da aula do Honeypot: n vírus, um a cada gap s; a aula começa quando o
 // primeiro está a `near` quadrados (pelo caminho) do lugar do pote, perto do Hacker
 const SWARM = { type: 'v2', n: 6, gap: 0.16, near: 3 };
@@ -118,6 +119,20 @@ export class Tutorial {
         target: () => (this.g.placing === 'firewall' ? this.spotFor('firewall') : this.tile('firewall')),
         allow: (x, y, L) => inRect(this.tileRect(L, 'firewall'), x, y) || (this.g.placing === 'firewall' && x < L.panel.x),
       },
+      // Minerador: libera, ganha o dinheiro dele e vai EM CIMA de uma pilha de bitcoin
+      {
+        kind: 'say', freeze: true, enter: () => this.giftMiner(),
+        text: `Tá vendo essas pilhas de bitcoin no chão? Elas dão dinheiro! Toma ${MINER_GIFT} bitcoins pra comprar o Minerador.`,
+      },
+      {
+        kind: 'do', freeze: true, event: ['place', 'minerador'],
+        text: () => (this.g.placing === 'minerador'
+          ? 'Coloque o Minerador EM CIMA da pilha de bitcoin. Fora dela ele não minera!'
+          : 'Toque no Minerador na loja.'),
+        target: () => (this.g.placing === 'minerador' ? this.coinSpot() : this.tile('minerador')),
+        allow: (x, y, L) => inRect(this.tileRect(L, 'minerador'), x, y) || (this.g.placing === 'minerador' && x < L.panel.x),
+      },
+      { kind: 'say', freeze: true, text: 'Agora toda rodada ele minera bitcoins pra você comprar mais defesas. Cada pilha aguenta um Minerador!' },
       { kind: 'say', freeze: true, text: 'E não é só a gente: mais pra frente aparecem outros personagens pra defender o servidor. Fica de olho!' },
       { kind: 'say', freeze: true, text: () => `Mandou bem, ${this.name}! Agora é com você: segura os vírus até a última onda. Boa sorte!` },
     ];
@@ -258,10 +273,11 @@ export class Tutorial {
   // Quadrado livre pro toque: fora da aba de informações da defesa (canto de
   // cima à direita do mapa, aberta enquanto se posiciona) e da caixa de fala
   clear(p) {
-    const sx = p.x + this.g.offsetX;
-    const underInfo = sx > this.g.mapW - 250 && p.y < 330;
-    const underTalk = p.y > 400;
-    return !underInfo && !underTalk;
+    return !this.underInfo(p) && p.y <= 400;
+  }
+
+  underInfo(p) {
+    return p.x + this.g.offsetX > this.g.mapW - 250 && p.y < 330;
   }
 
   // Garante dinheiro (o tutorial não pode travar sem ele)
@@ -360,6 +376,26 @@ export class Tutorial {
         return;
       }
     }
+  }
+
+  // Aula do Minerador: libera ele na loja e dá o dinheiro dele (+MINER_GIFT)
+  giftMiner() {
+    const g = this.g;
+    g.lockedTowers?.delete('minerador');
+    g.money += MINER_GIFT;
+    const L = layout(g);
+    g.fx.panelText(L.panel.x + L.panel.w / 2, 70, `+$${MINER_GIFT}`, '#ffd23f', 22);
+  }
+
+  // Pilha de bitcoin livre pro Minerador, fora da aba de informações (aberta
+  // enquanto se posiciona: tocar nela não chega no mapa). A caixa de fala não
+  // atrapalha: ela vai pro lado contrário do alvo. Sem pilha, o melhor quadrado comum
+  coinSpot() {
+    const g = this.g;
+    const free = g.coinTiles.filter((c) => g.canPlace('minerador', c.x, c.y));
+    const c = free.find((p) => this.clear(p)) ?? free.find((p) => !this.underInfo(p)) ?? free[0];
+    if (!c) return this.spotFor('minerador');
+    return { x: c.x + g.offsetX, y: c.y, r: TILE * 0.62, tile: true };
   }
 
   // Presente do tutorial: 1 consumível no inventário
