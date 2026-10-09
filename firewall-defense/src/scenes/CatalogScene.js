@@ -8,14 +8,18 @@ import { iconButton, inRect } from '../render/widgets.js';
 import { drawVirusIcon } from '../render/viruses.js';
 import { drawCharacter } from '../render/characters.js';
 import { AGES, statsAt, statRows } from '../data/towerInfo.js';
+import { TERRAINS } from '../data/terrains.js';
+import { drawTerrain } from '../render/terrains.js';
 
 /* ════════════════════════════════════════════════════════════
- *  CATÁLOGO (ameaças e defesas)
- *  Um "computador" (monitor CRT com terminal verde) com duas abas:
+ *  CATÁLOGO (ameaças, defesas e terrenos)
+ *  Um "computador" (monitor CRT com terminal verde) com três abas:
  *  - AMEAÇAS (THREAT_DB.EXE): ameaça que ainda não apareceu em nenhuma
  *    fase vira silhueta, com cadeado, e a ficha mostra ACESSO NEGADO.
  *  - DEFESAS (AGENTS_DB.EXE): os personagens, com os status de cada
  *    nível e a evolução criança → adolescente → adulto.
+ *  - TERRENOS (TERRAIN_DB.EXE): o que cada chão faz (estrada, pilha de
+ *    bitcoin, zona eletrificada, água): data/terrains.js.
  *  Lista à esquerda e a ficha da escolhida à direita.
  * ════════════════════════════════════════════════════════════ */
 
@@ -23,6 +27,7 @@ const ORDER = ['v1', 'v2', 'v3', 'v4', 'v5', 'worm', 'worm2', 'worm3', 'worm4', 
 const TABS = [
   { id: 'threats', label: 'AMEAÇAS', file: 'THREAT_DB.EXE', items: ORDER },
   { id: 'towers', label: 'DEFESAS', file: 'AGENTS_DB.EXE', items: TOWER_ORDER },
+  { id: 'terrains', label: 'TERRENOS', file: 'TERRAIN_DB.EXE', items: TERRAINS.map((t) => t.id) },
 ];
 const ATTACK_KIND = { projectile: 'PROJÉTIL', pulse: 'ONDA', beam: 'LASER', farm: 'ECONOMIA', decoy: 'ISCA' };
 const LEVEL_TIME = 2.2; // segundos de cada idade no retrato (quando nenhuma foi escolhida)
@@ -39,7 +44,7 @@ export class CatalogScene {
     this.returnTo = returnTo;
     this.t = 0;
     this.tab = 0;
-    this.sel = [Math.max(0, ORDER.findIndex((k) => app.hasSeen(k))), 0]; // um por aba
+    this.sel = [Math.max(0, ORDER.findIndex((k) => app.hasSeen(k))), 0, 0]; // um por aba
     this.level = null; // idade escolhida na ficha da defesa (null = vai alternando)
     this.typed = 0; // letras já "digitadas" da frase da ficha
   }
@@ -53,7 +58,7 @@ export class CatalogScene {
     const mon = { x: 76, y: 14, w: W - 152, h: 470 };
     const scr = { x: mon.x + 22, y: mon.y + 20, w: mon.w - 44, h: mon.h - 76 };
     const list = { x: scr.x + 14, y: scr.y + 78, w: 236, h: scr.h - 92 };
-    const rowH = list.h / this.items.length;
+    const rowH = Math.min(48, list.h / this.items.length); // (poucos itens: linhas não esticam)
     const detail = { x: list.x + list.w + 16, y: list.y, w: scr.x + scr.w - 14 - (list.x + list.w + 16), h: list.h };
     const pr = { x: detail.x + 16, y: detail.y + 16, s: Math.min(150, detail.h * 0.48) };
     const evoY = pr.y + pr.s + 18;
@@ -157,14 +162,17 @@ export class CatalogScene {
     if (this.tab === 0) {
       const seen = ORDER.filter((k) => this.app.hasSeen(k)).length;
       mono(ctx, `AMEAÇAS CATALOGADAS: ${seen}/${ORDER.length}`, scr.x + scr.w - 14, scr.y + 17, 13, GREEN, 'right', true);
-    } else {
+    } else if (this.tab === 1) {
       mono(ctx, `DEFESAS DISPONÍVEIS: ${TOWER_ORDER.length}`, scr.x + scr.w - 14, scr.y + 17, 13, GREEN, 'right', true);
+    } else {
+      mono(ctx, `TERRENOS MAPEADOS: ${TERRAINS.length}`, scr.x + scr.w - 14, scr.y + 17, 13, GREEN, 'right', true);
     }
 
     this.drawTabs(ctx, L);
     this.drawList(ctx, L);
     if (this.tab === 0) this.drawThreat(ctx, L);
-    else this.drawTower(ctx, L);
+    else if (this.tab === 1) this.drawTower(ctx, L);
+    else this.drawTerrainInfo(ctx, L);
 
     // efeito CRT: linhas de varredura, faixa passando e vinheta
     ctx.fillStyle = 'rgba(0,0,0,0.22)';
@@ -207,8 +215,8 @@ export class CatalogScene {
     const sel = this.sel[this.tab];
     L.rows.forEach((r, i) => {
       const type = this.items[i];
-      const seen = this.tab === 1 || this.app.hasSeen(type);
-      const name = this.tab === 1 ? TOWERS[type].name : ENEMIES[type].name;
+      const seen = this.tab > 0 || this.app.hasSeen(type);
+      const name = this.tab === 1 ? TOWERS[type].name : this.tab === 2 ? TERRAINS[i].name : ENEMIES[type].name;
       const active = i === sel;
       if (active) {
         ctx.fillStyle = seen ? GREEN : RED;
@@ -223,6 +231,7 @@ export class CatalogScene {
       ctx.save();
       ctx.translate(r.x + 22, r.y + r.h / 2);
       if (this.tab === 1) drawTowerIcon(ctx, type, icon, 2, this.t + i, 0);
+      else if (this.tab === 2) drawTerrain(ctx, type, 26, this.t + i);
       else this.drawIcon(ctx, type, 30, seen);
       ctx.restore();
       mono(ctx, `${String(i + 1).padStart(2, '0')}`, r.x + 46, r.y + r.h / 2, 12, active ? BG : DIM, 'left', true);
@@ -388,6 +397,24 @@ export class CatalogScene {
     }
     const last = L.evo[levels - 1];
     this.drawLore(ctx, def.lore ?? def.desc, d.x + 16, last.y + last.h + 15, d.w - 32, 13);
+  }
+
+  // Ficha do terreno: a amostra do chão no retrato, onde aparece, os
+  // números e como funciona
+  drawTerrainInfo(ctx, L) {
+    const { detail: d, pr } = L;
+    const ter = TERRAINS[this.sel[2]];
+    this.drawFrame(ctx, d);
+    this.drawPortrait(ctx, L, (s) => drawTerrain(ctx, ter.id, s * 0.62, this.t));
+    const fx = pr.x + pr.s + 18;
+    const cursor = Math.sin(this.t * 8) > 0 ? '_' : ' ';
+    mono(ctx, `${ter.name.toUpperCase()}${cursor}`, fx, pr.y + 18, 22, GREEN, 'left', true);
+    mono(ctx, `[ ${ter.where} ]`, fx, pr.y + 44, 13, DIM, 'left', true);
+    this.drawRows(ctx, ter.rows, fx, pr.y + 76);
+    const ly = pr.y + pr.s + 22;
+    mono(ctx, '> COMO FUNCIONA', d.x + 16, ly, 14, DIM, 'left', true);
+    const shown = ter.desc.slice(0, Math.floor(this.typed));
+    wrapMono(ctx, `${shown}${shown.length < ter.desc.length ? '█' : ''}`, d.x + 16, ly + 26, d.w - 32, 14, '#b9ffd8');
   }
 
   pointerDown(x, y) {
