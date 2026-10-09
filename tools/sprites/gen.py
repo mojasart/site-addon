@@ -154,6 +154,10 @@ ASSETS = {
     # juntas no chat do Gemini (raw/coinpile_vip_sheet.webp, separadas ao meio)
     'coin_pile': ('green', 'A pile of bitcoins seen from a three-quarter top-down view: a small messy mound of thick shiny '
                   'gold coins, some stacked in short towers, some lying flat, each with an embossed orange "₿". '),
+    # símbolo de raiva (mangá, 💢) na cabeça de quem está no buff do Executivo
+    # (feito no chat do Gemini: raw/anger.png)
+    'anger': ('green', 'A manga anger mark symbol (like the 💢 emoji): three thick curved glossy red strokes around '
+              'an empty center, two on top bending outward and one underneath bending down like a frown. '),
     'vip': ('green', 'A VIP badge icon: a chunky shiny golden crown on top of a rounded purple shield with a big bold '
             'white "VIP", small cyan gems on the crown and a red ribbon banner under the shield. '),
     # infinito do contador de energia (energia ilimitada), par do raio

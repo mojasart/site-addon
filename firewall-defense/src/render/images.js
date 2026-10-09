@@ -62,6 +62,7 @@ const NAMES = [
   'heart',
   'coin_pile', // pilha de bitcoin: chão do Minerador (render/coinTiles.js) e Bitcoin Extra na loja
   'vip', // selo do modo VIP (loja)
+  'anger', // símbolo de raiva (💢): defesa no buff do Executivo (render/ui.js drawHasted)
 ];
 
 // Ícones dos botões e da interface (SVG: ficam nítidos em qualquer tamanho)
