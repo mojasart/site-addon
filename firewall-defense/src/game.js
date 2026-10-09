@@ -1093,6 +1093,7 @@ export class Game {
   // toque). Spyware escondido não conta (isVisible); quem voa é tocado onde
   // aparece, lá no alto. Protegido pela aura da Cicada não leva (takeDamage)
   tapEnemy(x, y, type) {
+    const s = (this.tapStats ??= applyPerks({ damage: TAP.damage, critChance: 0, executeChance: 0, splashChance: 0, slowChance: 0 }, 'tap', this.app.perks ?? {}));
     const slack = type === 'mouse' ? TAP.slackMouse : TAP.slackTouch;
     let best = null;
     let bestD = Infinity;
@@ -1106,8 +1107,24 @@ export class Game {
       }
     }
     if (!best) return false;
-    best.takeDamage(TAP.damage, this, { armored: true });
-    this.fx.spark(x, y, '#ffffff', 10);
+    // ramo do Toque (Dark Net): crítico, estourar tudo, respingo e choque
+    const crit = chance(s.critChance);
+    const hit = (e) => {
+      if (!e.def.boss && chance(s.executeChance)) e.takeDamage(Infinity, this, { armored: true });
+      else e.takeDamage(s.damage * (crit ? 2 : 1), this, { armored: true });
+      if (chance(s.slowChance)) e.slow(0.5, 2);
+    };
+    hit(best);
+    if (chance(s.splashChance)) {
+      const near = this.enemies
+        .filter((e) => e !== best && !e.dead && this.isVisible(e) && Math.hypot(e.x - best.x, e.y - best.y) <= TAP.splash)
+        .sort((a, b) => Math.hypot(a.x - best.x, a.y - best.y) - Math.hypot(b.x - best.x, b.y - best.y))[0];
+      if (near) {
+        hit(near);
+        this.fx.spark(near.x, near.y - near.r, '#9fe8ff', 8);
+      }
+    }
+    this.fx.spark(x, y, crit ? '#ffd23f' : '#ffffff', crit ? 14 : 10);
     this.sound.play('tap');
     return true;
   }
