@@ -1,7 +1,8 @@
 import { VIEW_H, PANEL_W, OUTLINE, GOLD } from '../config.js';
 import { PLAT_WAVES } from '../data/platinum.js';
 import { comboMul } from '../data/bounty.js';
-import { TOWERS, TOWER_ORDER, TARGET_MODES, BURNOUT, COMMANDER_MAX } from '../data/towers.js';
+import { TOWERS, TOWER_ORDER, TARGET_MODES, BURNOUT, COMMANDER_MAX, BIN } from '../data/towers.js';
+import { drawBinBody } from './bin.js';
 import { rrect, circle, fillOutline, text, setFont, button } from './canvas.js';
 import { drawCharacter } from './characters.js';
 import { drawVirusIcon } from './viruses.js';
@@ -30,9 +31,10 @@ export function layout(game) {
       const alone = i === TOWER_ORDER.length - 1 && i % 2 === 0;
       return { type, x: px + 10 + (alone ? 45 : (i % 2) * 90), y: 44 + Math.floor(i / 2) * pitch, w: 80, h: pitch - 8 };
     }),
-    // BURNOUT (com um Executivo no mapa): canto de baixo do mapa, à esquerda
-    // (do lado do Pato de Borracha, se ele estiver ali)
-    burnout: { x: game.app?.perks?.duck ? 62 : 12, y: VIEW_H - 76, w: 64, h: 64 },
+    // botões de poder do Executivo (BURNOUT e Lixeira Turbo), lado a lado no
+    // canto que não cobre o caminho (Game.abilitySpot); o BURNOUT fica do
+    // lado da borda
+    ...powerButtons(game),
     // abas no topo do painel: DEFESAS e ITENS (game.panelTab)
     tabs: [
       { id: 'towers', label: 'DEFESAS', x: px + 10, y: 4, w: 88, h: 34 },
@@ -105,41 +107,94 @@ export function drawHud(ctx, game) {
   }
   iconButton(ctx, L.pause, '#5fb4ff', 'pause');
   if (game.commanders?.length) drawBurnout(ctx, game, L.burnout);
+  if (game.binOpen) drawBinButton(ctx, game, L.bin);
   drawBossBars(ctx, game);
 }
 
-// Botão do BURNOUT: laranja e pulsando quando dá pra usar; ligado mostra os
-// segundos que faltam; recarregando fica apagado, com um "relógio" escuro
-// que vai sumindo e os segundos pra usar de novo
+// Tamanho dos botões de poder (BURNOUT e Lixeira) e o espaço entre eles
+export const POWER_BTN = 64;
+export const POWER_GAP = 8;
+
+function powerButtons(game) {
+  const spot = game.abilitySpot ?? { x: 12, y: VIEW_H - 12 - POWER_BTN, right: false };
+  const a = { x: spot.x, y: spot.y, w: POWER_BTN, h: POWER_BTN };
+  const b = { x: spot.x + POWER_BTN + POWER_GAP, y: spot.y, w: POWER_BTN, h: POWER_BTN };
+  return spot.right ? { burnout: b, bin: a } : { burnout: a, bin: b };
+}
+
+// BURNOUT: laranja e pulsando quando dá pra usar; ligado mostra os segundos
+// que faltam; recarregando fica apagado, com os segundos pra usar de novo
 function drawBurnout(ctx, game, r) {
-  const t = game.anim;
   const on = game.burnoutLeft > 0;
   const ready = game.burnoutCd <= 0;
+  const label = on ? `${Math.ceil(game.burnoutLeft)}s` : ready ? 'BURNOUT' : `${Math.ceil(game.burnoutCd)}s`;
+  drawPowerButton(ctx, game, r, {
+    color: on ? '#ff5a1a' : '#ff8a2a',
+    glow: '#ff7a1a',
+    ready: ready || on,
+    active: on,
+    wait: !ready && !on ? game.burnoutCd / BURNOUT.cooldown : 0,
+    label,
+    icon: (lit) => drawFlame(ctx, game.anim, lit, on),
+  });
+}
+
+// Lixeira Turbo: azul com o preço quando dá pra chamar (vermelho sem
+// dinheiro); recarregando mostra os segundos
+function drawBinButton(ctx, game, r) {
+  const ready = game.binCd <= 0;
+  const money = game.canAfford(BIN.cost);
+  drawPowerButton(ctx, game, r, {
+    color: '#2f8bff',
+    glow: '#3df2ff',
+    ready: ready && money,
+    active: false,
+    wait: ready ? 0 : game.binCd / BIN.cooldown,
+    label: ready ? `$${BIN.cost}` : `${Math.ceil(game.binCd)}s`,
+    labelColor: ready && !money ? '#ff9aa6' : '#ffffff',
+    icon: () => {
+      ctx.translate(0, 6);
+      ctx.scale(0.62, 0.62);
+      drawBinBody(ctx, game.anim);
+    },
+  });
+}
+
+// Botão redondo de poder: brilha quando dá pra usar; recarregando fica
+// apagado com um "relógio" escuro (wait: fração que falta) e o texto embaixo
+function drawPowerButton(ctx, game, r, o) {
+  const t = game.anim;
   const cx = r.x + r.w / 2;
   const cy = r.y + r.h / 2;
   const R = r.w / 2 - 2;
   ctx.save();
-  if (ready || on) {
-    ctx.shadowColor = '#ff7a1a';
-    ctx.shadowBlur = on ? 22 : 10 + Math.sin(t * 5) * 6;
+  if (o.ready) {
+    ctx.shadowColor = o.glow;
+    ctx.shadowBlur = o.active ? 22 : 10 + Math.sin(t * 5) * 6;
   }
   circle(ctx, cx, cy + 4, R);
   ctx.fillStyle = OUTLINE;
   ctx.fill();
   ctx.shadowBlur = 0;
   circle(ctx, cx, cy, R);
-  fillOutline(ctx, on ? '#ff5a1a' : ready ? '#ff8a2a' : '#6b5a4a', 3);
-  if (!ready && !on) {
+  fillOutline(ctx, o.ready ? o.color : '#5a5f74', 3);
+  if (o.wait > 0) {
     ctx.beginPath();
     ctx.moveTo(cx, cy);
-    ctx.arc(cx, cy, R - 2, -Math.PI / 2, -Math.PI / 2 + (game.burnoutCd / BURNOUT.cooldown) * TAU);
+    ctx.arc(cx, cy, R - 2, -Math.PI / 2, -Math.PI / 2 + o.wait * TAU);
     ctx.closePath();
     ctx.fillStyle = 'rgba(15,18,36,0.55)';
     ctx.fill();
   }
-  // chama
-  const s = 1 + (on ? Math.sin(t * 18) * 0.08 : 0);
   ctx.translate(cx, cy - 4);
+  o.icon(o.ready);
+  ctx.restore();
+  text(ctx, o.label, cx, r.y + r.h - 6, { size: o.label.length > 5 ? 12 : 16, color: o.labelColor ?? '#ffffff' });
+}
+
+// Chama do BURNOUT (centro na origem)
+function drawFlame(ctx, t, lit, on) {
+  const s = 1 + (on ? Math.sin(t * 18) * 0.08 : 0);
   ctx.scale(s, s);
   ctx.beginPath();
   ctx.moveTo(0, -17);
@@ -147,16 +202,24 @@ function drawBurnout(ctx, game, r) {
   ctx.bezierCurveTo(8, 13, -8, 13, -10, 7);
   ctx.bezierCurveTo(-12, 1, -6, -4, -4, -9);
   ctx.bezierCurveTo(-2, -4, 2, -3, 0, -17);
-  fillOutline(ctx, ready || on ? '#ffd23f' : '#c9b9a0', 2.5);
+  fillOutline(ctx, lit ? '#ffd23f' : '#c9b9a0', 2.5);
   ctx.beginPath();
   ctx.moveTo(0, -3);
   ctx.bezierCurveTo(5, 2, 5, 9, 0, 10);
   ctx.bezierCurveTo(-5, 9, -5, 3, 0, -3);
-  ctx.fillStyle = ready || on ? '#fff3c4' : '#e8dcc8';
+  ctx.fillStyle = lit ? '#fff3c4' : '#e8dcc8';
   ctx.fill();
-  ctx.restore();
-  const label = on ? `${Math.ceil(game.burnoutLeft)}s` : ready ? 'BURNOUT' : `${Math.ceil(game.burnoutCd)}s`;
-  text(ctx, label, cx, r.y + r.h - 6, { size: ready && !on ? 12 : 16, color: '#ffffff' });
+}
+
+// Raio do Executivo no chão: laranja meio transparente (onde ele acelera
+// as defesas); no BURNOUT fica mais forte e pulsa
+export function drawCommandZone(ctx, tw, t, burning) {
+  circle(ctx, tw.x, tw.y, tw.stats.range);
+  ctx.fillStyle = `rgba(255,140,40,${burning ? 0.2 + Math.sin(t * 8) * 0.05 : 0.1})`;
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = `rgba(255,150,50,${burning ? 0.75 : 0.4})`;
+  ctx.stroke();
 }
 
 // Defesa acelerada (Executivo por perto ou BURNOUT): setinhas pra cima do
@@ -177,19 +240,6 @@ export function drawHasted(ctx, t, haste, burning) {
       ctx.stroke();
     }
   }
-  ctx.restore();
-}
-
-// BURNOUT ligado: bordas do mapa pulsando em laranja
-export function drawBurnoutGlow(ctx, game) {
-  const W = game.mapW;
-  const a = 0.28 + Math.sin(game.anim * 8) * 0.08;
-  const g = ctx.createRadialGradient(W / 2, VIEW_H / 2, Math.min(W, VIEW_H) * 0.42, W / 2, VIEW_H / 2, Math.hypot(W, VIEW_H) / 2);
-  g.addColorStop(0, 'rgba(255,110,20,0)');
-  g.addColorStop(1, `rgba(255,110,20,${a})`);
-  ctx.save();
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, W, VIEW_H);
   ctx.restore();
 }
 

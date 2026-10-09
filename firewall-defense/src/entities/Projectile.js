@@ -1,11 +1,12 @@
-// Projéteis: o teclado que o Hacker arremessa.
+// Projéteis: o teclado que o Hacker arremessa e a Zip Bomb do Script Kiddie
+// (essa explode no primeiro vírus que acertar: Projectile.explode).
 //
 // Depois de sair da mão o tiro é TELEGUIADO: a cada passo ele vira na
 // direção do alvo (até TURN_RATE rad/s), então vírus rápidos ou que
 // mudam de direção não escapam. Exceção: se o alvo anda mais rápido que
 // a munição, o tiro não persegue (segue reto). Se o alvo morre antes,
 // ele procura o vírus mais perto e continua.
-import { chance } from '../util.js';
+import { chance, TAU } from '../util.js';
 
 const TURN_RATE = 16; // quanto o tiro consegue virar por segundo (radianos)
 const RETARGET_R = 140; // raio pra achar um alvo novo quando o dele morre
@@ -23,6 +24,9 @@ export class Projectile {
     this.crit = chance(s.critChance); // Tecla Crítica (Dark Net): dano dobrado (Exploit Afiado: mais)
     this.damage = s.damage * (this.crit ? s.critMul ?? 2 : 1);
     this.pierce = s.pierce ?? 1; // quantos vírus atravessa (upgrades podem aumentar)
+    this.splash = s.splash ?? 0; // raio da explosão (Zip Bomb)
+    this.cluster = s.cluster ?? 0; // zips menores que a explosão solta (Zip de Zips)
+    this.maxTargets = s.maxTargets ?? 8;
     this.armored = tower.hitsArmored;
     this.source = tower;
     this.target = target;
@@ -80,6 +84,16 @@ export class Projectile {
       if (e.dead || this.hit.has(e) || !game.isVisible(e)) continue;
       const rr = e.r + this.r;
       if ((e.x - this.x) ** 2 + (e.y - this.y) ** 2 >= rr * rr) continue;
+      if (this.splash) {
+        this.explode(game, this.x, this.y, this.splash);
+        for (let i = 0; i < this.cluster; i++) {
+          const a = (i / this.cluster) * TAU + this.spin;
+          this.explode(game, this.x + Math.cos(a) * this.splash * 0.9, this.y + Math.sin(a) * this.splash * 0.9, this.splash * 0.6);
+        }
+        game.sound.play('zip');
+        this.dead = true;
+        return;
+      }
       this.hit.add(e);
       const opts = { armored: this.armored, source: this.source, hitSet: this.hit };
       const reach = !e.def.armored || this.armored;
@@ -96,5 +110,14 @@ export class Projectile {
         return;
       }
     }
+  }
+
+  // Zip Bomb: acerta até maxTargets vírus no raio (os mais adiantados
+  // primeiro; escondidos não). Blindado só se a defesa fura blindagem
+  explode(game, x, y, radius) {
+    const opts = { armored: this.armored, source: this.source };
+    for (const e of game.enemiesInRange(x, y, radius).slice(0, this.maxTargets)) e.takeDamage(this.damage, game, opts);
+    game.fx.ring(x, y, radius, 'zip');
+    game.fx.burst(x, y, '#ffd23f', 8, 170, 0.35, 4, true);
   }
 }

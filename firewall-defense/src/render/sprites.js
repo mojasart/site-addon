@@ -6,7 +6,18 @@ import { drawImage, hasImage } from './images.js';
 // ── Projéteis ───────────────────────────────────────────────
 export function drawProjectile(ctx, p, t) {
   ctx.save();
-  if (p.kind === 'keyboard') {
+  if (p.kind === 'zip') {
+    // Zip Bomb: pastinha amarela com zíper, girando (o Script Kiddie joga)
+    ctx.rotate(p.spin * 0.6);
+    rrect(ctx, -8, -6, 16, 12, 2.5);
+    fillOutline(ctx, '#ffd23f', 2.5);
+    rrect(ctx, -8, -8, 7, 4, 1.5);
+    fillOutline(ctx, '#f5b01a', 2);
+    ctx.fillStyle = OUTLINE;
+    for (let i = 0; i < 4; i++) ctx.fillRect(-1, -5 + i * 2.6, 2, 1.4);
+    ctx.fillStyle = '#ff4d5e';
+    ctx.fillRect(-1.5, 4, 3, 2);
+  } else if (p.kind === 'keyboard') {
     // tecladinho girando no ar (o Hacker arremessa)
     ctx.rotate(p.spin * 0.8);
     rrect(ctx, -10, -5.5, 20, 11, 3);
