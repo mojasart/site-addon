@@ -430,8 +430,8 @@ export class LevelSelectScene {
     ctx.restore();
   }
 
-  // Sala do Bug Bounty da season (barra embaixo da grade): aberta (dourada,
-  // com estrelas e recorde) ou trancada (cadeado e quantas fases faltam platinar)
+  // Sala do Bug Bounty da season (barra embaixo da grade, azul como as abas
+  // das seasons): aberta (com estrelas e recorde) ou trancada (cadeado e quantas fases faltam platinar)
   drawBounty(ctx, r, s) {
     const map = BOUNTY_MAPS[s];
     const open = this.app.bountyOpen(s);
@@ -443,7 +443,7 @@ export class LevelSelectScene {
     ctx.translate(r.x + r.w / 2 + dx, r.y + r.h / 2);
     ctx.scale(k, k);
     ctx.translate(-(r.x + r.w / 2), -(r.y + r.h / 2));
-    button(ctx, r, open ? '#ffb020' : '#4a5d92', { radius: 16, depth: 5 });
+    button(ctx, r, '#4a5d92', { radius: 16, depth: 5 });
     const h = r.h - 5;
     const cy = r.y + h / 2;
     // miniatura da sala à esquerda
@@ -463,8 +463,7 @@ export class LevelSelectScene {
     if (open) {
       stars(ctx, rx - 150, cy, got, 9, 22, null, starTier(got, false));
       const best = this.app.bountyBest(map.id);
-      text(ctx, '+1 café por estrela', rx, cy - (best ? 8 : 0), { size: 13, align: 'right', color: '#fff3c4' });
-      if (best) text(ctx, `recorde ${best}`, rx, cy + 10, { size: 12, align: 'right', color: '#fff3c4' });
+      if (best) text(ctx, `recorde ${best}`, rx, cy + 1, { size: 14, align: 'right', color: '#d8e6ff' });
     } else {
       const n = this.app.seasonPlatinumCount(s);
       text(ctx, `Platine a season (${n}/${MAPS_PER_SEASON})`, rx, cy + 1, { size: 15, align: 'right', color: '#d8e6ff' });
