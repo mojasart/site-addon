@@ -108,19 +108,14 @@ export class App {
   }
 
   // Modo debug (?debug na URL ou tocando no worm da tela inicial): todos os
-  // mapas liberados com 3 estrelas e platina, DEBUG.money por fase e
-  // DEBUG.coffee cafés. Usa uma cópia do save que não é gravada: o progresso
-  // de verdade volta ao recarregar a página
+  // mapas, platinas e salas liberados (sem estrelas feitas) e DEBUG.coffee
+  // cafés; o dinheiro da fase é o normal. Usa uma cópia do save que não é
+  // gravada: o progresso de verdade volta ao recarregar a página
   enableDebug() {
     if (this.debug) return;
     this.debug = true;
     pauseSaving();
-    const s = structuredClone(this.save);
-    for (const m of MAPS) {
-      s.stars[m.id] = 3;
-      s.platinum[m.id] = true;
-    }
-    this.save = s;
+    this.save = structuredClone(this.save);
   }
 
   get game() {

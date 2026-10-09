@@ -8,7 +8,7 @@ const stage = document.getElementById('stage'); // área útil da tela (fora do 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
-// Abra com ?debug na URL: dinheiro infinito e todos os mapas liberados.
+// Abra com ?debug na URL: cafés infinitos e todos os mapas liberados.
 // ?mute: começa com música e efeitos desligados (servidores de teste)
 const params = new URLSearchParams(location.search);
 const app = new App({ debug: params.has('debug'), mute: params.has('mute') });

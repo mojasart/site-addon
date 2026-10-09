@@ -17,7 +17,7 @@ python3 -m http.server 8080
 
 - **No computador:** `http://localhost:8080` (Espaço = iniciar/acelerar, Esc = pausar)
 - **No celular:** mesma rede Wi-Fi, abra `http://IP-DO-SEU-PC:8080`
-- **Modo debug:** `?debug` no final do endereço (dinheiro infinito e todos os mapas liberados). O objeto `app` fica exposto no console.
+- **Modo debug:** `?debug` no final do endereço (cafés infinitos e todos os mapas liberados, sem estrelas). O objeto `app` fica exposto no console.
 
 ## Como jogar
 
