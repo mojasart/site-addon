@@ -14,7 +14,7 @@ import { LAYER_HP } from '../config.js';
 //  sprite   → imagem em assets/sprites (sem ela usa o desenho do kind)
 //  reward   → moedas ao estourar essa camada (padrão 1)
 //  spawn    → { type, every }: vai soltando esse vírus enquanto está vivo
-//  stealth  → invisível: só dá pra acertar no alcance de um Robô NMAP
+//  stealth  → invisível: só dá pra acertar no alcance de um Robô NMAP ou de um Executivo
 //  flying   → voa: a onda do Golem (dano e fogo) e a do Pinguim (lentidão e
 //             gelo) não pegam, e passa por cima do Honeypot
 //  aura     → raio da aura de criptografia (Cicada 3301): os outros vírus
@@ -66,8 +66,8 @@ export const ENEMIES = {
   },
   spyware: {
     name: 'Spyware',
-    desc: 'Invisível: só aparece no alcance do Robô NMAP',
-    lore: 'Espiona a rede sem ser visto. Só o Robô NMAP, varrendo as portas, consegue revelar ele pras outras defesas.',
+    desc: 'Invisível: só aparece no alcance do Robô NMAP ou do Executivo',
+    lore: 'Espiona a rede sem ser visto. Só o Robô NMAP, varrendo as portas, ou o Executivo, de olho em tudo, conseguem revelar ele pras outras defesas.',
     hp: 2 * LAYER_HP,
     speed: 105,
     radius: 14,
