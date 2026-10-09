@@ -1,7 +1,7 @@
 import { VIEW_H, PANEL_W, SPEEDS, TURBO_SPEED, DANGER_TILES, TAP, EARLY_BONUS, EARLY_WAVES } from './config.js';
 import { MAPS, BOUNTY_MAPS } from './data/maps.js';
 import { roundsFor } from './data/rounds.js';
-import { PLAT_WAVES, PLAT_LIVES, PLAT_WARMUP, PLAT_REWARD, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
+import { PLAT_WAVES, PLAT_LIVES, PLAT_WARMUP, PLAT_REWARD, WAVE_GAP, PLAT_GATE, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
 import { worth, ENEMIES } from './data/enemies.js';
 import { BOUNTY, bountyRound, layers, comboMul, bountyStars } from './data/bounty.js';
 import { TOWERS, TARGET_MODES, COMMANDER_MAX, BURNOUT } from './data/towers.js';
@@ -499,13 +499,15 @@ export class Game {
     this.end(bountyStars(this.bountyRatio) > 0);
   }
 
-  // Platina: a próxima onda começa assim que a anterior termina de entrar;
-  // no fim do tempo (ou das ondas) vem o chefão
+  // Platina: a próxima onda começa quando a anterior termina de entrar e
+  // sobram no máximo PLAT_GATE vírus vivos no mapa (+ WAVE_GAP); depois da
+  // última onda vem o chefão (com a mesma regra)
   platinumStep(dt) {
     if (this.bossCalled) return;
     const r = this.rounds;
     this.platTime += dt;
     if (r.pending[r.started - 1] > 0) return; // a última onda ainda está entrando
+    if (this.aliveCount() > PLAT_GATE) return; // mapa cheio demais: a próxima espera
     this.waveGap = (this.waveGap ?? WAVE_GAP) - dt;
     if (this.waveGap <= 0) {
       this.waveGap = null;
@@ -513,6 +515,14 @@ export class Game {
       if (r.canStart) this.startRound();
       else this.callBoss();
     }
+  }
+
+  // Vírus vivos no mapa agora (inclusive os que acabaram de nascer)
+  aliveCount() {
+    let n = 0;
+    for (const e of this.enemies) if (!e.dead) n++;
+    for (const e of this.newEnemies) if (!e.dead) n++;
+    return n;
   }
 
   callBoss() {
