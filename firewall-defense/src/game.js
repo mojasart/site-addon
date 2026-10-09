@@ -1,4 +1,4 @@
-import { VIEW_H, PANEL_W, SPEEDS, TURBO_SPEED, DANGER_TIME, EARLY_BONUS, DEBUG } from './config.js';
+import { VIEW_H, PANEL_W, SPEEDS, TURBO_SPEED, DANGER_TILES, EARLY_BONUS, DEBUG } from './config.js';
 import { MAPS } from './data/maps.js';
 import { roundsFor } from './data/rounds.js';
 import { PLAT_TIME, PLAT_LIVES, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
@@ -498,7 +498,8 @@ export class Game {
   checkDanger() {
     for (const e of this.enemies) {
       if (e.dead || e.dangerSeen) continue;
-      if (e.remaining / Math.max(1, e.speed) > DANGER_TIME || e.threat < this.lives) continue;
+      // pela distância que falta no caminho (por tempo, os rápidos avisavam lá longe)
+      if (e.remaining > DANGER_TILES * TILE || e.threat < this.lives) continue;
       e.dangerSeen = true;
       this.speed = 1;
       this.toast = { text: 'PERIGO! Velocidade normal', time: 2.6 };
