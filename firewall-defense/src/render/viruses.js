@@ -38,14 +38,7 @@ export function drawEnemy(ctx, e) {
   }
   ctx.filter = 'none';
   if (e.golden) goldenSparkles(ctx, e);
-  if (e.slowTimer > 0 && !def.boss) {
-    circle(ctx, 0, -e.r * 0.3, e.r + 4);
-    ctx.fillStyle = 'rgba(170,235,255,0.38)';
-    ctx.fill();
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = '#d8f8ff';
-    ctx.stroke();
-  }
+  drawChill(ctx, e, -e.r * 0.3);
   if (e.burnTimer > 0) drawBurning(ctx, e, -e.r * 0.3);
   if (e.flash > 0) {
     circle(ctx, 0, -e.r * 0.3, e.r);
@@ -159,15 +152,48 @@ function drawSpriteEnemy(ctx, e) {
   }
   ctx.restore();
 
-  if (e.slowTimer > 0 && !def.boss) {
-    circle(ctx, 0, ground - lift - size * look.foot, r + 4);
-    ctx.fillStyle = 'rgba(170,235,255,0.38)';
-    ctx.fill();
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = '#d8f8ff';
-    ctx.stroke();
-  }
+  drawChill(ctx, e, ground - lift - size * look.foot);
   if (e.burnTimer > 0) drawBurning(ctx, e, ground - lift - size * look.foot);
+}
+
+// Gelo do Penguin Linux (cy = centro do corpo):
+//   congelado (Kernel Gelado, Congelar Tudo) → bloco de gelo semitransparente
+//   em volta do vírus, do tamanho dele
+//   lento (onda do Pinguim) → floquinho em cima da cabeça, girando devagar
+// Sem as sprites, o círculo azul de antes. Chefão não fica lento nem congela
+function drawChill(ctx, e, cy) {
+  if (e.def.boss) return;
+  const { r } = e;
+  if (e.freezeTimer > 0) {
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    // o bloco ocupa ~70% da largura e quase toda a altura do quadro; os Worms
+    // são compridos, então o bloco estica na largura
+    if (e.def.kind === 'worm') ctx.scale(1.9, 1);
+    if (!drawImage(ctx, 'ice_block', r * 3, 0, cy + r * 0.05)) {
+      circle(ctx, 0, cy, r + 4);
+      ctx.fillStyle = 'rgba(170,235,255,0.6)';
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+  if (e.slowTimer > 0) {
+    const fy = cy - r - 7 + Math.sin(e.phase * 3) * 1.5;
+    ctx.save();
+    ctx.translate(0, fy);
+    ctx.rotate(Math.sin(e.phase * 1.5) * 0.4);
+    if (!drawImage(ctx, 'frost_flake', r * 1.15)) {
+      ctx.restore();
+      circle(ctx, 0, cy, r + 4);
+      ctx.fillStyle = 'rgba(170,235,255,0.38)';
+      ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = '#d8f8ff';
+      ctx.stroke();
+      return;
+    }
+    ctx.restore();
+  }
 }
 
 // Pegando fogo (Golem com Incêndio): chaminhas tremendo em cima do corpo.

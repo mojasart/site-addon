@@ -56,6 +56,8 @@ const NAMES = [
   'coffee_sack',
   'energy_bolt', // raio da energia (render/energy.js)
   'energy_infinity', // infinito da energia ilimitada (VIP)
+  'frost_flake', // floco em cima do vírus lento (Penguin Linux)
+  'ice_block', // bloco de gelo em volta do vírus congelado
   'server',
   'server_hurt',
   'coin',

@@ -154,6 +154,12 @@ ASSETS = {
     # juntas no chat do Gemini (raw/coinpile_vip_sheet.webp, separadas ao meio)
     'coin_pile': ('green', 'A pile of bitcoins seen from a three-quarter top-down view: a small messy mound of thick shiny '
                   'gold coins, some stacked in short towers, some lying flat, each with an embossed orange "₿". '),
+    # gelo do Penguin Linux (feitos juntos no chat do Gemini: raw/ice_sheet.png):
+    # floco em cima do vírus lento e bloco em volta do congelado
+    'frost_flake': ('magenta', 'A chunky glossy cartoon ice-blue SNOWFLAKE icon with six thick rounded arms and a small sparkle, '
+                    'thick dark navy outline. '),
+    'ice_block': ('magenta', 'A tall cartoon translucent pale-blue ICE BLOCK with rounded corners, glossy diagonal shines, a few '
+                  'small cracks, a little snow cap on top and icicles hanging at the bottom, thick dark navy outline. '),
     # estouro dos vírus (efeito de morte; feito no chat do Gemini: raw/pop.png)
     'pop': ('green', 'A cartoon "POP!" burst effect: a big white star-shaped splash with rounded spikes, pale-yellow '
             'glow in the center, small droplets and sparkles flying outward, speed lines. '),
