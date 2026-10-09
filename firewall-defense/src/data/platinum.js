@@ -19,6 +19,8 @@ export const PLAT_LIVES = 1; // vidas no modo platina
 export const WAVE_GAP = 2.5; // pausa entre uma onda terminar de entrar e a próxima
 export const BOSS_HP = 0.6; // vida do chefão: BOSS_HP × √pressão do mapa × dificuldade da platina
 const RAMP = 0.06; // cada onda repetida vem 6% mais cheia que a anterior
+export const PLAT_WARMUP = 5; // as primeiras ondas sobem da força do modo normal até a da platina (RoundManager)
+export const PLAT_REWARD = 1.5; // cada vírus estourado na platina dá 50% a mais de dinheiro
 
 // Dificuldade da platina no mapa (data/platinumTuning.js, calibrada com os bots)
 export function platinumScale(mapIndex) {

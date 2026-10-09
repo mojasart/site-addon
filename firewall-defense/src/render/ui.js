@@ -251,17 +251,24 @@ function drawItems(ctx, game, L) {
     ctx.translate(tile.x + tile.w / 2, tile.y + 58);
     drawItemIcon(ctx, item.id, 18, game.anim);
     ctx.restore();
-    if (n <= 0) {
+    if (n <= 0 || game.platinum) {
       rrect(ctx, tile.x, tile.y, tile.w, tile.h - 5, 14);
       ctx.fillStyle = 'rgba(20,28,60,0.62)';
       ctx.fill();
     }
-    if (active) text(ctx, 'ATIVA', tile.x + tile.w / 2, tile.y + tile.h - 16, { size: 15, color: GOLD });
+    // platina: itens trancados (cadeado no lugar da quantidade)
+    if (game.platinum) {
+      ctx.save();
+      ctx.translate(tile.x + tile.w / 2, tile.y + tile.h - 18);
+      ICONS.lock(ctx, 9);
+      ctx.restore();
+    } else if (active) text(ctx, 'ATIVA', tile.x + tile.w / 2, tile.y + tile.h - 16, { size: 15, color: GOLD });
     else text(ctx, String(n), tile.x + tile.w / 2, tile.y + tile.h - 16, { size: 18, color: n > 0 ? '#ffffff' : '#ff7a8a' });
   });
   // onde compra mais
   const y = L.items[L.items.length - 1].y + 108 + 16;
-  wrapText(ctx, 'Compre mais na LOJA, na tela de mapas', P.x + P.w / 2 + 2, y, P.w - 30, 12, '#bcd0f5', 2);
+  const note = game.platinum ? 'Na platina não dá pra usar itens' : 'Compre mais na LOJA, na tela de mapas';
+  wrapText(ctx, note, P.x + P.w / 2 + 2, y, P.w - 30, 12, game.platinum ? '#ff9aa5' : '#bcd0f5', 2);
 }
 
 // Função (classe) de cada defesa: aparece na aba de informações (infoPanel.js)

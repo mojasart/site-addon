@@ -1,7 +1,7 @@
 import { VIEW_H, PANEL_W, SPEEDS, TURBO_SPEED, DANGER_TILES, EARLY_BONUS, EARLY_WAVES, DEBUG } from './config.js';
 import { MAPS, BOUNTY_MAPS } from './data/maps.js';
 import { roundsFor } from './data/rounds.js';
-import { PLAT_WAVES, PLAT_LIVES, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
+import { PLAT_WAVES, PLAT_LIVES, PLAT_WARMUP, PLAT_REWARD, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
 import { worth, ENEMIES } from './data/enemies.js';
 import { BOUNTY, bountyRound, layers, comboMul, bountyStars } from './data/bounty.js';
 import { TOWERS, TARGET_MODES } from './data/towers.js';
@@ -98,6 +98,7 @@ export class Game {
       early: this.platinum || this.bounty ? null : EARLY_WAVES, // modo normal: primeiras ondas mais cheias
       // platina: a dificuldade k enche as ondas sem esticar elas (intervalo ÷ k)
       gap: this.map.gapMul / (this.platinum ? Math.max(1, k) : 1),
+      warmup: this.platinum ? { k, waves: PLAT_WARMUP } : null, // platina: as primeiras ondas pegam leve
       speed: this.map.speedMul,
       hp: this.map.pressure * k, // chefões e worms acompanham a pressão
     });
@@ -452,6 +453,20 @@ export class Game {
     this.nextIn = this.autoRound ? 0 : null;
   }
 
+  // Dinheiro de um vírus estourado (Bug Bounty não dá; platina dá PLAT_REWARD
+  // vezes mais, guardando o quebrado pra próxima)
+  earnPop(reward) {
+    if (this.bounty) return;
+    if (!this.platinum) {
+      this.money += reward;
+      return;
+    }
+    this.popCents = (this.popCents ?? 0) + reward * PLAT_REWARD;
+    const whole = Math.floor(this.popCents);
+    this.money += whole;
+    this.popCents -= whole;
+  }
+
   // Ainda tem vírus vivo no mapa (conta quem não segura a onda, como a Cicada)
   anyAlive() {
     return this.enemies.some((e) => !e.dead) || this.newEnemies.some((e) => !e.dead);
@@ -531,8 +546,9 @@ export class Game {
       this.money += bonus;
       this.coinBump = 1;
     }
-    // Juros (Dark Net): rende uma parte do dinheiro guardado (no Bug Bounty não)
-    const interest = this.app.perks?.minerador4 && !this.bounty && this.money > 0 ? Math.min(INTEREST.max, Math.floor(this.money * INTEREST.rate)) : 0;
+    // Juros (Dark Net): rende uma parte do dinheiro guardado (na platina e no
+    // Bug Bounty não: na platina são 50 ondas emendadas, renderia demais)
+    const interest = this.app.perks?.minerador4 && this.mode === 'normal' && this.money > 0 ? Math.min(INTEREST.max, Math.floor(this.money * INTEREST.rate)) : 0;
     if (interest > 0) {
       this.money += interest;
       this.coinBump = 1;
@@ -1037,6 +1053,11 @@ export class Game {
   // card ficaria por baixo do painel)
   itemTapped(tile) {
     const item = ITEM[tile.id];
+    if (this.platinum) {
+      this.toast = { text: 'Na platina não dá pra usar itens', time: 2.2 };
+      this.sound.play('error');
+      return;
+    }
     const lives = this.platinum ? 1 : BACKUP_LIVES;
     if (!((this.app.inventory?.[tile.id] ?? 0) > 0)) {
       this.toast = { text: `Sem ${item.name}! Compre na LOJA, na tela de mapas`, time: 2.6 };

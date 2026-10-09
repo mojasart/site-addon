@@ -242,7 +242,7 @@ export class Enemy {
       game.fx.burst(this.x, this.y, '#c8f4ff', 10, 200, 0.4, 4);
       for (const e of game.enemiesInRange(this.x, this.y, SHATTER_R)) if (e !== this) e.takeDamage(LAYER_HP, game, { armored: true });
     }
-    if (!game.bounty) game.money += this.def.reward ?? 1; // Bug Bounty: estourar não dá dinheiro
+    game.earnPop(this.def.reward ?? 1); // (Bug Bounty não dá; platina dá mais)
     game.stats.pops++;
     game.bountyPop?.(this); // Bug Bounty: ponto e combo
     if (game.killsBy) game.killsBy[this.type] = (game.killsBy[this.type] ?? 0) + 1; // catálogo
