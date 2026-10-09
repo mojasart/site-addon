@@ -3,13 +3,14 @@ import { TOWERS } from '../data/towers.js';
 import { statsAt, statRows } from '../data/towerInfo.js';
 import { applyPerks } from '../data/darknet.js';
 import { rrect, fillOutline, text } from './canvas.js';
+import { ROLE, ROLE_GREEN, roleFont } from './ui.js';
 
 /* ════════════════════════════════════════════════════════════
  *  ABA DE INFORMAÇÕES DA DEFESA
  *  Aparece na borda direita do mapa quando o jogador escolhe uma defesa
  *  na loja (antes de comprar, mesmo sem dinheiro: aí o custo fica
- *  vermelho) ou toca numa já colocada: o nome e os
- *  números do nível atual. A alça do lado recolhe e abre a aba (fica
+ *  vermelho) ou toca numa já colocada: o nome, a classe ([DANO], [ÁREA]...)
+ *  e os números do nível atual. A alça do lado recolhe e abre a aba (fica
  *  salvo em save.infoOpen). Abrir, fechar, aparecer e sumir são animados:
  *  a aba desliza pela borda direita do mapa.
  * ════════════════════════════════════════════════════════════ */
@@ -18,6 +19,7 @@ const W = 224; // largura da aba
 const TOP = 70; // abaixo do contador de rodada
 const PAD = 12;
 const ROW_H = 20;
+const CLASS_H = 16; // linha da classe, embaixo do nome
 const SLIDE = W + 8; // recolhida: a aba sai da tela e só a alça fica na borda
 const SPEED = 4; // velocidade da animação: vai de ponta a ponta em 1/SPEED s (0,25 s)
 const ease = (k) => k * k * (3 - 2 * k);
@@ -88,7 +90,8 @@ function drawCard(ctx, L, game) {
     ...(sub.placed ? [] : [['CUSTO', `$${game.costOf(sub.type)}`]]),
     ...statRows(s, { armor: s.attack !== 'farm' && s.attack !== 'decoy' && s.effect !== 'frost' }),
   ];
-  const h = PAD * 2 + 34 + (rows.length - 0.5) * ROW_H;
+  const role = ROLE[sub.type];
+  const h = PAD * 2 + 34 + (role ? CLASS_H : 0) + (rows.length - 0.5) * ROW_H;
   game.infoH = h;
   card.h = h;
 
@@ -101,6 +104,19 @@ function drawCard(ctx, L, game) {
   let y = card.y + PAD + 10;
   text(ctx, def.name, x, y, { size: 18, align: 'left' });
   y += 26;
+  // classe, no verde de terminal (igual ao nome no card da loja)
+  if (role) {
+    ctx.save();
+    ctx.font = roleFont(12);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = ROLE_GREEN;
+    ctx.shadowColor = ROLE_GREEN;
+    ctx.shadowBlur = 6;
+    ctx.fillText(`[${role.label}]`, x, y - 8);
+    ctx.restore();
+    y += CLASS_H;
+  }
 
   // status: rótulo à esquerda, valor à direita
   for (const [k, v] of rows) {

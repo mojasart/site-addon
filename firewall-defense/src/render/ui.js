@@ -265,8 +265,8 @@ function drawItems(ctx, game, L) {
   wrapText(ctx, 'Compre mais na LOJA, na tela de mapas', P.x + P.w / 2 + 2, y, P.w - 30, 12, '#bcd0f5', 2);
 }
 
-// Etiqueta da função de cada defesa no card da loja (pra escolher sem abrir o catálogo)
-const ROLE = {
+// Função (classe) de cada defesa: aparece na aba de informações (infoPanel.js)
+export const ROLE = {
   hacker: { label: 'DANO', color: '#ff7a5c' },
   firewall: { label: 'ÁREA', color: '#ff9a2e' },
   pinguim: { label: 'SUPORTE', color: '#5fd0ff' },
@@ -275,23 +275,34 @@ const ROLE = {
   honeypot: { label: 'ISCA', color: '#f5a524' },
 };
 
-// Função escrita como num terminal: [DANO] em fonte de máquina, na cor da
-// função e com brilho de fósforo (combina com a tela cyber do card)
-const ROLE_GREEN = '#3dff9a'; // verde hacker em todas as funções
-const ROLE_FONT = 'bold 11px "Courier New", ui-monospace, Menlo, Consolas, monospace';
+// Nome da defesa escrito como num terminal: [HACKER] em fonte de máquina,
+// verde e com brilho de fósforo (combina com a tela cyber do card).
+// Nome comprido diminui a fonte pra caber no card
+export const ROLE_GREEN = '#3dff9a';
+export const roleFont = (px) => `bold ${px}px "Courier New", ui-monospace, Menlo, Consolas, monospace`;
 
 function drawRoleTag(ctx, tile) {
-  const role = ROLE[tile.type];
-  if (!role) return;
   const def = TOWERS[tile.type];
+  if (!def) return;
+  // [NOME] em 11px; comprido: fonte menor, depois sem colchetes e, no fim,
+  // a fonte estreita (aperta na horizontal) pra caber no card
+  const name = def.name.toUpperCase();
+  const room = tile.w - 8;
   ctx.save();
-  ctx.font = ROLE_FONT;
+  let label = `[${name}]`;
+  let px = 11;
+  ctx.font = roleFont(px);
+  while (px > 9 && ctx.measureText(label).width > room) ctx.font = roleFont(--px);
+  if (ctx.measureText(label).width > room) label = name;
+  const squeeze = Math.min(1, room / ctx.measureText(label).width);
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = ROLE_GREEN;
   ctx.shadowColor = ROLE_GREEN;
   ctx.shadowBlur = 6;
-  ctx.fillText(`[${role.label}]`, tile.x + tile.w / 2, tile.y + 14);
+  ctx.translate(tile.x + tile.w / 2, tile.y + 14);
+  ctx.scale(squeeze, 1);
+  ctx.fillText(label, 0, 0);
   ctx.restore();
   // escudinho: fura blindagem (Trojan)
   if (def.canHitArmored && def.attack !== 'decoy' && def.effect !== 'frost') {
