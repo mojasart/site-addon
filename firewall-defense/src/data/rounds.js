@@ -24,12 +24,12 @@ import { ENEMIES } from './enemies.js';
 export const EARLY_MAPS = 3;
 const EARLY_SKIP = new Set(['spyware', 'worm', 'cicada']);
 
-// Ondas a mais no modo normal: cada mapa joga STRETCH × map.rounds ondas.
-// Entre duas rodadas da lista entram ondas de transição (uma mistura das
-// duas), então a dificuldade sobe aos poucos, a fase dura mais e dá tempo de
-// juntar dinheiro pra encher o mapa de defesas. A 1ª e a última onda são as
-// mesmas de antes.
-export const STRETCH = 1.5;
+// Ondas no modo normal: cada mapa joga map.waves ondas (data/maps.js, pelo
+// nível de dificuldade) feitas das suas map.rounds rodadas da lista. Com mais
+// ondas que rodadas, entre duas rodadas entram ondas de transição (uma
+// mistura das duas): a dificuldade sobe aos poucos e dá tempo de juntar
+// dinheiro. Com menos, pula rodadas espalhadas. A 1ª e a última onda são
+// sempre a 1ª e a última rodada.
 const MIN_PART = 0.2; // pedaço mínimo de uma rodada pra entrar numa onda de transição
 
 // Miniboss que fecha a fase no modo normal: é o último a entrar na última
@@ -44,11 +44,11 @@ export function finaleFor(map) {
 }
 
 // Rodadas de um mapa no modo normal: as primeiras map.rounds da lista,
-// esticadas (STRETCH), e o miniboss no fim da última onda
+// esticadas (ou comprimidas) pra map.waves ondas, e o miniboss no fim da última
 export function roundsFor(map) {
   let list = ROUNDS.slice(0, map.rounds);
   if (map.season === 0 && map.number <= EARLY_MAPS) list = list.map((round) => round.filter((g) => !EARLY_SKIP.has(g.type)));
-  const waves = stretch(list, Math.round(list.length * STRETCH));
+  const waves = stretch(list, map.waves ?? list.length);
   const finale = finaleFor(map);
   if (finale.length) {
     // (se a última onda já tem esse chefão no meio, ele passa pro fim)
@@ -64,7 +64,9 @@ export function roundsFor(map) {
 // cai mais perto da rodada deles
 function stretch(list, n) {
   const R = list.length;
-  if (n <= R || R < 2) return list;
+  if (n === R || R < 2) return list;
+  // menos ondas que rodadas: pega rodadas espalhadas (sempre a 1ª e a última)
+  if (n < R) return Array.from({ length: n }, (_, j) => list[Math.round((j * (R - 1)) / (n - 1))]);
   const home = list.map((_, s) => Math.round((s * (n - 1)) / (R - 1)));
   const waves = [];
   for (let j = 0; j < n; j++) {

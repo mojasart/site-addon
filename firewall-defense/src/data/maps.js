@@ -77,6 +77,12 @@ const LAYOUT_FIX = { 'data-center-1': { e: 2 }, 'data-center-6': { e: 2 } };
 const lerp = (a, b, t) => a + (b - a) * t;
 const round5 = (v) => Math.round(v / 5) * 5;
 
+// Quantas ondas cada fase tem no modo normal, pelo nível de dificuldade do
+// card (vitória dos bots): FÁCIL 15, MÉDIO 20, DIFÍCIL 25, MUITO DIFÍCIL 30,
+// INSANO 40. Fixo (tirado dos níveis de 09/10/2026): se seguisse o card ao
+// vivo, cada recalibração mudaria as ondas de novo
+const WAVES = [15, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 25, 20, 20, 20, 25, 20, 25, 25, 25, 25, 25, 25, 25, 25, 25, 30, 30, 30, 30, 30, 30, 30, 25, 30, 30, 30, 30, 40, 40];
+
 function label(d) {
   if (d < 0.25) return 'FÁCIL';
   if (d < 0.5) return 'MÉDIO';
@@ -139,7 +145,8 @@ function makeMap(season, s, k, bounty = false) {
     d,
     desc: bounty ? '5 min com orçamento fixo: vírus não dão dinheiro' : describe(gen, season),
     theme: season.theme,
-    rounds: Math.round(lerp(season.rounds[0], season.rounds[1], ks)),
+    rounds: Math.round(lerp(season.rounds[0], season.rounds[1], ks)), // rodadas da lista (data/rounds.js) que a fase usa
+    waves: bounty ? 1 : WAVES[g], // ondas no modo normal (as rodadas esticadas ou comprimidas: roundsFor)
     money: round5(lerp(DIFF.money[0], DIFF.money[1], d)),
     lives: round5(lerp(DIFF.lives[0], DIFF.lives[1], d)),
     // calibrada com bots (data/tuning.js); sem calibração usa a curva
