@@ -44,6 +44,9 @@ const DUCK_AWAY = { x: 1000, y: 900 }; // Pato de Borracha: bem isolado, pra cim
 const DRAG_SLOP = 8; // até quantos px um toque ainda é toque (e não arrasto)
 const DOT_GAP = 48; // pontinhos do chão, pra sentir o movimento
 
+const DOUBLE_TAP = 0.35; // segundos entre dois toques no mesmo nó pra comprar direto
+const DOUBLE_TAP_R = 60; // distância máxima entre os dois toques (px de tela)
+
 export class DarkNetScene {
   constructor(app) {
     this.app = app;
@@ -510,13 +513,7 @@ export class DarkNetScene {
       if (this.state(this.sel) === 'owned') {
         this.app.refundPerk(this.sel);
         this.app.sound.play('sell');
-      } else if (this.app.buyPerk(this.sel)) {
-        this.flash[this.sel] = 1;
-        this.app.sound.play('upgrade');
-      } else {
-        this.shake = 1;
-        this.app.sound.play('error');
-      }
+      } else this.buy(this.sel);
       return;
     }
     if (inRect(L.zoomIn, x, y) || inRect(L.zoomOut, x, y)) {
@@ -545,12 +542,32 @@ export class DarkNetScene {
     this.clampCam();
   }
 
+  // Compra o nó (botão COMPRAR ou toque duplo); sem café ou trancado: treme
+  buy(id) {
+    if (this.app.buyPerk(id)) {
+      this.flash[id] = 1;
+      this.app.sound.play('upgrade');
+    } else {
+      this.shake = 1;
+      this.app.sound.play('error');
+    }
+  }
+
   pointerUp(x, y) {
     const d = this.drag;
     const pinched = this.pinching;
     this.drag = null;
     this.pinching = false;
     if (!d || d.moved || pinched) return;
+    // toque duplo num nó: compra direto (perto do 1º toque: a câmera pode
+    // estar indo até o nó e ele sai um pouco do lugar). Comprado não vende assim
+    const now = performance.now();
+    const last = this.lastTap;
+    this.lastTap = null;
+    if (last && now - last.at <= DOUBLE_TAP * 1000 && Math.hypot(x - last.x, y - last.y) <= DOUBLE_TAP_R) {
+      if (this.state(last.id) !== 'owned') this.buy(last.id);
+      return;
+    }
     const L = this.layout();
     const w = this.toWorld(x, y);
     for (const n of [...TREE, NODE.duck]) {
@@ -559,6 +576,7 @@ export class DarkNetScene {
         this.sel = n.id;
         this.homing = this.focus(n.id); // aproxima e centraliza no nó
         this.app.sound.play('click');
+        this.lastTap = { id: n.id, x, y, at: now };
         return;
       }
     }
