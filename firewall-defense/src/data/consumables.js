@@ -13,7 +13,7 @@
 //  O desenho de cada item fica em render/consumables.js (drawItemIcon).
 // ─────────────────────────────────────────────────────────────
 export const CASH = 300; // Bitcoin Extra: dinheiro na hora
-export const FREEZE_TIME = 5; // Congelar Tudo: segundos parados (chefão só fica lento)
+export const FREEZE_TIME = 10; // Congelar Tudo: segundos parados (chefão só fica lento)
 export const BACKUP_LIVES = 5; // Backup: vidas a mais (na platina não dá pra usar item)
 
 export const CONSUMABLES = [
