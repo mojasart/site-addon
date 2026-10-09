@@ -4,7 +4,7 @@ import { iconButton, inRect } from '../render/widgets.js';
 import { ICONS } from '../render/sprites.js';
 import { drawImage } from '../render/images.js';
 import { drawItemIcon } from '../render/consumables.js';
-import { CONSUMABLES, COFFEE_PACKS } from '../data/consumables.js';
+import { CONSUMABLES, COFFEE_PACKS, ITEM } from '../data/consumables.js';
 import { formatCoffee } from '../data/darknet.js';
 
 /* ════════════════════════════════════════════════════════════
@@ -12,9 +12,10 @@ import { formatCoffee } from '../data/darknet.js';
  *  Um programa no monitor, igual ao catálogo: tela preta de terminal
  *  verde ("C:\DARKWEB\LOJA.EXE"). Cada item (data/consumables.js) é um
  *  "arquivo" à venda (> congelar_tudo.exe) pago com café; vai pro
- *  inventário e é usado na partida (aba de itens do painel). À direita, a
- *  pasta dos pacotes de café com dinheiro de verdade, ainda "EM BREVE"
- *  (falta o meio de pagamento: não vendem nem pedem nada).
+ *  inventário e é usado na partida (aba de itens do painel). À direita, o
+ *  brinde do dia (1 item de graça por dia assistindo um anúncio: app.js
+ *  freeOffer) e a pasta dos pacotes de café com dinheiro de verdade, ainda
+ *  "EM BREVE" (falta o meio de pagamento: não vendem nem pedem nada).
  * ════════════════════════════════════════════════════════════ */
 
 const MONO = '"Courier New", ui-monospace, Menlo, Consolas, monospace';
@@ -30,6 +31,13 @@ const fileName = (name) =>
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/\s+/g, '_')}.exe`;
+
+// hh:mm:ss
+const clock = (ms) => {
+  const t = Math.max(0, Math.ceil(ms / 1000));
+  const p = (n) => String(n).padStart(2, '0');
+  return `${p(Math.floor(t / 3600))}:${p(Math.floor((t % 3600) / 60))}:${p(t % 60)}`;
+};
 
 // Texto de terminal: fonte de máquina com brilho de fósforo
 function mono(ctx, str, x, y, size, color, align = 'left', bold = true) {
@@ -83,9 +91,13 @@ export class ShopScene {
       return r;
     });
     const px = scr.x + scr.w - side - 14;
-    const packH = (scr.h - 94) / COFFEE_PACKS.length;
-    const packs = COFFEE_PACKS.map((p, i) => ({ pack: p, x: px, y: top + 28 + i * packH, w: side, h: packH - 10 }));
-    return { back: { x: 10, y: 14, w: 56, h: 56 }, mon, scr, rows, packs, side: { x: px, y: top, w: side } };
+    // brinde do dia em cima; os pacotes de café (ainda "em breve") embaixo, compactos
+    const free = { x: px, y: top + 24, w: side, h: 118 };
+    free.btn = { x: free.x + 10, y: free.y + free.h - 42, w: free.w - 20, h: 32 };
+    const packTop = free.y + free.h + 40;
+    const packH = (scr.y + scr.h - 12 - packTop) / COFFEE_PACKS.length;
+    const packs = COFFEE_PACKS.map((p, i) => ({ pack: p, x: px, y: packTop + i * packH, w: side, h: packH - 8 }));
+    return { back: { x: 10, y: 14, w: 56, h: 56 }, mon, scr, rows, packs, free, side: { x: px, y: packTop - 20, w: side } };
   }
 
   update(dt) {
@@ -159,6 +171,7 @@ export class ShopScene {
     ctx.restore();
 
     for (const r of L.rows) this.drawRow(ctx, r);
+    this.drawFree(ctx, L);
     this.drawPacks(ctx, L);
 
     // efeito CRT: linhas de varredura, faixa passando e vinheta
@@ -232,10 +245,54 @@ export class ShopScene {
     ctx.restore();
   }
 
+  // Brinde do dia: 1 item de graça assistindo um anúncio; depois de pego,
+  // o tempo até o próximo (meia-noite)
+  drawFree(ctx, L) {
+    const f = L.free;
+    const offer = this.app.freeOffer;
+    const item = ITEM[offer.id];
+    const fl = this.flash.free ?? 0;
+    mono(ctx, '> brinde_do_dia/', f.x, f.y - 16, 15, GREEN);
+    // moldura pulsando enquanto o brinde está esperando
+    const glow = offer.claimed ? 0 : 0.5 + Math.sin(this.t * 4) * 0.5;
+    ctx.fillStyle = `rgba(61,255,154,${0.04 + 0.06 * glow + 0.2 * fl})`;
+    ctx.fillRect(f.x, f.y, f.w, f.h);
+    ctx.strokeStyle = offer.claimed ? DIM : GREEN;
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = GREEN;
+    ctx.shadowBlur = 8 * glow;
+    ctx.strokeRect(f.x + 0.5, f.y + 0.5, f.w - 1, f.h - 1);
+    ctx.shadowBlur = 0;
+    ctx.save();
+    ctx.translate(f.x + 34, f.y + 38);
+    drawItemIcon(ctx, item.id, 18, this.t);
+    ctx.restore();
+    mono(ctx, fileName(item.name), f.x + 62, f.y + 28, 13, GREEN);
+    mono(ctx, offer.claimed ? 'PEGO HOJE' : 'GRÁTIS', f.x + 62, f.y + 48, 13, offer.claimed ? DIM : '#ffd23f');
+    const b = f.btn;
+    ctx.font = `bold 13px ${MONO}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if (!offer.claimed) {
+      // [ASSISTIR ANÚNCIO]: cheio, como o botão de comprar
+      ctx.fillStyle = GREEN;
+      ctx.fillRect(b.x, b.y, b.w, b.h);
+      ctx.fillStyle = SCREEN;
+      ctx.fillText('[ASSISTIR ANÚNCIO]', b.x + b.w / 2, b.y + b.h / 2 + 1);
+    } else {
+      ctx.strokeStyle = DIM;
+      ctx.strokeRect(b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1);
+      ctx.fillStyle = DIM;
+      ctx.fillText(`PRÓXIMO EM ${clock(this.app.freeOfferNextMs())}`, b.x + b.w / 2, b.y + b.h / 2 + 1);
+    }
+  }
+
   // Pasta dos pacotes de café (dinheiro de verdade): ainda "EM BREVE"
   drawPacks(ctx, L) {
     const s = L.side;
     mono(ctx, '> pacotes_cafe/', s.x, s.y + 8, 15, GREEN);
+    // pisca como cursor: ainda não vende
+    if (Math.sin(this.t * 4) > -0.3) mono(ctx, '[EM BREVE]', s.x + s.w, s.y + 8, 11, DIM, 'right');
     for (const p of L.packs) {
       const { pack } = p;
       ctx.strokeStyle = DIM;
@@ -244,14 +301,17 @@ export class ShopScene {
       ctx.strokeRect(p.x + 0.5, p.y + 0.5, p.w - 1, p.h - 1);
       ctx.setLineDash([]);
       ctx.save();
-      ctx.translate(p.x + 36, p.y + p.h / 2);
-      if (!drawImage(ctx, pack.sprite, Math.min(60, p.h - 8))) ICONS.coffee(ctx, 16);
+      ctx.translate(p.x + 28, p.y + p.h / 2);
+      if (!drawImage(ctx, pack.sprite, Math.min(44, p.h - 4))) ICONS.coffee(ctx, 13);
       ctx.restore();
-      mono(ctx, `+${pack.coffee} CAFÉS`, p.x + 74, p.y + p.h / 2 - 14, 15, GREEN);
-      mono(ctx, pack.price, p.x + 74, p.y + p.h / 2 + 4, 12, '#9fe8c0', 'left', false);
-      // pisca como cursor: ainda não vende
-      if (Math.sin(this.t * 4) > -0.3) mono(ctx, '[EM BREVE]', p.x + 74, p.y + p.h / 2 + 22, 11, DIM);
+      mono(ctx, `+${pack.coffee} CAFÉS`, p.x + 56, p.y + p.h / 2 - 8, 14, GREEN);
+      mono(ctx, pack.price, p.x + 56, p.y + p.h / 2 + 9, 11, '#9fe8c0', 'left', false);
     }
+  }
+
+  // o anúncio do brinde acabou (app.energyTap): brilho no quadro
+  rewarded() {
+    this.flash.free = 1;
   }
 
   pointerDown(x, y) {
@@ -270,6 +330,11 @@ export class ShopScene {
         this.shake[r.item.id] = 1;
         this.app.sound.play('error');
       }
+      return;
+    }
+    // brinde do dia: abre o anúncio (já pego hoje: só avisa)
+    if (inRect(L.free.btn, x, y)) {
+      this.app.sound.play(this.app.watchAdForFree() ? 'click' : 'error');
       return;
     }
     // pacote de café: ainda não vende (só avisa)

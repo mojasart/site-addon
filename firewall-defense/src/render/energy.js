@@ -1,6 +1,7 @@
 import { VIEW_H, OUTLINE, GOLD, ENERGY } from '../config.js';
 import { rrect, fillOutline, text, setFont } from './canvas.js';
 import { drawImage } from './images.js';
+import { drawItemIcon } from './consumables.js';
 import { bigButton, iconButton, ribbon } from './widgets.js';
 import { ICONS } from './sprites.js';
 import { easeOutBack } from '../util.js';
@@ -176,10 +177,12 @@ function drawAd(ctx, app, ui) {
   if (left > 0) {
     text(ctx, `Recompensa em ${Math.ceil(left)}…`, W - 24, 28, { size: 16, align: 'right', color: '#d8e6ff' });
   } else {
-    bigButton(ctx, L.skip, '#3fd16b', `PEGAR +${ENERGY.ad}`, { size: 24 });
+    // recompensa: energias ou o brinde do dia da loja (ui.reward = id do item)
+    bigButton(ctx, L.skip, '#3fd16b', ui.reward ? 'PEGAR' : `PEGAR +${ENERGY.ad}`, { size: 24 });
     ctx.save();
     ctx.translate(L.skip.x + L.skip.w - 40, L.skip.y + (L.skip.h - 6) / 2);
-    drawBolt(ctx, 14);
+    if (ui.reward) drawItemIcon(ctx, ui.reward, 16, ui.t);
+    else drawBolt(ctx, 14);
     ctx.restore();
   }
   ctx.lineWidth = 1;
