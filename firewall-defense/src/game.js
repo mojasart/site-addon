@@ -4,11 +4,10 @@ import { roundsFor } from './data/rounds.js';
 import { PLAT_WAVES, PLAT_LIVES, PLAT_WARMUP, PLAT_REWARD, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
 import { worth, ENEMIES } from './data/enemies.js';
 import { BOUNTY, bountyRound, layers, comboMul, bountyStars } from './data/bounty.js';
-import { TOWERS, TARGET_MODES, COMMANDER_MAX, BURNOUT, BIN } from './data/towers.js';
+import { TOWERS, TARGET_MODES, COMMANDER_MAX, BURNOUT } from './data/towers.js';
 import { applyPerks, ROOT_MONEY, DUCK, INTEREST, LOAN } from './data/darknet.js';
 import { fitsTerrain } from './core/terrain.js';
 import { Tower } from './entities/Tower.js';
-import { Bin } from './entities/Bin.js';
 import { Projectile } from './entities/Projectile.js';
 import { Packet } from './entities/Packet.js';
 import { RoundManager } from './systems/RoundManager.js';
@@ -16,8 +15,7 @@ import { Effects } from './systems/Effects.js';
 import { Hazards } from './systems/Hazards.js';
 import { MapView } from './render/maps/index.js';
 import { TILE, tileOf, tileKey, inGrid, snapToTile } from './core/grid.js';
-import { layout, drawHud, drawPanel, drawRange, bossBarsBottom, drawHasted, drawCommandZone, POWER_BTN, POWER_GAP } from './render/ui.js';
-import { drawBin } from './render/bin.js';
+import { layout, drawHud, drawPanel, drawRange, bossBarsBottom, drawHasted, drawCommandZone, POWER_BTN } from './render/ui.js';
 import { inRect, sliderValue } from './render/widgets.js';
 import { drawBanner, drawOverlay, overlayLayout } from './render/screens.js';
 import { drawInfoPanel, infoLayout } from './render/infoPanel.js';
@@ -112,8 +110,6 @@ export class Game {
     this.callCooldown = 0;
     this.burnoutLeft = 0; // BURNOUT ligado: segundos que faltam
     this.burnoutCd = 0; // segundos até poder usar o BURNOUT de novo
-    this.bins = []; // Lixeiras Turbo rolando (entities/Bin.js)
-    this.binCd = 0; // segundos até poder chamar outra
     this.placing = null; // tipo de defesa sendo posicionada
     this.inspect = null; // defesa da loja só sendo olhada (sem dinheiro pra comprar): mostra os atributos
     this.selectedTower = null;
@@ -271,7 +267,6 @@ export class Game {
       return;
     }
     this.callCooldown = Math.max(0, this.callCooldown - dt);
-    this.binCd = Math.max(0, this.binCd - dt);
     this.updateAds(dt);
     if (this.nextIn != null && (this.nextIn -= dt) <= 0) this.startRound();
     if (this.platinum && this.rounds.started > 0) this.platinumStep(dt);
@@ -288,8 +283,6 @@ export class Game {
     this.flushSpawns();
     for (const p of this.projectiles) p.update(dt, this);
     this.flushSpawns();
-    for (const v of this.bins) v.update(dt, this);
-    this.flushSpawns();
     for (const e of this.enemies) if (!e.dead) e.update(dt, this);
     if (this.speed > 1 && !this.bounty) this.checkDanger();
     for (const p of this.packets) p.update(dt, this);
@@ -300,7 +293,6 @@ export class Game {
     this.enemies = this.enemies.filter((e) => !e.dead);
     this.projectiles = this.projectiles.filter((p) => !p.dead);
     this.packets = this.packets.filter((p) => !p.dead);
-    if (this.bins.length) this.bins = this.bins.filter((v) => !v.dead);
     if (this.towers.some((t) => t.dead)) {
       this.towers = this.towers.filter((t) => !t.dead);
       if (this.selectedTower?.dead) this.selectedTower = null;
@@ -359,9 +351,10 @@ export class Game {
       if (this.commanders.length) this.sound.play('error');
       return;
     }
-    const extra = Math.max(0, ...this.commanders.map((c) => c.stats.burnoutExtra ?? 0));
-    this.burnoutLeft = BURNOUT.time + extra;
-    this.burnoutCd = BURNOUT.cooldown;
+    // o melhor Executivo manda (Meta Agressiva: dura mais e recarrega antes)
+    const best = (key) => Math.max(0, ...this.commanders.map((c) => c.stats[key] ?? 0));
+    this.burnoutLeft = BURNOUT.time + best('burnoutExtra');
+    this.burnoutCd = this.burnoutMax = BURNOUT.cooldown - best('burnoutFaster');
     const bosses = this.activeCommanders;
     for (const t of this.towers) {
       if (!hastes(t) || !bosses.some((c) => Math.hypot(c.x - t.x, c.y - t.y) <= c.stats.range)) continue;
@@ -377,43 +370,12 @@ export class Game {
     buzz(30);
   }
 
-  // Lixeira Turbo: liberada com um Executivo no nível 2 (Limpeza de Disco)
-  get binOpen() {
-    return this.commanders.some((c) => c.stats.bin);
-  }
-
-  // Chama a Lixeira Turbo (BIN.cost, a cada BIN.cooldown s). Ela sai da base
-  // pela entrada que tem mais vírus no caminho
-  callBin() {
-    if (!this.binOpen || this.state !== 'playing') return;
-    if (this.binCd > 0) {
-      this.sound.play('error');
-      return;
-    }
-    if (!this.canAfford(BIN.cost)) {
-      const r = layout(this).bin;
-      this.fx.text(r.x + r.w / 2 - this.offsetX, r.y - 10, 'Sem dinheiro!', '#ff7a8a', 16);
-      this.sound.play('error');
-      return;
-    }
-    this.pay(BIN.cost);
-    this.binCd = BIN.cooldown;
-    const routes = this.path.routes;
-    const crowd = routes.map((r) => this.enemies.filter((e) => !e.dead && e.route === r).length);
-    const bin = new Bin(routes[crowd.indexOf(Math.max(...crowd))]);
-    this.bins.push(bin);
-    this.fx.burst(bin.x, bin.y, '#7fd3ff', 12, 160, 0.4, 4, true);
-    this.fx.text(bin.x, bin.y - 40, 'DEL!', '#7fd3ff', 22);
-    this.sound.play('bin');
-    buzz(20);
-  }
-
-  // Canto dos botões de poder (BURNOUT e Lixeira), em coordenadas de tela:
-  // embaixo à direita, a não ser que o caminho, uma entrada de vírus ou a
-  // base passem ali; aí vai pro canto que menos cobre o caminho
+  // Canto do botão do BURNOUT, em coordenadas de tela: embaixo à direita, a
+  // não ser que o caminho, uma entrada de vírus ou a base passem ali; aí vai
+  // pro canto que menos cobre o caminho
   get abilitySpot() {
     if (this.abilityFor === this.view) return this.ability;
-    const W = 2 * POWER_BTN + POWER_GAP;
+    const W = POWER_BTN;
     const H = POWER_BTN;
     const left = this.app.perks?.duck ? 62 : 12;
     const right = this.mapW - 12 - W;
@@ -441,7 +403,7 @@ export class Game {
       if (n < least) [best, least] = [s, n];
       if (n === 0) break;
     }
-    this.ability = { ...best, right: best.x > this.mapW / 2 };
+    this.ability = best;
     this.abilityFor = this.view;
     return this.ability;
   }
@@ -461,8 +423,6 @@ export class Game {
       if (t.def.attack !== 'decoy' || t.dead || t.ransom) continue; // criptografada não segura ninguém
       if (Math.hypot(e.x - t.x, e.y - t.y) < t.r + e.r * 0.8) return t;
     }
-    // Lixeira Turbo: uma isca andando
-    for (const v of this.bins) if (!v.dead && Math.hypot(e.x - v.x, e.y - v.y) < v.r + e.r * 0.8) return v;
     return null;
   }
 
@@ -1079,7 +1039,6 @@ export class Game {
   key(k) {
     if (k === ' ' && this.state === 'playing' && (!this.tutorial || this.tutorial.done)) this.playPressed();
     else if ((k === 'b' || k === 'B') && this.state === 'playing') this.burnout();
-    else if ((k === 'c' || k === 'C') && this.state === 'playing') this.callBin();
     else if (k === 'Escape') {
       if (this.state === 'paused') this.resume();
       else this.pause();
@@ -1097,7 +1056,6 @@ export class Game {
     if (sx >= L.panel.x) return this.panelTap(sx, sy, L);
     if (inRect(L.pause, sx, sy)) return this.pause();
     if (this.commanders.length && inRect(L.burnout, sx, sy)) return this.burnout();
-    if (this.binOpen && inRect(L.bin, sx, sy)) return this.callBin();
     // aba de informações da defesa: a alça abre/recolhe; tocar na aba não mexe no mapa
     const info = infoLayout(this);
     if (info && inRect(info.toggle, sx, sy)) return this.app.toggleInfo?.();
@@ -1355,13 +1313,8 @@ export class Game {
     const things = [
       ...this.enemies.map((e) => ({ y: e.y, e })),
       ...this.towers.filter((tw) => !tw.def.onPath).map((tw) => ({ y: tw.y, tw })),
-      ...this.bins.map((v) => ({ y: v.y, v })),
     ].sort((a, b) => a.y - b.y);
     for (const th of things) {
-      if (th.v) {
-        drawBin(ctx, th.v, t);
-        continue;
-      }
       if (th.tw) {
         this.drawTowerAt(ctx, th.tw);
         // patrocinada por um Minerador: moedinha girando em cima

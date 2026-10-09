@@ -375,7 +375,7 @@ export class CatalogScene {
     const fx = pr.x + pr.s + 18;
     const cursor = Math.sin(this.t * 8) > 0 ? '_' : ' ';
     mono(ctx, `${def.name.toUpperCase()}${cursor}`, fx, pr.y + 18, 22, GREEN, 'left', true);
-    const kind = [ATTACK_KIND[def.attack], def.splash ? 'EXPLOSÃO' : null, def.canHitArmored ? 'FURA BLINDAGEM' : null, def.onPath ? 'NO CAMINHO' : null].filter(Boolean);
+    const kind = [ATTACK_KIND[def.attack], def.canHitArmored ? 'FURA BLINDAGEM' : null, def.onPath ? 'NO CAMINHO' : null].filter(Boolean);
     mono(ctx, `[ ${kind.join(' · ')} ]`, fx, pr.y + 44, 13, DIM, 'left', true);
     const rows = towerRows(type, s, lv);
     this.drawRows(ctx, rows, fx, pr.y + 72, rows.length > 4 ? 21 : 24);

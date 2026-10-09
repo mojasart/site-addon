@@ -12,9 +12,7 @@
 //    aura       → não ataca: as defesas no alcance atacam mais rápido (haste)
 //
 //  commander: comandante (Executivo). No máximo COMMANDER_MAX por fase; com
-//  um no mapa aparecem os botões de poder num canto de baixo do mapa
-//  (BURNOUT e, no nível 2, a Lixeira Turbo)
-//  splash:    raio da explosão do projétil (Zip Bomb do Script Kiddie)
+//  um no mapa aparece o botão do BURNOUT num canto de baixo do mapa
 //
 //  upgrades: 2 níveis, cada um com custo e uma função que altera os status
 //  lore:     frase do catálogo de defesas (scenes/CatalogScene.js)
@@ -151,54 +149,23 @@ export const TOWERS = {
     commander: true,
     haste: 0.15, // defesas no alcance atacam 15% mais rápido (dois Executivos não somam: vale o maior)
     upgrades: [
-      // nível 2: botão da Lixeira Turbo (BIN), paga a cada chamada
-      { name: 'Limpeza de Disco', desc: 'Libera a Lixeira Turbo: pague e ela vem deletando vírus', cost: 300,
-        apply: (s) => { s.bin = true; } },
-      { name: 'Meta Agressiva', desc: 'Mais alcance, +25% de velocidade e BURNOUT 3s mais longo', cost: 450,
-        apply: (s) => { s.range += 20; s.haste = 0.25; s.burnoutExtra = 3; } },
-    ],
-  },
-  kiddie: {
-    name: 'Script Kiddie',
-    desc: 'Joga Zip Bombs: explodem e acertam os vírus em volta',
-    lore: 'Baixou um "kit hacker" num fórum duvidoso. Não sabe direito o que faz, mas explode tudo.',
-    cost: 375,
-    radius: 18,
-    range: 110,
-    attack: 'projectile',
-    projectile: 'zip',
-    fireRate: 1.6,
-    damage: 1000,
-    splash: 42, // raio da explosão: acerta até maxTargets vírus
-    maxTargets: 8,
-    projectileSpeed: 420,
-    canHitArmored: false,
-    targeting: true,
-    sound: 'throw',
-    upgrades: [
-      { name: 'Compressão Máxima', desc: 'Explosão maior e arremessa mais rápido', cost: 300,
-        apply: (s) => { s.splash = 56; s.fireRate *= 0.8; } },
-      // a explosão espalha `cluster` zips menores em volta (Projectile.explode)
-      { name: 'Zip de Zips', desc: 'Cada explosão solta 3 zips menores em volta', cost: 550, apply: (s) => { s.cluster = 3; } },
+      { name: 'Reunião de Alinhamento', desc: 'Mais alcance e as defesas no raio atacam 25% mais rápido', cost: 300,
+        apply: (s) => { s.range += 20; s.haste = 0.25; } },
+      // BURNOUT mais longo e recarga mais curta (Game.burnout usa o melhor Executivo)
+      { name: 'Meta Agressiva', desc: 'BURNOUT dura 3s a mais e recarrega 5s mais rápido', cost: 450,
+        apply: (s) => { s.burnoutExtra = 3; s.burnoutFaster = 5; } },
     ],
   },
 };
 
-export const TOWER_ORDER = ['hacker', 'firewall', 'pinguim', 'scanner', 'kiddie', 'minerador', 'honeypot', 'executivo'];
+export const TOWER_ORDER = ['hacker', 'firewall', 'pinguim', 'scanner', 'minerador', 'honeypot', 'executivo'];
 
 // Comandantes por fase (Executivo)
 export const COMMANDER_MAX = 3;
 // Poder do Executivo: as defesas que atacam no raio de um Executivo ficam
 // `haste` mais rápidas por `time` s (+ burnoutExtra do melhor Executivo);
-// dá pra usar de novo `cooldown` s depois de ativar
+// dá pra usar de novo `cooldown` s (− burnoutFaster) depois de ativar
 export const BURNOUT = { haste: 0.6, time: 5, cooldown: 20 };
-// Lixeira Turbo (Executivo nível 2, entities/Bin.js): a lixeira do sistema
-// vem rolando e deleta vírus. Custa `cost` por chamada e dá pra chamar de
-// novo `cooldown` s depois. Sai da base e rola pelo caminho ao contrário
-// (`speed` px/s); quem encosta para e morde (como no Honeypot: perde vida)
-// e ela tira `hit` de até `maxTargets` vírus encostados a cada `every` s
-// (fura blindagem). Some quando a vida (`hp`) acaba ou quando chega na entrada
-export const BIN = { cost: 300, cooldown: 35, hp: 30, speed: 60, hit: 1000, every: 0.6, maxTargets: 3, r: 17 };
 
 // Modos de mira (botão ALVO no painel da defesa). Empate: o mais perto da base.
 //   first  → o mais adiantado no caminho      last  → o mais atrasado

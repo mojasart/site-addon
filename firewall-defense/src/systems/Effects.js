@@ -10,7 +10,6 @@ const RING_COLORS = {
   frost: { fill: 'rgba(140,225,255,0.32)', stroke: '#c8f4ff' },
   ransom: { fill: 'rgba(61,255,154,0.14)', stroke: '#3dff9a' },
   boost: { fill: 'rgba(255,190,60,0.16)', stroke: '#ffcf4a' }, // Executivo / BURNOUT
-  zip: { fill: 'rgba(255,210,63,0.32)', stroke: '#ffe27a' }, // explosão da Zip Bomb
 };
 
 // Efeitos visuais. Tudo em coordenadas do mapa.

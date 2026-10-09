@@ -1,8 +1,7 @@
 import { VIEW_H, PANEL_W, OUTLINE, GOLD } from '../config.js';
 import { PLAT_WAVES } from '../data/platinum.js';
 import { comboMul } from '../data/bounty.js';
-import { TOWERS, TOWER_ORDER, TARGET_MODES, BURNOUT, COMMANDER_MAX, BIN } from '../data/towers.js';
-import { drawBinBody } from './bin.js';
+import { TOWERS, TOWER_ORDER, TARGET_MODES, BURNOUT, COMMANDER_MAX } from '../data/towers.js';
 import { rrect, circle, fillOutline, text, setFont, button } from './canvas.js';
 import { drawCharacter } from './characters.js';
 import { drawVirusIcon } from './viruses.js';
@@ -31,10 +30,8 @@ export function layout(game) {
       const alone = i === TOWER_ORDER.length - 1 && i % 2 === 0;
       return { type, x: px + 10 + (alone ? 45 : (i % 2) * 90), y: 44 + Math.floor(i / 2) * pitch, w: 80, h: pitch - 8 };
     }),
-    // botões de poder do Executivo (BURNOUT e Lixeira Turbo), lado a lado no
-    // canto que não cobre o caminho (Game.abilitySpot); o BURNOUT fica do
-    // lado da borda
-    ...powerButtons(game),
+    // BURNOUT do Executivo: no canto que não cobre o caminho (Game.abilitySpot)
+    burnout: { ...(game.abilitySpot ?? { x: 12, y: VIEW_H - 12 - POWER_BTN }), w: POWER_BTN, h: POWER_BTN },
     // abas no topo do painel: DEFESAS e ITENS (game.panelTab)
     tabs: [
       { id: 'towers', label: 'DEFESAS', x: px + 10, y: 4, w: 88, h: 34 },
@@ -107,20 +104,11 @@ export function drawHud(ctx, game) {
   }
   iconButton(ctx, L.pause, '#5fb4ff', 'pause');
   if (game.commanders?.length) drawBurnout(ctx, game, L.burnout);
-  if (game.binOpen) drawBinButton(ctx, game, L.bin);
   drawBossBars(ctx, game);
 }
 
-// Tamanho dos botões de poder (BURNOUT e Lixeira) e o espaço entre eles
+// Tamanho do botão de poder (BURNOUT)
 export const POWER_BTN = 64;
-export const POWER_GAP = 8;
-
-function powerButtons(game) {
-  const spot = game.abilitySpot ?? { x: 12, y: VIEW_H - 12 - POWER_BTN, right: false };
-  const a = { x: spot.x, y: spot.y, w: POWER_BTN, h: POWER_BTN };
-  const b = { x: spot.x + POWER_BTN + POWER_GAP, y: spot.y, w: POWER_BTN, h: POWER_BTN };
-  return spot.right ? { burnout: b, bin: a } : { burnout: a, bin: b };
-}
 
 // BURNOUT: laranja e pulsando quando dá pra usar; ligado mostra os segundos
 // que faltam; recarregando fica apagado, com os segundos pra usar de novo
@@ -133,30 +121,9 @@ function drawBurnout(ctx, game, r) {
     glow: '#ff7a1a',
     ready: ready || on,
     active: on,
-    wait: !ready && !on ? game.burnoutCd / BURNOUT.cooldown : 0,
+    wait: !ready && !on ? game.burnoutCd / (game.burnoutMax ?? BURNOUT.cooldown) : 0,
     label,
     icon: (lit) => drawFlame(ctx, game.anim, lit, on),
-  });
-}
-
-// Lixeira Turbo: azul com o preço quando dá pra chamar (vermelho sem
-// dinheiro); recarregando mostra os segundos
-function drawBinButton(ctx, game, r) {
-  const ready = game.binCd <= 0;
-  const money = game.canAfford(BIN.cost);
-  drawPowerButton(ctx, game, r, {
-    color: '#2f8bff',
-    glow: '#3df2ff',
-    ready: ready && money,
-    active: false,
-    wait: ready ? 0 : game.binCd / BIN.cooldown,
-    label: ready ? `$${BIN.cost}` : `${Math.ceil(game.binCd)}s`,
-    labelColor: ready && !money ? '#ff9aa6' : '#ffffff',
-    icon: () => {
-      ctx.translate(0, 6);
-      ctx.scale(0.62, 0.62);
-      drawBinBody(ctx, game.anim);
-    },
   });
 }
 

@@ -23,14 +23,6 @@ const SFX = {
     s.tone({ type: 'triangle', freq: 650, to: 1150, dur: 0.06, vol: 0.07 });
     s.noise({ dur: 0.05, vol: 0.05, filter: 'highpass', freq: 3500 });
   },
-  bin(s) {
-    s.tone({ type: 'square', freq: 880, to: 1320, dur: 0.08, vol: 0.06 });
-    s.noise({ dur: 0.35, vol: 0.18, filter: 'bandpass', freq: 600, to: 2200, q: 1.2 });
-  },
-  zip(s) {
-    s.noise({ dur: 0.2, vol: 0.22, filter: 'lowpass', freq: 1500, to: 180 });
-    s.tone({ type: 'sine', freq: 190, to: 55, dur: 0.16, vol: 0.2 });
-  },
   burnout(s) {
     s.tone({ type: 'sawtooth', freq: 160, to: 760, dur: 0.38, vol: 0.12 });
     s.noise({ dur: 0.45, vol: 0.2, filter: 'lowpass', freq: 700, to: 2600 });

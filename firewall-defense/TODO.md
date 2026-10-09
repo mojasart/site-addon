@@ -35,6 +35,17 @@ Lista do que falta fazer no jogo. Marque com `[x]` quando terminar.
     platina (aliado bloqueado) continuam funcionando com o deck
   - Os bots (`tools/sim/bot.js`) escolhem o deck pelo perfil
 
+## Executivo (comandante)
+
+- [ ] **Poder do nível 2: chamar algo cyber pelo caminho** (tipo o comandante do Tower Defense
+  Simulator, que chama um veículo). Pago a cada chamada, sai da base e anda pelo caminho ao
+  contrário com uma vida própria, segurando e acertando os vírus até a vida acabar (um Honeypot
+  andando). Ideia testada e tirada por enquanto: **Lixeira Turbo** (a lixeira do sistema rolando
+  e deletando vírus) — o código está no commit `e84f976` (`src/entities/Bin.js`, `src/render/bin.js`).
+  Outras ideias: Cavalo de Troia do bem, trem de fibra óptica
+- [ ] **8º personagem** pra fechar o painel em 4 linhas. Ideia testada e tirada: **Script Kiddie**
+  (joga Zip Bombs que explodem em área), também no commit `e84f976`
+
 ## Dark Net
 
 - [x] **Árvore de upgrades, fase 1**: nó central (Acesso Root) + 1 ramo por defesa

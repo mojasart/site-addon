@@ -3,7 +3,7 @@
 //  informações do jogo): os status com os upgrades até o nível aplicados,
 //  do mesmo jeito que o jogo aplica.
 // ─────────────────────────────────────────────────────────────
-import { TOWERS, BURNOUT, COMMANDER_MAX, BIN } from './towers.js';
+import { TOWERS, BURNOUT, COMMANDER_MAX } from './towers.js';
 import { fmt, plural } from '../util.js';
 
 // Idade de cada nível (os personagens crescem a cada upgrade)
@@ -36,10 +36,9 @@ export function statRows(s, { armor = false } = {}) {
       ['ACELERA', `+${pct(s.haste)} nas defesas em volta`],
       ['ALCANCE', `${s.range}`],
       ['BURNOUT', `+${pct(BURNOUT.haste)} no raio por ${BURNOUT.time + (s.burnoutExtra ?? 0)}s`],
-      ['RECARGA', `${BURNOUT.cooldown}s`],
+      ['RECARGA', `${BURNOUT.cooldown - (s.burnoutFaster ?? 0)}s`],
       ['LIMITE', `${COMMANDER_MAX} comandantes por fase`],
     );
-    if (s.bin) rows.push(['LIXEIRA', `$${BIN.cost} · ${BIN.hp} de vida · a cada ${BIN.cooldown}s`]);
     return rows;
   }
   if (s.attack === 'decoy') {
@@ -52,8 +51,6 @@ export function statRows(s, { armor = false } = {}) {
   } else {
     rows.push(['DANO', s.multishot > 1 ? `${s.multishot} teclados de ${fmt(s.damage)}` : fmt(s.damage)]);
     if (s.pierce > 1) rows.push(['ATRAVESSA', `até ${s.pierce} vírus`]);
-    if (s.splash) rows.push(['EXPLOSÃO', `raio ${s.splash} · até ${s.maxTargets} vírus`]);
-    if (s.cluster) rows.push(['ZIPS EXTRAS', `${s.cluster} menores em volta`]);
     if (s.markTime) rows.push(['MARCA', `+${Math.round((s.markMul - 1) * 100)}% de dano por ${num(s.markTime)}s`]);
     if (s.burn) rows.push(['QUEIMA', `${fmt(s.burn * (s.burnMul ?? 1))}/s por ${num(s.burnTime + (s.burnExtra ?? 0))}s`]);
   }
