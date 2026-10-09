@@ -2,7 +2,7 @@ import { VIEW_H, OUTLINE, GOLD } from '../config.js';
 import { MAPS, SEASONS, MAPS_PER_SEASON, BOUNTY_MAPS } from '../data/maps.js';
 import { renderThumb } from '../render/maps/index.js';
 import { rrect, fillOutline, text, button, setFont } from '../render/canvas.js';
-import { iconButton, inRect, stars, ribbon, bigButton, starTier, volumeSlider, sliderValue } from '../render/widgets.js';
+import { iconButton, inRect, stars, ribbon, bigButton, starTier, volumeSlider, sliderValue, terminalToast } from '../render/widgets.js';
 import { ICONS } from '../render/sprites.js';
 import { BOT_WIN } from '../data/botStats.js';
 import { DARKNET_STARS } from '../data/darknet.js';
@@ -209,15 +209,8 @@ export class LevelSelectScene {
   }
 
   drawToast(ctx, x, y) {
-    const a = Math.min(1, this.toast.time * 3);
-    ctx.save();
-    ctx.globalAlpha = a;
-    setFont(ctx, 18);
-    const w = ctx.measureText(this.toast.text).width + 40;
-    rrect(ctx, x - w / 2, y - 21, w, 42, 21);
-    fillOutline(ctx, '#2a1840', 4);
-    text(ctx, this.toast.text, x, y + 1, { size: 18, color: '#e3c9ff' });
-    ctx.restore();
+    // aviso de terminal (render/widgets.js), igual aos da partida
+    terminalToast(ctx, { text: this.toast.text, cx: x, y: y - 16, alpha: Math.min(1, this.toast.time * 3), tone: this.toast.tone, t: this.t });
   }
 
   // Face de botão platinada (aba da season toda platinada): o mesmo metal do

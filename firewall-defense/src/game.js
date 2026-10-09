@@ -16,7 +16,7 @@ import { Hazards } from './systems/Hazards.js';
 import { MapView } from './render/maps/index.js';
 import { TILE, tileOf, tileKey, inGrid, snapToTile } from './core/grid.js';
 import { layout, drawHud, drawPanel, drawRange, bossBarsBottom, drawHasted, drawCommandZone, POWER_BTN } from './render/ui.js';
-import { inRect, sliderValue } from './render/widgets.js';
+import { inRect, sliderValue, terminalToast } from './render/widgets.js';
 import { drawBanner, drawOverlay, overlayLayout } from './render/screens.js';
 import { drawInfoPanel, infoLayout } from './render/infoPanel.js';
 import { drawCharacter } from './render/characters.js';
@@ -646,7 +646,7 @@ export class Game {
       if (e.remaining > DANGER_TILES * TILE || e.threat < this.lives) continue;
       e.dangerSeen = true;
       this.speed = 1;
-      this.toast = { text: 'PERIGO! Velocidade normal', time: 2.6 };
+      this.toast = { text: 'PERIGO! Velocidade normal', time: 2.6, tone: 'alert' };
       this.sound.play('error');
       return;
     }
@@ -1211,13 +1211,13 @@ export class Game {
   itemTapped(tile) {
     const item = ITEM[tile.id];
     if (this.platinum) {
-      this.toast = { text: 'Na platina não dá pra usar itens', time: 2.2 };
+      this.toast = { text: 'Na platina não dá pra usar itens', time: 2.2, tone: 'alert' };
       this.sound.play('error');
       return;
     }
     const lives = BACKUP_LIVES;
     if (!((this.app.inventory?.[tile.id] ?? 0) > 0)) {
-      this.toast = { text: `Sem ${item.name}! Compre na LOJA, na tela de mapas`, time: 2.6 };
+      this.toast = { text: `Sem ${item.name}! Compre na LOJA, na tela de mapas`, time: 2.6, tone: 'alert' };
       this.sound.play('error');
       return;
     }
@@ -1228,7 +1228,7 @@ export class Game {
     } else {
       // não deu pra usar agora (o item não foi gasto)
       const why = { free: 'Já tem uma defesa grátis esperando', freeze: 'Nenhum vírus pra congelar', cash: 'No Bug Bounty é só o orçamento' };
-      this.toast = { text: why[tile.id] ?? 'Agora não dá pra usar', time: 2.2 };
+      this.toast = { text: why[tile.id] ?? 'Agora não dá pra usar', time: 2.2, tone: 'alert' };
     }
   }
 
@@ -1466,41 +1466,17 @@ function drawTileMark(ctx, x, y, valid) {
 // (ou logo abaixo das barras de chefão), do tamanho do texto
 function drawToast(ctx, game) {
   const toast = game.toast;
-  const a = Math.min(1, toast.time * 2, ((toast.total ?? 3) - toast.time) * 4);
-  setFont(ctx, 14);
-  const info = !!toast.threat; // vírus novo: "i" no canto direito abre o catálogo
-  const w = ctx.measureText(toast.text).width + 44 + (info ? 30 : 0);
-  const y = Math.max(8, bossBarsBottom(game) + 6);
   // no meio da tela, mas sem passar por cima do contador de rodada (direita do mapa)
-  const x = Math.min(game.viewW / 2 - w / 2, game.mapW - 150 - w);
-  const cx = x + w / 2;
-  ctx.save();
-  ctx.globalAlpha = a;
-  rrect(ctx, x, y, w, 34, 17);
-  fillOutline(ctx, '#0b2416', 3);
-  ctx.strokeStyle = '#3dff9a';
-  ctx.lineWidth = 2;
-  rrect(ctx, x + 4, y + 4, w - 8, 26, 13);
-  ctx.stroke();
-  text(ctx, toast.text, cx - (info ? 15 : 0), y + 18, { size: 14, color: '#3dff9a' });
-  if (info) {
-    // "i" pulsando: toque pra ver o vírus no catálogo
-    const ix = x + w - 22;
-    const iy = y + 17;
-    const p = 1 + Math.sin(game.anim * 6) * 0.12;
-    ctx.save();
-    ctx.translate(ix, iy);
-    ctx.scale(p, p);
-    ctx.shadowColor = '#3dff9a';
-    ctx.shadowBlur = 8 + 6 * Math.sin(game.anim * 6);
-    circle(ctx, 0, 0, 11);
-    fillOutline(ctx, '#3dff9a', 2.5);
-    ctx.shadowBlur = 0;
-    text(ctx, 'i', 0, 1, { size: 15, color: '#0b2416', stroke: null });
-    ctx.restore();
-    game.toastInfo = { x: ix - 16, y: iy - 16, w: 32, h: 32 };
-  } else game.toastInfo = null;
-  ctx.restore();
+  game.toastInfo = terminalToast(ctx, {
+    text: toast.text,
+    cx: game.viewW / 2,
+    y: Math.max(8, bossBarsBottom(game) + 6),
+    maxRight: game.mapW - 150,
+    alpha: Math.min(1, toast.time * 2, ((toast.total ?? 3) - toast.time) * 4),
+    tone: toast.tone,
+    t: game.anim,
+    info: !!toast.threat, // vírus novo: "i" abre o catálogo nele
+  });
 }
 
 // Vida da isca (Honeypot), em cima dela, quando começa a apanhar
