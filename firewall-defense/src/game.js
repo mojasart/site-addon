@@ -23,7 +23,7 @@ import { drawCharacter } from './render/characters.js';
 import { drawEnemy, drawAura } from './render/viruses.js';
 import { drawProjectile, drawCoin, drawServer, ICONS } from './render/sprites.js';
 import { drawHazards, drawStunned, drawHazardWarning } from './render/hazards.js';
-import { drawEncrypted, ENCRYPT_FILTER } from './render/ransom.js';
+import { drawEncrypted, drawEncryptedBody } from './render/ransom.js';
 import { drawSpawns } from './render/spawns.js';
 import { Tutorial, TUTORIAL_LOCKED } from './systems/tutorial.js';
 import { drawTutorial } from './render/tutorial.js';
@@ -1514,9 +1514,9 @@ export class Game {
     ctx.save();
     ctx.translate(tw.x, tw.y);
     const idle = tw.def.attack === 'farm' && !this.canMine(tw); // Minerador fora da pilha
-    if (tw.ransom) ctx.filter = ENCRYPT_FILTER; // criptografada: "verde de terminal" e apagada
-    drawCharacter(ctx, tw.type, { t: tw.anim, face: tw.face, attack: tw.def.commander && this.burnoutLeft > 0 ? 1 : tw.attack, pulse: tw.pulse, spawn: tw.spawnAnim, level: tw.level, idle });
-    ctx.filter = 'none';
+    // criptografada: "verde de terminal", apagada e parada (desenho guardado)
+    if (tw.ransom) drawEncryptedBody(ctx, tw.type, tw.level, tw.face);
+    else drawCharacter(ctx, tw.type, { t: tw.anim, face: tw.face, attack: tw.def.commander && this.burnoutLeft > 0 ? 1 : tw.attack, pulse: tw.pulse, spawn: tw.spawnAnim, level: tw.level, idle });
     if (tw.ransom) drawEncrypted(ctx, this.anim, tw.ransom);
     if (idle) drawNoMine(ctx, 0, 0, this.anim);
     if (tw.def.attack === 'decoy' && tw.hp < tw.maxHp) drawBaitBar(ctx, tw);
