@@ -1,4 +1,4 @@
-import { TOWERS } from '../data/towers.js';
+import { TOWERS, LEVEL_RANGE } from '../data/towers.js';
 import { SELL_RATE, LAYER_HP } from '../config.js';
 import { rand, chance } from '../util.js';
 import { laserOrigin } from '../render/characters.js';
@@ -61,6 +61,8 @@ export class Tower {
   refresh() {
     const s = { ...this.def };
     for (let i = 0; i < this.level; i++) this.def.upgrades[i].apply(s);
+    // +LEVEL_RANGE de alcance a cada nível (antes dos bônus da Dark Net)
+    if (Number.isFinite(s.range)) s.range *= (1 + LEVEL_RANGE) ** this.level;
     this.stats = applyPerks(s, this.type, this.perks);
   }
 
