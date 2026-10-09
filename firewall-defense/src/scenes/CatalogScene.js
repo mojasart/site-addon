@@ -10,12 +10,15 @@ import { drawCharacter } from '../render/characters.js';
 import { AGES, statsAt, statRows } from '../data/towerInfo.js';
 import { TERRAINS } from '../data/terrains.js';
 import { drawTerrain } from '../render/terrains.js';
+import { ThreatPreview } from '../render/threatPreview.js';
 
 /* ════════════════════════════════════════════════════════════
  *  CATÁLOGO (ameaças, defesas e terrenos)
  *  Um "computador" (monitor CRT com terminal verde) com três abas:
  *  - AMEAÇAS (THREAT_DB.EXE): ameaça que ainda não apareceu em nenhuma
  *    fase vira silhueta, com cadeado, e a ficha mostra ACESSO NEGADO.
+ *    Olhando a mesma ameaça por PREVIEW_DELAY s, abre por cima da ficha
+ *    um "vídeo" do que ela faz (render/threatPreview.js); tocar fecha.
  *  - DEFESAS (AGENTS_DB.EXE): os personagens, com os status de cada
  *    nível e a evolução criança → adolescente → adulto.
  *  - TERRENOS (TERRAIN_DB.EXE): o que cada chão faz (estrada, pilha de
@@ -31,6 +34,7 @@ const TABS = [
 ];
 const ATTACK_KIND = { projectile: 'PROJÉTIL', pulse: 'ONDA', beam: 'LASER', farm: 'ECONOMIA', decoy: 'ISCA', aura: 'COMANDANTE' };
 const LEVEL_TIME = 2.2; // segundos de cada idade no retrato (quando nenhuma foi escolhida)
+const PREVIEW_DELAY = 2; // segundos olhando a mesma ameaça até abrir o preview
 const MONO = '"Courier New", ui-monospace, Menlo, Consolas, monospace';
 const GREEN = '#3dff9a';
 const DIM = '#1f8a52';
@@ -49,6 +53,24 @@ export class CatalogScene {
     if (select && ORDER.includes(select)) this.sel[0] = ORDER.indexOf(select);
     this.level = null; // idade escolhida na ficha da defesa (null = vai alternando)
     this.typed = 0; // letras já "digitadas" da frase da ficha
+    this.resetPreview();
+  }
+
+  // Preview da ameaça: conta de novo a cada troca de ameaça ou de aba
+  resetPreview() {
+    this.dwell = 0; // tempo olhando a ameaça atual
+    this.preview = null;
+    this.previewOff = false; // fechado com um toque (só volta trocando de ameaça)
+  }
+
+  get previewK() {
+    return this.preview ? Math.min(1, (this.dwell - PREVIEW_DELAY) * 4) : 0;
+  }
+
+  // Janela do preview: por cima do retrato e dos números da ficha
+  previewBox(L) {
+    const d = L.detail;
+    return { x: d.x + 10, y: d.y + 10, w: d.w - 20, h: L.pr.s + 12 };
   }
 
   get items() {
@@ -81,6 +103,13 @@ export class CatalogScene {
   update(dt) {
     this.t += dt;
     this.typed += dt * 45;
+    const type = ORDER[this.sel[0]];
+    if (this.tab !== 0 || this.previewOff || !this.app.hasSeen(type)) return;
+    this.dwell += dt;
+    if (this.dwell >= PREVIEW_DELAY) {
+      this.preview ??= new ThreatPreview(type);
+      this.preview.update(Math.min(dt, 0.05));
+    }
   }
 
   select(i) {
@@ -88,6 +117,7 @@ export class CatalogScene {
     this.sel[this.tab] = i;
     this.level = null;
     this.typed = 0;
+    this.resetPreview();
     this.app.sound.play('click');
   }
 
@@ -96,6 +126,7 @@ export class CatalogScene {
     this.tab = i;
     this.level = null;
     this.typed = 0;
+    this.resetPreview();
     this.app.sound.play('click');
   }
 
@@ -352,6 +383,37 @@ export class CatalogScene {
     mono(ctx, `${fmt(kills)} ${plural(kills, 'ABATIDO', 'ABATIDOS')}`, d.x + d.w - 16, ly, 14, GREEN, 'right', true);
     mono(ctx, drops, d.x + 16, ly + 24, 14, GREEN, 'left', true);
     this.drawLore(ctx, def.lore ?? def.desc ?? '', d.x + 16, ly + 52, d.w - 32);
+    if (this.preview) this.drawPreview(ctx, L, def);
+  }
+
+  // "Vídeo" da ameaça numa janela de player por cima da ficha
+  drawPreview(ctx, L, def) {
+    const b = this.previewBox(L);
+    const k = this.previewK;
+    ctx.save();
+    ctx.globalAlpha = k;
+    ctx.fillStyle = BG;
+    ctx.fillRect(b.x - 2, b.y - 2, b.w + 4, b.h + 4);
+    ctx.strokeStyle = GREEN;
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1);
+    // barra do player: nome do arquivo, REC piscando e o X
+    const bar = 20;
+    ctx.fillStyle = '#0c3a22';
+    ctx.fillRect(b.x + 1, b.y + 1, b.w - 2, bar);
+    const file = def.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, '_');
+    mono(ctx, `> preview_${file}.mp4`, b.x + 8, b.y + bar / 2 + 1, 12, GREEN, 'left', true);
+    if (Math.sin(this.t * 5) > -0.2) {
+      ctx.beginPath();
+      ctx.arc(b.x + b.w - 58, b.y + bar / 2 + 1, 4, 0, Math.PI * 2);
+      ctx.fillStyle = RED;
+      ctx.fill();
+      mono(ctx, 'REC', b.x + b.w - 50, b.y + bar / 2 + 1, 11, RED, 'left', true);
+    }
+    mono(ctx, '[X]', b.x + b.w - 6, b.y + bar / 2 + 1, 12, GREEN, 'right', true);
+    const scr = { x: b.x + 4, y: b.y + bar + 3, w: b.w - 8, h: b.h - bar - 7 };
+    this.preview.draw(ctx, scr);
+    ctx.restore();
   }
 
   // Idade mostrada na ficha da defesa: a escolhida, ou vai alternando sozinha
@@ -429,6 +491,13 @@ export class CatalogScene {
     L.tabs.forEach((r, i) => {
       if (inRect(r, x, y)) this.setTab(i);
     });
+    // preview aberto: tocar nele fecha (volta a ficha com os números)
+    if (this.preview && inRect(this.previewBox(L), x, y)) {
+      this.preview = null;
+      this.previewOff = true;
+      this.app.sound.play('click');
+      return;
+    }
     L.rows.forEach((r, i) => {
       if (inRect(r, x, y)) this.select(i);
     });
