@@ -31,6 +31,9 @@ const NAMES = [
   'minerador_teen_attack',
   'scanner_kid',
   'scanner_teen',
+  'ceo_kid', // Executivo (sprites do CEO: render/characters.js SPRITE_OF)
+  'ceo_teen',
+  'ceo',
   'virus_red',
   'virus_blue',
   'virus_green',

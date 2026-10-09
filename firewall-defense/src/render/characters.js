@@ -188,6 +188,10 @@ const SPRITE_META = {
   firewall: { size: 64, foot: 0.473, feet: -0.076 },
   firewall_attack: { size: 75, foot: 0.434, dx: -1.7, feet: 0.018 },
   scanner: { size: 62, foot: 0.477, feet: -0.002 },
+  // Executivo (sprites do CEO): criança, adolescente e adulto
+  ceo_kid: { size: 47, foot: 0.48, feet: -0.05, shadow: 9 },
+  ceo_teen: { size: 55, foot: 0.48, feet: 0, shadow: 10.5 },
+  ceo: { size: 62, foot: 0.477, feet: -0.015 },
 };
 
 // Tela do computador do Minerador adulto (de onde saem as moedas)
@@ -217,10 +221,14 @@ const AGE_SUFFIX = ['_kid', '_teen', ''];
 // Sprite parada do personagem nesse nível (sem a imagem da idade, usa a
 // adulta; sem nenhuma, null → desenho com formas)
 function spriteOf(type, level = 2) {
-  const name = type + (AGE_SUFFIX[level] ?? '');
+  const base = SPRITE_OF[type] ?? type;
+  const name = base + (AGE_SUFFIX[level] ?? '');
   if (hasImage(name)) return name;
-  return hasImage(type) ? type : null;
+  return hasImage(base) ? base : null;
 }
+
+// Defesas cujas sprites têm outro nome (o Executivo usa as do CEO)
+const SPRITE_OF = { executivo: 'ceo' };
 
 // Pose que está sendo mostrada (a de ataque logo depois de atacar)
 function poseOf(sprite, type, a) {
