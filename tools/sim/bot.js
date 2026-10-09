@@ -182,6 +182,7 @@ export function playMap(mapIndex, profileName, seed, mode = 'normal', perks = nu
     waves: game.rounds.started,
     lives: game.lives,
     towers: game.towers.length,
+    ratio: game.bounty ? game.bountyRatio : null, // Bug Bounty: % das camadas estouradas
     leaked,
   };
 }

@@ -242,13 +242,13 @@ export class Enemy {
       game.fx.burst(this.x, this.y, '#c8f4ff', 10, 200, 0.4, 4);
       for (const e of game.enemiesInRange(this.x, this.y, SHATTER_R)) if (e !== this) e.takeDamage(LAYER_HP, game, { armored: true });
     }
-    game.money += this.def.reward ?? 1;
+    if (!game.bounty) game.money += this.def.reward ?? 1; // Bug Bounty: estourar não dá dinheiro
     game.stats.pops++;
     game.bountyPop?.(this); // Bug Bounty: ponto e combo
     if (game.killsBy) game.killsBy[this.type] = (game.killsBy[this.type] ?? 0) + 1; // catálogo
     if (opts.source) {
       opts.source.pops++;
-      game.money += game.sponsorBonus?.(opts.source) ?? 0; // Patrocínio do Minerador
+      if (!game.bounty) game.money += game.sponsorBonus?.(opts.source) ?? 0; // Patrocínio do Minerador
     }
     game.fx.pop(this.x, this.y - this.r * 0.3, this.def.color, this.r);
     // vírus dourado (Toque de Midas): solta a moeda dele (os filhos não herdam)
