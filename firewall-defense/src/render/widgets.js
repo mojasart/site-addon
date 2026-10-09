@@ -112,3 +112,71 @@ export function ribbon(ctx, cx, y, w, label, color = '#ff5a6a', size = 26) {
   ctx.fillRect(cx - w / 2 + 4, y - h / 2 + 4, w - 8, h * 0.35);
   text(ctx, label, cx, y + 1, { size, stroke: OUTLINE });
 }
+
+// ── Aviso no estilo terminal hacker ─────────────────────────
+// Caixa reta de tela de fósforo (como a loja e o catálogo), com prompt e
+// cursor piscando. tone 'alert' (erro, perigo) fica vermelho com "!".
+// info: quadradinho "i" pulsando no canto direito (vírus novo → catálogo).
+// Centralizado em cx, sem passar de maxRight; devolve o retângulo do "i".
+const TOAST_MONO = '"Courier New", ui-monospace, Menlo, Consolas, monospace';
+const TOAST_H = 32;
+
+export function terminalToast(ctx, { text: str, cx, y, maxRight = Infinity, alpha = 1, tone = 'info', t = 0, info = false }) {
+  const alert = tone === 'alert';
+  const color = alert ? '#ff5a6a' : '#3dff9a';
+  const label = `${alert ? '!' : '>'} ${str}`;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.font = `bold 14px ${TOAST_MONO}`;
+  const tw = ctx.measureText(label).width;
+  const pad = 14;
+  const infoW = info ? 34 : 0;
+  const w = tw + pad * 2 + 12 + infoW;
+  const x = Math.min(cx - w / 2, maxRight - w);
+  const H = TOAST_H;
+  // sombra e tela escura com um tom da cor, linhas de varredura
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fillRect(x + 3, y + 4, w, H);
+  ctx.fillStyle = '#03130a';
+  ctx.fillRect(x, y, w, H);
+  ctx.fillStyle = alert ? 'rgba(255,90,106,0.12)' : 'rgba(61,255,154,0.07)';
+  ctx.fillRect(x, y, w, H);
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  for (let yy = y + 1; yy < y + H; yy += 3) ctx.fillRect(x, yy, w, 1);
+  // borda reta brilhando, com os cantos marcados
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 8;
+  ctx.strokeRect(x + 1, y + 1, w - 2, H - 2);
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = color;
+  for (const [cx2, cy2] of [[x, y], [x + w - 5, y], [x, y + H - 5], [x + w - 5, y + H - 5]]) ctx.fillRect(cx2, cy2, 5, 5);
+  // texto com brilho de fósforo e o cursor piscando
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.shadowBlur = 6;
+  ctx.fillText(label, x + pad, y + H / 2 + 1);
+  ctx.shadowBlur = 0;
+  if (Math.sin(t * 8) > 0) ctx.fillRect(x + pad + tw + 3, y + H / 2 - 7, 8, 14);
+  let infoRect = null;
+  if (info) {
+    // [i] pulsando: toque pra ver o vírus no catálogo
+    const s = H - 10;
+    const bx = x + w - infoW - 2 + (infoW - s) / 2;
+    const by = y + 5;
+    const glow = 0.5 + Math.sin(t * 6) * 0.5;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 6 + 8 * glow;
+    ctx.fillStyle = color;
+    ctx.fillRect(bx, by, s, s);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#03130a';
+    ctx.textAlign = 'center';
+    ctx.font = `bold 16px ${TOAST_MONO}`;
+    ctx.fillText('i', bx + s / 2, by + s / 2 + 1);
+    infoRect = { x: bx - 6, y: by - 6, w: s + 12, h: s + 12 };
+  }
+  ctx.restore();
+  return infoRect;
+}
