@@ -302,9 +302,8 @@ export function drawPanel(ctx, game) {
 
 function drawShop(ctx, game, L) {
   const P = L.panel;
-  const shown = game.placing ?? game.inspect; // posicionando ou só olhando os atributos
-  if (shown) text(ctx, TOWERS[shown].name, P.x + P.w / 2 + 2, 22, { size: 19 });
-  else drawTabs(ctx, game, L);
+  const shown = game.placing ?? game.inspect; // posicionando ou só olhando os atributos (card dourado)
+  drawTabs(ctx, game, L); // as abas ficam sempre, mesmo com uma defesa escolhida
   for (const tile of L.tiles) {
     const def = TOWERS[tile.type];
     const placing = shown === tile.type;

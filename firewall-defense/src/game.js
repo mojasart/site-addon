@@ -5,7 +5,7 @@ import { PLAT_WAVES, PLAT_LIVES, PLAT_WARMUP, PLAT_REWARD, WAVE_GAP, PLAT_GATE, 
 import { worth, ENEMIES } from './data/enemies.js';
 import { BOUNTY, bountyRound, layers, comboMul, bountyStars } from './data/bounty.js';
 import { TOWERS, TARGET_MODES, COMMANDER_MAX, BURNOUT } from './data/towers.js';
-import { applyPerks, ROOT_MONEY, DUCK, INTEREST, LOAN } from './data/darknet.js';
+import { applyPerks, ROOT_MONEY, DUCK, INTEREST, LOAN, BULK_DISCOUNT } from './data/darknet.js';
 import { fitsTerrain } from './core/terrain.js';
 import { Tower } from './entities/Tower.js';
 import { Projectile } from './entities/Projectile.js';
@@ -887,7 +887,9 @@ export class Game {
 
   costOf(type) {
     if (this.freeTower) return 0; // consumível Defesa Grátis: a próxima sai de graça
-    return applyPerks({ ...TOWERS[type] }, type, this.app.perks).cost;
+    const cost = applyPerks({ ...TOWERS[type] }, type, this.app.perks).cost;
+    // Atacadão (Dark Net, Minerador): todas as defesas mais baratas
+    return this.app.perks?.minerador2d ? Math.round(cost * (1 - BULK_DISCOUNT)) : cost;
   }
 
   place(type, x, y) {
@@ -1230,17 +1232,16 @@ export class Game {
       return;
     }
 
-    // abas DEFESAS / ITENS (com o nome da defesa no lugar delas, o toque ali não troca)
-    if (!this.placing && !this.inspect) {
-      const tab = L.tabs.find((r) => inRect(r, sx, sy));
-      if (tab) {
-        if (tab.id !== this.panelTab) {
-          this.panelTab = tab.id;
-          this.sound.play('click');
-        }
-        this.tutorial?.on('tab', tab.id);
-        return;
+    // abas DEFESAS / ITENS (sempre à mostra; ir pra ITENS larga a defesa escolhida)
+    const tab = L.tabs.find((r) => inRect(r, sx, sy));
+    if (tab) {
+      if (tab.id !== this.panelTab) {
+        this.panelTab = tab.id;
+        if (tab.id === 'items') this.placing = this.inspect = null;
+        this.sound.play('click');
       }
+      this.tutorial?.on('tab', tab.id);
+      return;
     }
     if (this.panelTab === 'items') {
       const tile = L.items.find((r) => inRect(r, sx, sy));
@@ -1298,6 +1299,7 @@ export class Game {
       this.tutorial?.on('item', tile.id);
       const done = { cash: `+$${CASH}`, free: 'a próxima defesa sai de graça', freeze: 'vírus congelados', lives: `+${lives} ${plural(lives, 'vida', 'vidas')}` };
       this.toast = { text: `${item.name.toUpperCase()}: ${done[tile.id] ?? 'usado'}`, time: 2.2 };
+      if (tile.id === 'free') this.panelTab = 'towers'; // Defesa Grátis: já volta pras defesas pra escolher
     } else {
       // não deu pra usar agora (o item não foi gasto)
       const why = { free: 'Já tem uma defesa grátis esperando', freeze: 'Nenhum vírus pra congelar', cash: 'No Bug Bounty é só o orçamento' };

@@ -40,7 +40,7 @@ export const DANGER_TILES = 3; // acelerado: volta pra 1x quando um vírus que f
 // (0,2 a 0,5) e elas vinham quase vazias. A 1ª onda vem com `mul` da quantidade
 // original (no máximo `max` × a pressão do mapa, senão os mapas de pressão
 // baixa quebram cedo), caindo até a pressão do mapa na onda `waves` + 1
-// (18 = as 12 de antes × o STRETCH das ondas, data/rounds.js)
+// (em ondas do modo normal: map.waves, de 15 a 40)
 export const EARLY_WAVES = { mul: 0.7, waves: 18, max: 2.5 };
 export const EARLY_BONUS = 0.75; // chamar com outra rodada rolando: até 75% do valor da próxima (cai conforme a rodada atual acaba)
 
