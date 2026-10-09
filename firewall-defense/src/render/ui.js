@@ -11,6 +11,7 @@ import { iconButton } from './widgets.js';
 import { fmt, TAU } from '../util.js';
 import { CONSUMABLES } from '../data/consumables.js';
 import { drawItemIcon } from './consumables.js';
+import { drawImage } from './images.js';
 
 // Posições da interface do jogo (pra desenhar E pra detectar toques).
 // Coordenadas de tela; o painel fica colado na direita.
@@ -189,9 +190,19 @@ export function drawCommandZone(ctx, tw, t, burning) {
   ctx.stroke();
 }
 
-// Defesa acelerada (Executivo por perto ou BURNOUT): setinhas pra cima do
-// lado dela (laranja no BURNOUT). Em coordenadas da defesa
-export function drawHasted(ctx, t, haste, burning) {
+// Canto de cima da cabeça de cada defesa (onde vai o símbolo de raiva), em
+// coordenadas da defesa: cada personagem tem uma altura
+const HEAD_CORNER = { hacker: [12, -40], firewall: [15, -27], pinguim: [12, -36], scanner: [15, -33] };
+
+// Defesa acelerada (Executivo por perto ou BURNOUT): o símbolo de raiva no
+// canto da cabeça (sprite anger; sem ela, setinhas pra cima, laranja no
+// BURNOUT). Em coordenadas da defesa
+export function drawHasted(ctx, t, haste, burning, type) {
+  // símbolo de raiva (💢) no canto de cima da cabeça, pulsando (mais forte no BURNOUT)
+  const beat = Math.abs(Math.sin(t * (burning ? 9 : 5)));
+  const [hx, hy] = HEAD_CORNER[type] ?? [14, -36];
+  if (drawImage(ctx, 'anger', (burning ? 22 : 18) * (1 + beat * 0.15), hx, hy)) return;
+  // sem a imagem: as setinhas
   ctx.save();
   ctx.translate(-22, -34 + Math.sin(t * 6) * 2);
   ctx.lineCap = 'round';

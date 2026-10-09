@@ -1432,7 +1432,7 @@ export class Game {
     if (idle) drawNoMine(ctx, 0, 0, this.anim);
     if (tw.def.attack === 'decoy' && tw.hp < tw.maxHp) drawBaitBar(ctx, tw);
     if (tw.stunned > 0) drawStunned(ctx, this.anim);
-    if (tw.haste > 1) drawHasted(ctx, this.anim, tw.haste, this.burnoutLeft > 0);
+    if (tw.haste > 1) drawHasted(ctx, this.anim, tw.haste, this.burnoutLeft > 0, tw.type);
     ctx.restore();
   }
 }
