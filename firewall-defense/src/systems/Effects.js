@@ -1,9 +1,12 @@
 import { OUTLINE } from '../config.js';
 import { text } from '../render/canvas.js';
 import { TAU, rand } from '../util.js';
+import { drawImage, hasImage } from '../render/images.js';
 
 const MAX_PARTICLES = 450;
 const MAX_POPS = 60;
+const POP_LIFE = 0.28; // duração do estouro (s)
+const POP_PX = 96; // tamanho em que a sprite do estouro é desenhada (e escalada)
 
 const RING_COLORS = {
   fire: { fill: 'rgba(255,122,26,0.30)', stroke: '#ff9a2e' },
@@ -27,7 +30,7 @@ export class Effects {
 
   // "POP!" estilo Bloons: estrelinha branca + gotinhas da cor do vírus
   pop(x, y, color, r) {
-    if (this.pops.length < MAX_POPS) this.pops.push({ x, y, r: r * 1.6, life: 0.16, max: 0.16, rot: Math.random() * TAU });
+    if (this.pops.length < MAX_POPS) this.pops.push({ x, y, r: r * 1.6, life: POP_LIFE, max: POP_LIFE, rot: Math.random() * TAU });
     const big = r > 22;
     this.burst(x, y, color, big ? 34 : 7, big ? 280 : 170, big ? 0.6 : 0.35, big ? 7 : 4.5, true);
   }
@@ -148,6 +151,20 @@ export class Effects {
 
     for (const p of this.pops) {
       const k = 1 - p.life / p.max;
+      // sprite do estouro (assets/sprites/pop.png): nasce pequeno, cresce
+      // rápido, gira um pouco e some no fim. Desenhada num tamanho só
+      // (cache) e escalada
+      if (hasImage('pop')) {
+        const d = p.r * 2.3 * (0.5 + 0.65 * (1 - (1 - k) ** 3));
+        ctx.save();
+        ctx.globalAlpha = k < 0.55 ? 1 : 1 - (k - 0.55) / 0.45;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot + k * 0.5);
+        ctx.scale(d / POP_PX, d / POP_PX);
+        drawImage(ctx, 'pop', POP_PX);
+        ctx.restore();
+        continue;
+      }
       const r = p.r * (0.7 + k * 0.5);
       ctx.save();
       ctx.translate(p.x, p.y);
