@@ -13,4 +13,4 @@ ALLOW_ORIGIN = "https://mojasart.github.io,http://localhost:10001"
 # e cole o id que ele mostrar aqui
 [[kv_namespaces]]
 binding = "PURCHASES"
-id = "COLE_AQUI_O_ID_DO_KV"
+id = "aeafac55174e4425a3f7a75c9ad5a12b"

@@ -51,4 +51,4 @@ export const SKIN = '#f6c9a0';
 export const DEBUG = { coffee: 9999999 };
 // Compras com dinheiro de verdade (src/pay.js): endereço do servidor de
 // compras (server/, Cloudflare Worker). Vazio = loja "EM BREVE", sem vender
-export const PAY = { api: '' };
+export const PAY = { api: 'https://firewall-defense-pay.firewall-defense.workers.dev' };
