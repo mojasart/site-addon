@@ -110,6 +110,12 @@ A árvore começa num nó central, que abre um ramo por defesa. Cada nó é um b
 | Lente Calibrada | Robô NMAP com +1 de dano | 5 cafés |
 | Overclock | cada bitcoin minerado vale +$5 | 5 cafés |
 | Mel Turbinado | Honeypot com +50% de vida | 5 cafés |
+| Hora Extra | cada defesa no raio do Executivo tem 4% de chance de atacar de novo na hora | 5 cafés |
+
+O ramo do Executivo abre em dois braços: **a equipe** (Plano de Carreira: +3% de chance de atacar de novo;
+Open Space: +8% de alcance; Feedback 360°: quem está no raio ataca 5% mais rápido) e **o BURNOUT** (Café
+Expresso: recarrega 2 s mais rápido; Prazo Apertado: dura 1 s a mais; Virada de Noite: 10% de chance de já
+ficar pronto de novo assim que acaba).
 
 Os bots jogam sem esses bônus, então a dificuldade calibrada é a de quem ainda não comprou nada.
 

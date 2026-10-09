@@ -322,15 +322,19 @@ export class Game {
       // só quem ataca com recarga acelera (não o Executivo, o Minerador nem a isca)
       if (!hastes(t)) {
         t.haste = 1;
+        t.teamRecharge = 0;
         continue;
       }
       let aura = 0;
       let near = false;
+      let recharge = 0; // Hora Extra (Dark Net): o melhor Executivo que alcança
       for (const c of bosses) {
         if (Math.hypot(c.x - t.x, c.y - t.y) > c.stats.range) continue;
         near = true;
         aura = Math.max(aura, c.stats.haste);
+        recharge = Math.max(recharge, c.stats.teamRecharge ?? 0);
       }
+      t.teamRecharge = recharge;
       // BURNOUT: só no raio de um Executivo
       t.haste = (1 + aura) * (burning && near ? 1 + BURNOUT.haste : 1);
     }
@@ -355,6 +359,8 @@ export class Game {
     const best = (key) => Math.max(0, ...this.commanders.map((c) => c.stats[key] ?? 0));
     this.burnoutLeft = BURNOUT.time + best('burnoutExtra');
     this.burnoutCd = this.burnoutMax = BURNOUT.cooldown - best('burnoutFaster');
+    // Virada de Noite (Dark Net): às vezes o BURNOUT fica pronto de novo assim que este acaba
+    if (chance(best('burnoutFree'))) this.burnoutCd = this.burnoutLeft;
     const bosses = this.activeCommanders;
     for (const t of this.towers) {
       if (!hastes(t) || !bosses.some((c) => Math.hypot(c.x - t.x, c.y - t.y) <= c.stats.range)) continue;
