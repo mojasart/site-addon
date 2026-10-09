@@ -2,6 +2,7 @@ import { OUTLINE } from '../config.js';
 import { rrect, fillOutline, text } from './canvas.js';
 import { drawCoin, drawHeart } from './sprites.js';
 import { drawCharacter } from './characters.js';
+import { drawImage } from './images.js';
 
 /* ════════════════════════════════════════════════════════════
  *  DESENHO DOS CONSUMÍVEIS (data/consumables.js)
@@ -14,7 +15,8 @@ export function drawItemIcon(ctx, id, s, t = 0) {
   ctx.save();
   switch (id) {
     case 'cash': {
-      // pilha de moedas com a de cima girando
+      // pilha de bitcoin (sprite); sem ela, pilha de moedas com a de cima girando
+      if (drawImage(ctx, 'coin_pile', s * 2.6)) break;
       for (let i = 2; i >= 0; i--) {
         ctx.save();
         ctx.translate((i - 1) * s * 0.35, s * 0.35 - i * s * 0.18);
