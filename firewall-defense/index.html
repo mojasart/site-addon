@@ -14,6 +14,16 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap">
   <link rel="stylesheet" href="style.css">
+  <!-- Anúncios com recompensa do Google (H5 Games Ads), em MODO DE TESTE:
+       anúncios de mentira. Pra valer: trocar o ca-pub-123456789 pelo ID do
+       AdSense aprovado pra jogos e tirar o data-adbreak-test (src/ads.js) -->
+  <script async data-adbreak-test="on"
+    src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-123456789"
+    crossorigin="anonymous"></script>
+  <script>
+    window.adsbygoogle = window.adsbygoogle || [];
+    var adBreak = adConfig = function (o) { adsbygoogle.push(o); };
+  </script>
 </head>
 <body>
   <div id="stage"><canvas id="game"></canvas></div>

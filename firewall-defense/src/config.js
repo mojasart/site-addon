@@ -28,7 +28,7 @@ export const versionLabel = () => `v${VERSION}.${String(BUILD).padStart(3, '0')}
 
 // Energia: cada partida gasta 1 ao passar da 1ª onda; volta 1 a cada regenMin
 // minutos até max; sem energia, um anúncio de adTime s dá +ad
-export const ENERGY = { max: 10, regenMin: 12, ad: 2, adTime: 5 };
+export const ENERGY = { max: 10, regenMin: 12, ad: 5, adTime: 5 }; // ad: energias por anúncio; adTime: duração do anúncio simulado (s)
 export const SELL_RATE = 0.7; // vender devolve 70% do que foi gasto
 export const SPEEDS = [1, 2, 3]; // botão de acelerar: 1x → 2x → 3x
 export const TURBO_SPEED = 5; // a mais no fim da lista com a Placa-Mãe (season 1) toda platinada

@@ -10,15 +10,23 @@ import { CatalogScene } from './scenes/CatalogScene.js';
 import { DarkNetScene } from './scenes/DarkNetScene.js';
 import { ShopScene } from './scenes/ShopScene.js';
 import { NameScene } from './scenes/NameScene.js';
-import { ITEM } from './data/consumables.js';
+import { ITEM, CONSUMABLES } from './data/consumables.js';
 import { drawEnergyModal, energyLayout } from './render/energy.js';
 import { inRect } from './render/widgets.js';
+import { configAds, showRewarded } from './ads.js';
 import { DARKNET_STARS, COFFEE, mapCoffee, NODE, TREE } from './data/darknet.js';
 
 // Controla as telas (título → mapas → jogo), a transição entre elas,
 // o progresso salvo e o som.
+// Dia de hoje (hora local) contado desde 1970: chave do brinde da loja
+function today() {
+  const now = new Date();
+  return Math.floor((now.getTime() - now.getTimezoneOffset() * 60000) / 86400000);
+}
+
 export class App {
   constructor({ debug = false, mute = false } = {}) {
+    configAds(); // pré-carrega os anúncios com recompensa do Google
     this.debug = false;
     this.save = loadSave();
     if (debug) this.enableDebug();
@@ -121,6 +129,66 @@ export class App {
     if (!item || this.coffee < item.cost) return false;
     this.save.coffeeSpent = (this.save.coffeeSpent ?? 0) + item.cost;
     this.inventory[id] = (this.inventory[id] ?? 0) + 1;
+    writeSave(this.save);
+    return true;
+  }
+
+  // Brinde do dia da loja: 1 consumível de graça por dia, pego assistindo
+  // um anúncio; o item muda a cada dia (vira à meia-noite, hora local)
+  get freeOffer() {
+    const day = today();
+    return { id: CONSUMABLES[day % CONSUMABLES.length].id, claimed: this.save.freeItemDay === day };
+  }
+
+  // ms até o próximo brinde (meia-noite)
+  freeOfferNextMs() {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1) - now;
+  }
+
+  // Abre o anúncio; no fim dele o brinde vai pro inventário
+  watchAdForFree() {
+    if (this.energyUI || this.freeOffer.claimed) return false;
+    this.watchAd(this.freeOffer.id, null);
+    return true;
+  }
+
+  // Anúncio com recompensa: o do Google (ads.js); sem anúncio disponível,
+  // o simulado do jogo (energyUI 'ad'). reward = id do brinde da loja, ou
+  // null pras energias; pending = partida que ia começar
+  watchAd(reward, pending) {
+    this.energyUI = { mode: 'loading', t: 0, reward, pending };
+    showRewarded(reward ? 'brinde_do_dia' : 'energia', {
+      beforeAd: () => this.sound.suspend(),
+      afterAd: () => this.sound.resume(),
+      done: (result) => {
+        const ui = this.energyUI;
+        if (ui?.mode !== 'loading') return;
+        if (result === 'viewed') this.grantAd(ui);
+        else if (result === 'dismissed') {
+          // fechou antes do fim: não ganha (a janela de energia volta, com o aviso)
+          this.energyUI = reward ? null : { mode: 'empty', t: 1, pending, note: 'Assista até o fim pra ganhar' };
+          this.sound.play('error');
+        } else this.energyUI = { mode: 'ad', t: 0, reward, pending };
+      },
+    });
+  }
+
+  // Assistiu até o fim: energias (ou o brinde) e segue pra partida, se tinha
+  grantAd(ui) {
+    if (ui.reward) this.claimFreeItem();
+    else this.addEnergy(ENERGY.ad);
+    this.sound.play('upgrade');
+    this.energyUI = null;
+    if (ui.reward) this.scene.rewarded?.(ui.reward);
+    if (ui.pending) this.startMap(ui.pending.i, ui.pending.mode);
+  }
+
+  claimFreeItem() {
+    const { id, claimed } = this.freeOffer;
+    if (claimed) return false;
+    this.inventory[id] = (this.inventory[id] ?? 0) + 1;
+    this.save.freeItemDay = today();
     writeSave(this.save);
     return true;
   }
@@ -304,19 +372,15 @@ export class App {
     const ui = this.energyUI;
     const L = energyLayout(this);
     if (ui.mode === 'ad') {
-      // anúncio: só fecha depois da contagem, pegando as energias
-      if (ui.t >= ENERGY.adTime && inRect(L.skip, x, y)) {
-        this.addEnergy(ENERGY.ad);
-        this.sound.play('upgrade');
-        const p = ui.pending;
-        this.energyUI = null;
-        if (p) this.startMap(p.i, p.mode); // segue pra partida que ia começar
-      }
+      // anúncio simulado: só fecha depois da contagem, pegando as energias
+      // (ou o brinde do dia da loja)
+      if (ui.t >= ENERGY.adTime && inRect(L.skip, x, y)) this.grantAd(ui);
       return;
     }
+    if (ui.mode === 'loading') return; // esperando o anúncio do Google
     if (inRect(L.watch, x, y)) {
-      this.energyUI = { mode: 'ad', t: 0, pending: ui.pending };
       this.sound.play('click');
+      this.watchAd(null, ui.pending);
     } else if (inRect(L.close, x, y) || !inRect(L.card, x, y)) {
       this.energyUI = null;
       this.sound.play('click');
@@ -477,7 +541,7 @@ export class App {
   key(k) {
     this.sound.unlock();
     if (this.energyUI) {
-      if (k === 'Escape' && this.energyUI.mode !== 'ad') this.energyUI = null;
+      if (k === 'Escape' && this.energyUI.mode === 'empty') this.energyUI = null;
       return;
     }
     if (!this.next) this.scene.key?.(k);
