@@ -48,8 +48,9 @@ export const ENERGY_BADGE = { w: 178, h: 42 };
 export function drawEnergyBadge(ctx, app, x, y) {
   const { w, h } = ENERGY_BADGE;
   const e = app.energy;
-  const full = app.debug || e >= ENERGY.max;
-  const empty = !app.debug && e <= 0;
+  const inf = app.debug || app.vip; // energia infinita
+  const full = inf || e >= ENERGY.max;
+  const empty = !inf && e <= 0;
   const t = performance.now() / 1000;
   // sombra + pílula
   rrect(ctx, x, y + 4, w, h, h / 2);
@@ -61,9 +62,9 @@ export function drawEnergyBadge(ctx, app, x, y) {
   // quantidade: "9" grande e "/10" menor
   const nx = x + 46;
   const cy = y + h / 2 + 1;
-  const count = app.debug ? '∞' : String(e);
+  const count = inf ? '∞' : String(e);
   text(ctx, count, nx, cy, { size: 24, align: 'left', color: empty ? '#ff7a8a' : '#ffffff' });
-  if (!app.debug) {
+  if (!inf) {
     setFont(ctx, 24);
     text(ctx, `/${ENERGY.max}`, nx + ctx.measureText(count).width + 2, cy + 3, { size: 14, align: 'left', color: '#9fb2d8' });
   }
@@ -75,7 +76,7 @@ export function drawEnergyBadge(ctx, app, x, y) {
   const by = y + 6;
   ctx.save();
   rrect(ctx, bx, by, bw, bh, bh / 2);
-  ctx.fillStyle = full ? '#2fbf6a' : '#0c1230';
+  ctx.fillStyle = app.vip ? '#e0a92a' : full ? '#2fbf6a' : '#0c1230';
   ctx.fill();
   if (!full) {
     ctx.clip();
@@ -84,7 +85,8 @@ export function drawEnergyBadge(ctx, app, x, y) {
     ctx.fillRect(bx, by, bw * Math.min(1, Math.max(0, k)), bh);
   }
   ctx.restore();
-  if (full) text(ctx, 'CHEIO', bx + bw / 2, by + bh / 2 + 1, { size: 13 });
+  if (app.vip) text(ctx, 'VIP', bx + bw / 2, by + bh / 2 + 1, { size: 15 });
+  else if (full) text(ctx, 'CHEIO', bx + bw / 2, by + bh / 2 + 1, { size: 13 });
   else text(ctx, clock(app.energyNextMs()), bx + bw / 2, by + bh / 2 + 1, { size: 15, color: '#ffe27a' });
 
   // raio grande por cima da borda esquerda, respirando de leve

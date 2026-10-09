@@ -10,7 +10,7 @@ import { CatalogScene } from './scenes/CatalogScene.js';
 import { DarkNetScene } from './scenes/DarkNetScene.js';
 import { ShopScene } from './scenes/ShopScene.js';
 import { NameScene } from './scenes/NameScene.js';
-import { ITEM, CONSUMABLES } from './data/consumables.js';
+import { ITEM, CONSUMABLES, VIP } from './data/consumables.js';
 import { drawEnergyModal, energyLayout } from './render/energy.js';
 import { inRect } from './render/widgets.js';
 import { configAds, showRewarded } from './ads.js';
@@ -236,7 +236,7 @@ export class App {
   get coffeeEarned() {
     const maps = MAPS.reduce((sum, m) => sum + mapCoffee(this.save.stars[m.id], this.hasPlatinum(m.id)), 0);
     const bounty = BOUNTY_MAPS.reduce((sum, m) => sum + mapCoffee(this.save.stars[m.id], false, true), 0) + (this.save.legacyBountyCoffee ?? 0);
-    return maps + bounty + (this.save.kills ?? 0) * COFFEE.perKill + (this.save.duckCoffee ?? 0);
+    return maps + bounty + (this.save.kills ?? 0) * COFFEE.perKill + (this.save.duckCoffee ?? 0) + (this.save.boughtCoffee ?? 0);
   }
 
   // Café que o Pato de Borracha achou numa partida (upgrade secreto)
@@ -249,6 +249,21 @@ export class App {
   get coffee() {
     if (this.debug) return Math.round((DEBUG.coffee - (this.save.coffeeSpent ?? 0)) * 100) / 100;
     return Math.round((this.coffeeEarned - (this.save.coffeeSpent ?? 0)) * 100) / 100;
+  }
+
+  // Modo VIP: energia infinita (e os cafés do VIP já vêm junto, em grantVip)
+  get vip() {
+    return !!this.save.vip;
+  }
+
+  // Ativa o VIP (quando a compra for confirmada): +VIP.coffee cafés e
+  // energia infinita pra sempre
+  grantVip() {
+    if (this.save.vip) return false;
+    this.save.vip = true;
+    this.save.boughtCoffee = (this.save.boughtCoffee ?? 0) + VIP.coffee;
+    writeSave(this.save);
+    return true;
   }
 
   // Monstros abatidos numa partida entram no total do save (viram cafés)
@@ -336,7 +351,7 @@ export class App {
   // janela "SEM ENERGIA" (com o anúncio); depois do anúncio a partida começa
   startMap(i, mode = 'normal') {
     if (this.next || this.energyUI) return;
-    if (!this.debug && this.energy <= 0) {
+    if (!this.debug && !this.vip && this.energy <= 0) {
       this.energyUI = { mode: 'empty', t: 0, pending: { i, mode } };
       this.sound.play('error');
       return;
@@ -372,9 +387,9 @@ export class App {
     return Math.max(0, this.save.energyAt + this.energyRegenMs - Date.now());
   }
 
-  // Gasta 1 energia (no modo debug é de graça). false se não tiver
+  // Gasta 1 energia (no modo debug e no VIP é de graça). false se não tiver
   spendEnergy() {
-    if (this.debug) return true;
+    if (this.debug || this.vip) return true;
     if (this.energy <= 0) return false;
     if (this.save.energy >= ENERGY.max) this.save.energyAt = Date.now(); // começa a recarregar agora
     this.save.energy--;
