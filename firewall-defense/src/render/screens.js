@@ -115,7 +115,7 @@ export function drawOverlay(ctx, game) {
       // Bug Bounty: pontos, % estourada, recorde e café
       const pct = Math.round(game.bountyRatio * 100);
       text(ctx, `${game.points} PONTOS`, cx, 262, { size: 30, color: GOLD });
-      text(ctx, `Estourou ${pct}% dos vírus${game.newRecord ? ' · NOVO RECORDE!' : ''}`, cx, 298, { size: 18, color: '#d8e6ff' });
+      text(ctx, `Conteve ${pct}% das ameaças${game.newRecord ? ' · NOVO RECORDE!' : ''}`, cx, 298, { size: 18, color: '#d8e6ff' });
       if (!won) text(ctx, `Bronze com ${Math.round(BOUNTY.tiers[0] * 100)}%: tente de novo!`, cx, 326, { size: 16, color: '#ffb3c0' });
       else if (game.coffeeGain >= 0.01) text(ctx, `+${formatCoffee(game.coffeeGain)} café`, cx, 328, { size: 20, color: '#ffe0b0' });
     } else if (won) {
