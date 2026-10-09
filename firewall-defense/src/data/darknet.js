@@ -58,6 +58,8 @@ export const TREE = [
     apply: (s) => { s.doubleChance = (s.doubleChance ?? 0) + 0.05; } },
   { id: 'honeypot', tower: 'honeypot', name: 'Mel Turbinado', desc: 'Quando quebra, o Honeypot tem 10% de chance de voltar com 50% da vida', cost: 5, parent: 'root',
     apply: (s) => { s.reviveChance = (s.reviveChance ?? 0) + 0.1; } },
+  { id: 'executivo', tower: 'executivo', name: 'Hora Extra', desc: 'Cada defesa no raio tem 4% de chance de atacar de novo na hora', cost: 5, parent: 'root',
+    apply: (s) => { s.teamRecharge = (s.teamRecharge ?? 0) + 0.04; } },
   // Depois do 1º nó, cada ramo abre em Y: dois braços, cada um um caminho
   // com tema próprio (3 nós em fila). O braço A sai do X2, o B do X3.
 
@@ -155,6 +157,20 @@ export const TREE = [
     apply: (s) => { s.stingChance = (s.stingChance ?? 0) + 0.06; } },
   { id: 'honeypot3c', tower: 'honeypot', name: 'Colmeia', desc: 'Quando quebra, o pote tem 5% de chance de soltar abelhas que tiram 1 camada dos vírus em volta', cost: 12, parent: 'honeypot3b',
     apply: (s) => { s.swarmChance = (s.swarmChance ?? 0) + 0.05; } },
+
+  // Executivo — A: a equipe (quem está no raio) · B: o BURNOUT
+  { id: 'executivo2', tower: 'executivo', name: 'Plano de Carreira', desc: '+3% de chance de atacar de novo na hora', cost: 8, parent: 'executivo',
+    apply: (s) => { s.teamRecharge = (s.teamRecharge ?? 0) + 0.03; } },
+  { id: 'executivo2b', tower: 'executivo', name: 'Open Space', desc: '+8% de alcance', cost: 10, parent: 'executivo2',
+    apply: (s) => { s.range = Math.round(s.range * 1.08); } },
+  { id: 'executivo2c', tower: 'executivo', name: 'Feedback 360°', desc: 'As defesas no raio atacam 5% mais rápido', cost: 12, parent: 'executivo2b',
+    apply: (s) => { s.haste += 0.05; } },
+  { id: 'executivo3', tower: 'executivo', name: 'Café Expresso', desc: 'O BURNOUT recarrega 2s mais rápido', cost: 8, parent: 'executivo',
+    apply: (s) => { s.burnoutFaster = (s.burnoutFaster ?? 0) + 2; } },
+  { id: 'executivo3b', tower: 'executivo', name: 'Prazo Apertado', desc: 'O BURNOUT dura 1s a mais', cost: 10, parent: 'executivo3',
+    apply: (s) => { s.burnoutExtra = (s.burnoutExtra ?? 0) + 1; } },
+  { id: 'executivo3c', tower: 'executivo', name: 'Virada de Noite', desc: 'Cada BURNOUT tem 10% de chance de recarregar na hora', cost: 12, parent: 'executivo3b',
+    apply: (s) => { s.burnoutFree = (s.burnoutFree ?? 0) + 0.1; } },
 ];
 
 // Upgrade secreto: fora da árvore, apagadinho no canto de cima da Dark Net.
