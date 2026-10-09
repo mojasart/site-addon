@@ -80,7 +80,8 @@ export class Game {
 
   reset() {
     // Acesso Root (Dark Net): dinheiro a mais no começo da fase
-    this.money = this.app.debug ? DEBUG.money : this.map.money + (this.app.perks?.root ? ROOT_MONEY : 0);
+    // Bug Bounty: só o orçamento da partida (sem o Acesso Root)
+    this.money = this.app.debug ? DEBUG.money : this.bounty ? BOUNTY.budget[this.map.season] : this.map.money + (this.app.perks?.root ? ROOT_MONEY : 0);
     this.lives = this.platinum ? PLAT_LIVES : this.bounty ? Infinity : this.map.lives;
     this.towers = [];
     this.coinTiles = pickCoinTiles(this); // pilhas de bitcoin (seasons 1 e 2)
@@ -145,7 +146,7 @@ export class Game {
       return;
     }
     if (this.bounty) {
-      this.showBanner('BUG BOUNTY', 3, '#ffd23f', 50, 'Estoure o máximo de vírus em 90 s!');
+      this.showBanner('BUG BOUNTY', 3, '#ffd23f', 50, `5 minutos com $${this.money}: vírus não dão dinheiro!`);
       return;
     }
     // mapa com novidade (várias entradas, loop, zonas...) avisa no começo
@@ -530,8 +531,8 @@ export class Game {
       this.money += bonus;
       this.coinBump = 1;
     }
-    // Juros (Dark Net): rende uma parte do dinheiro guardado
-    const interest = this.app.perks?.minerador4 && this.money > 0 ? Math.min(INTEREST.max, Math.floor(this.money * INTEREST.rate)) : 0;
+    // Juros (Dark Net): rende uma parte do dinheiro guardado (no Bug Bounty não)
+    const interest = this.app.perks?.minerador4 && !this.bounty && this.money > 0 ? Math.min(INTEREST.max, Math.floor(this.money * INTEREST.rate)) : 0;
     if (interest > 0) {
       this.money += interest;
       this.coinBump = 1;
@@ -641,6 +642,7 @@ export class Game {
   // chance de vir dourado (cada Minerador minerando com o upgrade rola a sua).
   // Destruído, solta uma moeda de goldenValue (Enemy.pop)
   rollGolden(enemy) {
+    if (this.bounty) return; // Bug Bounty: vírus não dão dinheiro
     for (const t of this.towers) {
       const s = t.stats;
       if (!s.goldenChance || !this.canMine(t)) continue;
@@ -679,7 +681,7 @@ export class Game {
   // pode ficar até LOAN no negativo
   canAfford(cost) {
     if (this.money >= cost) return true;
-    return !!this.app.perks?.minerador4b && this.loanRound !== this.rounds.started && this.money - cost >= -LOAN;
+    return !!this.app.perks?.minerador4b && !this.bounty && this.loanRound !== this.rounds.started && this.money - cost >= -LOAN;
   }
 
   // Paga (usando o empréstimo da rodada se faltar dinheiro)
@@ -692,6 +694,7 @@ export class Game {
   // Defesa indisponível nesta partida: o aliado bloqueado da platina ou as
   // que ainda não existem no tutorial (1-1)
   isLocked(type) {
+    if (this.bounty && type === 'minerador') return true; // Bug Bounty: sem renda
     return type === this.blocked || !!this.lockedTowers?.has(type);
   }
 
@@ -1045,7 +1048,7 @@ export class Game {
       this.toast = { text: `${item.name.toUpperCase()}: ${done[tile.id] ?? 'usado'}`, time: 2.2 };
     } else {
       // não deu pra usar agora (o item não foi gasto)
-      const why = { free: 'Já tem uma defesa grátis esperando', freeze: 'Nenhum vírus pra congelar' };
+      const why = { free: 'Já tem uma defesa grátis esperando', freeze: 'Nenhum vírus pra congelar', cash: 'No Bug Bounty é só o orçamento' };
       this.toast = { text: why[tile.id] ?? 'Agora não dá pra usar', time: 2.2 };
     }
   }
