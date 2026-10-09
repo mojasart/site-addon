@@ -94,8 +94,8 @@ export function playMap(mapIndex, profileName, seed, mode = 'normal', perks = nu
   const ARMORED = new Set(['trojan', 'locker', 'ransomware']);
   function armorSoon() {
     const r = game.rounds;
-    // platina: o chefão (blindado) vem no fim do tempo; se prepara no último minuto
-    if (game.platinum && game.platLeft < 60) return true;
+    // platina: o chefão (blindado) vem depois da última onda; se prepara nas últimas 4
+    if (game.platinum && game.platLeft <= 4) return true;
     for (let k = r.started; k < Math.min(r.total, r.started + 3); k++) if (r.rounds[k].some((g) => ARMORED.has(g.type))) return true;
     return false;
   }

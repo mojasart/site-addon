@@ -2,8 +2,11 @@
 //  MODO PLATINA (libera com 3 estrelas no mapa)
 //
 //  As ondas vêm uma atrás da outra, sem esperar o mapa limpar: a próxima
-//  começa assim que a anterior termina de entrar (+ WAVE_GAP). Depois de
-//  PLAT_TIME segundos acabam as ondas e vem o chefão; derrotou, venceu.
+//  começa assim que a anterior termina de entrar (+ WAVE_GAP). São
+//  PLAT_WAVES ondas em todo mapa; depois da última vem o chefão; derrotou,
+//  venceu. Partida longa de propósito (dá pra montar mais defesas e o
+//  Minerador rende mais): depois das rodadas do mapa as ondas repetem as
+//  últimas, cada vez mais cheias (RAMP).
 //  Só PLAT_LIVES vida: qualquer vírus que chegar no servidor já é derrota.
 //  Cada mapa tem um aliado bloqueado (sorteado pelo id do mapa, então é
 //  sempre o mesmo naquele mapa).
@@ -11,11 +14,11 @@
 import { ROUNDS } from './rounds.js';
 import { PLAT_TUNE } from './platinumTuning.js';
 
-export const PLAT_TIME = 180; // segundos de ondas até o chefão
+export const PLAT_WAVES = 50; // ondas até o chefão (em todo mapa)
 export const PLAT_LIVES = 1; // vidas no modo platina
 export const WAVE_GAP = 2.5; // pausa entre uma onda terminar de entrar e a próxima
 export const BOSS_HP = 0.6; // vida do chefão: BOSS_HP × √pressão do mapa × dificuldade da platina
-const MAX_WAVES = 60; // mais do que cabe em 3 minutos
+const RAMP = 0.06; // cada onda repetida vem 6% mais cheia que a anterior
 
 // Dificuldade da platina no mapa (data/platinumTuning.js, calibrada com os bots)
 export function platinumScale(mapIndex) {
@@ -31,16 +34,22 @@ export function blockedAlly(map) {
   return ALLIES[h % ALLIES.length];
 }
 
-// As rodadas do mapa em sequência; se acabarem antes do tempo, repete as
-// últimas 4 (as mais fortes). Com o Robô NMAP bloqueado não vem Spyware:
-// só ele revela o Spyware, e com 1 vida seria derrota certa
+// As PLAT_WAVES ondas: as rodadas do mapa em sequência e depois as últimas
+// 4 (as mais fortes) repetidas, cada repetida RAMP mais cheia que a anterior
+// (a quantidade dos grupos; o chefão não). Com o Robô NMAP bloqueado não
+// vem Spyware: só ele revela o Spyware, e com 1 vida seria derrota certa
 export function platinumRounds(map) {
   const noSpy = blockedAlly(map) === 'scanner';
   const base = ROUNDS.slice(0, map.rounds).map((round) => (noSpy ? round.filter((g) => g.type !== 'spyware') : round));
   const tail = base.slice(-4);
   const out = [...base];
-  while (out.length < MAX_WAVES) out.push(...tail);
-  return out.slice(0, MAX_WAVES);
+  for (let k = 1; out.length < PLAT_WAVES; k++) {
+    const grow = 1 + RAMP * k;
+    const round = tail[(k - 1) % tail.length];
+    // mais cheia e mais apertada: a onda dura o mesmo tanto
+    out.push(round.map((g) => (g.type === 'cicada' ? g : { ...g, count: g.count * grow, gap: g.gap / grow })));
+  }
+  return out.slice(0, PLAT_WAVES);
 }
 
 // O chefão cresce ao longo da season (e a vida acompanha a pressão do

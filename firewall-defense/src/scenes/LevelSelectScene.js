@@ -8,6 +8,7 @@ import { BOT_WIN } from '../data/botStats.js';
 import { DARKNET_STARS } from '../data/darknet.js';
 import { drawEnergyBadge } from '../render/energy.js';
 import { DarkNetUnlock } from '../render/darknetUnlock.js';
+import { PLAT_WAVES } from '../data/platinum.js';
 import { writeSave } from '../save.js';
 
 const DIFF_COLOR = { 'FÁCIL': '#3fd16b', 'MÉDIO': '#ffd23f', 'DIFÍCIL': '#ff4d5e', 'EXTREMO': '#a259ff' };
@@ -286,7 +287,7 @@ export class LevelSelectScene {
       text(ctx, tier.name, r.x + r.w - 42, cy + 1, { size: 13, align: 'right' });
     }
 
-    text(ctx, 'Ondas sem parar por 3:00, depois vem o chefão', W / 2, c.y + 272, { size: 16, color: '#d8e6ff' });
+    text(ctx, `${PLAT_WAVES} ondas sem parar, cada vez mais fortes; depois vem o chefão`, W / 2, c.y + 272, { size: 15, color: '#d8e6ff' });
     text(ctx, 'Um aliado fica bloqueado', W / 2, c.y + 298, { size: 15, color: '#ff9aa5' });
 
     // sem as 3 estrelas: a parte da platina fica trancada
