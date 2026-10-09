@@ -66,7 +66,7 @@ if (!isMainThread) {
       return `${p.slice(0, 4)} ${pr.filter((r) => r.won).length}/${pr.length}`;
     });
     const avgRound = mode === 'platinum' ? rs.reduce((a, r) => a + r.time, 0) / rs.length : rs.reduce((a, r) => a + r.round, 0) / rs.length;
-    rows.push({ map: m + 1, id: MAPS[m].id, rate: wins / rs.length, wins, n: rs.length, avgRound, total: MAPS[m].rounds, byProfile });
+    rows.push({ map: m + 1, id: MAPS[m].id, rate: wins / rs.length, wins, n: rs.length, avgRound, total: rs[0]?.total ?? MAPS[m].rounds, byProfile });
   }
   for (const r of rows) {
     const bar = '█'.repeat(Math.round(r.rate * 20)).padEnd(20, '·');

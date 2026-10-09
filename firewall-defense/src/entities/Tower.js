@@ -21,6 +21,7 @@ export class Tower {
     this.perks = {}; // nós da Dark Net comprados (Game.place passa os do jogador)
     this.stats = { ...this.def }; // cópia: upgrades mexem aqui, não no original
     this.cooldown = 0.2;
+    this.haste = 1; // velocidade de ataque (Executivo e BURNOUT; Game.updateHaste)
     this.face = 1; // 1 = olhando pra direita, -1 = esquerda
     this.attack = 0; // animação de ataque (1 → 0)
     this.pulse = 0;
@@ -161,7 +162,7 @@ export class Tower {
   update(dt, game) {
     const s = this.stats;
     this.anim += dt;
-    this.cooldown = Math.max(0, this.cooldown - dt);
+    this.cooldown = Math.max(0, this.cooldown - dt * this.haste);
     this.attack = Math.max(0, this.attack - dt * 4);
     this.pulse = Math.max(0, this.pulse - dt * 4);
     this.spawnAnim = Math.max(0, this.spawnAnim - dt * 3);
@@ -262,6 +263,9 @@ export class Tower {
       }
       case 'decoy':
         // a isca não ataca: quem faz tudo são os vírus mordendo (bite)
+        break;
+      case 'aura':
+        // o Executivo não ataca: acelera quem está em volta (Game.updateHaste)
         break;
       case 'farm': {
         if (s.sponsor) this.updateSponsor(game);

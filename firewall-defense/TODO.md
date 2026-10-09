@@ -23,6 +23,18 @@ Lista do que falta fazer no jogo. Marque com `[x]` quando terminar.
     trocar o `return true` da season 3 por algo como `return !!tower.stats.offshore`
   - Os bots (`tools/sim/bot.js`) vão precisar comprar esse upgrade antes de contar com o Minerador
 
+## Arsenal (inventário de personagens)
+
+- [ ] **Comprar personagens novos e levar 8 pra cada fase**
+  - Loja de personagens: os novos (ex.: o **Executivo** e os próximos comandantes) são comprados
+    uma vez e ficam no **arsenal** do jogador (guardar em `save.js`, ex.: `save.owned`)
+  - Antes de cada fase, tela de **escolher 8** do arsenal (o "deck" da partida); o painel da loja
+    da fase (`layout` em `src/render/ui.js`) mostra só esses 8 em vez de `TOWER_ORDER` inteiro
+  - Lembrar o último deck escolhido (ex.: `save.loadout`) pra não ter que montar toda vez
+  - Os iniciais (Hacker, Golem, Pinguim, Honeypot...) já vêm no arsenal; o tutorial (1-1) e a
+    platina (aliado bloqueado) continuam funcionando com o deck
+  - Os bots (`tools/sim/bot.js`) escolhem o deck pelo perfil
+
 ## Dark Net
 
 - [x] **Árvore de upgrades, fase 1**: nó central (Acesso Root) + 1 ramo por defesa

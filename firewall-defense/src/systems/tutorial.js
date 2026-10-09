@@ -22,7 +22,7 @@ import { Enemy } from '../entities/Enemy.js';
  *  Terminou: save.tutorialDone = true (só registro: ele aparece de novo).
  * ════════════════════════════════════════════════════════════ */
 
-export const TUTORIAL_LOCKED = ['pinguim', 'scanner', 'minerador']; // na 1-1 só Hacker, Golem e Honeypot (o Minerador libera na aula dele)
+export const TUTORIAL_LOCKED = ['pinguim', 'scanner', 'minerador', 'executivo']; // na 1-1 só Hacker, Golem e Honeypot (o Minerador libera na aula dele)
 const MINER_GIFT = 650; // bitcoins de presente na aula do Minerador (o preço dele)
 // enxurrada da aula do Honeypot: n vírus, um a cada gap s; a aula começa quando o
 // primeiro está a `near` quadrados (pelo caminho) do lugar do pote, perto do Hacker

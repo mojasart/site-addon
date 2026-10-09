@@ -19,14 +19,54 @@
 // a Cicada 3301:
 // o jogador está aprendendo (a 1-1 é o tutorial, sem o Robô NMAP pra revelar
 // o Spyware). Os outros grupos dessas rodadas continuam iguais.
+import { ENEMIES } from './enemies.js';
+
 export const EARLY_MAPS = 3;
 const EARLY_SKIP = new Set(['spyware', 'worm', 'cicada']);
 
-// Rodadas de um mapa no modo normal: as primeiras map.rounds da lista
+// Ondas a mais no modo normal: cada mapa joga STRETCH × map.rounds ondas.
+// Entre duas rodadas da lista entram ondas de transição (uma mistura das
+// duas), então a dificuldade sobe aos poucos, a fase dura mais e dá tempo de
+// juntar dinheiro pra encher o mapa de defesas. A 1ª e a última onda são as
+// mesmas de antes.
+export const STRETCH = 1.5;
+const MIN_PART = 0.2; // pedaço mínimo de uma rodada pra entrar numa onda de transição
+
+// Rodadas de um mapa no modo normal: as primeiras map.rounds da lista,
+// esticadas (STRETCH)
 export function roundsFor(map) {
-  const list = ROUNDS.slice(0, map.rounds);
-  if (map.season > 0 || map.number > EARLY_MAPS) return list;
-  return list.map((round) => round.filter((g) => !EARLY_SKIP.has(g.type)));
+  let list = ROUNDS.slice(0, map.rounds);
+  if (map.season === 0 && map.number <= EARLY_MAPS) list = list.map((round) => round.filter((g) => !EARLY_SKIP.has(g.type)));
+  return stretch(list, Math.round(list.length * STRETCH));
+}
+
+// Estica a lista de rodadas pra n ondas: a onda j fica na posição p da lista
+// (entre as rodadas a e a + 1) e leva (1 − t) dos vírus de uma e t da outra.
+// Chefões e grupos de 1 vírus não se dividem: vêm só uma vez, na onda que
+// cai mais perto da rodada deles
+function stretch(list, n) {
+  const R = list.length;
+  if (n <= R || R < 2) return list;
+  const home = list.map((_, s) => Math.round((s * (n - 1)) / (R - 1)));
+  const waves = [];
+  for (let j = 0; j < n; j++) {
+    const p = (j * (R - 1)) / (n - 1);
+    const a = Math.floor(p);
+    const t = p - a;
+    const wave = [];
+    const add = (s, w) => {
+      if (s >= R) return;
+      for (const g of list[s]) {
+        if (ENEMIES[g.type]?.boss || g.count === 1) {
+          if (home[s] === j) wave.push(g);
+        } else if (w >= MIN_PART) wave.push({ ...g, count: g.count * w });
+      }
+    };
+    add(a, 1 - t);
+    if (t > 0) add(a + 1, t);
+    waves.push(wave);
+  }
+  return waves;
 }
 
 export const ROUNDS = [

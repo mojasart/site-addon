@@ -23,6 +23,10 @@ const SFX = {
     s.tone({ type: 'triangle', freq: 650, to: 1150, dur: 0.06, vol: 0.07 });
     s.noise({ dur: 0.05, vol: 0.05, filter: 'highpass', freq: 3500 });
   },
+  burnout(s) {
+    s.tone({ type: 'sawtooth', freq: 160, to: 760, dur: 0.38, vol: 0.12 });
+    s.noise({ dur: 0.45, vol: 0.2, filter: 'lowpass', freq: 700, to: 2600 });
+  },
   laser(s) {
     s.tone({ type: 'sawtooth', freq: 1700, to: 180, dur: 0.15, vol: 0.06 });
   },

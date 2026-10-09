@@ -9,6 +9,10 @@
 //                 param pra atacar até a vida (hp) dela acabar. A vida também
 //                 é um tempo: nas rodadas ela gasta sozinha em `duration` s
 //    farm       → minera bitcoins durante as rodadas
+//    aura       → não ataca: as defesas no alcance atacam mais rápido (haste)
+//
+//  commander: comandante (Executivo). No máximo COMMANDER_MAX por fase; com
+//  um no mapa aparece o botão do BURNOUT (canto de baixo, à esquerda)
 //
 //  upgrades: 2 níveis, cada um com custo e uma função que altera os status
 //  lore:     frase do catálogo de defesas (scenes/CatalogScene.js)
@@ -134,9 +138,32 @@ export const TOWERS = {
     duration: 15, // segundos que dura sozinha: nas rodadas vai murchando mesmo sem ninguém morder
     upgrades: [],
   },
+  executivo: {
+    name: 'Executivo',
+    desc: 'Comandante: as defesas perto dele atacam mais rápido. Libera o BURNOUT',
+    lore: 'Nunca escreveu uma linha de código, mas cobra entrega de todo mundo. E todo mundo entrega.',
+    cost: 400,
+    radius: 18,
+    range: 95,
+    attack: 'aura',
+    commander: true,
+    haste: 0.15, // defesas no alcance atacam 15% mais rápido (dois Executivos não somam: vale o maior)
+    upgrades: [
+      { name: 'Reunião de Alinhamento', desc: 'Mais alcance e as defesas em volta atacam 25% mais rápido', cost: 300,
+        apply: (s) => { s.range += 20; s.haste = 0.25; } },
+      { name: 'Meta Agressiva', desc: 'O BURNOUT dura 3s a mais', cost: 450, apply: (s) => { s.burnoutExtra = 3; } },
+    ],
+  },
 };
 
-export const TOWER_ORDER = ['hacker', 'firewall', 'pinguim', 'scanner', 'minerador', 'honeypot'];
+export const TOWER_ORDER = ['hacker', 'firewall', 'pinguim', 'scanner', 'minerador', 'honeypot', 'executivo'];
+
+// Comandantes por fase (Executivo)
+export const COMMANDER_MAX = 3;
+// Poder do Executivo: todas as defesas que atacam ficam `haste` mais rápidas
+// por `time` s (+ burnoutExtra do melhor Executivo); dá pra usar de novo
+// `cooldown` s depois de ativar
+export const BURNOUT = { haste: 0.6, time: 5, cooldown: 20 };
 
 // Modos de mira (botão ALVO no painel da defesa). Empate: o mais perto da base.
 //   first  → o mais adiantado no caminho      last  → o mais atrasado

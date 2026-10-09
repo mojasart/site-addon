@@ -29,7 +29,7 @@ const TABS = [
   { id: 'towers', label: 'DEFESAS', file: 'AGENTS_DB.EXE', items: TOWER_ORDER },
   { id: 'terrains', label: 'TERRENOS', file: 'TERRAIN_DB.EXE', items: TERRAINS.map((t) => t.id) },
 ];
-const ATTACK_KIND = { projectile: 'PROJÉTIL', pulse: 'ONDA', beam: 'LASER', farm: 'ECONOMIA', decoy: 'ISCA' };
+const ATTACK_KIND = { projectile: 'PROJÉTIL', pulse: 'ONDA', beam: 'LASER', farm: 'ECONOMIA', decoy: 'ISCA', aura: 'COMANDANTE' };
 const LEVEL_TIME = 2.2; // segundos de cada idade no retrato (quando nenhuma foi escolhida)
 const MONO = '"Courier New", ui-monospace, Menlo, Consolas, monospace';
 const GREEN = '#3dff9a';

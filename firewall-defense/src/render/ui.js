@@ -1,14 +1,14 @@
 import { VIEW_H, PANEL_W, OUTLINE, GOLD } from '../config.js';
 import { PLAT_WAVES } from '../data/platinum.js';
 import { comboMul } from '../data/bounty.js';
-import { TOWERS, TOWER_ORDER, TARGET_MODES } from '../data/towers.js';
+import { TOWERS, TOWER_ORDER, TARGET_MODES, BURNOUT, COMMANDER_MAX } from '../data/towers.js';
 import { rrect, circle, fillOutline, text, setFont, button } from './canvas.js';
 import { drawCharacter } from './characters.js';
 import { drawVirusIcon } from './viruses.js';
 import { ENEMIES } from '../data/enemies.js';
 import { drawCoin, drawHeart, ICONS } from './sprites.js';
 import { iconButton } from './widgets.js';
-import { fmt } from '../util.js';
+import { fmt, TAU } from '../util.js';
 import { CONSUMABLES } from '../data/consumables.js';
 import { drawItemIcon } from './consumables.js';
 
@@ -17,13 +17,22 @@ import { drawItemIcon } from './consumables.js';
 export function layout(game) {
   const px = game.mapW;
   const W = PANEL_W;
+  // com mais de 3 linhas de defesas os cards encolhem (e a prévia da próxima
+  // rodada fica mais baixinha) pra tudo caber em cima dos botões de rodada e
+  // velocidade
+  const rows = Math.ceil(TOWER_ORDER.length / 2);
+  const previewH = rows > 3 ? 50 : 66;
+  const pitch = rows > 3 ? Math.floor((VIEW_H - 76 - 4 - previewH - 44) / rows) : 116;
   return {
     panel: { x: px, y: 0, w: W, h: VIEW_H },
     // 2 colunas; se sobrar uma sozinha na última linha, ela fica no meio
     tiles: TOWER_ORDER.map((type, i) => {
       const alone = i === TOWER_ORDER.length - 1 && i % 2 === 0;
-      return { type, x: px + 10 + (alone ? 45 : (i % 2) * 90), y: 44 + Math.floor(i / 2) * 116, w: 80, h: 108 };
+      return { type, x: px + 10 + (alone ? 45 : (i % 2) * 90), y: 44 + Math.floor(i / 2) * pitch, w: 80, h: pitch - 8 };
     }),
+    // BURNOUT (com um Executivo no mapa): canto de baixo do mapa, à esquerda
+    // (do lado do Pato de Borracha, se ele estiver ali)
+    burnout: { x: game.app?.perks?.duck ? 62 : 12, y: VIEW_H - 76, w: 64, h: 64 },
     // abas no topo do painel: DEFESAS e ITENS (game.panelTab)
     tabs: [
       { id: 'towers', label: 'DEFESAS', x: px + 10, y: 4, w: 88, h: 34 },
@@ -39,7 +48,7 @@ export function layout(game) {
     ransom: { x: px + 10, y: 64, w: W - 20, h: 188 }, // no lugar dos upgrades (defesa criptografada)
     target: { x: px + 10, y: 262, w: W - 20, h: 46 },
     sell: { x: px + 10, y: 314, w: W - 20, h: 50 },
-    preview: { x: px + 10, y: 390, w: W - 20, h: 66 }, // vírus da próxima rodada
+    preview: { x: px + 10, y: rows > 3 ? 44 + rows * pitch : 390, w: W - 20, h: previewH }, // vírus da próxima rodada
   };
 }
 
@@ -95,7 +104,93 @@ export function drawHud(ctx, game) {
     text(ctx, `${r.current}/${r.total}`, L.pause.x - 14, 45, { size: 28, align: 'right' });
   }
   iconButton(ctx, L.pause, '#5fb4ff', 'pause');
+  if (game.commanders?.length) drawBurnout(ctx, game, L.burnout);
   drawBossBars(ctx, game);
+}
+
+// Botão do BURNOUT: laranja e pulsando quando dá pra usar; ligado mostra os
+// segundos que faltam; recarregando fica apagado, com um "relógio" escuro
+// que vai sumindo e os segundos pra usar de novo
+function drawBurnout(ctx, game, r) {
+  const t = game.anim;
+  const on = game.burnoutLeft > 0;
+  const ready = game.burnoutCd <= 0;
+  const cx = r.x + r.w / 2;
+  const cy = r.y + r.h / 2;
+  const R = r.w / 2 - 2;
+  ctx.save();
+  if (ready || on) {
+    ctx.shadowColor = '#ff7a1a';
+    ctx.shadowBlur = on ? 22 : 10 + Math.sin(t * 5) * 6;
+  }
+  circle(ctx, cx, cy + 4, R);
+  ctx.fillStyle = OUTLINE;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  circle(ctx, cx, cy, R);
+  fillOutline(ctx, on ? '#ff5a1a' : ready ? '#ff8a2a' : '#6b5a4a', 3);
+  if (!ready && !on) {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, R - 2, -Math.PI / 2, -Math.PI / 2 + (game.burnoutCd / BURNOUT.cooldown) * TAU);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(15,18,36,0.55)';
+    ctx.fill();
+  }
+  // chama
+  const s = 1 + (on ? Math.sin(t * 18) * 0.08 : 0);
+  ctx.translate(cx, cy - 4);
+  ctx.scale(s, s);
+  ctx.beginPath();
+  ctx.moveTo(0, -17);
+  ctx.bezierCurveTo(9, -6, 12, 2, 10, 7);
+  ctx.bezierCurveTo(8, 13, -8, 13, -10, 7);
+  ctx.bezierCurveTo(-12, 1, -6, -4, -4, -9);
+  ctx.bezierCurveTo(-2, -4, 2, -3, 0, -17);
+  fillOutline(ctx, ready || on ? '#ffd23f' : '#c9b9a0', 2.5);
+  ctx.beginPath();
+  ctx.moveTo(0, -3);
+  ctx.bezierCurveTo(5, 2, 5, 9, 0, 10);
+  ctx.bezierCurveTo(-5, 9, -5, 3, 0, -3);
+  ctx.fillStyle = ready || on ? '#fff3c4' : '#e8dcc8';
+  ctx.fill();
+  ctx.restore();
+  const label = on ? `${Math.ceil(game.burnoutLeft)}s` : ready ? 'BURNOUT' : `${Math.ceil(game.burnoutCd)}s`;
+  text(ctx, label, cx, r.y + r.h - 6, { size: ready && !on ? 12 : 16, color: '#ffffff' });
+}
+
+// Defesa acelerada (Executivo por perto ou BURNOUT): setinhas pra cima do
+// lado dela (laranja no BURNOUT). Em coordenadas da defesa
+export function drawHasted(ctx, t, haste, burning) {
+  ctx.save();
+  ctx.translate(-22, -34 + Math.sin(t * 6) * 2);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const [w, color] of [[6, OUTLINE], [3, burning ? '#ff8a2a' : GOLD]]) {
+    ctx.lineWidth = w;
+    ctx.strokeStyle = color;
+    for (const dy of [0, 7]) {
+      ctx.beginPath();
+      ctx.moveTo(-5, dy + 3);
+      ctx.lineTo(0, dy - 2);
+      ctx.lineTo(5, dy + 3);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+// BURNOUT ligado: bordas do mapa pulsando em laranja
+export function drawBurnoutGlow(ctx, game) {
+  const W = game.mapW;
+  const a = 0.28 + Math.sin(game.anim * 8) * 0.08;
+  const g = ctx.createRadialGradient(W / 2, VIEW_H / 2, Math.min(W, VIEW_H) * 0.42, W / 2, VIEW_H / 2, Math.hypot(W, VIEW_H) / 2);
+  g.addColorStop(0, 'rgba(255,110,20,0)');
+  g.addColorStop(1, `rgba(255,110,20,${a})`);
+  ctx.save();
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, VIEW_H);
+  ctx.restore();
 }
 
 // Chefão com topBar (Ransomware): barra grande no topo, no meio do mapa,
@@ -188,8 +283,9 @@ function drawShop(ctx, game, L) {
     ctx.beginPath();
     rrect(ctx, tile.x + 2, tile.y + 2, tile.w - 4, tile.h - 8, 12);
     ctx.clip();
-    ctx.translate(tile.x + tile.w / 2, tile.y + 56);
-    ctx.scale(0.8, 0.8);
+    const k = Math.min(1, tile.h / 108); // card menor (muitas defesas): personagem menor
+    ctx.translate(tile.x + tile.w / 2, tile.y + 56 * k);
+    ctx.scale(0.8 * k, 0.8 * k);
     drawCharacter(ctx, tile.type, { t: game.anim + tile.x * 0.01, face: 1, level: 0 });
     ctx.restore();
     const blocked = game.isLocked?.(tile.type) ?? game.blocked === tile.type;
@@ -205,6 +301,15 @@ function drawShop(ctx, game, L) {
       ICONS.lock(ctx, 14);
       ctx.restore();
       text(ctx, 'BLOQUEADO', tile.x + tile.w / 2, tile.y + tile.h - 16, { size: 13, color: '#ff7a8a' });
+      continue;
+    }
+    if (game.commanderFull?.(tile.type)) {
+      // já tem COMMANDER_MAX comandantes no mapa
+      rrect(ctx, tile.x, tile.y, tile.w, tile.h - 5, 14);
+      ctx.fillStyle = 'rgba(20,28,60,0.6)';
+      ctx.fill();
+      text(ctx, `${COMMANDER_MAX}/${COMMANDER_MAX}`, tile.x + tile.w / 2, tile.y + tile.h - 17, { size: 15, color: '#ff7a8a' });
+      drawRoleTag(ctx, tile);
       continue;
     }
     text(ctx, `$${cost}`, tile.x + tile.w / 2, tile.y + tile.h - 17, { size: 15, color: affordable ? GOLD : '#ff7a8a' }); // (longe da borda do card)
@@ -335,10 +440,11 @@ function drawPreview(ctx, game, r) {
   list.forEach(([type, n], i) => {
     const cx = r.x + step * (i + 0.5);
     ctx.save();
-    ctx.translate(cx - 9, r.y + 36);
+    const iy = r.y + Math.min(36, r.h - 16); // (prévia baixinha: ícones mais pra cima)
+    ctx.translate(cx - 9, iy);
     drawVirusIcon(ctx, type, ENEMIES[type], 9);
     ctx.restore();
-    text(ctx, `${n}`, cx + 13, r.y + 38, { size: 13, align: 'center' });
+    text(ctx, `${n}`, cx + 13, iy + 2, { size: 13, align: 'center' });
   });
 }
 

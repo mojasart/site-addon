@@ -3,7 +3,7 @@
 //  informações do jogo): os status com os upgrades até o nível aplicados,
 //  do mesmo jeito que o jogo aplica.
 // ─────────────────────────────────────────────────────────────
-import { TOWERS } from './towers.js';
+import { TOWERS, BURNOUT, COMMANDER_MAX } from './towers.js';
 import { fmt, plural } from '../util.js';
 
 // Idade de cada nível (os personagens crescem a cada upgrade)
@@ -29,6 +29,17 @@ export function statRows(s, { armor = false } = {}) {
     if (s.goldenChance) rows.push(['DOURADOS', `${Math.round(s.goldenChance * 100)}% · $${s.goldenValue} cada`]);
     if (s.sponsor) rows.push(['PATROCÍNIO', `+$${s.sponsor} por vírus de 1 defesa`]);
     return [...rows, ...luckRows(s)];
+  }
+  if (s.attack === 'aura') {
+    const pct = (p) => `${Math.round(p * 100)}%`;
+    rows.push(
+      ['ACELERA', `+${pct(s.haste)} nas defesas em volta`],
+      ['ALCANCE', `${s.range}`],
+      ['BURNOUT', `todas +${pct(BURNOUT.haste)} por ${BURNOUT.time + (s.burnoutExtra ?? 0)}s`],
+      ['RECARGA', `${BURNOUT.cooldown}s`],
+      ['LIMITE', `${COMMANDER_MAX} comandantes por fase`],
+    );
+    return rows;
   }
   if (s.attack === 'decoy') {
     rows.push(['VIDA', `${s.hp}`], ['DURAÇÃO', `${s.duration}s sozinha`], ['DANO', '0 (só distrai)']);

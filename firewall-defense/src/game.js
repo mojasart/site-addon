@@ -4,7 +4,7 @@ import { roundsFor } from './data/rounds.js';
 import { PLAT_WAVES, PLAT_LIVES, PLAT_WARMUP, PLAT_REWARD, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
 import { worth, ENEMIES } from './data/enemies.js';
 import { BOUNTY, bountyRound, layers, comboMul, bountyStars } from './data/bounty.js';
-import { TOWERS, TARGET_MODES } from './data/towers.js';
+import { TOWERS, TARGET_MODES, COMMANDER_MAX, BURNOUT } from './data/towers.js';
 import { applyPerks, ROOT_MONEY, DUCK, INTEREST, LOAN } from './data/darknet.js';
 import { fitsTerrain } from './core/terrain.js';
 import { Tower } from './entities/Tower.js';
@@ -15,7 +15,7 @@ import { Effects } from './systems/Effects.js';
 import { Hazards } from './systems/Hazards.js';
 import { MapView } from './render/maps/index.js';
 import { TILE, tileOf, tileKey, inGrid, snapToTile } from './core/grid.js';
-import { layout, drawHud, drawPanel, drawRange, bossBarsBottom } from './render/ui.js';
+import { layout, drawHud, drawPanel, drawRange, bossBarsBottom, drawHasted, drawBurnoutGlow } from './render/ui.js';
 import { inRect, sliderValue } from './render/widgets.js';
 import { drawBanner, drawOverlay, overlayLayout } from './render/screens.js';
 import { drawInfoPanel, infoLayout } from './render/infoPanel.js';
@@ -108,6 +108,8 @@ export class Game {
     this.speed = 1;
     this.nextIn = null; // turno automático: 0 = a próxima rodada começa no próximo passo (null = espera o jogador)
     this.callCooldown = 0;
+    this.burnoutLeft = 0; // BURNOUT ligado: segundos que faltam
+    this.burnoutCd = 0; // segundos até poder usar o BURNOUT de novo
     this.placing = null; // tipo de defesa sendo posicionada
     this.inspect = null; // defesa da loja só sendo olhada (sem dinheiro pra comprar): mostra os atributos
     this.selectedTower = null;
@@ -276,6 +278,7 @@ export class Game {
     this.flushSpawns();
     this.revealStealth();
     this.encryptAuras();
+    this.updateHaste(dt);
     for (const t of this.towers) t.update(dt, this);
     this.flushSpawns();
     for (const p of this.projectiles) p.update(dt, this);
@@ -295,6 +298,64 @@ export class Game {
       if (this.selectedTower?.dead) this.selectedTower = null;
     }
     if (this.lives <= 0) this.end(false);
+  }
+
+  // Comandantes (Executivo) no mapa que estão funcionando (criptografado ou
+  // atordoado não manda em ninguém)
+  get commanders() {
+    return this.towers.filter((t) => t.def.commander && !t.dead);
+  }
+
+  // Já tem COMMANDER_MAX comandantes: não dá pra colocar outro
+  commanderFull(type) {
+    return !!TOWERS[type].commander && this.commanders.length >= COMMANDER_MAX;
+  }
+
+  // Velocidade de ataque de cada defesa: a aura do Executivo mais forte que
+  // alcança ela (não soma com outro Executivo) e o BURNOUT por cima, pra todas
+  updateHaste(dt) {
+    this.burnoutLeft = Math.max(0, this.burnoutLeft - dt);
+    this.burnoutCd = Math.max(0, this.burnoutCd - dt);
+    const bosses = this.commanders.filter((c) => !c.ransom && !(c.stunned > 0));
+    const burn = this.burnoutLeft > 0 ? 1 + BURNOUT.haste : 1;
+    for (const t of this.towers) {
+      // só quem ataca com recarga acelera (não o Executivo, o Minerador nem a isca)
+      if (t.def.attack === 'aura' || t.def.attack === 'farm' || t.def.attack === 'decoy') {
+        t.haste = 1;
+        continue;
+      }
+      let aura = 0;
+      for (const c of bosses) if (Math.hypot(c.x - t.x, c.y - t.y) <= c.stats.range) aura = Math.max(aura, c.stats.haste);
+      t.haste = (1 + aura) * burn;
+    }
+  }
+
+  // Botão do BURNOUT: com um Executivo no mapa, a cada BURNOUT.cooldown s
+  get canBurnout() {
+    return this.commanders.length > 0 && this.burnoutCd <= 0 && this.state === 'playing';
+  }
+
+  burnout() {
+    if (!this.canBurnout) {
+      if (this.commanders.length) this.sound.play('error');
+      return;
+    }
+    const extra = Math.max(0, ...this.commanders.map((c) => c.stats.burnoutExtra ?? 0));
+    this.burnoutLeft = BURNOUT.time + extra;
+    this.burnoutCd = BURNOUT.cooldown;
+    for (const t of this.towers) {
+      if (t.def.attack === 'farm' || t.def.attack === 'decoy') continue;
+      t.spawnAnim = 1;
+      this.fx.burst(t.x, t.y - 20, '#ff9a2e', 10, 150, 0.45, 4, true);
+    }
+    for (const c of this.commanders) {
+      c.attack = 1; // punho pra cima
+      this.fx.ring(c.x, c.y, c.stats.range, 'boost');
+    }
+    this.showBanner('BURNOUT!', 1.1, '#ff9a2e', 50, `Todas as defesas +${Math.round(BURNOUT.haste * 100)}% mais rápidas`);
+    this.shake(4);
+    this.sound.play('burnout');
+    buzz(30);
   }
 
   // Filhos de vírus estourados entram na lista só entre etapas
@@ -727,7 +788,7 @@ export class Game {
 
   place(type, x, y) {
     const cost = this.costOf(type);
-    if (this.isLocked(type) || !this.canAfford(cost) || !this.canPlace(type, x, y)) return false;
+    if (this.isLocked(type) || this.commanderFull(type) || !this.canAfford(cost) || !this.canPlace(type, x, y)) return false;
     ({ x, y } = snapToTile(x, y)); // a defesa fica no centro do quadrado
     this.pay(cost);
     this.freeTower = false; // (se era a grátis, já usou)
@@ -927,6 +988,7 @@ export class Game {
 
   key(k) {
     if (k === ' ' && this.state === 'playing' && (!this.tutorial || this.tutorial.done)) this.playPressed();
+    else if ((k === 'b' || k === 'B') && this.state === 'playing') this.burnout();
     else if (k === 'Escape') {
       if (this.state === 'paused') this.resume();
       else this.pause();
@@ -943,6 +1005,7 @@ export class Game {
     const L = layout(this);
     if (sx >= L.panel.x) return this.panelTap(sx, sy, L);
     if (inRect(L.pause, sx, sy)) return this.pause();
+    if (this.commanders.length && inRect(L.burnout, sx, sy)) return this.burnout();
     // aba de informações da defesa: a alça abre/recolhe; tocar na aba não mexe no mapa
     const info = infoLayout(this);
     if (info && inRect(info.toggle, sx, sy)) return this.app.toggleInfo?.();
@@ -1046,6 +1109,11 @@ export class Game {
         this.sound.play('error');
         return;
       }
+      if (this.commanderFull(tile.type)) {
+        this.fx.panelText(tile.x + tile.w / 2, tile.y + 30, `Máx. ${COMMANDER_MAX}!`, '#ff7a8a', 16);
+        this.sound.play('error');
+        return;
+      }
       const toggleOff = this.placing === tile.type;
       if (!toggleOff && !this.canAfford(this.costOf(tile.type))) {
         this.fx.panelText(tile.x + tile.w / 2, tile.y + 30, 'Sem dinheiro!', '#ff7a8a', 16);
@@ -1127,7 +1195,8 @@ export class Game {
     }
     if (this.place(type, x, y)) return;
     const def = TOWERS[type];
-    this.fx.text(x, y - 30, def.onPath ? 'Só no caminho!' : 'Aqui não dá!', '#ff7a8a', 18);
+    const why = this.commanderFull(type) ? `Máx. ${COMMANDER_MAX} comandantes!` : def.onPath ? 'Só no caminho!' : 'Aqui não dá!';
+    this.fx.text(x, y - 30, why, '#ff7a8a', 18);
     this.sound.play('error');
   }
 
@@ -1181,7 +1250,7 @@ export class Game {
     ctx.restore();
 
     const sel = this.selectedTower;
-    if (sel) drawRange(ctx, sel.x, sel.y, sel.stats.range, true);
+    if (sel) drawRange(ctx, sel.x, sel.y, sel.stats.range, true, sel.def.attack === 'aura' ? 'rgba(255,207,74,0.2)' : null);
 
     // armadilhas ficam no chão, embaixo dos vírus
     for (const tw of this.towers) if (tw.def.onPath) this.drawTowerAt(ctx, tw);
@@ -1243,6 +1312,7 @@ export class Game {
     }
     ctx.restore();
 
+    if (this.burnoutLeft > 0) drawBurnoutGlow(ctx, this);
     drawHud(ctx, this);
     // Pato de Borracha boiando no canto de baixo do mapa
     if (this.app.perks?.duck) {
@@ -1279,12 +1349,13 @@ export class Game {
     ctx.translate(tw.x, tw.y);
     const idle = tw.def.attack === 'farm' && !this.canMine(tw); // Minerador fora da pilha
     if (tw.ransom) ctx.filter = ENCRYPT_FILTER; // criptografada: "verde de terminal" e apagada
-    drawCharacter(ctx, tw.type, { t: tw.anim, face: tw.face, attack: tw.attack, pulse: tw.pulse, spawn: tw.spawnAnim, level: tw.level, idle });
+    drawCharacter(ctx, tw.type, { t: tw.anim, face: tw.face, attack: tw.def.commander && this.burnoutLeft > 0 ? 1 : tw.attack, pulse: tw.pulse, spawn: tw.spawnAnim, level: tw.level, idle });
     ctx.filter = 'none';
     if (tw.ransom) drawEncrypted(ctx, this.anim, tw.ransom);
     if (idle) drawNoMine(ctx, 0, 0, this.anim);
     if (tw.def.attack === 'decoy' && tw.hp < tw.maxHp) drawBaitBar(ctx, tw);
     if (tw.stunned > 0) drawStunned(ctx, this.anim);
+    if (tw.haste > 1) drawHasted(ctx, this.anim, tw.haste, this.burnoutLeft > 0);
     ctx.restore();
   }
 }

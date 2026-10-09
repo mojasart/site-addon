@@ -550,6 +550,84 @@ const CHARACTERS = {
     ctx.fillStyle = OUTLINE;
     ctx.fillRect(bx - 1, by - 3.2, 1.6, 6.4);
   },
+
+  // Executivo de terno e gravata, maleta numa mão e celular na outra.
+  // No BURNOUT (a) levanta o punho cobrando entrega
+  executivo(ctx, s, t, a) {
+    const suit = '#26305a';
+    legs(ctx, '#20263f', '#14182a');
+    // maleta (atrás, na mão de trás)
+    rrect(ctx, -26, 1, 15, 11, 2.5);
+    fillOutline(ctx, '#7a4a26', 2.5);
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-22, 1);
+    ctx.lineTo(-22, -2);
+    ctx.lineTo(-15, -2);
+    ctx.lineTo(-15, 1);
+    ctx.stroke();
+    ctx.fillStyle = GOLD;
+    ctx.fillRect(-19.5, 4.5, 2, 2.5);
+    limb(ctx, -9, -8, -15, -1, 7, suit);
+    hand(ctx, -16, -1.5);
+    torso(ctx, suit);
+    // camisa e gravata
+    ctx.beginPath();
+    ctx.moveTo(-5, -13);
+    ctx.lineTo(5, -13);
+    ctx.lineTo(0, -3);
+    ctx.closePath();
+    fillOutline(ctx, '#f4f6fb', 1.5);
+    ctx.beginPath();
+    ctx.moveTo(-1.6, -12);
+    ctx.lineTo(1.6, -12);
+    ctx.lineTo(2.4, -4);
+    ctx.lineTo(0, -1);
+    ctx.lineTo(-2.4, -4);
+    ctx.closePath();
+    fillOutline(ctx, '#e0313f', 1.5);
+    // braço da frente: celular na mão; no BURNOUT, punho pra cima
+    const up = a > 0.2;
+    const hx = up ? 15 : 12;
+    const hy = up ? -24 : 0;
+    limb(ctx, 9, -8, hx, hy, 7, suit);
+    if (!up) {
+      rrect(ctx, hx - 1, hy - 9, 6, 10, 1.5);
+      fillOutline(ctx, '#1b2340', 1.5);
+      ctx.fillStyle = '#7fd3ff';
+      ctx.fillRect(hx, hy - 8, 4, 6);
+    }
+    hand(ctx, hx, hy);
+    // cabeça
+    circle(ctx, 0, -27, 15.5);
+    fillOutline(ctx, SKIN);
+    // cabelo penteado pro lado (com gel)
+    ctx.beginPath();
+    ctx.moveTo(-15.5, -25);
+    ctx.bezierCurveTo(-17, -42, 8, -47, 15, -33);
+    ctx.bezierCurveTo(9, -37, 2, -35, -3, -38);
+    ctx.bezierCurveTo(-6, -33, -11, -31, -15.5, -25);
+    ctx.closePath();
+    fillOutline(ctx, '#3b2a1f', 2.5);
+    gloss(ctx, -4, -40, 4, 1.6, -0.3);
+    // sobrancelhas de quem quer resultado, olhos e sorrisinho
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(0, -32.5);
+    ctx.lineTo(4.5, -31.2);
+    ctx.moveTo(8, -31.2);
+    ctx.lineTo(12, -32.5);
+    ctx.stroke();
+    eyesCute(ctx, 2.5, -27, 7.5);
+    blush(ctx, 1, -22.5, 10);
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(7, -22, 3, 0.2, Math.PI - 0.6);
+    ctx.stroke();
+  },
 };
 
 // ── peças reaproveitadas ───────────────────────────────────
