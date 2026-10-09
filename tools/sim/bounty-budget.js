@@ -7,7 +7,7 @@
 //
 //  No Bug Bounty a partida tem só o orçamento (vírus não dão dinheiro). Pra
 //  cada sala (uma por season) testa orçamentos de STEP em STEP e acha o
-//  MENOR em que pelo menos MIN_RATE dos bots passam (fazem 1 estrela). Os
+//  MENOR em que pelo menos MIN_RATE dos bots fazem STARS estrelas. Os
 //  bots jogam com todos os upgrades da Dark Net: o Bug Bounty só abre com a
 //  season inteira platinada.
 // ─────────────────────────────────────────────────────────────
@@ -15,18 +15,19 @@ import { Worker, isMainThread, parentPort, workerData } from 'node:worker_thread
 import { availableParallelism } from 'node:os';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { playMap, PROFILES, ALL_PERKS } from './bot.js';
-import { BOUNTY } from '../../firewall-defense/src/data/bounty.js';
+import { BOUNTY, bountyStars } from '../../firewall-defense/src/data/bounty.js';
 import { BOUNTY_MAPS } from '../../firewall-defense/src/data/maps.js';
 
 const MIN_RATE = 0.05;
+const STARS = 3; // estrelas que contam como "passou"
 const STEP = 250;
-const MAX = 8000;
+const MAX = 12000;
 
 if (!isMainThread) {
   for (const job of workerData.jobs) {
     BOUNTY.budget[job.season] = job.budget;
     const r = playMap(job.season, job.profile, job.seed, 'bounty', ALL_PERKS);
-    parentPort.postMessage({ ...job, won: r.won, ratio: r.ratio });
+    parentPort.postMessage({ ...job, won: bountyStars(r.ratio ?? 0) >= STARS, ratio: r.ratio });
   }
   parentPort.postMessage({ done: true });
 } else {
@@ -63,9 +64,9 @@ if (!isMainThread) {
       const rs = results.filter((r) => r.season === season && r.budget === budget);
       const rate = rs.filter((r) => r.won).length / rs.length;
       const ratio = rs.reduce((a, r) => a + (r.ratio ?? 0), 0) / rs.length;
-      const mark = pick == null && rate >= MIN_RATE ? '  ← menor com 5%' : '';
+      const mark = pick == null && rate >= MIN_RATE ? `  ← menor com ${Math.round(MIN_RATE * 100)}% fazendo ${STARS} estrelas` : '';
       if (pick == null && rate >= MIN_RATE) pick = budget;
-      console.log(`  $${String(budget).padStart(5)}  passam ${String(Math.round(rate * 100)).padStart(3)}%  estourados (média) ${Math.round(ratio * 100)}%${mark}`);
+      console.log(`  $${String(budget).padStart(5)}  ${STARS} estrelas ${String(Math.round(rate * 100)).padStart(3)}%  estourados (média) ${Math.round(ratio * 100)}%${mark}`);
     }
     return pick;
   });
@@ -73,7 +74,7 @@ if (!isMainThread) {
   console.log('orçamento mínimo por season:', picked.map((b) => (b == null ? `nenhum até $${MAX}` : `$${b}`)).join(' · '));
 
   if (args.includes('--save')) {
-    if (picked.some((b) => b == null)) throw new Error('alguma sala não chegou em 5%: aumente MAX');
+    if (picked.some((b) => b == null)) throw new Error(`alguma sala não chegou em ${Math.round(MIN_RATE * 100)}%: aumente MAX`);
     const url = new URL('../../firewall-defense/src/data/bounty.js', import.meta.url);
     const src = readFileSync(url, 'utf8').replace(/budget: \[[^\]]*\]/, `budget: [${picked.join(', ')}]`);
     writeFileSync(url, src);
