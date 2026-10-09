@@ -101,9 +101,10 @@ export class RoundManager {
       this.pending[q.round]--;
     }
     // as rodadas terminam em ordem: a mais antiga aberta acaba primeiro
+    // (quem não segura a onda, como a Cicada 3301, não conta)
     while (this.active) {
       const r = this.done;
-      const alive = (e) => !e.dead && e.round === r;
+      const alive = (e) => !e.dead && e.round === r && !e.def.lingers;
       if (this.pending[r] > 0 || game.enemies.some(alive) || game.newEnemies.some(alive)) break;
       this.done++;
       game.onRoundEnd(this.done);

@@ -2,7 +2,7 @@ import { VIEW_H, PANEL_W, SPEEDS, TURBO_SPEED, DANGER_TILES, EARLY_BONUS, EARLY_
 import { MAPS, BOUNTY_MAPS } from './data/maps.js';
 import { roundsFor } from './data/rounds.js';
 import { PLAT_TIME, PLAT_LIVES, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
-import { worth } from './data/enemies.js';
+import { worth, ENEMIES } from './data/enemies.js';
 import { BOUNTY, bountyRound, layers, comboMul, bountyStars } from './data/bounty.js';
 import { TOWERS, TARGET_MODES } from './data/towers.js';
 import { applyPerks, ROOT_MONEY, DUCK, INTEREST, LOAN } from './data/darknet.js';
@@ -249,7 +249,8 @@ export class Game {
 
   step(dt) {
     // venceu: o jogo segue rodando um instante (o estouro do último vírus) e aí vem a vitória
-    if (this.winIn != null && (this.winIn -= dt) <= 0) {
+    // (sobrou quem não segura a onda, como a Cicada: a vitória espera ele morrer)
+    if (this.winIn != null && !this.anyAlive() && (this.winIn -= dt) <= 0) {
       this.winIn = null;
       this.end(true);
       return;
@@ -430,6 +431,8 @@ export class Game {
     if (!this.rounds.active) for (const t of this.towers) t.finishMining(this);
     if (this.rounds.finished) {
       this.winIn = WIN_DELAY;
+      // sobrou a Cicada: a vitória só vem com ela morta
+      if (this.anyAlive()) this.showBanner('ÚLTIMA RODADA!', 2.4, '#3dff9a', 36, 'Derrote a Cicada 3301 pra vencer');
       return;
     }
     this.sound.play('roundEnd');
@@ -449,6 +452,11 @@ export class Game {
     this.nextIn = this.autoRound ? 0 : null;
   }
 
+  // Ainda tem vírus vivo no mapa (conta quem não segura a onda, como a Cicada)
+  anyAlive() {
+    return this.enemies.some((e) => !e.dead) || this.newEnemies.some((e) => !e.dead);
+  }
+
   // Bônus por chamar a próxima rodada com outra ainda rolando:
   // uma parte do dinheiro que os vírus dela valem, proporcional ao que
   // ainda falta da rodada atual (com 1 vírus sobrando, é só $1)
@@ -456,8 +464,8 @@ export class Game {
     if (this.platinum || this.bounty || !this.rounds.active || !this.canCall()) return 0;
     const roundValue = (r) => this.rounds.rounds[r].reduce((sum, g) => sum + g.count * worth(g.type), 0);
     const cur = this.rounds.done;
-    const alive = (e) => !e.dead && e.round === cur;
-    let left = this.rounds.queue.reduce((sum, q) => sum + (q.round === cur ? worth(q.type) : 0), 0);
+    const alive = (e) => !e.dead && e.round === cur && !e.def.lingers;
+    let left = this.rounds.queue.reduce((sum, q) => sum + (q.round === cur && !ENEMIES[q.type].lingers ? worth(q.type) : 0), 0);
     for (const e of this.enemies) if (alive(e)) left += worth(e.type);
     for (const e of this.newEnemies) if (alive(e)) left += worth(e.type);
     const frac = Math.min(1, left / roundValue(cur));

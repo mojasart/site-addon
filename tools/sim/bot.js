@@ -121,6 +121,14 @@ export function playMap(mapIndex, profileName, seed, mode = 'normal', perks = nu
   }
 
   function think() {
+    // Cicada 3301 viva (não segura a onda e fica pra trás): quem alcança ela
+    // mira em MAIS VIDA; longe dela, volta pra PRIMEIRO (como um jogador faria)
+    const cicadas = game.enemies.filter((e) => !e.dead && e.def.lingers);
+    for (const t of game.towers) {
+      if (!t.def.targeting) continue;
+      const near = cicadas.some((c) => Math.hypot(c.x - t.x, c.y - t.y) <= t.stats.range + 60);
+      t.targetMode = near ? 'hp' : 'first';
+    }
     // Ransomware criptografou defesas: paga o resgate primeiro (parada não ajuda)
     for (const t of game.towers) if (t.ransom && game.money >= t.ransom) game.payRansom(t);
     for (let guard = 0; guard < 6; guard++) {
