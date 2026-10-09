@@ -141,13 +141,14 @@ export const TOWERS = {
   },
   executivo: {
     name: 'Executivo',
-    desc: 'Comandante: as defesas no raio dele atacam mais rápido. Poder: BURNOUT',
+    desc: 'Comandante: as defesas no raio dele atacam mais rápido e o Spyware fica visível. Poder: BURNOUT',
     lore: 'Nunca escreveu uma linha de código, mas cobra entrega de todo mundo. E todo mundo entrega.',
     cost: 400,
     radius: 18,
     range: Math.round(2.5 * TILE), // 2,5 quadrados pra cada lado (135)
     attack: 'aura',
     commander: true,
+    reveals: true, // de olho em tudo: deixa o Spyware visível no alcance dele (como o Robô NMAP)
     haste: 0.15, // defesas no alcance atacam 15% mais rápido (dois Executivos não somam: vale o maior)
     upgrades: [
       { name: 'Reunião de Alinhamento', desc: 'Mais alcance e as defesas no raio atacam 25% mais rápido', cost: 300,
