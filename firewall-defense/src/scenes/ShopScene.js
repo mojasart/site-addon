@@ -329,7 +329,8 @@ export class ShopScene {
     ctx.shadowBlur = 0;
     ctx.save();
     ctx.translate(v.x + 28, v.y + v.h / 2);
-    drawBolt(ctx, Math.min(14, v.h / 2 - 3));
+    // selo do VIP (assets/sprites/vip.png); sem ele, o raio
+    if (!drawImage(ctx, 'vip', Math.min(46, v.h + 6))) drawBolt(ctx, Math.min(14, v.h / 2 - 3));
     ctx.restore();
     mono(ctx, 'MODO VIP', v.x + 56, v.y + v.h / 2 - 8, 14, VIP_GOLD);
     mono(ctx, on ? '[ATIVO]' : VIP.price, v.x + v.w - 8, v.y + v.h / 2 - 8, 11, VIP_GOLD, 'right', !on);

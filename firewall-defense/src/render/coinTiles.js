@@ -24,7 +24,11 @@ export function drawCoinTiles(ctx, tiles, t, highlight = false, towers = []) {
     ctx.setLineDash(highlight ? [] : [7, 5]);
     ctx.stroke();
     ctx.setLineDash([]);
-    drawPile(ctx, t + tile.c * 0.37);
+    // sprite (assets/sprites/coin_pile.png); sem ela, o desenho com formas
+    if (drawImage(ctx, 'coin_pile', s * 0.98, 0, 1)) {
+      const p = (t + tile.c * 0.37) % 2.4;
+      if (p < 0.5) sparkle(ctx, -6, -s * 0.3, 5 * Math.sin((p / 0.5) * Math.PI), '#fff6c8');
+    } else drawPile(ctx, t + tile.c * 0.37);
     ctx.restore();
   }
 }

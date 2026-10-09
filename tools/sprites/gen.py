@@ -139,6 +139,12 @@ ASSETS = {
     # ── HUD ──────────────────────────────────────────────
     'coin': ('magenta', 'A shiny orange round Bitcoin coin with a big white tilted bitcoin symbol "₿" in the middle, front view. '),
     'heart': ('magenta', 'A glossy red cartoon heart icon for lives, front view. '),
+    # pilha de bitcoin (chão do Minerador e loja) e selo do modo VIP: feitas
+    # juntas no chat do Gemini (raw/coinpile_vip_sheet.webp, separadas ao meio)
+    'coin_pile': ('green', 'A pile of bitcoins seen from a three-quarter top-down view: a small messy mound of thick shiny '
+                  'gold coins, some stacked in short towers, some lying flat, each with an embossed orange "₿". '),
+    'vip': ('green', 'A VIP badge icon: a chunky shiny golden crown on top of a rounded purple shield with a big bold '
+            'white "VIP", small cyan gems on the crown and a red ribbon banner under the shield. '),
     # raio do contador de energia (tela de mapas e janela SEM ENERGIA)
     'energy_bolt': ('magenta', 'A chunky glossy cartoon lightning bolt icon for an energy meter, like the energy '
                     'icons of Clash Royale and Brawl Stars, front view, slightly tilted to the right: one thick zig-zag '
