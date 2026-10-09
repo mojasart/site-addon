@@ -89,6 +89,7 @@ const ICON_NAMES = [
   'danger',
   'settings',
   'shop',
+  'infinity', // energia infinita do modo VIP (loja)
 ];
 
 const images = new Map();

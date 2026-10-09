@@ -314,7 +314,9 @@ export class ShopScene {
     this.drawVip(ctx, L.vip);
   }
 
-  // Modo VIP: moldura dourada brilhando; com o VIP ativo, [ATIVO]
+  // Modo VIP: moldura dourada brilhando. Selo do VIP com um saquinho de café
+  // na frente; em cima "+100 [café] [energia]∞", embaixo o preço (no mesmo
+  // lugar dos pacotes); com o VIP ativo, [ATIVO]
   drawVip(ctx, v) {
     const on = this.app.vip;
     const fl = this.flash.vip ?? 0;
@@ -327,14 +329,34 @@ export class ShopScene {
     ctx.shadowBlur = 4 + 8 * glow;
     ctx.strokeRect(v.x + 0.5, v.y + 0.5, v.w - 1, v.h - 1);
     ctx.shadowBlur = 0;
+    const cy = v.y + v.h / 2;
     ctx.save();
-    ctx.translate(v.x + 28, v.y + v.h / 2);
+    ctx.translate(v.x + 26, cy - 2);
     // selo do VIP (assets/sprites/vip.png); sem ele, o raio
-    if (!drawImage(ctx, 'vip', Math.min(46, v.h + 6))) drawBolt(ctx, Math.min(14, v.h / 2 - 3));
+    if (!drawImage(ctx, 'vip', Math.min(42, v.h + 2))) drawBolt(ctx, Math.min(14, v.h / 2 - 3));
+    // saquinho de café na frente, embaixo à direita do selo
+    drawImage(ctx, 'coffee_sack', 22, 13, 9);
     ctx.restore();
-    mono(ctx, 'MODO VIP', v.x + 56, v.y + v.h / 2 - 8, 14, VIP_GOLD);
-    mono(ctx, on ? '[ATIVO]' : VIP.price, v.x + v.w - 8, v.y + v.h / 2 - 8, 11, VIP_GOLD, 'right', !on);
-    mono(ctx, `+${VIP.coffee} cafés + energia ∞`, v.x + 56, v.y + v.h / 2 + 9, 11, '#ffe9a0', 'left', false);
+    // linha de cima: +100 [café] [energia]∞
+    const ty = cy - 8;
+    let x = v.x + 56;
+    mono(ctx, `+${VIP.coffee}`, x, ty, 14, VIP_GOLD);
+    ctx.font = `bold 14px ${MONO}`;
+    x += ctx.measureText(`+${VIP.coffee}`).width + 11;
+    if (!drawImage(ctx, 'coffee_cup', 20, x, ty)) {
+      ctx.save();
+      ctx.translate(x, ty);
+      ICONS.coffee(ctx, 7);
+      ctx.restore();
+    }
+    x += 22;
+    ctx.save();
+    ctx.translate(x, ty);
+    drawBolt(ctx, 8);
+    ctx.restore();
+    if (!drawImage(ctx, 'icon_infinity', 22, x + 17, ty)) mono(ctx, '∞', x + 10, ty, 14, VIP_GOLD);
+    // linha de baixo: o preço (ou [ATIVO])
+    mono(ctx, on ? '[ATIVO]' : VIP.price, v.x + 56, cy + 9, 11, '#ffe9a0', 'left', on);
   }
 
   // o anúncio do brinde acabou (app.energyTap): brilho no quadro
