@@ -1,5 +1,5 @@
 import { VIEW_H, PANEL_W, SPEEDS, TURBO_SPEED, DANGER_TILES, EARLY_BONUS, EARLY_WAVES, DEBUG } from './config.js';
-import { MAPS } from './data/maps.js';
+import { MAPS, BOUNTY_MAPS } from './data/maps.js';
 import { roundsFor } from './data/rounds.js';
 import { PLAT_TIME, PLAT_LIVES, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
 import { worth } from './data/enemies.js';
@@ -47,16 +47,17 @@ const CAST_TIME = 0.5; // Ransomware fica parado tremendo esse tempo ao criptogr
 const WIN_DELAY = 0.5; // limpou a última rodada: espera o último vírus estourar de vez antes da vitória
 
 // A partida em si (uma fase). Criada pelo App ao escolher um mapa.
-// mode: 'normal' ou 'platinum' (ondas sem parar até o chefão; data/platinum.js)
+// mode: 'normal', 'platinum' (ondas sem parar até o chefão; data/platinum.js)
+// ou 'bounty' (sala do Bug Bounty: mapIndex = season; data/bounty.js)
 export class Game {
   constructor(app, mapIndex, mode = 'normal') {
     this.app = app;
     this.sound = app.sound;
     this.mapIndex = mapIndex;
-    this.map = MAPS[mapIndex];
     this.mode = mode;
     this.platinum = mode === 'platinum';
-    this.bounty = !!this.map.bounty && !this.platinum; // fase Bug Bounty (data/bounty.js)
+    this.bounty = mode === 'bounty';
+    this.map = this.bounty ? BOUNTY_MAPS[mapIndex] : MAPS[mapIndex];
     this.anim = 0;
     this.pointer = { x: -1, y: -1, down: false, type: 'touch' };
     this.drag = null;
@@ -69,7 +70,7 @@ export class Game {
   get server() { return this.view.server; }
   get spawnDist() { return this.view.spawnDist; }
   get offsetX() { return this.view.offsetX; }
-  get nextMap() { return MAPS[this.mapIndex + 1] ?? null; }
+  get nextMap() { return this.bounty ? null : MAPS[this.mapIndex + 1] ?? null; }
 
   resize(viewW) {
     const mapW = viewW - PANEL_W;
@@ -136,7 +137,7 @@ export class Game {
     this.waveGap = null;
     this.blocked = this.platinum ? blockedAlly(this.map) : null;
     // 1-1 (normal) é o tutorial: só Hacker, Golem e Honeypot; o Hacker ensina a jogar
-    this.lockedTowers = this.mapIndex === 0 && !this.platinum ? new Set(TUTORIAL_LOCKED) : null;
+    this.lockedTowers = this.mapIndex === 0 && this.mode === 'normal' ? new Set(TUTORIAL_LOCKED) : null;
     this.tutorial = Tutorial.wanted(this) ? new Tutorial(this) : null;
     if (this.platinum) {
       this.showBanner('MODO PLATINA', 3, '#bdeeff', 46, `${TOWERS[this.blocked].name} bloqueado · chefão em 3:00`);
@@ -937,7 +938,7 @@ export class Game {
     else if (inRect(L.next, sx, sy)) {
       // venceu: vai pro próximo mapa (normal); perdeu: tenta de novo no mesmo modo
       if (this.state === 'won' && this.nextMap) this.app.startMap(this.mapIndex + 1);
-      else this.app.startMap(this.mapIndex, this.state === 'won' ? 'normal' : this.mode);
+      else this.app.startMap(this.mapIndex, this.state === 'won' && !this.bounty ? 'normal' : this.mode);
     }
   }
 

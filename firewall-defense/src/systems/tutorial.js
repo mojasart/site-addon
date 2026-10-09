@@ -36,7 +36,7 @@ export class Tutorial {
   // Sempre na 1-1 no modo normal (mesmo pra quem já fez); na platina, nunca.
   // (bots não têm save: sem tutorial)
   static wanted(game) {
-    return game.mapIndex === 0 && !game.platinum && !!game.app.save;
+    return game.mapIndex === 0 && game.mode === 'normal' && !!game.app.save;
   }
 
   constructor(game) {

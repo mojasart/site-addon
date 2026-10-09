@@ -35,8 +35,7 @@ if (!isMainThread) {
   const refine = process.argv.includes('--refine');
   const mi = process.argv.indexOf('--maps');
   const picked = mi >= 0 ? new Set(process.argv[mi + 1].split(',').map((x) => Number(x) - 1)) : null;
-  // Bug Bounty não tem vitória/derrota de bot: fica de fora (mantém o que tinha)
-  const only = new Set(MAPS.map((m, i) => i).filter((i) => !MAPS[i].bounty && (!picked || picked.has(i))));
+  const only = new Set(MAPS.map((m, i) => i).filter((i) => !picked || picked.has(i)));
   const n = MAPS.length;
   const BASE_SPEED = MAPS.map((m) => m.speedMul);
   const target = (m) => TARGET[0] + (TARGET[1] - TARGET[0]) * (m / (n - 1));
