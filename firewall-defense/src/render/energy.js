@@ -42,7 +42,7 @@ const clock = (ms) => {
 // Royal Match, Homescapes): o raio grande saindo da pílula pela esquerda,
 // a quantidade em destaque e, numa caixinha à direita, o relógio até a
 // próxima. A caixinha vai enchendo de amarelo enquanto a próxima carrega;
-// com a energia cheia ela fica verde com CHEIO.
+// com a energia cheia ela some.
 export const ENERGY_BADGE = { w: 178, h: 42 };
 
 export function drawEnergyBadge(ctx, app, x, y) {
@@ -74,20 +74,22 @@ export function drawEnergyBadge(ctx, app, x, y) {
   const bh = h - 12;
   const bx = x + w - bw - 6;
   const by = y + 6;
-  ctx.save();
-  rrect(ctx, bx, by, bw, bh, bh / 2);
-  ctx.fillStyle = app.vip ? '#e0a92a' : full ? '#2fbf6a' : '#0c1230';
-  ctx.fill();
-  if (!full) {
-    ctx.clip();
-    const k = 1 - app.energyNextMs() / app.energyRegenMs;
-    ctx.fillStyle = 'rgba(255,210,63,0.30)';
-    ctx.fillRect(bx, by, bw * Math.min(1, Math.max(0, k)), bh);
+  // (com a energia cheia, sem VIP, não tem caixinha nenhuma)
+  if (app.vip || !full) {
+    ctx.save();
+    rrect(ctx, bx, by, bw, bh, bh / 2);
+    ctx.fillStyle = app.vip ? '#e0a92a' : '#0c1230';
+    ctx.fill();
+    if (!full) {
+      ctx.clip();
+      const k = 1 - app.energyNextMs() / app.energyRegenMs;
+      ctx.fillStyle = 'rgba(255,210,63,0.30)';
+      ctx.fillRect(bx, by, bw * Math.min(1, Math.max(0, k)), bh);
+    }
+    ctx.restore();
+    if (app.vip) text(ctx, 'VIP', bx + bw / 2, by + bh / 2 + 1, { size: 15 });
+    else text(ctx, clock(app.energyNextMs()), bx + bw / 2, by + bh / 2 + 1, { size: 15, color: '#ffe27a' });
   }
-  ctx.restore();
-  if (app.vip) text(ctx, 'VIP', bx + bw / 2, by + bh / 2 + 1, { size: 15 });
-  else if (full) text(ctx, 'CHEIO', bx + bw / 2, by + bh / 2 + 1, { size: 13 });
-  else text(ctx, clock(app.energyNextMs()), bx + bw / 2, by + bh / 2 + 1, { size: 15, color: '#ffe27a' });
 
   // raio grande por cima da borda esquerda, respirando de leve
   ctx.save();
