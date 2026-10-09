@@ -288,11 +288,11 @@ export function drawPanel(ctx, game) {
   ctx.fillRect(P.x + 5, 0, 3, P.h);
 
   if (game.selectedTower) drawTowerInfo(ctx, game, L);
-  else {
-    if (game.panelTab === 'items') drawItems(ctx, game, L);
-    else drawShop(ctx, game, L);
-    drawPreview(ctx, game, L.preview);
-  }
+  else if (game.panelTab === 'items') drawItems(ctx, game, L);
+  else drawShop(ctx, game, L);
+  // vírus da próxima rodada: aparece sempre, até com uma defesa selecionada
+  // (a ficha dela termina no VENDER, acima da prévia)
+  drawPreview(ctx, game, L.preview);
   drawPlayButton(ctx, game, L.play);
   drawSpeedButton(ctx, game, L.speed);
 }
