@@ -7,6 +7,17 @@ const MAX_PARTICLES = 450;
 const MAX_POPS = 60;
 const POP_LIFE = 0.28; // duração do estouro (s)
 const POP_PX = 96; // tamanho em que a sprite do estouro é desenhada (e escalada)
+const POP_ALPHA = 0.7; // opacidade do estouro (um pouco transparente)
+// cores do estouro (sorteada a cada um): a original e filtros que pintam o
+// branco da sprite. Poucas, porque cada uma vira um desenho em cache
+const POP_TINTS = [
+  null,
+  'sepia(1) saturate(5) hue-rotate(-50deg)', // rosa
+  'sepia(1) saturate(5) hue-rotate(160deg)', // azul
+  'sepia(1) saturate(5) hue-rotate(60deg)', // verde
+  'sepia(1) saturate(4) hue-rotate(230deg)', // roxo
+  'sepia(1) saturate(6) hue-rotate(5deg)', // laranja
+];
 
 const RING_COLORS = {
   fire: { fill: 'rgba(255,122,26,0.30)', stroke: '#ff9a2e' },
@@ -30,7 +41,14 @@ export class Effects {
 
   // "POP!" estilo Bloons: estrelinha branca + gotinhas da cor do vírus
   pop(x, y, color, r) {
-    if (this.pops.length < MAX_POPS) this.pops.push({ x, y, r: r * 1.6, life: POP_LIFE, max: POP_LIFE, rot: Math.random() * TAU });
+    if (this.pops.length < MAX_POPS) {
+      this.pops.push({
+        x, y, r: r * 1.6, life: POP_LIFE, max: POP_LIFE,
+        rot: Math.random() * TAU, // ângulo e giro sorteados
+        spin: rand(-1.2, 1.2),
+        tint: POP_TINTS[Math.floor(Math.random() * POP_TINTS.length)],
+      });
+    }
     const big = r > 22;
     this.burst(x, y, color, big ? 34 : 7, big ? 280 : 170, big ? 0.6 : 0.35, big ? 7 : 4.5, true);
   }
@@ -157,11 +175,11 @@ export class Effects {
       if (hasImage('pop')) {
         const d = p.r * 2.3 * (0.5 + 0.65 * (1 - (1 - k) ** 3));
         ctx.save();
-        ctx.globalAlpha = k < 0.55 ? 1 : 1 - (k - 0.55) / 0.45;
+        ctx.globalAlpha = POP_ALPHA * (k < 0.55 ? 1 : 1 - (k - 0.55) / 0.45);
         ctx.translate(p.x, p.y);
-        ctx.rotate(p.rot + k * 0.5);
+        ctx.rotate(p.rot + k * p.spin);
         ctx.scale(d / POP_PX, d / POP_PX);
-        drawImage(ctx, 'pop', POP_PX);
+        drawImage(ctx, 'pop', POP_PX, 0, 0, p.tint);
         ctx.restore();
         continue;
       }
