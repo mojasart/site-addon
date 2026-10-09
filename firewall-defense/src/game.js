@@ -1191,7 +1191,7 @@ export class Game {
       this.sound.play('error');
       return;
     }
-    const lives = this.platinum ? 1 : BACKUP_LIVES;
+    const lives = BACKUP_LIVES;
     if (!((this.app.inventory?.[tile.id] ?? 0) > 0)) {
       this.toast = { text: `Sem ${item.name}! Compre na LOJA, na tela de mapas`, time: 2.6 };
       this.sound.play('error');

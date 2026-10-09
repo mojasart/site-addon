@@ -1,6 +1,6 @@
 import { VIEW_H, OUTLINE, GOLD, ENERGY } from '../config.js';
 import { rrect, fillOutline, text, setFont } from './canvas.js';
-import { drawImage } from './images.js';
+import { drawImage, hasImage } from './images.js';
 import { drawItemIcon } from './consumables.js';
 import { bigButton, iconButton, ribbon } from './widgets.js';
 import { ICONS } from './sprites.js';
@@ -59,15 +59,23 @@ export function drawEnergyBadge(ctx, app, x, y) {
   rrect(ctx, x, y, w, h, h / 2);
   fillOutline(ctx, '#1b2550', 3);
 
-  // quantidade: "9" grande e "/10" menor
-  const nx = x + 46;
+  // quantidade: "9" grande e "/10" menor. Cheia (sem a caixinha do relógio):
+  // centralizada no espaço depois do raio
   const cy = y + h / 2 + 1;
   const count = inf ? '∞' : String(e);
-  text(ctx, count, nx, cy, { size: 24, align: 'left', color: empty ? '#ff7a8a' : '#ffffff' });
-  if (!inf) {
-    setFont(ctx, 24);
-    text(ctx, `/${ENERGY.max}`, nx + ctx.measureText(count).width + 2, cy + 3, { size: 14, align: 'left', color: '#9fb2d8' });
-  }
+  const max = inf ? '' : `/${ENERGY.max}`;
+  // infinito: sprite energy_infinity (par do raio); sem ela, o "∞" em texto
+  const infImg = inf && hasImage('energy_infinity');
+  const INF = 46; // lado do quadro da sprite (o ∞ ocupa quase toda a largura)
+  setFont(ctx, 24);
+  const cw = infImg ? INF : ctx.measureText(count).width;
+  setFont(ctx, 14);
+  const tw = cw + (max ? 2 + ctx.measureText(max).width : 0);
+  const boxed = app.vip || !full; // tem a caixinha à direita
+  const nx = boxed ? x + 46 : x + 40 + (w - 40 - tw) / 2;
+  if (infImg) drawImage(ctx, 'energy_infinity', INF, nx + INF / 2, cy);
+  else text(ctx, count, nx, cy, { size: 24, align: 'left', color: empty ? '#ff7a8a' : '#ffffff' });
+  if (max) text(ctx, max, nx + cw + 2, cy + 3, { size: 14, align: 'left', color: '#9fb2d8' });
 
   // caixinha do tempo (enche enquanto a próxima energia carrega)
   const bw = 66;

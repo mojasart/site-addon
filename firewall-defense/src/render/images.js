@@ -52,6 +52,7 @@ const NAMES = [
   'coffee_cup',
   'coffee_sack',
   'energy_bolt', // raio da energia (render/energy.js)
+  'energy_infinity', // infinito da energia ilimitada (VIP)
   'server',
   'server_hurt',
   'coin',
