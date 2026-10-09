@@ -44,6 +44,7 @@ export function statRows(s, { armor = false } = {}) {
     if (s.burn) rows.push(['QUEIMA', `${fmt(s.burn * (s.burnMul ?? 1))}/s por ${num(s.burnTime + (s.burnExtra ?? 0))}s`]);
   }
   rows.push(['ALCANCE', `${s.range}`], ['RECARGA', `${num(s.fireRate)}s`]);
+  if (s.attack === 'pulse') rows.push(['VOADORES', 'não pega']); // a onda corre pelo chão (Bug)
   if (armor) rows.push(['BLINDADOS', s.canHitArmored ? 'fura' : 'não fura']);
   return [...rows, ...luckRows(s)];
 }

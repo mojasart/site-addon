@@ -87,6 +87,14 @@ ASSETS = {
     'ransomware': ('green', SIDE_RIGHT + 'A big chubby purple cartoon blimp / airship boss monster floating, '
                    'facing RIGHT with huge angry eyes and a toothy evil grin at the front, little tail fins at the back, '
                    'a big golden padlock with a dollar sign hanging on its belly. No feet. '),
+    # Cicada 3301: minichefão que voa (a cigarra do enigma da internet).
+    # As sprites do jogo (cicada.png e cicada_aura.png, a pose do pulso da
+    # aura) vieram de uma imagem só com as 2 poses, feita no chat do Gemini e
+    # separada com tools/sprites/split_pair.py (mesmo enquadramento nas duas)
+    'cicada': ('magenta', 'Top-down three-quarter view facing the RIGHT, flying: a chunky cartoon cicada boss bug with a '
+               'dark charcoal-green armored body, big transparent pale-green wings with glowing neon-green veins, '
+               'big bulging red eyes on a wide head, a smug confident grin, and the number "3301" in glowing green '
+               'digits on its back. Mysterious hacker vibe. '),
     'spyware': ('green', SIDE_RIGHT + 'A sneaky little round slate-grey-blue cartoon virus spy germ with short stubby '
                 'rounded spikes, wearing a black fedora hat and a black burglar eye mask, shifty eyes glancing to the RIGHT, '
                 'a sly smirk, holding a tiny magnifying glass, tiptoeing on two tiny feet. '),

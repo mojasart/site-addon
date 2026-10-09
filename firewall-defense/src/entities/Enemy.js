@@ -79,6 +79,7 @@ export class Enemy {
   }
 
   update(dt, game) {
+    if (this.def.aura) this.auraT = (this.auraT ?? 0) + dt; // pulso da aura (render/viruses.js)
     this.slowTimer = Math.max(0, this.slowTimer - dt);
     this.freezeTimer = Math.max(0, this.freezeTimer - dt);
     this.vulnTimer = Math.max(0, this.vulnTimer - dt);
@@ -215,6 +216,11 @@ export class Enemy {
   //         dot (dano contínuo, do fogo: não pisca) }
   takeDamage(amount, game, opts = {}) {
     if (this.dead || amount <= 0) return;
+    // protegido pela aura da Cicada 3301: não leva dano nenhum
+    if (this.shielded) {
+      if (!opts.dot) game.fx.spark(this.x, this.y - this.r, '#3dff9a', 6);
+      return;
+    }
     if (this.def.armored && !opts.armored) {
       game.fx.blocked(this.x, this.y - this.r);
       game.sound.play('block');

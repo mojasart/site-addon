@@ -102,18 +102,21 @@ export function playMap(mapIndex, profileName, seed, mode = 'normal', perks = nu
   const isPiercer = (t) => t.hitsArmored && (t.def.attack === 'pulse' ? t.stats.damage > 0 : t.def.attack !== 'decoy');
 
   // Platina (1 vida: qualquer vazamento perde) pede um jogo mais cuidadoso:
-  // as 3 primeiras defesas dão dano, e com Spyware chegando tem um Robô NMAP
+  // as 3 primeiras defesas dão dano, com Spyware chegando tem um Robô NMAP,
+  // e com a Cicada 3301 (voa) chegando tem 2 que acertam quem voa (Hacker ou NMAP)
   const DAMAGE = { hacker: 1, firewall: 1, scanner: 1 };
-  function spySoon() {
+  function comingSoon(type) {
     const r = game.rounds;
-    for (let k = r.started; k < Math.min(r.total, r.started + 3); k++) if (r.rounds[k].some((g) => g.type === 'spyware')) return true;
+    for (let k = r.started; k < Math.min(r.total, r.started + 3); k++) if (r.rounds[k].some((g) => g.type === type)) return true;
     return false;
   }
+  const AIR = { hacker: 1, scanner: 1 };
   function platinumPick() {
     if (!game.platinum) return null;
     const hitters = game.towers.filter((t) => DAMAGE[t.type]);
     if (hitters.length < 3) return pickWeighted(DAMAGE);
-    if (spySoon() && !game.isLocked('scanner') && !game.towers.some((t) => t.type === 'scanner')) return 'scanner';
+    if (comingSoon('spyware') && !game.isLocked('scanner') && !game.towers.some((t) => t.type === 'scanner')) return 'scanner';
+    if (comingSoon('cicada') && game.towers.filter((t) => AIR[t.type]).length < 2) return pickWeighted(AIR);
     return null;
   }
 

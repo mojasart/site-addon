@@ -20,8 +20,8 @@ import { inRect, sliderValue } from './render/widgets.js';
 import { drawBanner, drawOverlay, overlayLayout } from './render/screens.js';
 import { drawInfoPanel, infoLayout } from './render/infoPanel.js';
 import { drawCharacter } from './render/characters.js';
-import { drawEnemy } from './render/viruses.js';
-import { drawProjectile, drawCoin, drawServer } from './render/sprites.js';
+import { drawEnemy, drawAura } from './render/viruses.js';
+import { drawProjectile, drawCoin, drawServer, ICONS } from './render/sprites.js';
 import { drawHazards, drawStunned, drawHazardWarning } from './render/hazards.js';
 import { drawEncrypted, ENCRYPT_FILTER } from './render/ransom.js';
 import { drawSpawns } from './render/spawns.js';
@@ -265,6 +265,7 @@ export class Game {
     this.rounds.update(dt, this);
     this.flushSpawns();
     this.revealStealth();
+    this.encryptAuras();
     for (const t of this.towers) t.update(dt, this);
     this.flushSpawns();
     for (const p of this.projectiles) p.update(dt, this);
@@ -296,6 +297,7 @@ export class Game {
   // Isca (Honeypot) que o vírus está encostando, se houver
   baitAt(e) {
     if (e.def.stealth && !e.revealed) return null; // escondido, passa reto pela isca
+    if (e.def.flying) return null; // voa por cima da isca
     for (const t of this.towers) {
       if (t.def.attack !== 'decoy' || t.dead || t.ransom) continue; // criptografada não segura ninguém
       if (Math.hypot(e.x - t.x, e.y - t.y) < t.r + e.r * 0.8) return t;
@@ -560,6 +562,15 @@ export class Game {
     }
   }
 
+  // Cicada 3301: os vírus dentro da aura de criptografia ficam protegidos
+  // (e.shielded: não levam dano). Uma Cicada não protege a outra
+  encryptAuras() {
+    const auras = this.enemies.filter((c) => c.def.aura && !c.dead);
+    for (const e of this.enemies) {
+      e.shielded = !e.def.aura && auras.some((c) => Math.hypot(e.x - c.x, e.y - c.y) <= c.def.aura + e.r * 0.5);
+    }
+  }
+
   // Nota de cada vírus pro modo de mira da defesa (maior = alvo).
   // Nos modos por atributo, o empate vai pro mais perto da base.
   score(tower, e, d) {
@@ -582,7 +593,8 @@ export class Game {
       if (e.def.armored && !armored) continue;
       const d = Math.hypot(e.x - tower.x, e.y - tower.y);
       if (d > range + e.r) continue;
-      list.push({ e, score: this.score(tower, e, d) });
+      // protegido pela Cicada: só vira alvo se não tiver outro
+      list.push({ e, score: this.score(tower, e, d) - (e.shielded ? 1e12 : 0) });
     }
     list.sort((a, b) => b.score - a.score);
     return list.slice(0, n).map((x) => x.e);
@@ -1148,7 +1160,9 @@ export class Game {
       ctx.save();
       ctx.translate(e.x + (e.quake > 0 ? Math.sin(this.anim * 70) * 4 * Math.min(1, e.quake * 3) : 0), e.y); // treme lançando o Ransomware
       if (e.def.stealth && !e.revealed) ctx.globalAlpha = 0.25; // Spyware escondido: quase transparente
+      if (e.def.aura) drawAura(ctx, e, t); // aura de criptografia da Cicada 3301
       drawEnemy(ctx, e);
+      if (e.shielded) drawShielded(ctx, e, t);
       ctx.restore();
       if (e.def.boss && !e.def.topBar) drawBossBar(ctx, e); // (Ransomware: barra no topo, drawBossBars)
       if (e.vulnTimer > 0) drawVulnerable(ctx, e, t);
@@ -1284,10 +1298,23 @@ function drawBaitBar(ctx, tw) {
   }
 }
 
+// Vírus protegido pela aura da Cicada 3301: anel verde e um cadeadinho
+function drawShielded(ctx, e, t) {
+  const pulse = 0.5 + Math.sin(t * 6 + e.phase) * 0.5;
+  circle(ctx, 0, -e.r * 0.3, e.r + 5);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = `rgba(61,255,154,${0.5 + 0.4 * pulse})`;
+  ctx.stroke();
+  ctx.save();
+  ctx.translate(e.r * 0.8, -e.r * 1.1);
+  ICONS.lock(ctx, 6);
+  ctx.restore();
+}
+
 function drawBossBar(ctx, e) {
   const w = e.r * 2;
   const x = e.x - w / 2;
-  const y = e.y - e.r - 34;
+  const y = e.y - e.r - 34 - (e.def.flying ? 80 : 0); // quem voa tem a barra mais alta (acima das asas)
   rrect(ctx, x, y, w, 12, 6);
   fillOutline(ctx, '#2a1840', 3);
   const k = Math.max(0, e.hp / (e.maxHp ?? e.def.hp));
