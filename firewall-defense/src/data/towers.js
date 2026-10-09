@@ -128,6 +128,7 @@ export const TOWERS = {
     cost: 90,
     radius: 15,
     attack: 'decoy',
+    noSell: true, // não dá pra vender (Game.sell, botão some no painel)
     onPath: true,
     hp: 40, // cada vírus parado tira ~1 por segundo (chefões bem mais)
     duration: 15, // segundos que dura sozinha: nas rodadas vai murchando mesmo sem ninguém morder
