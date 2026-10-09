@@ -1,3 +1,4 @@
+import { TILE } from '../config.js';
 // ─────────────────────────────────────────────────────────────
 //  DEFESAS (os "macacos")
 //
@@ -144,7 +145,7 @@ export const TOWERS = {
     lore: 'Nunca escreveu uma linha de código, mas cobra entrega de todo mundo. E todo mundo entrega.',
     cost: 400,
     radius: 18,
-    range: 95,
+    range: Math.round(2.5 * TILE), // 2,5 quadrados pra cada lado (135)
     attack: 'aura',
     commander: true,
     haste: 0.15, // defesas no alcance atacam 15% mais rápido (dois Executivos não somam: vale o maior)
