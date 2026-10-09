@@ -30,6 +30,9 @@ export function drawEnemy(ctx, e) {
     case 'boss':
       drawBoss(ctx, e);
       break;
+    case 'cicada':
+      drawFlyer(ctx, e);
+      break;
     default:
       drawHopper(ctx, e);
   }
@@ -99,6 +102,7 @@ const SPRITE_LOOK = {
   spy: { size: 3, foot: 0.477, hop: 0.32 },
   adware: { size: 2.8, foot: 0.477, hop: 0.2 },
   boss: { size: 3.4, foot: 0.336, hop: 0 },
+  cicada: { size: 3.2, foot: 0.5, hop: 0, float: 30 }, // Cicada 3301: voa bem acima da sombra
 };
 const VIRUS_LOOK = { size: 2.9, foot: 0.477, hop: 0.42 };
 
@@ -122,7 +126,7 @@ function drawSpriteEnemy(ctx, e) {
   let sy = 1 - 0.07 * low + 0.05 * air;
   let lean = Math.sin(e.phase * rate * TAU) * 0.07;
   if (look.hop === 0) {
-    lift = 8 + Math.sin(e.phase * 2) * 4; // flutuando
+    lift = (look.float ?? 8) + Math.sin(e.phase * (look.float ? 5 : 2)) * 4; // flutuando (ou voando)
     sx = sy = 1;
     lean = 0;
   }
@@ -218,6 +222,7 @@ export function enemySprite(type, def, r) {
     else if (def.kind === 'locker') locker(g, r, def.color);
     else if (def.kind === 'adware') adware(g, r, def.color);
     else if (def.kind === 'spy') spy(g, r, def.color);
+    else if (def.kind === 'cicada') cicada(g, r, 0);
     else blob(g, r, def.color, true);
   });
 }
@@ -554,6 +559,114 @@ function bossBody(g, L, W, color) {
   rrect(g, -19, -8, 30, 24, 6);
   fillOutline(g, GOLD, 3);
   text(g, '$', -4, 5, { size: 18, color: '#7a5600', stroke: null });
+}
+
+// Cicada 3301 (voa): sombra no chão e a cigarra lá em cima, subindo e
+// descendo devagar e batendo as asas
+function drawFlyer(ctx, e) {
+  const { r } = e;
+  const ground = r * 0.9;
+  const lift = 30 + Math.sin(e.phase * 3) * 4;
+  ctx.fillStyle = 'rgba(10,20,30,0.22)';
+  ellipse(ctx, 0, ground, r * 0.8, r * 0.24);
+  ctx.fill();
+  ctx.save();
+  ctx.translate(0, ground - lift - r * 0.5);
+  ctx.scale((e.face || 1) * 1.5, 1.5); // minichefão: bem maior que os vírus
+  cicada(ctx, r, e.phase * 22);
+  if (e.flash > 0) {
+    circle(ctx, 0, 0, r * 0.7);
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// Cigarra do Cicada 3301: corpo escuro, asas transparentes com veias
+// verdes de terminal (batendo com o flap), olhos vermelhos e o "3301" nas
+// costas. Origem no meio do corpo, olhando pra direita
+function cicada(g, r, flap) {
+  const k = 0.7 + 0.3 * Math.abs(Math.sin(flap)); // abertura das asas
+  const wing = (rot, len, alpha) => {
+    g.save();
+    g.translate(-r * 0.1, -r * 0.2);
+    g.rotate(rot);
+    g.scale(1, k);
+    ellipse(g, -len * 0.55, 0, len * 0.6, r * 0.28);
+    g.fillStyle = `rgba(200,255,225,${alpha})`;
+    g.fill();
+    g.lineWidth = 2;
+    g.strokeStyle = '#3dff9a';
+    g.stroke();
+    // veias
+    g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(0, 0);
+    g.lineTo(-len * 1.05, 0);
+    g.moveTo(-len * 0.4, 0);
+    g.lineTo(-len * 0.75, -r * 0.18);
+    g.moveTo(-len * 0.4, 0);
+    g.lineTo(-len * 0.75, r * 0.18);
+    g.stroke();
+    g.restore();
+  };
+  wing(-0.55, r * 1.25, 0.45); // asa de trás
+  wing(-0.2, r * 1.45, 0.6); // asa da frente
+  // corpo
+  ellipse(g, -r * 0.05, r * 0.1, r * 0.75, r * 0.4);
+  fillOutline(g, '#1d2a24', 3);
+  // listras do abdômen
+  g.strokeStyle = '#3a5246';
+  g.lineWidth = 2;
+  for (const x of [-r * 0.45, -r * 0.25]) {
+    g.beginPath();
+    g.moveTo(x, -r * 0.18);
+    g.lineTo(x, r * 0.42);
+    g.stroke();
+  }
+  // "3301" nas costas, em verde de terminal
+  text(g, '3301', -r * 0.02, r * 0.12, { size: Math.max(7, r * 0.34), color: '#3dff9a', stroke: null });
+  // cabeça larga e os olhos vermelhos saltados
+  ellipse(g, r * 0.68, r * 0.02, r * 0.3, r * 0.36);
+  fillOutline(g, '#24352c', 3);
+  for (const dy of [-r * 0.24, r * 0.26]) {
+    circle(g, r * 0.84, dy, r * 0.13);
+    fillOutline(g, '#ff3b4e', 2);
+  }
+}
+
+// Aura de criptografia da Cicada 3301: círculo verde translúcido com borda
+// tracejada girando e caracteres cifrados correndo em volta. Desenhada na
+// origem da Cicada (centro do chão), antes dela
+const AURA_CHARS = '3301ᚠᚢᚦᚩᚱᚳ01$#';
+export function drawAura(ctx, e, t) {
+  const R = e.def.aura;
+  const pulse = 0.5 + Math.sin(t * 2.5) * 0.5;
+  ctx.save();
+  const g = ctx.createRadialGradient(0, 0, R * 0.2, 0, 0, R);
+  g.addColorStop(0, 'rgba(61,255,154,0.06)');
+  g.addColorStop(1, `rgba(61,255,154,${0.2 + 0.08 * pulse})`);
+  ctx.fillStyle = g;
+  circle(ctx, 0, 0, R);
+  ctx.fill();
+  ctx.setLineDash([10, 8]);
+  ctx.lineDashOffset = -t * 30;
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = `rgba(61,255,154,${0.7 + 0.3 * pulse})`;
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.font = 'bold 13px "Courier New", ui-monospace, monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#3dff9a';
+  ctx.shadowColor = '#3dff9a';
+  ctx.shadowBlur = 6;
+  const n = 14;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * TAU + t * 0.5;
+    ctx.fillText(AURA_CHARS[(i + Math.floor(t * 4)) % AURA_CHARS.length], Math.cos(a) * (R - 9), Math.sin(a) * (R - 9));
+  }
+  ctx.restore();
 }
 
 // Vírus parado (decoração de menus)

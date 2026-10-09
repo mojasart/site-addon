@@ -124,7 +124,7 @@ function drawCard(ctx, L, game) {
     ctx.fillStyle = 'rgba(255,255,255,0.06)';
     ctx.fill();
     text(ctx, k, x, y, { size: 12, align: 'left', color: '#bcd0f5' });
-    const red = (k === 'BLINDADOS' && v === 'não fura') || (k === 'CUSTO' && !game.canAfford(game.costOf(sub.type))); // custo em vermelho: falta dinheiro
+    const red = (k === 'BLINDADOS' && v === 'não fura') || (k === 'VOADORES' && v === 'não pega') || (k === 'CUSTO' && !game.canAfford(game.costOf(sub.type))); // custo em vermelho: falta dinheiro
     text(ctx, v, x + w, y, { size: 13, align: 'right', color: red ? '#ff9aa5' : GOLD });
     y += ROW_H;
   }

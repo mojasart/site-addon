@@ -227,13 +227,15 @@ export class Tower {
       }
       case 'pulse': {
         if (this.cooldown > 0) break;
+        // a onda (Golem e Pinguim) corre pelo chão: não pega quem voa (Bug)
+        const grounded = (list) => list.filter((e) => !e.def.flying);
         let range = s.range;
-        let targets = game.enemiesInRange(this.x, this.y, range);
+        let targets = grounded(game.enemiesInRange(this.x, this.y, range));
         if (targets.length === 0) break;
         // Erupção (Dark Net): às vezes a onda sai com o dobro do alcance
         if (chance(s.bigPulseChance)) {
           range *= 2;
-          targets = game.enemiesInRange(this.x, this.y, range);
+          targets = grounded(game.enemiesInRange(this.x, this.y, range));
         }
         // vira o corpo pro inimigo mais adiantado que está acertando
         this.lookAt(targets.reduce((a, b) => (b.remaining < a.remaining ? b : a)).x);

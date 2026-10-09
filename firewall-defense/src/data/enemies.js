@@ -15,6 +15,10 @@ import { LAYER_HP } from '../config.js';
 //  reward   → moedas ao estourar essa camada (padrão 1)
 //  spawn    → { type, every }: vai soltando esse vírus enquanto está vivo
 //  stealth  → invisível: só dá pra acertar no alcance de um Robô NMAP
+//  flying   → voa: a onda do Golem (dano e fogo) e a do Pinguim (lentidão e
+//             gelo) não pegam, e passa por cima do Honeypot
+//  aura     → raio da aura de criptografia (Cicada 3301): os outros vírus
+//             dentro dela não levam dano
 //  tint     → filtro de cor por cima da sprite (worms evoluídos: mesma sprite, outra cor)
 //  lore     → frase do catálogo de ameaças (scenes/CatalogScene.js)
 // ─────────────────────────────────────────────────────────────
@@ -35,6 +39,25 @@ export const ENEMIES = {
     kind: 'worm',
     sprite: 'worm',
     spawn: { type: 'v2', every: 1.4 },
+    children: [],
+  },
+  // Minichefão: bem lento, voa e protege quem está perto. Vem várias vezes
+  // na partida (data/rounds.js)
+  cicada: {
+    name: 'Cicada 3301',
+    desc: 'Minichefão que voa: os vírus dentro da aura de criptografia dela não levam dano',
+    lore: 'O enigma mais famoso da internet: só os mais inteligentes decifram. Quem anda perto dela fica criptografado e nenhuma defesa consegue tocar.',
+    hp: 40 * LAYER_HP,
+    lives: 20,
+    speed: 26,
+    radius: 22,
+    color: '#3dff9a',
+    kind: 'cicada',
+    sprite: 'cicada',
+    boss: true,
+    flying: true,
+    aura: 125, // raio da aura de criptografia (px)
+    reward: 15,
     children: [],
   },
   spyware: {
