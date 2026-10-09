@@ -413,11 +413,12 @@ export class CatalogScene {
     }
   }
 
-  // Voltar: pra partida pausada (se veio do menu de pausa) ou pra tela inicial
+  // Voltar: pra partida pausada (se veio do menu de pausa) ou pra tela dos
+  // mapas (de onde o catálogo é aberto)
   leave() {
     const game = this.returnTo;
     if (game) this.app.go(() => game);
-    else this.app.goTitle();
+    else this.app.goMaps();
   }
 
   key(k) {
