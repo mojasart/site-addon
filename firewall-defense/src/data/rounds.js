@@ -32,12 +32,30 @@ const EARLY_SKIP = new Set(['spyware', 'worm', 'cicada']);
 export const STRETCH = 1.5;
 const MIN_PART = 0.2; // pedaço mínimo de uma rodada pra entrar numa onda de transição
 
+// Miniboss que fecha a fase no modo normal: é o último a entrar na última
+// onda (RoundManager.start: FINALE_DELAY s depois do resto) e vem com
+// FINALE_HP × a vida. Placa-Mãe 2 a 4: Cicada 3301 e Locker; da 1-5 em
+// diante: o Adware. A 1-1 (tutorial) fica sem
+export const FINALE_HP = 1.5;
+export function finaleFor(map) {
+  if (map.season === 0 && map.number === 1) return [];
+  if (map.season === 0 && map.number <= 4) return ['cicada', 'locker'];
+  return ['adware'];
+}
+
 // Rodadas de um mapa no modo normal: as primeiras map.rounds da lista,
-// esticadas (STRETCH)
+// esticadas (STRETCH), e o miniboss no fim da última onda
 export function roundsFor(map) {
   let list = ROUNDS.slice(0, map.rounds);
   if (map.season === 0 && map.number <= EARLY_MAPS) list = list.map((round) => round.filter((g) => !EARLY_SKIP.has(g.type)));
-  return stretch(list, Math.round(list.length * STRETCH));
+  const waves = stretch(list, Math.round(list.length * STRETCH));
+  const finale = finaleFor(map);
+  if (finale.length) {
+    // (se a última onda já tem esse chefão no meio, ele passa pro fim)
+    const last = waves.at(-1).filter((g) => !(finale.includes(g.type) && g.count === 1));
+    waves[waves.length - 1] = [...last, ...finale.map((type) => ({ type, count: 1, gap: 0, finale: true, hpMul: FINALE_HP }))];
+  }
+  return waves;
 }
 
 // Estica a lista de rodadas pra n ondas: a onda j fica na posição p da lista
