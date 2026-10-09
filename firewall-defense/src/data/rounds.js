@@ -12,6 +12,19 @@
 //    Polimórfico → rodada 18: no fim da Placa-Mãe (mapas 14 e 15)
 //    Rei         → rodada 23: só no Cabo Submarino (mapa 10 em diante)
 // ─────────────────────────────────────────────────────────────
+// Nas 3 primeiras fases (Placa-Mãe 1 a 3) ainda não vêm Spyware nem Worm:
+// o jogador está aprendendo (a 1-1 é o tutorial, sem o Robô NMAP pra revelar
+// o Spyware). Os outros grupos dessas rodadas continuam iguais.
+export const EARLY_MAPS = 3;
+const EARLY_SKIP = new Set(['spyware', 'worm']);
+
+// Rodadas de um mapa no modo normal: as primeiras map.rounds da lista
+export function roundsFor(map) {
+  const list = ROUNDS.slice(0, map.rounds);
+  if (map.season > 0 || map.number > EARLY_MAPS) return list;
+  return list.map((round) => round.filter((g) => !EARLY_SKIP.has(g.type)));
+}
+
 export const ROUNDS = [
   /* 1 */ [{ type: 'v1', count: 20, gap: 0.8 }],
   /* 2 */ [{ type: 'v1', count: 35, gap: 0.55 }],

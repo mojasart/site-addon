@@ -1,6 +1,6 @@
 import { VIEW_H, PANEL_W, SPEEDS, TURBO_SPEED, DANGER_TIME, EARLY_BONUS, DEBUG } from './config.js';
 import { MAPS } from './data/maps.js';
-import { ROUNDS } from './data/rounds.js';
+import { roundsFor } from './data/rounds.js';
 import { PLAT_TIME, PLAT_LIVES, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
 import { worth } from './data/enemies.js';
 import { BOUNTY, bountyRound, layers, comboMul, bountyStars } from './data/bounty.js';
@@ -89,7 +89,7 @@ export class Game {
     this.packets = [];
     // platina: as ondas ganham a dificuldade calibrada do modo (k)
     const k = this.platinum ? platinumScale(this.mapIndex) : 1;
-    const list = this.platinum ? platinumRounds(this.map) : this.bounty ? [bountyRound(this.map.d)] : ROUNDS.slice(0, this.map.rounds);
+    const list = this.platinum ? platinumRounds(this.map) : this.bounty ? [bountyRound(this.map.d)] : roundsFor(this.map);
     this.rounds = new RoundManager(list, {
       count: this.bounty ? 1 : this.map.pressure * k, // Bug Bounty: a quantidade já vem pronta
       minCount: this.platinum ? 0 : 1,
