@@ -6,10 +6,11 @@ import { Enemy } from '../entities/Enemy.js';
 export class RoundManager {
   // mod: dificuldade do mapa { count, gap, speed, hp } (multiplicadores);
   // minCount: mínimo de vírus por grupo (a platina usa 0: com a dificuldade
-  // baixa os grupos pequenos somem, mas cada onda manda pelo menos 1)
+  // baixa os grupos pequenos somem, mas cada onda manda pelo menos 1);
+  // early: { mul, waves } — as primeiras ondas vêm mais cheias (config EARLY_WAVES)
   constructor(rounds, mod = {}) {
-    this.mod = { count: mod.count ?? 1, gap: mod.gap ?? 1, speed: mod.speed ?? 1, hp: mod.hp ?? 1, minCount: mod.minCount ?? 1 };
-    this.rounds = rounds.map((r) => this.scale(r));
+    this.mod = { count: mod.count ?? 1, gap: mod.gap ?? 1, speed: mod.speed ?? 1, hp: mod.hp ?? 1, minCount: mod.minCount ?? 1, early: mod.early };
+    this.rounds = rounds.map((r, i) => this.scale(r, { mul: this.countMul(i) }));
     this.started = 0; // quantas rodadas já começaram
     this.done = 0; // quantas já terminaram
     this.queue = []; // { type, t, round } em ordem de entrada
@@ -18,12 +19,23 @@ export class RoundManager {
     this.spawned = 0; // contador pra alternar as entradas (rotas)
   }
 
+  // Multiplicador de quantidade da rodada i (0 = 1ª): a pressão do mapa; nas
+  // primeiras (early) parte de early.mul (até early.max × a pressão) e desce
+  // em linha reta até ela
+  countMul(i) {
+    const p = this.mod.count;
+    const e = this.mod.early;
+    if (!e || i >= e.waves) return p;
+    const top = Math.min(e.mul, p * (e.max ?? Infinity));
+    return Math.max(p, top + (p - top) * (i / e.waves));
+  }
+
   // Aplica a dificuldade do mapa numa rodada (count: false mantém a
   // quantidade, pros chefões não se multiplicarem)
-  scale(round, { count = true } = {}) {
+  scale(round, { count = true, mul = this.mod.count } = {}) {
     const out = round.map((g) => ({
       ...g,
-      count: count ? Math.max(this.mod.minCount, Math.round(g.count * this.mod.count)) : g.count,
+      count: count ? Math.max(this.mod.minCount, Math.round(g.count * mul)) : g.count,
       gap: g.gap * this.mod.gap,
       at: (g.at ?? 0) * this.mod.gap,
     }));

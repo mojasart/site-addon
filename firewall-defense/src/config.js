@@ -33,6 +33,11 @@ export const SELL_RATE = 0.7; // vender devolve 70% do que foi gasto
 export const SPEEDS = [1, 2, 3]; // botão de acelerar: 1x → 2x → 3x
 export const TURBO_SPEED = 5; // a mais no fim da lista com a Placa-Mãe (season 1) toda platinada
 export const DANGER_TILES = 3; // acelerado: volta pra 1x quando um vírus que faz perder está a menos disso (quadrados de caminho) da base
+// Primeiras ondas do modo normal: a pressão do mapa corta a quantidade de vírus
+// (0,2 a 0,5) e elas vinham quase vazias. A 1ª onda vem com `mul` da quantidade
+// original (no máximo `max` × a pressão do mapa, senão os mapas de pressão
+// baixa quebram cedo), caindo até a pressão do mapa na onda `waves` + 1
+export const EARLY_WAVES = { mul: 0.7, waves: 12, max: 2.5 };
 export const EARLY_BONUS = 0.15; // chamar com outra rodada rolando: até 15% do valor da próxima (cai conforme a rodada atual acaba)
 
 export const FONT = '"Lilita One", "Arial Rounded MT Bold", "Arial Black", system-ui, sans-serif';

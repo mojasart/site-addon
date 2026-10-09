@@ -1,4 +1,4 @@
-import { VIEW_H, PANEL_W, SPEEDS, TURBO_SPEED, DANGER_TILES, EARLY_BONUS, DEBUG } from './config.js';
+import { VIEW_H, PANEL_W, SPEEDS, TURBO_SPEED, DANGER_TILES, EARLY_BONUS, EARLY_WAVES, DEBUG } from './config.js';
 import { MAPS } from './data/maps.js';
 import { roundsFor } from './data/rounds.js';
 import { PLAT_TIME, PLAT_LIVES, WAVE_GAP, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
@@ -93,6 +93,7 @@ export class Game {
     this.rounds = new RoundManager(list, {
       count: this.bounty ? 1 : this.map.pressure * k, // Bug Bounty: a quantidade já vem pronta
       minCount: this.platinum ? 0 : 1,
+      early: this.platinum || this.bounty ? null : EARLY_WAVES, // modo normal: primeiras ondas mais cheias
       gap: this.map.gapMul,
       speed: this.map.speedMul,
       hp: this.map.pressure * k, // chefões e worms acompanham a pressão
