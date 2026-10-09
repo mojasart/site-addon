@@ -134,7 +134,7 @@ export const TREE = [
   { id: 'minerador3c', tower: 'minerador', name: 'Hash da Sorte', desc: '+2% de chance de bloco raro', cost: 12, parent: 'minerador3b',
     apply: (s) => { s.goldChance = (s.goldChance ?? 0) + 0.02; } },
   // C: dinheiro (Juros e Empréstimo valem pra partida toda, não só pro Minerador; ver game.js)
-  { id: 'minerador4', tower: 'minerador', name: 'Juros', desc: `No começo de cada rodada rende ${INTEREST.rate * 100}% do dinheiro guardado (máximo $${INTEREST.max})`, cost: 10, parent: 'minerador',
+  { id: 'minerador4', tower: 'minerador', name: 'Juros', desc: `No começo de cada rodada rende ${INTEREST.rate * 100}% do dinheiro guardado (máximo $${INTEREST.max}; não vale na platina)`, cost: 10, parent: 'minerador',
     apply: () => {} },
   { id: 'minerador4b', tower: 'minerador', name: 'Empréstimo', desc: `Uma vez por rodada dá pra comprar ficando até $${LOAN} no negativo`, cost: 12, parent: 'minerador4',
     apply: () => {} },

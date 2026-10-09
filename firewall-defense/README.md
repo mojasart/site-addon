@@ -48,7 +48,9 @@ Tocar num mapa abre a escolha **NORMAL** / **PLATINA** (`src/data/platinum.js`);
 
 - São **50 ondas** em todo mapa, **uma atrás da outra**, sem esperar o mapa limpar (o HUD mostra a onda: 12/50).
   Depois das rodadas do mapa, as ondas repetem as últimas, **cada uma 6% mais cheia** que a anterior.
-  O bônus de cada onda vem quando ela começa.
+  As **5 primeiras** vêm leves (força do modo normal) e a dificuldade da platina entra aos poucos até a 6ª.
+  O bônus de cada onda vem quando ela começa. Cada vírus estourado dá **50% a mais** de dinheiro; em
+  troca, **não vale consumível** (aba ITENS trancada) nem os **Juros** da Dark Net.
 - Depois da 50ª vem o **chefão** (Locker nos mapas 1–5 da season, Ransomware nos 6–10 e Ransomware com
   Lockers nos 11–15). Derrotou, ganhou a platina: as estrelas do mapa ficam **azul-gelo** e o
   card da fase vira **prata azulado metálico**.

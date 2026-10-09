@@ -94,7 +94,8 @@ export const VIP = { coffee: 100, price: 'R$ 35,00' };
 export function useConsumable(game, id) {
   const item = ITEM[id];
   const app = game.app;
-  if (!item || game.state !== 'playing' || !((app.inventory?.[id] ?? 0) > 0)) return false;
+  // na platina não vale item nenhum
+  if (!item || game.platinum || game.state !== 'playing' || !((app.inventory?.[id] ?? 0) > 0)) return false;
   if (!item.use(game)) {
     game.sound.play('error');
     return false;

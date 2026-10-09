@@ -7,10 +7,16 @@ export class RoundManager {
   // mod: dificuldade do mapa { count, gap, speed, hp } (multiplicadores);
   // minCount: mínimo de vírus por grupo (a platina usa 0: com a dificuldade
   // baixa os grupos pequenos somem, mas cada onda manda pelo menos 1);
-  // early: { mul, waves } — as primeiras ondas vêm mais cheias (config EARLY_WAVES)
+  // early: { mul, waves } — as primeiras ondas vêm mais cheias (config EARLY_WAVES);
+  // warmup: { k, waves } — platina: a dificuldade k (que já está em count e
+  // gap) entra aos poucos: a 1ª onda vem como no modo normal e a força cheia
+  // só chega na onda waves + 1
   constructor(rounds, mod = {}) {
-    this.mod = { count: mod.count ?? 1, gap: mod.gap ?? 1, speed: mod.speed ?? 1, hp: mod.hp ?? 1, minCount: mod.minCount ?? 1, early: mod.early };
-    this.rounds = rounds.map((r, i) => this.scale(r, { mul: this.countMul(i) }));
+    this.mod = { count: mod.count ?? 1, gap: mod.gap ?? 1, speed: mod.speed ?? 1, hp: mod.hp ?? 1, minCount: mod.minCount ?? 1, early: mod.early, warmup: mod.warmup };
+    this.rounds = rounds.map((r, i) => {
+      const w = this.warm(i);
+      return this.scale(r, { mul: this.countMul(i) * w, gapMul: this.mod.gap / w });
+    });
     this.started = 0; // quantas rodadas já começaram
     this.done = 0; // quantas já terminaram
     this.queue = []; // { type, t, round } em ordem de entrada
@@ -30,14 +36,22 @@ export class RoundManager {
     return Math.max(p, top + (p - top) * (i / e.waves));
   }
 
+  // Aquecimento da rodada i (warmup): fração da dificuldade k que já vale
+  // (1/k na 1ª onda = modo normal; 1 a partir da onda waves + 1)
+  warm(i) {
+    const w = this.mod.warmup;
+    if (!w || w.k <= 1 || i >= w.waves) return 1;
+    return (1 + (w.k - 1) * (i / w.waves)) / w.k;
+  }
+
   // Aplica a dificuldade do mapa numa rodada (count: false mantém a
   // quantidade, pros chefões não se multiplicarem)
-  scale(round, { count = true, mul = this.mod.count } = {}) {
+  scale(round, { count = true, mul = this.mod.count, gapMul = this.mod.gap } = {}) {
     const out = round.map((g) => ({
       ...g,
       count: count ? Math.max(this.mod.minCount, Math.round(g.count * mul)) : g.count,
-      gap: g.gap * this.mod.gap,
-      at: (g.at ?? 0) * this.mod.gap,
+      gap: g.gap * gapMul,
+      at: (g.at ?? 0) * gapMul,
     }));
     if (out.length && out.every((g) => g.count === 0)) out[0].count = 1; // onda nunca vem vazia
     return out;
