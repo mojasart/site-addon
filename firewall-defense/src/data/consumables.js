@@ -84,6 +84,10 @@ export const COFFEE_PACKS = [
   { id: 'pack-l', coffee: 100, price: 'R$ 24,90', sprite: 'coffee_sack' },
 ];
 
+// Modo VIP (dinheiro de verdade, "em breve" como os pacotes): ganha `coffee`
+// cafés na hora e energia infinita pra sempre (save.vip; app.grantVip)
+export const VIP = { coffee: 100, price: 'R$ 35,00' };
+
 // Usa um item do inventário na partida: aplica o efeito e gasta 1.
 // Devolve true se usou. É o que a aba de itens do painel chama.
 export function useConsumable(game, id) {

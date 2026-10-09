@@ -7,6 +7,8 @@ import { ICONS } from '../render/sprites.js';
 import { BOT_WIN } from '../data/botStats.js';
 import { DARKNET_STARS } from '../data/darknet.js';
 import { drawEnergyBadge } from '../render/energy.js';
+import { DarkNetUnlock } from '../render/darknetUnlock.js';
+import { writeSave } from '../save.js';
 
 const DIFF_COLOR = { 'FÁCIL': '#3fd16b', 'MÉDIO': '#ff9a2e', 'DIFÍCIL': '#ff5a6a', 'EXTREMO': '#b65cff' };
 // Dificuldade pela % de partidas de bots que venceram o mapa (data/botStats.js)
@@ -29,7 +31,9 @@ const tierOf = (rate) => TIERS.find((t) => rate >= t.min);
 // (O aliado bloqueado só aparece dentro da partida.)
 // No canto de cima: o saldo de cafés, a Dark Net (libera com
 // DARKNET_STARS estrelas; antes disso fica trancada), o catálogo e as
-// configurações (música, efeitos e turno automático).
+// configurações (música, efeitos e turno automático). Na primeira vez que
+// a tela abre com a Dark Net liberada, toca a animação de desbloqueio
+// (render/darknetUnlock.js; save.darknetUnlockSeen).
 export class LevelSelectScene {
   constructor(app) {
     this.app = app;
@@ -46,6 +50,13 @@ export class LevelSelectScene {
     let last = 0;
     for (let i = 0; i < MAPS.length; i++) if (app.isUnlocked(i)) last = i;
     this.season = MAPS[last].season;
+    // acabou de liberar a Dark Net: animação (uma vez só; no debug, nunca)
+    if (app.darkNetOpen() && !app.debug && !app.save.darknetUnlockSeen) {
+      const d = this.layout().darknet;
+      this.unlock = new DarkNetUnlock({ x: d.x + d.w / 2, y: d.y + d.h / 2 }, (name) => app.sound.play(name));
+      app.save.darknetUnlockSeen = true;
+      writeSave(app.save);
+    }
   }
 
   layout() {
@@ -109,6 +120,15 @@ export class LevelSelectScene {
     this.t += dt;
     this.wiggle.t = Math.max(0, this.wiggle.t - dt);
     this.darkWiggle = Math.max(0, this.darkWiggle - dt);
+    this.darkPulse = Math.max(0, (this.darkPulse ?? 0) - dt);
+    if (this.unlock) {
+      this.unlock.update(dt);
+      if (this.unlock.done) {
+        this.unlock = null;
+        this.darkPulse = 2.4; // o botão pulsa um pouco quando a cebola chega
+        this.app.sound.play('click');
+      }
+    }
     this.bountyWiggle = Math.max(0, (this.bountyWiggle ?? 0) - dt);
     if (this.toast && (this.toast.time -= dt) <= 0) this.toast = null;
   }
@@ -152,6 +172,7 @@ export class LevelSelectScene {
     if (this.pick >= 0) this.drawModePicker(ctx, L.modal, this.pick);
     if (this.settings) this.drawSettings(ctx, L.modal);
     if (this.toast) this.drawToast(ctx, W / 2, 118);
+    this.unlock?.draw(ctx, W);
   }
 
   // Botão da Dark Net: roxo quando liberada; cinza com cadeado antes
@@ -162,6 +183,20 @@ export class LevelSelectScene {
       ctx.translate(r.x + r.w / 2, r.y + r.h / 2);
       ctx.rotate(Math.sin(this.darkWiggle * 40) * 0.12);
       ctx.translate(-(r.x + r.w / 2), -(r.y + r.h / 2));
+    }
+    // acabou de liberar: anel roxo pulsando em volta
+    if (this.darkPulse > 0) {
+      const p = (this.darkPulse * 1.6) % 1;
+      ctx.beginPath();
+      ctx.arc(r.x + r.w / 2, r.y + r.h / 2 - 2, r.w * (0.55 + (1 - p) * 0.5), 0, Math.PI * 2);
+      ctx.lineWidth = 4 * p;
+      ctx.strokeStyle = '#b77bff';
+      ctx.stroke();
+    }
+    // durante a animação a cebola está voando: o botão espera vazio
+    if (this.unlock) {
+      ctx.restore();
+      return;
     }
     iconButton(ctx, r, open ? '#7b3fe0' : '#5d6680', 'darknet');
     if (!open) {
@@ -443,6 +478,7 @@ export class LevelSelectScene {
   }
 
   pointerDown(x, y) {
+    if (this.unlock) return this.unlock.tap(); // a animação segura o toque
     const L = this.layout();
     if (this.settings) {
       const M = L.modal;
@@ -561,6 +597,7 @@ export class LevelSelectScene {
   }
 
   key(k) {
+    if (this.unlock) return this.unlock.tap();
     if (this.settings) {
       if (k === 'Escape') this.settings = false;
       return;

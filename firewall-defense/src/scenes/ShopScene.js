@@ -4,7 +4,8 @@ import { iconButton, inRect } from '../render/widgets.js';
 import { ICONS } from '../render/sprites.js';
 import { drawImage } from '../render/images.js';
 import { drawItemIcon } from '../render/consumables.js';
-import { CONSUMABLES, COFFEE_PACKS, ITEM } from '../data/consumables.js';
+import { CONSUMABLES, COFFEE_PACKS, ITEM, VIP } from '../data/consumables.js';
+import { drawBolt } from '../render/energy.js';
 import { formatCoffee } from '../data/darknet.js';
 
 /* ════════════════════════════════════════════════════════════
@@ -23,6 +24,7 @@ const GREEN = '#3dff9a';
 const DIM = '#1f8a52';
 const SCREEN = '#03130a';
 const RED = '#ff5a6a';
+const VIP_GOLD = '#ffd23f';
 
 // "Bitcoin Extra" → "bitcoin_extra.exe"
 const fileName = (name) =>
@@ -92,12 +94,14 @@ export class ShopScene {
     });
     const px = scr.x + scr.w - side - 14;
     // brinde do dia em cima; os pacotes de café (ainda "em breve") embaixo, compactos
-    const free = { x: px, y: top + 24, w: side, h: 118 };
+    const free = { x: px, y: top + 24, w: side, h: 100 };
     free.btn = { x: free.x + 10, y: free.y + free.h - 42, w: free.w - 20, h: 32 };
-    const packTop = free.y + free.h + 40;
-    const packH = (scr.y + scr.h - 12 - packTop) / COFFEE_PACKS.length;
+    // pacotes e, no fim da pasta, o modo VIP (mesmo tamanho de linha)
+    const packTop = free.y + free.h + 34;
+    const packH = (scr.y + scr.h - 12 - packTop) / (COFFEE_PACKS.length + 1);
     const packs = COFFEE_PACKS.map((p, i) => ({ pack: p, x: px, y: packTop + i * packH, w: side, h: packH - 8 }));
-    return { back: { x: 10, y: 14, w: 56, h: 56 }, mon, scr, rows, packs, free, side: { x: px, y: packTop - 20, w: side } };
+    const vip = { x: px, y: packTop + COFFEE_PACKS.length * packH, w: side, h: packH - 8 };
+    return { back: { x: 10, y: 14, w: 56, h: 56 }, mon, scr, rows, packs, vip, free, side: { x: px, y: packTop - 20, w: side } };
   }
 
   update(dt) {
@@ -307,6 +311,29 @@ export class ShopScene {
       mono(ctx, `+${pack.coffee} CAFÉS`, p.x + 56, p.y + p.h / 2 - 8, 14, GREEN);
       mono(ctx, pack.price, p.x + 56, p.y + p.h / 2 + 9, 11, '#9fe8c0', 'left', false);
     }
+    this.drawVip(ctx, L.vip);
+  }
+
+  // Modo VIP: moldura dourada brilhando; com o VIP ativo, [ATIVO]
+  drawVip(ctx, v) {
+    const on = this.app.vip;
+    const fl = this.flash.vip ?? 0;
+    const glow = 0.5 + Math.sin(this.t * 3) * 0.5;
+    ctx.fillStyle = `rgba(255,210,63,${0.06 + 0.05 * glow + 0.25 * fl})`;
+    ctx.fillRect(v.x, v.y, v.w, v.h);
+    ctx.strokeStyle = VIP_GOLD;
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = VIP_GOLD;
+    ctx.shadowBlur = 4 + 8 * glow;
+    ctx.strokeRect(v.x + 0.5, v.y + 0.5, v.w - 1, v.h - 1);
+    ctx.shadowBlur = 0;
+    ctx.save();
+    ctx.translate(v.x + 28, v.y + v.h / 2);
+    drawBolt(ctx, Math.min(14, v.h / 2 - 3));
+    ctx.restore();
+    mono(ctx, 'MODO VIP', v.x + 56, v.y + v.h / 2 - 8, 14, VIP_GOLD);
+    mono(ctx, on ? '[ATIVO]' : VIP.price, v.x + v.w - 8, v.y + v.h / 2 - 8, 11, VIP_GOLD, 'right', !on);
+    mono(ctx, `+${VIP.coffee} cafés + energia ∞`, v.x + 56, v.y + v.h / 2 + 9, 11, '#ffe9a0', 'left', false);
   }
 
   // o anúncio do brinde acabou (app.energyTap): brilho no quadro
@@ -335,6 +362,14 @@ export class ShopScene {
     // brinde do dia: abre o anúncio (já pego hoje: só avisa)
     if (inRect(L.free.btn, x, y)) {
       this.app.sound.play(this.app.watchAdForFree() ? 'click' : 'error');
+      return;
+    }
+    // VIP: ainda não vende (no modo debug ativa, pra testar)
+    if (inRect(L.vip, x, y)) {
+      if (this.app.debug && this.app.grantVip()) {
+        this.flash.vip = 1;
+        this.app.sound.play('upgrade');
+      } else this.app.sound.play('error');
       return;
     }
     // pacote de café: ainda não vende (só avisa)
