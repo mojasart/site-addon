@@ -60,7 +60,9 @@ const NAMES = [
   'ice_block', // bloco de gelo em volta do vírus congelado
   'server',
   'server_hurt',
-  'coin',
+  'coin', // moeda de bitcoin: frente, meio-giro e de lado (render/sprites.js drawCoin)
+  'coin_tilt',
+  'coin_edge',
   'heart',
   'coin_pile', // pilha de bitcoin: chão do Minerador (render/coinTiles.js) e Bitcoin Extra na loja
   'vip', // selo do modo VIP (loja)

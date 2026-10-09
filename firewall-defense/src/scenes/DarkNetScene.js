@@ -4,6 +4,7 @@ import { iconButton, inRect } from '../render/widgets.js';
 import { ICONS } from '../render/sprites.js';
 import { drawCharacter } from '../render/characters.js';
 import { drawDuck } from '../render/duck.js';
+import { drawImage } from '../render/images.js';
 import { TREE, NODE, COFFEE, formatCoffee } from '../data/darknet.js';
 import { seeded, plural } from '../util.js';
 
@@ -27,15 +28,15 @@ const GREEN = '#3dff9a';
 const COFFEE_TXT = '#ffe0b0';
 const CHARS = '01₿#$%<>/{}';
 const COLS = 64;
-const RADIUS = [125, 185]; // distância do centro da árvore até os ramos (sorteada)
+const RADIUS = [170, 220]; // distância do centro da árvore até os ramos (sorteada)
 const STEP = [88, 115]; // distância entre um nó e o seguinte no mesmo ramo (sorteada)
 const TURN = 0.25; // quanto cada braço pode virar a cada nó (radianos, pra cada lado)
 const FORK = 0.45; // ramo em Y: quanto cada braço abre pra um lado (radianos)
-const SEED = 1938; // semente do layout (o grafo sai sempre igual)
+const SEED = 938; // semente do layout (o grafo sai sempre igual; escolhida pra nenhum nó encostar no outro)
 const FLOAT = 5; // quanto os nós flutuam (px no mundo)
 const HOME_ZOOM = [0.45, 1.15]; // zoom inicial: enquadra os nós visíveis, dentro desses limites
 const FOCUS_ZOOM = 1.1; // tocou num nó: aproxima até esse zoom (se estiver mais longe)
-const BRANCH_ORDER = ['hacker', 'firewall', 'pinguim', 'scanner', 'minerador', 'honeypot'];
+const BRANCH_ORDER = ['hacker', 'firewall', 'pinguim', 'scanner', 'minerador', 'honeypot', 'executivo', 'tap'];
 const ZOOM_MIN = 0.45;
 const ZOOM_MAX = 2.4;
 const ROAM = 450; // quanto dá pra passear além da borda da árvore
@@ -363,6 +364,12 @@ export class DarkNetScene {
     if (n.id === 'duck') {
       ctx.translate(p.x - 2, p.y + p.r * 0.32);
       drawDuck(ctx, p.r * 0.45, { t, gray: ghost });
+    } else if (n.tower === 'tap') {
+      // ramo do toque: a mãozinha (sprite do tutorial); sem ela, a cebola
+      if (!drawImage(ctx, 'hand', p.r * 1.5, p.x, p.y + p.r * 0.15)) {
+        ctx.translate(p.x, p.y);
+        ICONS.darknet(ctx, p.r * 0.5);
+      }
     } else if (n.tower) {
       const k = (p.r * 1.7) / 62;
       ctx.translate(p.x, p.y + 16 * k);

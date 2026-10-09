@@ -22,6 +22,7 @@ export class Tower {
     this.stats = { ...this.def }; // cópia: upgrades mexem aqui, não no original
     this.cooldown = 0.2;
     this.haste = 1; // velocidade de ataque (Executivo e BURNOUT; Game.updateHaste)
+    this.teamRecharge = 0; // chance de atacar de novo na hora (Hora Extra do Executivo; Game.updateHaste)
     this.face = 1; // 1 = olhando pra direita, -1 = esquerda
     this.attack = 0; // animação de ataque (1 → 0)
     this.pulse = 0;
@@ -303,7 +304,8 @@ export class Tower {
   }
 
   fire() {
-    this.cooldown = this.stats.fireRate;
+    // Hora Extra (Executivo por perto, Dark Net): às vezes já recarrega
+    this.cooldown = chance(this.teamRecharge) ? RECHARGE : this.stats.fireRate;
     this.attack = 1;
   }
 }

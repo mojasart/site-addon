@@ -49,6 +49,10 @@ const WIN_DELAY = 0.5; // limpou a última rodada: espera o último vírus estou
 // A partida em si (uma fase). Criada pelo App ao escolher um mapa.
 // mode: 'normal', 'platinum' (ondas sem parar até o chefão; data/platinum.js)
 // ou 'bounty' (sala do Bug Bounty: mapIndex = season; data/bounty.js)
+const COIN_MERGE = 40; // moedas de vírus mais perto que isso viram uma só (px)
+const COIN_MAX = 30; // máximo de moedas no chão (daí pra frente juntam na mais perto)
+const COIN_TAP = 14; // folga do toque em volta da moeda (px)
+
 export class Game {
   constructor(app, mapIndex, mode = 'normal') {
     this.app = app;
@@ -322,15 +326,19 @@ export class Game {
       // só quem ataca com recarga acelera (não o Executivo, o Minerador nem a isca)
       if (!hastes(t)) {
         t.haste = 1;
+        t.teamRecharge = 0;
         continue;
       }
       let aura = 0;
       let near = false;
+      let recharge = 0; // Hora Extra (Dark Net): o melhor Executivo que alcança
       for (const c of bosses) {
         if (Math.hypot(c.x - t.x, c.y - t.y) > c.stats.range) continue;
         near = true;
         aura = Math.max(aura, c.stats.haste);
+        recharge = Math.max(recharge, c.stats.teamRecharge ?? 0);
       }
+      t.teamRecharge = recharge;
       // BURNOUT: só no raio de um Executivo
       t.haste = (1 + aura) * (burning && near ? 1 + BURNOUT.haste : 1);
     }
@@ -355,6 +363,8 @@ export class Game {
     const best = (key) => Math.max(0, ...this.commanders.map((c) => c.stats[key] ?? 0));
     this.burnoutLeft = BURNOUT.time + best('burnoutExtra');
     this.burnoutCd = this.burnoutMax = BURNOUT.cooldown - best('burnoutFaster');
+    // Virada de Noite (Dark Net): às vezes o BURNOUT fica pronto de novo assim que este acaba
+    if (chance(best('burnoutFree'))) this.burnoutCd = this.burnoutLeft;
     const bosses = this.activeCommanders;
     for (const t of this.towers) {
       if (!hastes(t) || !bosses.some((c) => Math.hypot(c.x - t.x, c.y - t.y) <= c.stats.range)) continue;
@@ -581,17 +591,51 @@ export class Game {
   }
 
   // Dinheiro de um vírus estourado (Bug Bounty não dá; platina dá PLAT_REWARD
-  // vezes mais, guardando o quebrado pra próxima)
-  earnPop(reward) {
+  // vezes mais, guardando o quebrado pra próxima). Com a posição (x, y), cai
+  // uma moeda no chão ali (dropCoin); sem ela, entra direto na carteira
+  earnPop(reward, x, y) {
     if (this.bounty) return;
-    if (!this.platinum) {
-      this.money += reward;
+    let value = reward;
+    if (this.platinum) {
+      this.popCents = (this.popCents ?? 0) + reward * PLAT_REWARD;
+      value = Math.floor(this.popCents);
+      this.popCents -= value;
+    }
+    if (value <= 0) return;
+    if (x == null) this.money += value;
+    else this.dropCoin(x, y, value);
+  }
+
+  // Moeda de vírus no chão (entities/Packet.js): fica até o jogador tocar
+  // ou DROP_WAIT s. Pra não encher o mapa, junta com uma que ainda está no
+  // chão a menos de COIN_MERGE px (soma o valor e ela cresce); com
+  // COIN_MAX moedas no chão, junta com a mais perto, esteja onde estiver
+  dropCoin(x, y, value) {
+    const ground = this.packets.filter((p) => p.drop && p.state !== 'flying');
+    let into = null;
+    let best = Infinity;
+    for (const p of ground) {
+      const d = Math.hypot(p.toX - x, p.toY - y);
+      if (d < best) [best, into] = [d, p];
+    }
+    if (into && (best < COIN_MERGE || ground.length >= COIN_MAX)) {
+      into.value += value;
+      into.bump = 1;
       return;
     }
-    this.popCents = (this.popCents ?? 0) + reward * PLAT_REWARD;
-    const whole = Math.floor(this.popCents);
-    this.money += whole;
-    this.popCents -= whole;
+    this.packets.push(new Packet(x, y, value, false, true));
+  }
+
+  // Toque no mapa: recolhe as moedas do chão em volta (x, y do mapa)
+  tapCoins(x, y) {
+    let got = false;
+    for (const p of this.packets) {
+      if (!p.drop || p.state === 'flying' || Math.hypot(p.x - x, p.y - y) > p.size + COIN_TAP) continue;
+      p.collect();
+      got = true;
+    }
+    if (got) this.sound.play('click');
+    return got;
   }
 
   // Ainda tem vírus vivo no mapa (conta quem não segura a onda, como a Cicada)
@@ -1072,6 +1116,8 @@ export class Game {
     if (info?.open && inRect(info.card, sx, sy)) return;
 
     const mx = sx - this.offsetX;
+    // moeda no chão: o toque recolhe (antes de bater em vírus ou escolher defesa)
+    if (!this.placing && this.tapCoins(mx, sy)) return;
     if (this.placing) {
       // decide no pointerUp: toque rápido coloca ali, arrastar ajusta a posição
       this.drag = { type: this.placing, x: sx, y: sy, moved: false, fromMap: true };
@@ -1097,6 +1143,7 @@ export class Game {
   // toque). Spyware escondido não conta (isVisible); quem voa é tocado onde
   // aparece, lá no alto. Protegido pela aura da Cicada não leva (takeDamage)
   tapEnemy(x, y, type) {
+    const s = (this.tapStats ??= applyPerks({ damage: TAP.damage, critChance: 0, executeChance: 0, splashChance: 0, slowChance: 0 }, 'tap', this.app.perks ?? {}));
     const slack = type === 'mouse' ? TAP.slackMouse : TAP.slackTouch;
     let best = null;
     let bestD = Infinity;
@@ -1110,8 +1157,24 @@ export class Game {
       }
     }
     if (!best) return false;
-    best.takeDamage(TAP.damage, this, { armored: true });
-    this.fx.spark(x, y, '#ffffff', 10);
+    // ramo do Toque (Dark Net): crítico, estourar tudo, respingo e choque
+    const crit = chance(s.critChance);
+    const hit = (e) => {
+      if (!e.def.boss && chance(s.executeChance)) e.takeDamage(Infinity, this, { armored: true });
+      else e.takeDamage(s.damage * (crit ? 2 : 1), this, { armored: true });
+      if (chance(s.slowChance)) e.slow(0.5, 2);
+    };
+    hit(best);
+    if (chance(s.splashChance)) {
+      const near = this.enemies
+        .filter((e) => e !== best && !e.dead && this.isVisible(e) && Math.hypot(e.x - best.x, e.y - best.y) <= TAP.splash)
+        .sort((a, b) => Math.hypot(a.x - best.x, a.y - best.y) - Math.hypot(b.x - best.x, b.y - best.y))[0];
+      if (near) {
+        hit(near);
+        this.fx.spark(near.x, near.y - near.r, '#9fe8ff', 8);
+      }
+    }
+    this.fx.spark(x, y, crit ? '#ffd23f' : '#ffffff', crit ? 14 : 10);
     this.sound.play('tap');
     return true;
   }
@@ -1342,6 +1405,8 @@ export class Game {
 
     // armadilhas ficam no chão, embaixo dos vírus
     for (const tw of this.towers) if (tw.def.onPath) this.drawTowerAt(ctx, tw);
+    // moedas dos vírus no chão (as que já voam pra carteira vão por cima do HUD)
+    for (const p of this.packets) if (p.drop && p.state !== 'flying') this.drawPacket(ctx, p);
 
     // vírus e defesas ordenados pela altura (quem está mais embaixo fica na frente)
     const things = [
@@ -1412,12 +1477,7 @@ export class Game {
     // moedas voando até o contador (por cima do HUD)
     ctx.save();
     ctx.translate(this.offsetX, 0);
-    for (const p of this.packets) {
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      drawCoin(ctx, (p.state === 'flying' ? 11 : 13) * (p.big ? 1.5 : 1), p.spin);
-      ctx.restore();
-    }
+    for (const p of this.packets) if (!p.drop || p.state === 'flying') this.drawPacket(ctx, p);
     ctx.restore();
 
     drawInfoPanel(ctx, this); // antes do painel: a alça recolhida "entra" embaixo dele
@@ -1429,6 +1489,23 @@ export class Game {
     drawBanner(ctx, this);
     drawOverlay(ctx, this);
     this.fx.drawConfetti(ctx);
+  }
+
+  // Moeda (minerada ou de vírus): no chão gira devagar, com sombra e um
+  // pulinho quando junta outra; voando pra carteira fica menor
+  drawPacket(ctx, p) {
+    const r = p.state === 'flying' ? Math.min(11, p.size) : p.size;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    if (p.drop && p.state === 'resting') {
+      ctx.fillStyle = 'rgba(10,20,30,0.25)';
+      ctx.beginPath();
+      ctx.ellipse(0, r * 0.95, r * 0.8, r * 0.25, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.translate(0, -Math.sin(p.bump * Math.PI) * 6);
+    }
+    drawCoin(ctx, r, p.spin);
+    ctx.restore();
   }
 
   drawTowerAt(ctx, tw) {

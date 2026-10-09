@@ -41,13 +41,20 @@ export function drawProjectile(ctx, p, t) {
 // Moeda de bitcoin: disco laranja com o ₿ em pé. spin achata no eixo x (girando).
 // Usa o SVG (assets/icons/coin.svg); se faltar, a sprite PNG; se faltar, o desenho abaixo.
 export function drawCoin(ctx, r = 14, spin = 0) {
-  const sx = Math.max(0.25, Math.abs(Math.cos(spin * 2)));
+  // sprites da moeda girando (frente, meio-giro e de lado): pega o quadro
+  // pelo ângulo e espelha na volta de trás
+  const c = Math.cos(spin * 2);
+  const frame = Math.abs(c) > 0.72 ? 'coin' : Math.abs(c) > 0.28 ? 'coin_tilt' : 'coin_edge';
   ctx.save();
-  ctx.scale(sx, 1);
-  if (drawImage(ctx, 'icon_coin', r * 2.15) || drawImage(ctx, 'coin', r * 2.2)) {
+  if (Math.sin(spin * 2) < 0 && frame !== 'coin') ctx.scale(-1, 1);
+  if (drawImage(ctx, frame, r * 2.3)) {
     ctx.restore();
     return;
   }
+  ctx.restore();
+  const sx = Math.max(0.25, Math.abs(c));
+  ctx.save();
+  ctx.scale(sx, 1);
   circle(ctx, 0, 0, r);
   fillOutline(ctx, '#e8850f', 3);
   circle(ctx, 0, 0, r * 0.76);
