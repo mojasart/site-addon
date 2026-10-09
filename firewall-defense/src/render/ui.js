@@ -1,6 +1,6 @@
 import { VIEW_H, PANEL_W, OUTLINE, GOLD } from '../config.js';
 import { PLAT_WAVES } from '../data/platinum.js';
-import { comboMul } from '../data/bounty.js';
+import { comboMul, bountyStars } from '../data/bounty.js';
 import { TOWERS, TOWER_ORDER, TARGET_MODES, BURNOUT, COMMANDER_MAX } from '../data/towers.js';
 import { rrect, circle, fillOutline, text, setFont, button } from './canvas.js';
 import { drawCharacter } from './characters.js';
@@ -61,8 +61,11 @@ export function drawHud(ctx, game) {
   const t = game.anim;
 
   if (game.bounty) {
-    // Bug Bounty: pontos e combo no lugar das vidas
-    text(ctx, `${game.points} pts`, 16, 32, { size: 28, align: 'left', color: '#ffe07a' });
+    // Bug Bounty: pontos e combo no lugar das vidas. Os pontos ficam na cor
+    // das estrelas que já garantiu: bronze (1), prata (2), ouro (3); sem
+    // estrela ainda, cinza-azulado
+    const got = bountyStars(game.bountyRatio);
+    text(ctx, `${game.points} pts`, 16, 32, { size: 28, align: 'left', color: STAR_COLOR[got] ?? '#9fb2d8' });
     const mul = comboMul(game.combo);
     if (mul > 1) text(ctx, `COMBO x${String(mul).replace('.', ',')}`, 18 + measureText(ctx, `${game.points} pts`, 28) + 10, 34, { size: 16, align: 'left', color: '#ff9a2e' });
   } else {
@@ -566,7 +569,7 @@ function drawTowerInfo(ctx, game, L) {
   const tw = game.selectedTower;
   const def = tw.def;
   text(ctx, def.name, P.x + 14, 24, { size: def.name.length > 11 ? 17 : 21, align: 'left' });
-  if (def.attack !== 'farm' && def.damage !== 0) text(ctx, `Estourou ${tw.pops}`, P.x + 14, 50, { size: 13, align: 'left', color: '#bcd0f5' });
+  if (def.attack !== 'farm' && def.damage !== 0) text(ctx, `Conteve ${tw.pops} ${tw.pops === 1 ? 'ameaça' : 'ameaças'}`, P.x + 14, 50, { size: 13, align: 'left', color: '#bcd0f5' });
   iconButton(ctx, L.close, '#ff5a5a', 'close');
 
   if (tw.ransom) drawRansom(ctx, game, tw, L.ransom);
