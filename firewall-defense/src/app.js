@@ -30,6 +30,8 @@ export class App {
     this.debug = false;
     this.save = loadSave();
     this.migrateBounty();
+    // quem já usava a Dark Net (antes da animação de desbloqueio existir) não vê ela
+    if (Object.keys(this.save.darknet ?? {}).length || this.save.coffeeSpent) this.save.darknetUnlockSeen = true;
     if (debug) this.enableDebug();
     // saves antigos: música/efeitos desligados viram volume 0
     if (this.save.music === false) this.save.musicVol = 0;
