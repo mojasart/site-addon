@@ -203,7 +203,7 @@ function drawShop(ctx, game, L) {
       text(ctx, 'BLOQUEADO', tile.x + tile.w / 2, tile.y + tile.h - 16, { size: 13, color: '#ff7a8a' });
       continue;
     }
-    text(ctx, `$${cost}`, tile.x + tile.w / 2, tile.y + tile.h - 16, { size: 18, color: affordable ? GOLD : '#ff7a8a' });
+    text(ctx, `$${cost}`, tile.x + tile.w / 2, tile.y + tile.h - 17, { size: 15, color: affordable ? GOLD : '#ff7a8a' }); // (longe da borda do card)
     drawRoleTag(ctx, tile);
   }
 }
@@ -284,17 +284,17 @@ export const roleFont = (px) => `bold ${px}px "Courier New", ui-monospace, Menlo
 function drawRoleTag(ctx, tile) {
   const def = TOWERS[tile.type];
   if (!def) return;
-  // [NOME] em 11px; nome comprido (GOLEM FIREWALL, PENGUIN LINUX) quebra em
-  // 2 linhas: [GOLEM / FIREWALL]
+  // [NOME] em 10px, com folga das bordas do card; nome comprido (GOLEM
+  // FIREWALL, PENGUIN LINUX) quebra em 2 linhas: [GOLEM / FIREWALL]
   const name = def.name.toUpperCase();
-  const room = tile.w - 8;
+  const room = tile.w - 20;
   ctx.save();
-  ctx.font = roleFont(11);
+  ctx.font = roleFont(10);
   let lines = [`[${name}]`];
-  if (ctx.measureText(lines[0]).width > room) ctx.font = roleFont(10); // quase cabe ([ROBÔ NMAP])
+  if (ctx.measureText(lines[0]).width > room) ctx.font = roleFont(9); // quase cabe ([ROBÔ NMAP])
   const words = name.split(' ');
   if (ctx.measureText(lines[0]).width > room && words.length > 1) {
-    ctx.font = roleFont(11);
+    ctx.font = roleFont(10);
     const half = Math.ceil(words.length / 2);
     lines = [`[${words.slice(0, half).join(' ')}`, `${words.slice(half).join(' ')}]`];
   }
@@ -305,9 +305,9 @@ function drawRoleTag(ctx, tile) {
   ctx.fillStyle = ROLE_GREEN;
   ctx.shadowColor = ROLE_GREEN;
   ctx.shadowBlur = 6;
-  ctx.translate(tile.x + tile.w / 2, tile.y + (lines.length > 1 ? 9 : 14));
+  ctx.translate(tile.x + tile.w / 2, tile.y + (lines.length > 1 ? 10 : 14));
   ctx.scale(squeeze, 1);
-  lines.forEach((l, i) => ctx.fillText(l, 0, i * 12));
+  lines.forEach((l, i) => ctx.fillText(l, 0, i * 11));
   ctx.restore();
   // escudinho: fura blindagem (Trojan)
   if (def.canHitArmored && def.attack !== 'decoy' && def.effect !== 'frost') {
