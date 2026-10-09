@@ -309,19 +309,6 @@ function drawRoleTag(ctx, tile) {
   ctx.scale(squeeze, 1);
   lines.forEach((l, i) => ctx.fillText(l, 0, i * 11));
   ctx.restore();
-  // escudinho: fura blindagem (Trojan)
-  if (def.canHitArmored && def.attack !== 'decoy' && def.effect !== 'frost') {
-    ctx.save();
-    ctx.translate(tile.x + tile.w - 13, tile.y + (lines.length > 1 ? 38 : 30)); // (nome em 2 linhas: mais pra baixo)
-    ctx.beginPath();
-    ctx.moveTo(0, -7);
-    ctx.lineTo(6, -4.5);
-    ctx.quadraticCurveTo(6, 3.5, 0, 7);
-    ctx.quadraticCurveTo(-6, 3.5, -6, -4.5);
-    ctx.closePath();
-    fillOutline(ctx, '#c9d3e0', 2);
-    ctx.restore();
-  }
 }
 
 // Prévia da próxima rodada: os tipos de vírus que vêm e quantos
