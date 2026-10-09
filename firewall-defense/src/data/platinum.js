@@ -2,7 +2,8 @@
 //  MODO PLATINA (libera com 3 estrelas no mapa)
 //
 //  As ondas vêm uma atrás da outra, sem esperar o mapa limpar: a próxima
-//  começa assim que a anterior termina de entrar (+ WAVE_GAP). São
+//  começa quando a anterior termina de entrar e sobram no máximo
+//  PLAT_GATE vírus vivos no mapa (+ WAVE_GAP). São
 //  PLAT_WAVES ondas em todo mapa; depois da última vem o chefão; derrotou,
 //  venceu. Partida longa de propósito (dá pra montar mais defesas e o
 //  Minerador rende mais): depois das rodadas do mapa as ondas repetem as
@@ -17,6 +18,7 @@ import { PLAT_TUNE } from './platinumTuning.js';
 export const PLAT_WAVES = 50; // ondas até o chefão (em todo mapa)
 export const PLAT_LIVES = 1; // vidas no modo platina
 export const WAVE_GAP = 2.5; // pausa entre uma onda terminar de entrar e a próxima
+export const PLAT_GATE = 5; // a próxima onda só vem com no máximo isso de vírus vivos no mapa
 export const BOSS_HP = 0.6; // vida do chefão: BOSS_HP × √pressão do mapa × dificuldade da platina
 const RAMP = 0.06; // cada onda repetida vem 6% mais cheia que a anterior
 export const PLAT_WARMUP = 5; // as primeiras ondas sobem da força do modo normal até a da platina (RoundManager)
