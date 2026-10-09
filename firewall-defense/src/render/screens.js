@@ -20,10 +20,11 @@ export function overlayLayout(game) {
     // MAPAS e CATÁLOGO lado a lado (o catálogo volta pra partida pausada)
     L.maps = { x: cx - 150, y: 312, w: 146, h: 66 };
     L.catalog = { x: cx + 4, y: 312, w: 146, h: 66 };
-    // volume da música e dos efeitos (barras) e o turno automático do lado
+    // volume da música e dos efeitos (barras) e o turno automático do lado,
+    // centralizado na altura das duas barras
     L.music = { x: cx - 235, y: 392, w: 340, h: 40 };
     L.sfx = { x: cx - 235, y: 440, w: 340, h: 40 };
-    L.auto = { x: cx + 135, y: 396, w: 60, h: 60 };
+    L.auto = { x: cx + 135, y: (L.music.y + L.sfx.y + L.sfx.h) / 2 - 30, w: 60, h: 60 };
   } else if (retryOffered(game)) {
     // venceu com 2 estrelas ou menos: MAPAS · DE NOVO · PRÓXIMO
     L.maps = { x: cx - 255, y: 392, w: 160, h: 72 };
@@ -94,7 +95,6 @@ export function drawOverlay(ctx, game) {
     volumeSlider(ctx, L.music, 'music', game.app.save.musicVol);
     volumeSlider(ctx, L.sfx, 'sfx', game.app.save.sfxVol);
     iconButton(ctx, L.auto, game.autoRound ? '#3fd16b' : '#7d8fa8', 'auto', game.autoRound);
-    text(ctx, game.autoRound ? 'AUTO: LIGADO' : 'AUTO: DESLIGADO', L.auto.x + L.auto.w / 2, 474, { size: 12, color: '#d8e6ff' });
   } else {
     const won = game.state === 'won';
     const plat = won && game.platinum;
