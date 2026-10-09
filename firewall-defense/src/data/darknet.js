@@ -60,6 +60,9 @@ export const TREE = [
     apply: (s) => { s.reviveChance = (s.reviveChance ?? 0) + 0.1; } },
   { id: 'executivo', tower: 'executivo', name: 'Hora Extra', desc: 'Cada defesa no raio tem 4% de chance de atacar de novo na hora', cost: 5, parent: 'root',
     apply: (s) => { s.teamRecharge = (s.teamRecharge ?? 0) + 0.04; } },
+  // Toque do jogador nos vírus (não é defesa: tower 'tap', status em Game.tapStats)
+  { id: 'tap', tower: 'tap', name: 'Dedo Nervoso', desc: 'Cada toque tem 10% de chance de dar 200% de dano', cost: 5, parent: 'root',
+    apply: (s) => { s.critChance += 0.1; } },
   // Depois do 1º nó, cada ramo abre em Y: dois braços, cada um um caminho
   // com tema próprio (3 nós em fila). O braço A sai do X2, o B do X3.
 
@@ -171,6 +174,20 @@ export const TREE = [
     apply: (s) => { s.burnoutExtra = (s.burnoutExtra ?? 0) + 1; } },
   { id: 'executivo3c', tower: 'executivo', name: 'Virada de Noite', desc: 'Cada BURNOUT tem 10% de chance de recarregar na hora', cost: 12, parent: 'executivo3b',
     apply: (s) => { s.burnoutFree = (s.burnoutFree ?? 0) + 0.1; } },
+
+  // Toque — A: força do dedo · B: efeitos em volta
+  { id: 'tap2', tower: 'tap', name: 'Calo no Dedo', desc: '+20% de dano por toque', cost: 8, parent: 'tap',
+    apply: (s) => { s.damage = Math.round(s.damage * 1.2); } },
+  { id: 'tap2b', tower: 'tap', name: 'Clique Duplo', desc: '+8% de chance de dar 200% de dano', cost: 10, parent: 'tap2',
+    apply: (s) => { s.critChance += 0.08; } },
+  { id: 'tap2c', tower: 'tap', name: 'Ctrl+Alt+Del', desc: 'Cada toque tem 3% de chance de estourar todas as camadas do vírus de uma vez, menos em chefão', cost: 12, parent: 'tap2b',
+    apply: (s) => { s.executeChance += 0.03; } },
+  { id: 'tap3', tower: 'tap', name: 'Respingo', desc: 'Cada toque tem 10% de chance de acertar também o vírus mais perto', cost: 8, parent: 'tap',
+    apply: (s) => { s.splashChance += 0.1; } },
+  { id: 'tap3b', tower: 'tap', name: 'Dedo Gordo', desc: '+8% de chance de acertar também o vírus mais perto', cost: 10, parent: 'tap3',
+    apply: (s) => { s.splashChance += 0.08; } },
+  { id: 'tap3c', tower: 'tap', name: 'Choque Estático', desc: 'Cada toque tem 5% de chance de deixar o vírus 50% mais lento por 2s', cost: 12, parent: 'tap3b',
+    apply: (s) => { s.slowChance += 0.05; } },
 ];
 
 // Upgrade secreto: fora da árvore, apagadinho no canto de cima da Dark Net.

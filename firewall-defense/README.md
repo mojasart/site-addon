@@ -117,6 +117,12 @@ Open Space: +8% de alcance; Feedback 360°: quem está no raio ataca 5% mais rá
 Expresso: recarrega 2 s mais rápido; Prazo Apertado: dura 1 s a mais; Virada de Noite: 10% de chance de já
 ficar pronto de novo assim que acaba).
 
+Tem também um ramo pro **toque do jogador** nos vírus (a mãozinha; `tower: 'tap'`, status em `Game.tapEnemy`):
+Dedo Nervoso (10% de chance de 200% de dano) e dois braços, **força** (Calo no Dedo: +20% de dano; Clique Duplo:
++8% de chance de 200%; Ctrl+Alt+Del: 3% de chance de estourar o vírus inteiro, menos chefão) e **em volta**
+(Respingo: 10% de chance de acertar também o vírus mais perto; Dedo Gordo: +8%; Choque Estático: 5% de chance de
+deixar o vírus 50% mais lento por 2 s).
+
 Os bots jogam sem esses bônus, então a dificuldade calibrada é a de quem ainda não comprou nada.
 
 Os cafés vêm do melhor resultado de cada mapa (`src/data/darknet.js`), então nunca se ganha o mesmo café duas vezes:
