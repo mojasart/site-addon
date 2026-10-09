@@ -87,6 +87,17 @@ ASSETS = {
     'ransomware': ('green', SIDE_RIGHT + 'A big chubby purple cartoon blimp / airship boss monster floating, '
                    'facing RIGHT with huge angry eyes and a toothy evil grin at the front, little tail fins at the back, '
                    'a big golden padlock with a dollar sign hanging on its belly. No feet. '),
+    # CEO (executivo da empresa: dá buff nas outras defesas). As 3 idades
+    # vieram de uma imagem só feita no chat do Gemini (criança, adolescente e
+    # adulto lado a lado), separadas em ceo_kid, ceo_teen e ceo
+    'ceo': ('magenta', 'Full body, chibi proportions (big head, small body), three-quarter view facing and looking to the '
+            'RIGHT, standing on two feet. The adult company CEO: sharp tailored navy suit, crisp white shirt, a shiny GOLD '
+            'tie, slicked dark brown hair, a confident charismatic grin, a small golden upward-arrow pin on the lapel, a '
+            'golden tablet in one hand showing a big green arrow going up, the other hand pointing forward. '),
+    'ceo_kid': ('magenta', 'Same CEO as a tiny adorable 6-year-old kid in an oversized navy suit, clip-on gold tie, '
+                'holding up a tiny golden briefcase. '),
+    'ceo_teen': ('magenta', 'Same CEO as a 14-year-old startup-founder teen: navy blazer over a white t-shirt, loose gold '
+                 'tie, sneakers, a lanyard with an ID badge, thumbs up and a smartphone. '),
     # Cicada 3301: minichefão que voa (a cigarra do enigma da internet).
     # As sprites do jogo (cicada.png e cicada_aura.png, a pose do pulso da
     # aura) vieram de uma imagem só com as 2 poses, feita no chat do Gemini e
