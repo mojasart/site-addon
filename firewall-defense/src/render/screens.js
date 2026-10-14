@@ -26,6 +26,11 @@ export function overlayLayout(game) {
     L.music = { x: cx - 235, y: 392, w: 340, h: 40 };
     L.sfx = { x: cx - 235, y: 440, w: 340, h: 40 };
     L.auto = { x: cx + 135, y: (L.music.y + L.sfx.y + L.sfx.h) / 2 - 30, w: 60, h: 60 };
+  } else if (game.state === 'won' && game.canContinue) {
+    // platina vencida: MAPAS · CONTINUAR (platina infinita) · PRÓXIMO
+    L.maps = { x: cx - 255, y: 392, w: 160, h: 72 };
+    L.cont = { x: cx - 80, y: 392, w: 160, h: 72 };
+    L.next = { x: cx + 95, y: 392, w: 160, h: 72 };
   } else if (retryOffered(game)) {
     // venceu com 2 estrelas ou menos: MAPAS · DE NOVO · PRÓXIMO
     L.maps = { x: cx - 255, y: 392, w: 160, h: 72 };
@@ -99,7 +104,7 @@ export function drawOverlay(ctx, game) {
   } else {
     const won = game.state === 'won';
     const plat = won && game.platinum;
-    const title = game.bounty ? (won ? 'RECOMPENSA!' : 'FIM DO TEMPO') : plat ? 'PLATINA!' : won ? 'VITÓRIA!' : 'SERVIDOR INVADIDO';
+    const title = game.bounty ? (won ? 'RECOMPENSA!' : 'FIM DO TEMPO') : plat ? 'PLATINA!' : won ? 'VITÓRIA!' : game.endless ? 'FIM DA PARTIDA' : 'SERVIDOR INVADIDO';
     ribbon(ctx, cx, c.y + 46, won ? 280 : 360, title, plat ? '#5fb4e8' : won ? '#3fd16b' : '#ff5a6a', 30);
     if (won) {
       const pop = (i) => easeOutBack(clamp((game.overlayTime - 0.4 - i * 0.35) * 3, 0, 1));
@@ -123,6 +128,14 @@ export function drawOverlay(ctx, game) {
       drawResults(ctx, cx, 270, game.lives, game.coffeeGain, game.overlayTime);
       text(ctx, `Ameaças contidas: ${game.stats.pops}`, cx, 318, { size: 19, color: GOLD });
       if (game.turboUnlocked) text(ctx, 'ACELERAR 5x LIBERADO!', cx, 348, { size: 17, color: '#bdeeff' });
+      // platina: os pontos da partida (seguem no CONTINUAR)
+      else if (plat) text(ctx, `${game.points} pontos${game.newRecord ? ' · NOVO RECORDE!' : ''}`, cx, 348, { size: 17, color: '#bdeeff' });
+    } else if (game.endless) {
+      // fim da platina infinita: pontos, até onde chegou e o recorde da fase
+      const best = game.app.endlessBest?.(game.map.id) ?? game.points;
+      text(ctx, `${game.points} PONTOS`, cx, 262, { size: 30, color: GOLD });
+      text(ctx, `Aguentou ${game.endlessK} ${game.endlessK === 1 ? 'onda' : 'ondas'} a mais${game.newRecord ? ' · NOVO RECORDE!' : ''}`, cx, 298, { size: 18, color: '#d8e6ff' });
+      text(ctx, `Recorde da fase: ${best} pontos`, cx, 330, { size: 17, color: '#bdeeff' });
     } else {
       const lines = game.platinum
         ? [game.bossCalled ? 'O chefão invadiu o servidor.' : `Os vírus venceram na onda ${game.rounds.current}/${PLAT_WAVES}.`, 'Tente outras defesas ou upgrades!']
@@ -149,9 +162,10 @@ export function drawOverlay(ctx, game) {
       }
     }
     if (game.endDelay <= 0) {
-      const size = L.retry ? 21 : 24; // com 3 botões, a letra encolhe um pouco
+      const size = L.retry || L.cont ? 21 : 24; // com 3 botões, a letra encolhe um pouco
       bigButton(ctx, L.maps, '#5fb4ff', 'MAPAS', { icon: 'map', size });
       if (L.retry) bigButton(ctx, L.retry, '#ff9a2e', 'DE NOVO', { icon: 'restart', size });
+      if (L.cont) bigButton(ctx, L.cont, '#5fb4e8', 'CONTINUAR', { icon: 'play', size: 19 });
       const label = won ? (game.nextMap ? 'PRÓXIMO' : 'DE NOVO') : 'DE NOVO';
       bigButton(ctx, L.next, '#3fd16b', label, { icon: won && game.nextMap ? 'play' : 'restart', size });
     }

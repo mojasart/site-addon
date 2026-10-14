@@ -507,6 +507,17 @@ export class App {
     writeSave(this.save);
   }
 
+  // Recorde de pontos da platina de uma fase (contando a platina infinita)
+  endlessBest(mapId) {
+    return this.save.endless?.[mapId] ?? 0;
+  }
+
+  recordEndless(mapId, score) {
+    if (score <= this.endlessBest(mapId)) return;
+    this.save.endless = { ...this.save.endless, [mapId]: score };
+    writeSave(this.save);
+  }
+
   recordStars(mapId, n) {
     if (n > (this.save.stars[mapId] ?? 0)) {
       this.save.stars[mapId] = n;
