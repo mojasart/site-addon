@@ -1,7 +1,8 @@
 import { VIEW_H, PANEL_W, SPEEDS, TURBO_SPEED, DANGER_TILES, TAP, EARLY_BONUS, EARLY_WAVES } from './config.js';
 import { MAPS, BOUNTY_MAPS } from './data/maps.js';
 import { roundsFor } from './data/rounds.js';
-import { PLAT_WAVES, PLAT_LIVES, PLAT_WARMUP, PLAT_REWARD, WAVE_GAP, PLAT_GATE, BOSS_HP, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
+import { PLAT_WAVES, PLAT_LIVES, PLAT_WARMUP, PLAT_REWARD, WAVE_GAP, PLAT_GATE, BOSS_HP, ENDLESS, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
+import { withoutBosses } from './data/rounds.js';
 import { worth, ENEMIES } from './data/enemies.js';
 import { BOUNTY, bountyRound, layers, comboMul, bountyStars } from './data/bounty.js';
 import { TOWERS, TARGET_MODES, COMMANDER_MAX, BURNOUT } from './data/towers.js';
@@ -194,6 +195,7 @@ export class Game {
       // 3 estrelas com 90% das vidas ou mais, 2 com pelo menos metade, 1 com menos
       this.stars = this.bounty ? bountyStars(this.bountyRatio) : this.starsNow;
       if (this.platinum) {
+        this.canContinue = true; // CONTINUAR: platina infinita (continueEndless)
         this.stars = 3; // vencer a platina já vale as 3 (em platina)
         const hadTurbo = this.app.seasonPlatinum?.(0);
         this.app.recordPlatinum?.(this.map.id);
@@ -205,6 +207,11 @@ export class Game {
       this.sound.play('win');
       for (let i = 0; i < this.stars; i++) setTimeout(() => this.sound.play('star'), 500 + i * 350);
     } else this.sound.play('lose');
+    // platina: os pontos (como no Bug Bounty) contam pro recorde da fase
+    if (this.platinum) {
+      this.newRecord = this.points > (this.app.endlessBest?.(this.map.id) ?? 0);
+      this.app.recordEndless?.(this.map.id, this.points);
+    }
     // cafés novos da partida: o que passou do recorde do mapa e os monstros
     // abatidos (data/darknet.js)
     this.bankKills();
@@ -480,7 +487,7 @@ export class Game {
 
   // Bug Bounty: cada camada estourada vale ponto × combo (Enemy.pop chama)
   bountyPop(e) {
-    if (!this.bounty) return;
+    if (!this.bounty && !this.platinum) return; // pontos: Bug Bounty e platina
     this.combo++;
     this.points += Math.round((e.def.reward ?? 1) * comboMul(this.combo) * 10);
   }
@@ -521,10 +528,41 @@ export class Game {
     this.waveGap = (this.waveGap ?? WAVE_GAP) - dt;
     if (this.waveGap <= 0) {
       this.waveGap = null;
-      // acabaram as PLAT_WAVES ondas: vem o chefão
+      // acabaram as PLAT_WAVES ondas: vem o chefão (na platina infinita, mais uma onda)
       if (r.canStart) this.startRound();
+      else if (this.endless) this.endlessWave();
       else this.callBoss();
     }
+  }
+
+  // ── Platina infinita ──
+  // Venceu a platina e tocou em CONTINUAR: a partida segue (mesmas defesas,
+  // dinheiro e pontos) com ondas sem fim, cada vez mais cheias e com mais vida
+  continueEndless() {
+    if (!this.canContinue) return;
+    this.canContinue = false;
+    this.endless = true;
+    this.endlessK = 0;
+    // as 4 últimas ondas da platina (sem chefões) são a base das infinitas
+    this.endlessBase = platinumRounds(this.map).slice(-4).map((w) => withoutBosses(w).map(({ finale, hpMul, ...g }) => g));
+    this.state = 'playing';
+    this.endDelay = 0;
+    this.winIn = null;
+    this.bossCalled = false;
+    this.waveGap = WAVE_GAP;
+    this.showBanner('PLATINA INFINITA', 2.6, '#bdeeff', 46, 'Ondas sem fim: até onde você aguenta?');
+    this.sound.play('round');
+  }
+
+  // Mais uma onda infinita: a base com ENDLESS a mais de vírus e de vida a cada uma
+  endlessWave() {
+    const k = ++this.endlessK;
+    const r = this.rounds;
+    const grow = 1 + ENDLESS.count * k;
+    const hp = r.mod.hp * (1 + ENDLESS.hp * k);
+    const base = this.endlessBase[(k - 1) % this.endlessBase.length];
+    r.rounds.push(r.scale(base.map((g) => ({ ...g, count: g.count * grow, gap: g.gap / grow, hp }))));
+    this.startRound();
   }
 
   // Vírus vivos no mapa agora (inclusive os que acabaram de nascer)
@@ -559,7 +597,7 @@ export class Game {
     }
     if (this.platinum) {
       // platina: o bônus da onda já veio quando ela começou (elas se acumulam)
-      if (this.rounds.finished) this.winIn = WIN_DELAY;
+      if (this.rounds.finished && !this.endless) this.winIn = WIN_DELAY;
       return;
     }
     const bonus = 100 + n;
@@ -1200,6 +1238,7 @@ export class Game {
     }
     if (this.endDelay > 0) return;
     if (inRect(L.maps, sx, sy)) this.app.goMaps();
+    else if (L.cont && inRect(L.cont, sx, sy)) this.continueEndless(); // platina infinita
     else if (L.retry && inRect(L.retry, sx, sy)) this.app.startMap(this.mapIndex, 'normal'); // tentar as 3 estrelas
     else if (inRect(L.next, sx, sy)) {
       // venceu: vai pro próximo mapa (normal); perdeu: tenta de novo no mesmo modo

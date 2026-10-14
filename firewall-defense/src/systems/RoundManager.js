@@ -97,7 +97,7 @@ export class RoundManager {
       for (let i = 0; i < g.count; i++, n++) {
         const t = this.time + (g.at ?? 0) + i * g.gap;
         end = Math.max(end, t);
-        this.queue.push({ type: g.type, t, round, hp: g.hp });
+        this.queue.push({ type: g.type, t, round, hp: g.hpMul ? (g.hp ?? this.mod.hp) * g.hpMul : g.hp });
       }
     }
     // miniboss do fim da fase (data/rounds.js finaleFor): 1 só, depois de

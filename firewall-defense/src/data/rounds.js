@@ -12,17 +12,17 @@
 //    Polimórfico → rodada 18: no fim da Placa-Mãe (mapas 14 e 15)
 //    Rei         → rodada 23: só no Cabo Submarino (mapa 10 em diante)
 //
-//  Cicada 3301 (minichefão que voa e protege os vírus em volta): 1 por vez
-//  nas rodadas 8, 11, 14, 17, 19, 22 e 24 (de 3 a 7 vezes por partida)
+//  Chefões (Locker, Cicada 3301, Ransomware e Adware) NÃO vêm desta lista:
+//  cada fase tem a sua agenda (bossPlan / platinumBossPlan, mais abaixo) e
+//  eles são espalhados pela partida (addBosses).
 // ─────────────────────────────────────────────────────────────
-// Nas 3 primeiras fases (Placa-Mãe 1 a 3) ainda não vêm Spyware, Worm nem
-// a Cicada 3301:
+// Nas 3 primeiras fases (Placa-Mãe 1 a 3) ainda não vêm Spyware nem Worm:
 // o jogador está aprendendo (a 1-1 é o tutorial, sem o Robô NMAP pra revelar
 // o Spyware). Os outros grupos dessas rodadas continuam iguais.
 import { ENEMIES } from './enemies.js';
 
 export const EARLY_MAPS = 3;
-const EARLY_SKIP = new Set(['spyware', 'worm', 'cicada']);
+const EARLY_SKIP = new Set(['spyware', 'worm']);
 
 // Ondas no modo normal: cada mapa joga map.waves ondas (data/maps.js, pelo
 // nível de dificuldade) feitas das suas map.rounds rodadas da lista. Com mais
@@ -32,30 +32,94 @@ const EARLY_SKIP = new Set(['spyware', 'worm', 'cicada']);
 // sempre a 1ª e a última rodada.
 const MIN_PART = 0.2; // pedaço mínimo de uma rodada pra entrar numa onda de transição
 
-// Miniboss que fecha a fase no modo normal: é o último a entrar na última
-// onda (RoundManager.start: FINALE_DELAY s depois do resto) e vem com
-// FINALE_HP × a vida. Placa-Mãe 2 a 4: Cicada 3301 e Locker; da 1-5 em
-// diante: o Adware. A 1-1 (tutorial) fica sem
+// ── Chefões ──────────────────────────────────────────────────
+// Minichefão = Locker ou Cicada 3301 (a Cicada é CICADA_SHARE deles). Cada
+// fase tem uma agenda de quantos vêm na partida inteira; eles são
+// espalhados pelas ondas, mais pro fim (addBosses). Os da última onda
+// entram depois de todo mundo e com FINALE_HP × a vida.
+export const BOSSES = new Set(['locker', 'cicada', 'ransomware', 'adware']);
+export const CICADA_SHARE = 0.35;
 export const FINALE_HP = 1.5;
-export function finaleFor(map) {
-  if (map.season === 0 && map.number === 1) return [];
-  if (map.season === 0 && map.number <= 4) return ['cicada', 'locker'];
-  return ['adware'];
+// Vida dos chefões da agenda (× a vida normal deles). Com a vida cheia, os
+// chefões no meio da partida derrubavam os bots (63% → 15% de vitória nas
+// fases 1-13 a 2-7) e nem a calibração compensava
+export const AGENDA_HP = 0.35;
+const SPREAD_FROM = 0.35; // o 1º chefão vem nessa fração da partida; o último, na última onda
+
+const lerpRound = (a, b, t) => Math.round(a + (b - a) * Math.min(1, Math.max(0, t)));
+const minis = (n) => {
+  const cicada = Math.round(n * CICADA_SHARE);
+  return { locker: n - cicada, cicada };
+};
+
+// Modo normal: Locker fecha a fase da 1-3 à 1-9; da 1-10 em diante vêm
+// minichefões e Ransomwares no meio da partida; Adware a partir da 2-5.
+// Sobe aos poucos até as fases 15 (1-15: 3 mini + 2 Ransom; 2-15: 5 mini
+// + 1 Adware + 1 Ransom; 3-15: 7 mini + 3 Ransom + 1 Adware)
+export function bossPlan(map) {
+  const s = map.season;
+  const n = map.number;
+  const k = (n - 1) / 14; // 0 na fase 1, 1 na 15
+  if (s === 0) {
+    if (n < 10) return { ...minis(0), ransomware: 0, adware: 0, finale: n >= 3 ? 'locker' : null };
+    const t = (n - 10) / 5;
+    return { ...minis(lerpRound(1, 3, t)), ransomware: lerpRound(1, 2, t), adware: 0, finale: null };
+  }
+  if (s === 1) return { ...minis(lerpRound(3, 5, k)), ransomware: lerpRound(2, 1, k), adware: n >= 5 ? 1 : 0, finale: null };
+  return { ...minis(lerpRound(5, 7, k)), ransomware: lerpRound(1, 3, k), adware: 1, finale: null };
 }
 
-// Rodadas de um mapa no modo normal: as primeiras map.rounds da lista,
-// esticadas (ou comprimidas) pra map.waves ondas, e o miniboss no fim da última
+// Platina (além do chefão do fim, platinum.js): sobe aos poucos até
+// 1-15: 5 mini + 3 Ransom; 2-15: 8 mini + 1 Adware + 3 Ransom;
+// 3-15: 15 mini + 5 Ransom + 2 Adware
+const PLAT_PLAN = [
+  { mini: [0, 5], ransomware: [0, 3], adware: [0, 0] },
+  { mini: [5, 8], ransomware: [3, 3], adware: [0, 1] },
+  { mini: [8, 15], ransomware: [3, 5], adware: [1, 2] },
+];
+export function platinumBossPlan(map) {
+  const p = PLAT_PLAN[Math.min(map.season, PLAT_PLAN.length - 1)];
+  const k = (map.number - 1) / 14;
+  return { ...minis(lerpRound(...p.mini, k)), ransomware: lerpRound(...p.ransomware, k), adware: lerpRound(...p.adware, k), finale: null };
+}
+
+// Espalha os chefões da agenda pelas ondas: o i-ésimo de N fica em
+// SPREAD_FROM + (1 − SPREAD_FROM)·i/N do caminho (o último na última onda),
+// os mais fracos primeiro (Locker e Cicada intercalados, depois Adware e
+// Ransomware). No meio da onda entram 4 s depois do começo; na última,
+// depois de todo mundo (finale). plan.finale: chefão a mais fechando a fase
+export function addBosses(waves, plan) {
+  const nl = plan.locker ?? 0;
+  const nc = plan.cicada ?? 0;
+  const list = [];
+  for (let i = 0; i < Math.max(nl, nc); i++) {
+    if (i < nl) list.push('locker');
+    if (i < nc) list.push('cicada');
+  }
+  for (let i = 0; i < (plan.adware ?? 0); i++) list.push('adware');
+  for (let i = 0; i < (plan.ransomware ?? 0); i++) list.push('ransomware');
+  const W = waves.length;
+  const out = waves.map((w) => [...w]);
+  const boss = (type, last) => (last ? { type, count: 1, gap: 0, finale: true, hpMul: AGENDA_HP * FINALE_HP } : { type, count: 1, gap: 0, at: 4, hpMul: AGENDA_HP });
+  list.forEach((type, i) => {
+    const w = Math.min(W - 1, Math.round((SPREAD_FROM + ((1 - SPREAD_FROM) * (i + 1)) / list.length) * (W - 1)));
+    out[w].push(boss(type, w === W - 1));
+  });
+  if (plan.finale) out[W - 1].push(boss(plan.finale, true));
+  return out;
+}
+
+// Tira os chefões de uma rodada da lista (eles vêm pela agenda)
+export const withoutBosses = (round) => round.filter((g) => !BOSSES.has(g.type));
+
+// Rodadas de um mapa no modo normal: as primeiras map.rounds da lista (sem
+// chefões), esticadas (ou comprimidas) pra map.waves ondas, e os chefões da
+// agenda espalhados (bossPlan)
 export function roundsFor(map) {
-  let list = ROUNDS.slice(0, map.rounds);
+  let list = ROUNDS.slice(0, map.rounds).map(withoutBosses);
   if (map.season === 0 && map.number <= EARLY_MAPS) list = list.map((round) => round.filter((g) => !EARLY_SKIP.has(g.type)));
   const waves = stretch(list, map.waves ?? list.length);
-  const finale = finaleFor(map);
-  if (finale.length) {
-    // (se a última onda já tem esse chefão no meio, ele passa pro fim)
-    const last = waves.at(-1).filter((g) => !(finale.includes(g.type) && g.count === 1));
-    waves[waves.length - 1] = [...last, ...finale.map((type) => ({ type, count: 1, gap: 0, finale: true, hpMul: FINALE_HP }))];
-  }
-  return waves;
+  return addBosses(waves, bossPlan(map));
 }
 
 // Estica a lista de rodadas pra n ondas: a onda j fica na posição p da lista
