@@ -22,12 +22,12 @@
             </intent-filter>
         </activity>
 
-        <!-- AdMob: ID do APP (não é o do bloco de anúncio). Esse é o de TESTE do
-             Google; pra valer, trocar pelo ID do app criado no AdMob
-             (ca-app-pub-XXXXXXXXXXXXXXXX~NNNNNNNNNN) e o ADMOB do src/config.js -->
+        <!-- AdMob: ID do APP "Firewall Defense" na conta do AdMob (não é o do
+             bloco de anúncio, que fica no ADMOB do src/config.js). O de teste
+             do Google era ca-app-pub-3940256099942544~3347511713 -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"
+            android:value="ca-app-pub-8853291698252580~6524306976"
         />
 
         <provider

@@ -63,12 +63,14 @@ export const DEBUG = { coffee: 9999999, items: 999 }; // modo debug: cafés e qu
 // Compras com dinheiro de verdade (src/pay.js): endereço do servidor de
 // compras (server/, Cloudflare Worker). Vazio = loja "EM BREVE", sem vender
 export const PAY = { api: 'https://firewall-defense-pay.firewall-defense.workers.dev' };
-// Anúncios com recompensa no app Android (AdMob, src/ads.js). test: true usa
-// o bloco de teste do Google (anúncio de mentira, pode clicar à vontade).
-// Pra valer: pôr o ID do bloco "Premiado" criado no AdMob em `rewarded`,
-// test: false, e o ID do app no AndroidManifest (app/android/.../AndroidManifest.xml)
+// Anúncios com recompensa no app Android (AdMob, src/ads.js): bloco "energia"
+// (Premiado) da conta do AdMob; o ID do app fica no AndroidManifest
+// (app/android/app/src/main/AndroidManifest.xml). test: true volta pro bloco
+// de teste do Google (anúncio de mentira, pode clicar à vontade). No seu
+// celular, cadastre ele em AdMob → Configurações → Dispositivos de teste
+// e NUNCA clique nos anúncios de verdade do próprio app
 export const ADMOB = {
-  test: true,
-  rewarded: '', // ca-app-pub-XXXXXXXXXXXXXXXX/NNNNNNNNNN
+  test: false,
+  rewarded: 'ca-app-pub-8853291698252580/8982774348', // bloco "energia"
   testRewarded: 'ca-app-pub-3940256099942544/5224354917', // bloco de teste oficial do Google
 };

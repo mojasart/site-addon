@@ -56,7 +56,13 @@ O apelido do jogador fica só no aparelho (não conta como coletado).
 Antes de publicar: **teste fechado com pelo menos 12 testadores por 14
 dias seguidos**. Juntar os e-mails (conta Google com Android) desde já.
 
-## AdMob (pra ativar os anúncios de verdade)
+## AdMob
+Feito: app "Firewall Defense" (`ca-app-pub-8853291698252580~6524306976`) e bloco
+premiado "energia" (`ca-app-pub-8853291698252580/8982774348`) já estão no app.
+Falta: mensagem de privacidade (passo 6), celular como dispositivo de teste,
+e os passos 5 depois de publicar.
+
+Passo a passo original:
 1. Criar conta em admob.google.com (pede dados de pagamento/impostos).
 2. Apps → Adicionar app → Android → "O app não está publicado" → nome Firewall Defense.
 3. Blocos de anúncios → **Premiado** (rewarded) → nome "energia".

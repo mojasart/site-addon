@@ -64,7 +64,8 @@ Saem de `firewall-defense/assets/app/` (`python tools/icons.py`), copiados
 pra `app/assets/` e gerados com `npx @capacitor/assets generate --android`.
 
 ## O que muda no app em relação à web
-- Anúncios: AdMob (`src/ads.js`), ainda com o anúncio de teste do Google.
+- Anúncios: AdMob (`src/ads.js`), com o bloco premiado de verdade (`ADMOB` no
+  `config.js`; `test: true` volta pro anúncio de teste do Google).
 - Loja de dinheiro: "EM BREVE" (a Play só aceita Google Play Billing).
 - Botão voltar do Android: `app.back()`.
 - Tela cheia sem barras, só deitado.
