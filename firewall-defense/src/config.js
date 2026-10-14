@@ -22,9 +22,16 @@ export const LAYER_HP = 1000;
 // Versão do jogo, mostrada na tela inicial como vVERSION.BUILD (v1.0.345).
 // BUILD = número de commits: o GitHub Pages grava na hora de publicar
 // (.github/workflows/pages.yml); aqui fica o da última vez que alguém mudou
+// Na Play Store (app Android, ver STORE.md):
+//   versionName = VERSION.BUILD ("1.0.346"), o que o jogador vê na loja
+//   versionCode = BUILD (346): número inteiro que só sobe, a loja recusa um
+//   envio com versionCode menor ou igual ao anterior. Subir VERSION (1.1,
+//   2.0) quando tiver novidade grande; o BUILD continua contando sozinho
 export const VERSION = '1.0';
 export const BUILD = 346;
 export const versionLabel = () => `v${VERSION}.${String(BUILD).padStart(3, '0')}`;
+export const versionName = () => `${VERSION}.${BUILD}`;
+export const versionCode = () => BUILD;
 
 // Energia: cada partida gasta 1 ao passar da 1ª onda; volta 1 a cada regenMin
 // minutos até max; sem energia, um anúncio de adTime s dá +ad

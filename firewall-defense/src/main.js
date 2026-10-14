@@ -106,6 +106,24 @@ canvas.addEventListener(
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 window.addEventListener('keydown', (e) => app.key(e.key));
 
+// Botão/gesto de voltar do Android: pausa a partida e volta de tela nos
+// menus (app.back). Na tela inicial deixa sair do jogo.
+// No navegador o "voltar" mexe no histórico: fica sempre uma entrada extra
+// nossa; quando o jogador volta, o popstate trata e põe a entrada de novo.
+// No app (Capacitor) o plugin App avisa pelo 'backButton'
+const Cap = window.Capacitor;
+if (Cap?.isNativePlatform?.() && Cap.Plugins?.App) {
+  Cap.Plugins.App.addListener('backButton', () => {
+    if (!app.back()) Cap.Plugins.App.exitApp();
+  });
+} else {
+  history.pushState({ firewall: true }, '');
+  window.addEventListener('popstate', () => {
+    if (app.back()) history.pushState({ firewall: true }, '');
+    else history.back(); // tela inicial: sai de verdade
+  });
+}
+
 // Pausa sozinho quando o app vai pro fundo (ligação, troca de app...)
 document.addEventListener('visibilitychange', () => (document.hidden ? app.hidden() : app.shown()));
 
