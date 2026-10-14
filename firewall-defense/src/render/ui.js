@@ -506,10 +506,11 @@ function drawRoleTag(ctx, tile) {
 
 // Prévia da próxima rodada: os tipos de vírus que vêm e quantos
 function drawPreview(ctx, game, r) {
-  const rounds = game.rounds;
-  if (game.platinum || !rounds.canStart) return;
+  // (normal e platina: na platina, depois da última onda, o chefão)
+  const next = game.nextWaveGroups?.();
+  if (!next) return;
   const counts = new Map();
-  for (const g of rounds.rounds[rounds.started]) if (g.count > 0) counts.set(g.type, (counts.get(g.type) ?? 0) + g.count);
+  for (const g of next) if (g.count > 0) counts.set(g.type, (counts.get(g.type) ?? 0) + Math.round(g.count));
   if (!counts.size) return;
   text(ctx, t('PRÓXIMA RODADA'), r.x + r.w / 2, r.y + 8, { size: 11, color: '#bcd0f5' });
   const list = [...counts].slice(0, 4);

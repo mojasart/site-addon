@@ -180,7 +180,7 @@ export const DATA = {
     minerador3c: { name: 'Lucky Hash', desc: '+2% rare block chance' },
     minerador4: () => ({
       name: 'Interest',
-      desc: `At the start of each round, earn ${INTEREST.rate * 100}% of your saved money (max $${INTEREST.max}; not in Platinum)`,
+      desc: `At the start of each round, earn ${INTEREST.rate * 100}% of your saved money (max $${INTEREST.max})`,
     }),
     minerador4b: () => ({ name: 'Loan', desc: `Once per match, you can keep buying down to $${LOAN} in debt` }),
     minerador4c: { name: 'Midas Touch', desc: '5% of viruses come golden and drop $100 when destroyed' },
