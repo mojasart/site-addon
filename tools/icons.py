@@ -95,7 +95,7 @@ def main():
     # adaptável: fundo cheio, desenho menor (dentro do círculo de 80%)
     mask = place(background(1024), 0.56)
     save(mask.resize((512, 512), Image.LANCZOS).convert('RGB'), 'icon-maskable-512.png')
-    save(place(Image.new('RGBA', (1024, 1024), (0, 0, 0, 0)), 0.5, transparent=True), 'icon-foreground-1024.png')
+    save(place(Image.new('RGBA', (1024, 1024), (0, 0, 0, 0)), 0.66, transparent=True), 'icon-foreground-1024.png')  # o Android ainda encolhe a camada (inset 16,7%)
     save(background(1024).convert('RGB'), 'icon-background-1024.png')
     # abertura: fundo escuro liso com o ícone no meio (o Capacitor corta as
     # bordas conforme a tela, então o desenho fica pequeno no centro)

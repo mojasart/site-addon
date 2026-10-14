@@ -1,6 +1,7 @@
 import { PAY } from './config.js';
 import { COFFEE_PACKS } from './data/consumables.js';
 import { writeSave } from './save.js';
+import { isNative } from './native.js';
 
 /* ════════════════════════════════════════════════════════════
  *  COMPRAS COM DINHEIRO DE VERDADE (pacotes de café e modo VIP)
@@ -13,7 +14,9 @@ import { writeSave } from './save.js';
  *  as compras em outro aparelho). Sem PAY.api a loja fica "EM BREVE".
  * ════════════════════════════════════════════════════════════ */
 
-export const payEnabled = () => !!PAY.api;
+// No app Android a Play só deixa vender pelo Google Play Billing: o Mercado
+// Pago fica só no navegador (no app a loja de dinheiro mostra EM BREVE)
+export const payEnabled = () => !!PAY.api && !isNative;
 
 // Código do jogador (gerado uma vez e guardado no save)
 export function playerId(save) {

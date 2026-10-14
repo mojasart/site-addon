@@ -3,6 +3,7 @@ import { VIEW_H, MIN_VIEW_W, MAX_VIEW_W } from './config.js';
 import { bumpFontEpoch } from './render/maps/index.js';
 import { clamp } from './util.js';
 import { loadImages } from './render/images.js';
+import { isNative, plugin } from './native.js';
 
 const stage = document.getElementById('stage'); // área útil da tela (fora do notch)
 const canvas = document.getElementById('game');
@@ -111,10 +112,10 @@ window.addEventListener('keydown', (e) => app.key(e.key));
 // No navegador o "voltar" mexe no histórico: fica sempre uma entrada extra
 // nossa; quando o jogador volta, o popstate trata e põe a entrada de novo.
 // No app (Capacitor) o plugin App avisa pelo 'backButton'
-const Cap = window.Capacitor;
-if (Cap?.isNativePlatform?.() && Cap.Plugins?.App) {
-  Cap.Plugins.App.addListener('backButton', () => {
-    if (!app.back()) Cap.Plugins.App.exitApp();
+if (isNative) {
+  const App = plugin('App');
+  App.addListener('backButton', () => {
+    if (!app.back()) App.exitApp();
   });
 } else {
   history.pushState({ firewall: true }, '');
@@ -132,6 +133,7 @@ let fullscreenTried = false;
 function requestFullscreenOnMobile() {
   if (fullscreenTried) return;
   fullscreenTried = true;
+  if (isNative) return; // o app já abre em tela cheia (MainActivity)
   if (!matchMedia('(pointer: coarse)').matches) return;
   const el = document.documentElement;
   const req = el.requestFullscreen || el.webkitRequestFullscreen;

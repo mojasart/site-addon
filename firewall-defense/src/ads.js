@@ -1,5 +1,14 @@
+import { ADMOB } from './config.js';
+import { isNative, plugin } from './native.js';
+
 /* ════════════════════════════════════════════════════════════
- *  ANÚNCIOS COM RECOMPENSA (Google H5 Games Ads / Ad Placement API)
+ *  ANÚNCIOS COM RECOMPENSA
+ *  No navegador: Google H5 Games Ads (Ad Placement API), abaixo.
+ *  No app Android: AdMob (plugin @capacitor-community/admob, ADMOB no
+ *  config.js), mais embaixo. O resto do jogo só chama configAds e
+ *  showRewarded, igual nos dois.
+ *
+ *  H5 Games Ads (Google H5 Games Ads / Ad Placement API)
  *  https://developers.google.com/ad-placement
  *
  *  O script do Google fica no index.html, em MODO DE TESTE
@@ -18,6 +27,7 @@ const api = () => (typeof window.adBreak === 'function' ? window.adBreak : null)
 
 // Pré-carrega os anúncios e diz se o jogo tem som (chamar uma vez no começo)
 export function configAds(sound = true) {
+  if (isNative) return admobInit();
   window.adConfig?.({ preloadAdBreaks: 'on', sound: sound ? 'on' : 'off' });
 }
 
@@ -25,6 +35,7 @@ export function configAds(sound = true) {
 // done(result): 'viewed' (assistiu até o fim: ganha), 'dismissed' (fechou
 // antes: não ganha) ou 'unavailable' (não teve anúncio)
 export function showRewarded(name, { beforeAd, afterAd, done }) {
+  if (isNative) return admobRewarded({ beforeAd, afterAd, done });
   const adBreak = api();
   if (!adBreak) return done('unavailable');
   let settled = false;
@@ -55,4 +66,60 @@ export function showRewarded(name, { beforeAd, afterAd, done }) {
       finish(s === 'viewed' ? 'viewed' : s === 'dismissed' ? 'dismissed' : 'unavailable');
     },
   });
+}
+
+// ── AdMob (app Android) ──────────────────────────────────────
+// O anúncio é pré-carregado (prepare) e mostrado na hora (show). O show só
+// responde quando o jogador ganha a recompensa; se ele fecha antes, só vem o
+// evento Dismissed. Por isso: ganhou = o show respondeu; fechou = Dismissed.
+// Antes de tudo, o formulário de consentimento do Google (UMP), que só
+// aparece onde a lei pede (Europa, Reino Unido...)
+const adUnit = () => (ADMOB.test || !ADMOB.rewarded ? ADMOB.testRewarded : ADMOB.rewarded);
+let admob = null;
+let ready = null; // promessa do anúncio carregado (ou null)
+
+function admobInit() {
+  if (admob) return;
+  admob = plugin('AdMob');
+  admob
+    .initialize({ initializeForTesting: ADMOB.test })
+    .then(() => admob.requestConsentInfo())
+    .then((c) => (c?.status === 'REQUIRED' && c.isConsentFormAvailable ? admob.showConsentForm() : c))
+    .catch(() => {})
+    .then(preload);
+}
+
+function preload() {
+  ready = admob.prepareRewardVideoAd({ adId: adUnit(), isTesting: ADMOB.test }).then(
+    () => true,
+    () => false,
+  );
+  return ready;
+}
+
+async function admobRewarded({ beforeAd, afterAd, done }) {
+  if (!admob) admobInit();
+  let loaded = await Promise.race([ready ?? preload(), new Promise((ok) => setTimeout(() => ok(false), WAIT))]);
+  if (!loaded) loaded = await preload(); // o pré-carregado falhou (sem internet...): tenta de novo
+  if (!loaded) return done('unavailable');
+  let rewarded = false;
+  let settled = false;
+  const handles = [];
+  const finish = (result) => {
+    if (settled) return;
+    settled = true;
+    handles.forEach((h) => h.then((x) => x.remove()));
+    afterAd?.();
+    ready = null;
+    preload(); // já deixa o próximo carregando
+    done(result);
+  };
+  // fechou: espera um pouco, a recompensa às vezes chega logo depois
+  handles.push(admob.addListener('onRewardedVideoAdDismissed', () => setTimeout(() => finish(rewarded ? 'viewed' : 'dismissed'), 400)));
+  handles.push(admob.addListener('onRewardedVideoAdFailedToShow', () => finish('unavailable')));
+  beforeAd?.();
+  admob.showRewardVideoAd().then(
+    () => (rewarded = true),
+    () => finish('unavailable'),
+  );
 }
