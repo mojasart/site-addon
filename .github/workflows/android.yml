@@ -1,0 +1,127 @@
+# Gera o app Android (Capacitor, pasta app/) a cada push na main:
+#   firewall-defense-<versão>.aab → o pacote pra enviar na Play Console
+#   firewall-defense-<versão>.apk → pra instalar direto no celular (testes)
+# Ficam na execução, em Actions → "App Android" → Artifacts (30 dias).
+#
+# Assinatura: secrets ANDROID_KEYSTORE_BASE64 (a chave de upload em base64)
+# e ANDROID_KEYSTORE_PASSWORD (a senha dela). Passo a passo em app/README.md.
+# Sem os secrets, gera só um APK de teste (debug), sem o pacote da Play.
+# Dá pra rodar na mão em Actions → "App Android" → Run workflow.
+name: App Android
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'firewall-defense/**'
+      - 'app/**'
+      - '.github/workflows/android.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# um push novo cancela o build que ainda está rodando
+concurrency:
+  group: android
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # histórico inteiro: versionCode = número de commits
+
+      - name: Confere a chave do Gemini
+        run: |
+          if git grep -n 'AQ\.Ab8'; then
+            echo '::error::Achei a chave do Gemini no repositório: não gerei nada'
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Instala o Capacitor
+        working-directory: app
+        run: npm ci
+
+      # copia o jogo pra app/www (com a versão certa) e atualiza o projeto Android
+      - name: Monta o jogo dentro do app
+        working-directory: app
+        run: |
+          node build.mjs
+          npx cap sync android
+
+      - name: Versão
+        id: version
+        run: |
+          NAME=$(grep '^versionName=' app/android/app/version.properties | cut -d= -f2)
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "Versão $NAME"
+
+      # a chave fica só nesta máquina, durante o build (o build.gradle lê de
+      # ~/.android-keys/firewall-defense.properties, igual no PC)
+      - name: Chave de assinatura
+        id: key
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE" ] || [ -z "$PASSWORD" ]; then
+            echo '::warning::Sem os secrets da chave: gerando só o APK de teste (debug)'
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          mkdir -p ~/.android-keys
+          echo "$KEYSTORE" | base64 -d > ~/.android-keys/firewall-defense-upload.jks
+          {
+            echo "storeFile=$HOME/.android-keys/firewall-defense-upload.jks"
+            echo "storePassword=$PASSWORD"
+            echo "keyAlias=upload"
+            echo "keyPassword=$PASSWORD"
+          } > ~/.android-keys/firewall-defense.properties
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Gera o pacote da Play e o APK (assinados)
+        if: steps.key.outputs.signed == 'true'
+        working-directory: app/android
+        run: ./gradlew bundleRelease assembleRelease --no-daemon
+
+      - name: Gera o APK de teste (sem chave)
+        if: steps.key.outputs.signed != 'true'
+        working-directory: app/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Junta os arquivos
+        run: |
+          mkdir out
+          V=${{ steps.version.outputs.name }}
+          if [ "${{ steps.key.outputs.signed }}" = "true" ]; then
+            cp app/android/app/build/outputs/bundle/release/app-release.aab "out/firewall-defense-$V.aab"
+            cp app/android/app/build/outputs/apk/release/app-release.apk "out/firewall-defense-$V.apk"
+          else
+            cp app/android/app/build/outputs/apk/debug/app-debug.apk "out/firewall-defense-$V-teste.apk"
+          fi
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firewall-defense-android-${{ steps.version.outputs.name }}
+          path: out/*
+          retention-days: 30
+
+      - name: Apaga a chave
+        if: always()
+        run: rm -rf ~/.android-keys
