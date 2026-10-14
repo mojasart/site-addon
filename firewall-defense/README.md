@@ -148,6 +148,24 @@ estrelas). Regras em `src/data/bounty.js`; as salas são `BOUNTY_MAPS` em `src/d
 (Antes, os mapas 10, 20, 30 e 40 eram Bug Bounty; hoje são fases normais. Saves antigos perdem as estrelas
 dessas fases, mas os cafés que elas deram ficam: `App.migrateBounty`.)
 
+### Chefões
+
+Minichefão = **Locker** ou **Cicada 3301** (a Cicada é 35% deles). Os chefões não vêm da lista de rodadas:
+cada fase tem uma agenda (`bossPlan` / `platinumBossPlan` em `src/data/rounds.js`), espalhada pela partida e
+mais pro fim (`addBosses`); os da última onda entram depois de todo mundo, com +50% de vida.
+
+- **Modo normal:** o Locker fecha a fase da 1-3 à 1-9; da 1-10 em diante vêm minichefões e Ransomwares no
+  meio da partida, e Adware a partir da 2-5. Sobe aos poucos até 1-15: 3 mini + 2 Ransomwares · 2-15: 5 mini
+  + 1 Adware + 1 Ransomware · 3-15: 7 mini + 3 Ransomwares + 1 Adware.
+- **Platina:** além do chefão do fim (com +50% de vida: `BOSS_HP` 5,4), sobe até 1-15: 5 mini + 3
+  Ransomwares · 2-15: 8 mini + 1 Adware + 3 Ransomwares · 3-15: 15 mini + 5 Ransomwares + 2 Adwares.
+
+### Platina infinita
+
+A platina conta **pontos** como o Bug Bounty desde o começo. Vencendo, aparece **CONTINUAR**: a partida
+segue com ondas sem fim (as últimas 4 da platina, cada uma com mais vírus e mais vida: `ENDLESS` em
+`src/data/platinum.js`) até perder a vida. O recorde de pontos fica salvo por fase (`save.endless`).
+
 ## Seasons e mapas
 
 São **3 seasons de 15 mapas** (45 fases), numa ordem só de dificuldade. Vencer um mapa libera o próximo, e a season seguinte abre ao vencer o último mapa da anterior.

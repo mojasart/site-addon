@@ -78,6 +78,8 @@ export function drawHud(ctx, game) {
     // cor das estrelas que daria vencendo agora: dourado (3), prata (2), bronze (1)
     const color = game.platinum ? '#ffffff' : STAR_COLOR[game.starsNow];
     text(ctx, String(Math.max(0, game.lives)), 54, 32, { size: 28, align: 'left', color });
+    // platina: os pontos (como no Bug Bounty) do lado da vida
+    if (game.platinum) text(ctx, `${game.points} pts`, 84, 34, { size: 18, align: 'left', color: '#bdeeff' });
   }
 
   ctx.save();
@@ -101,7 +103,8 @@ export function drawHud(ctx, game) {
     // platina: onda atual / PLAT_WAVES (pisca vermelho nas últimas 3)
     const hurry = !game.bossCalled && game.platLeft < 3 && Math.sin(t * 10) > 0;
     text(ctx, 'PLATINA', L.pause.x - 14, 20, { size: 14, align: 'right', color: '#bdeeff' });
-    text(ctx, game.bossCalled ? 'CHEFÃO' : `${r.current}/${PLAT_WAVES}`, L.pause.x - 14, 45, { size: 28, align: 'right', color: game.bossCalled || hurry ? '#ff7a8a' : '#ffffff' });
+    if (game.endless) text(ctx, `INFINITO ${game.endlessK}`, L.pause.x - 14, 45, { size: 24, align: 'right', color: '#bdeeff' });
+    else text(ctx, game.bossCalled ? 'CHEFÃO' : `${r.current}/${PLAT_WAVES}`, L.pause.x - 14, 45, { size: 28, align: 'right', color: game.bossCalled || hurry ? '#ff7a8a' : '#ffffff' });
   } else {
     text(ctx, 'RODADA', L.pause.x - 14, 20, { size: 14, align: 'right', color: '#e3f6ff' });
     text(ctx, `${r.current}/${r.total}`, L.pause.x - 14, 45, { size: 28, align: 'right' });
