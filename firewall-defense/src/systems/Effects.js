@@ -1,5 +1,6 @@
 import { OUTLINE } from '../config.js';
 import { text } from '../render/canvas.js';
+import { t } from '../i18n.js';
 import { TAU, rand } from '../util.js';
 import { drawImage, hasImage } from '../render/images.js';
 
@@ -70,7 +71,7 @@ export class Effects {
   }
 
   blocked(x, y) {
-    if (this.texts.length < 30) this.texts.push({ x, y, str: 'BLOQ!', color: '#d6deea', size: 14, life: 0.5, max: 0.5 });
+    if (this.texts.length < 30) this.texts.push({ x, y, str: t('BLOQ!'), color: '#d6deea', size: 14, life: 0.5, max: 0.5 });
   }
 
   text(x, y, str, color = '#ffffff', size = 22) {

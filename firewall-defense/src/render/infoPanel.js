@@ -4,6 +4,7 @@ import { statsAt, statRows } from '../data/towerInfo.js';
 import { applyPerks } from '../data/darknet.js';
 import { rrect, fillOutline, text } from './canvas.js';
 import { ROLE, ROLE_GREEN, roleFont } from './ui.js';
+import { t } from '../i18n.js';
 
 /* ════════════════════════════════════════════════════════════
  *  ABA DE INFORMAÇÕES DA DEFESA
@@ -113,7 +114,7 @@ function drawCard(ctx, L, game) {
     ctx.fillStyle = ROLE_GREEN;
     ctx.shadowColor = ROLE_GREEN;
     ctx.shadowBlur = 6;
-    ctx.fillText(`[${role.label}]`, x, y - 8);
+    ctx.fillText(`[${t(role.label)}]`, x, y - 8);
     ctx.restore();
     y += CLASS_H;
   }
@@ -123,8 +124,10 @@ function drawCard(ctx, L, game) {
     rrect(ctx, x - 4, y - ROW_H / 2 + 1, w + 8, ROW_H - 2, 6);
     ctx.fillStyle = 'rgba(255,255,255,0.06)';
     ctx.fill();
-    text(ctx, k, x, y, { size: 12, align: 'left', color: '#bcd0f5' });
-    const red = (k === 'BLINDADOS' && v === 'não fura') || (k === 'VOADORES' && v === 'não pega') || (k === 'CUSTO' && !game.canAfford(game.costOf(sub.type))); // custo em vermelho: falta dinheiro
+    text(ctx, t(k), x, y, { size: 12, align: 'left', color: '#bcd0f5' });
+    // (compara com o português e com a tradução: as linhas podem vir já traduzidas)
+    const is = (a, pt) => a === pt || a === t(pt);
+    const red = (is(k, 'BLINDADOS') && is(v, 'não fura')) || (is(k, 'VOADORES') && is(v, 'não pega')) || (k === 'CUSTO' && !game.canAfford(game.costOf(sub.type))); // custo em vermelho: falta dinheiro
     text(ctx, v, x + w, y, { size: 13, align: 'right', color: red ? '#ff9aa5' : GOLD });
     y += ROW_H;
   }

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -41,4 +42,11 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- vibrar ao colocar defesa, perder vida etc. (navigator.vibrate no jogo) -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- avisos de energia, brinde e "faz tempo que você não joga" (src/notify.js) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- o plugin de notificação pede alarme exato; o jogo não precisa (e a Play
+         pede justificativa pra ele): tira do app final -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />
 </manifest>

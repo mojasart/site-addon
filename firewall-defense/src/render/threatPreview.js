@@ -4,6 +4,7 @@ import { rrect, circle, text } from './canvas.js';
 import { drawEnemy, drawAura } from './viruses.js';
 import { drawCharacter } from './characters.js';
 import { drawProjectile, ICONS } from './sprites.js';
+import { t } from '../i18n.js';
 
 /* ════════════════════════════════════════════════════════════
  *  PREVIEW DA AMEAÇA (catálogo)
@@ -130,12 +131,12 @@ export class ThreatPreview {
       for (const tw of this.towers) {
         if (tw.locked || Math.abs(tw.x - e.x) > 70) continue;
         tw.locked = true;
-        this.say(tw.x, tw.y - 44, 'CRIPTOGRAFADO!', '#ff5a6a');
+        this.say(tw.x, tw.y - 44, t('CRIPTOGRAFADO!'), '#ff5a6a');
       }
     }
     if (e.x >= SERVER_X) {
       e.dead = true;
-      this.say(SERVER_X - 10, ROAD_Y - 40, '-VIDA', '#ff5a6a');
+      this.say(SERVER_X - 10, ROAD_Y - 40, t('-VIDA'), '#ff5a6a');
     }
   }
 
@@ -203,8 +204,8 @@ export class ThreatPreview {
   // keyboard: teclado do Hacker (não fura blindagem)
   damage(e, keyboard) {
     const top = ROAD_Y - e.r * 2.6 - (e.def.flying ? 30 : 0);
-    if (keyboard && e.def.armored) return this.say(e.x, top, 'BLINDADO', '#c9d1de');
-    if (this.inAura(e)) return this.say(e.x, top, 'IMUNE', '#3dff9a');
+    if (keyboard && e.def.armored) return this.say(e.x, top, t('BLINDADO'), '#c9d1de');
+    if (this.inAura(e)) return this.say(e.x, top, t('IMUNE'), '#3dff9a');
     e.flash = 1;
     e.hp--;
     if (e.hp > 0) return;
@@ -393,13 +394,13 @@ export class ThreatPreview {
     ctx.stroke();
     ctx.fillStyle = a.hue;
     ctx.fillRect(1, 1, w - 2, 15);
-    text(ctx, 'GANHE JÁ!', w / 2 - 8, 9, { size: 10 });
+    text(ctx, t('GANHE JÁ!'), w / 2 - 8, 9, { size: 10 });
     rrect(ctx, w - 15, 3, 11, 11, 2);
     ctx.fillStyle = '#ff5a5a';
     ctx.fill();
     text(ctx, '×', w - 9.5, 8.5, { size: 10 });
     text(ctx, 'iPhone 19', w / 2, 33, { size: 15, color: a.hue });
-    text(ctx, 'clique aqui!', w / 2, 52, { size: 11, color: '#3a3f52', stroke: null });
+    text(ctx, t('clique aqui!'), w / 2, 52, { size: 11, color: '#3a3f52', stroke: null });
     ctx.restore();
   }
 }

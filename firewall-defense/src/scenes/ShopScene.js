@@ -8,6 +8,7 @@ import { CONSUMABLES, COFFEE_PACKS, ITEM, VIP } from '../data/consumables.js';
 import { drawBolt } from '../render/energy.js';
 import { formatCoffee } from '../data/darknet.js';
 import { payEnabled } from '../pay.js';
+import { t } from '../i18n.js';
 
 /* ════════════════════════════════════════════════════════════
  *  LOJA DE CONSUMÍVEIS
@@ -168,8 +169,8 @@ export class ShopScene {
     // barra de título da janela, com o saldo de cafés
     ctx.fillStyle = '#0c3a22';
     ctx.fillRect(scr.x, scr.y, scr.w, 32);
-    mono(ctx, 'C:\\DARKWEB\\LOJA.EXE', scr.x + 14, scr.y + 17, 15, GREEN);
-    const bal = `SALDO: ${formatCoffee(this.app.coffee)}`;
+    mono(ctx, t('C:\\DARKWEB\\LOJA.EXE'), scr.x + 14, scr.y + 17, 15, GREEN);
+    const bal = t('SALDO: {n}', { n: formatCoffee(this.app.coffee) });
     mono(ctx, bal, scr.x + scr.w - 40, scr.y + 17, 14, GREEN, 'right');
     ctx.save();
     ctx.translate(scr.x + scr.w - 24, scr.y + 16);
@@ -240,8 +241,9 @@ export class ShopScene {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = ink;
-    ctx.fillText(`[COMPRAR ${item.cost}`, b.x + 10, b.y + b.h / 2 + 1);
-    const cw = ctx.measureText(`[COMPRAR ${item.cost}`).width;
+    const buy = `[${t('COMPRAR')} ${item.cost}`;
+    ctx.fillText(buy, b.x + 10, b.y + b.h / 2 + 1);
+    const cw = ctx.measureText(buy).width;
     ctx.save();
     ctx.translate(b.x + 10 + cw + 12, b.y + b.h / 2);
     ICONS.coffee(ctx, 8);
@@ -258,7 +260,7 @@ export class ShopScene {
     const offer = this.app.freeOffer;
     const item = ITEM[offer.id];
     const fl = this.flash.free ?? 0;
-    mono(ctx, '> brinde_do_dia/', f.x, f.y - 16, 15, GREEN);
+    mono(ctx, t('> brinde_do_dia/'), f.x, f.y - 16, 15, GREEN);
     // moldura pulsando enquanto o brinde está esperando
     const glow = offer.claimed ? 0 : 0.5 + Math.sin(this.t * 4) * 0.5;
     ctx.fillStyle = `rgba(61,255,154,${0.04 + 0.06 * glow + 0.2 * fl})`;
@@ -274,7 +276,7 @@ export class ShopScene {
     drawItemIcon(ctx, item.id, 18, this.t);
     ctx.restore();
     mono(ctx, fileName(item.name), f.x + 62, f.y + 28, 13, GREEN);
-    mono(ctx, offer.claimed ? 'PEGO HOJE' : 'GRÁTIS', f.x + 62, f.y + 48, 13, offer.claimed ? DIM : '#ffd23f');
+    mono(ctx, offer.claimed ? t('PEGO HOJE') : t('GRÁTIS'), f.x + 62, f.y + 48, 13, offer.claimed ? DIM : '#ffd23f');
     const b = f.btn;
     ctx.font = `bold 13px ${MONO}`;
     ctx.textAlign = 'center';
@@ -284,21 +286,21 @@ export class ShopScene {
       ctx.fillStyle = GREEN;
       ctx.fillRect(b.x, b.y, b.w, b.h);
       ctx.fillStyle = SCREEN;
-      ctx.fillText('[ASSISTIR ANÚNCIO]', b.x + b.w / 2, b.y + b.h / 2 + 1);
+      ctx.fillText(`[${t('ASSISTIR ANÚNCIO')}]`, b.x + b.w / 2, b.y + b.h / 2 + 1);
     } else {
       ctx.strokeStyle = DIM;
       ctx.strokeRect(b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1);
       ctx.fillStyle = DIM;
-      ctx.fillText(`PRÓXIMO EM ${clock(this.app.freeOfferNextMs())}`, b.x + b.w / 2, b.y + b.h / 2 + 1);
+      ctx.fillText(t('PRÓXIMO EM {time}', { time: clock(this.app.freeOfferNextMs()) }), b.x + b.w / 2, b.y + b.h / 2 + 1);
     }
   }
 
   // Pasta dos pacotes de café (dinheiro de verdade; sem servidor de compras, "EM BREVE")
   drawPacks(ctx, L) {
     const s = L.side;
-    mono(ctx, '> pacotes_cafe/', s.x, s.y + 8, 15, GREEN);
+    mono(ctx, t('> pacotes_cafe/'), s.x, s.y + 8, 15, GREEN);
     // pisca como cursor: ainda não vende
-    if (!payEnabled() && Math.sin(this.t * 4) > -0.3) mono(ctx, '[EM BREVE]', s.x + s.w, s.y + 8, 11, DIM, 'right');
+    if (!payEnabled() && Math.sin(this.t * 4) > -0.3) mono(ctx, `[${t('EM BREVE')}]`, s.x + s.w, s.y + 8, 11, DIM, 'right');
     for (const p of L.packs) {
       const { pack } = p;
       ctx.strokeStyle = DIM;
@@ -310,7 +312,7 @@ export class ShopScene {
       ctx.translate(p.x + 28, p.y + p.h / 2);
       if (!drawImage(ctx, pack.sprite, Math.min(44, p.h - 4))) ICONS.coffee(ctx, 13);
       ctx.restore();
-      mono(ctx, `+${pack.coffee} CAFÉS`, p.x + 56, p.y + p.h / 2 - 8, 14, GREEN);
+      mono(ctx, `+${pack.coffee} ${t('CAFÉS')}`, p.x + 56, p.y + p.h / 2 - 8, 14, GREEN);
       mono(ctx, pack.price, p.x + 56, p.y + p.h / 2 + 9, 11, '#9fe8c0', 'left', false);
     }
     this.drawVip(ctx, L.vip);
@@ -358,7 +360,7 @@ export class ShopScene {
     ctx.restore();
     if (!drawImage(ctx, 'icon_infinity', 22, x + 17, ty)) mono(ctx, '∞', x + 10, ty, 14, VIP_GOLD);
     // linha de baixo: o preço (ou [ATIVO])
-    mono(ctx, on ? '[ATIVO]' : VIP.price, v.x + 56, cy + 9, 11, '#ffe9a0', 'left', on);
+    mono(ctx, on ? `[${t('ATIVO')}]` : VIP.price, v.x + 56, cy + 9, 11, '#ffe9a0', 'left', on);
   }
 
   // o anúncio do brinde acabou (app.energyTap): brilho no quadro

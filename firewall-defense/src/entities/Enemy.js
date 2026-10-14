@@ -2,6 +2,7 @@ import { ENEMIES, threat, lives } from '../data/enemies.js';
 import { LAYER_HP } from '../config.js';
 import { rand, chance } from '../util.js';
 import { TILE } from '../core/grid.js';
+import { t } from '../i18n.js';
 
 const SHATTER_R = 45; // alcance do Estilhaço
 const STICKY = { mul: 0.5, time: 2 }; // Mel Pegajoso: 50% mais lento por 2 s
@@ -102,7 +103,7 @@ export class Enemy {
     const bait = game.baitAt?.(this);
     if (bait && this.def.boss) {
       bait.wear(Infinity, game, true);
-      game.fx.text(bait.x, bait.y - 44, 'ESMAGADO!', '#ff7a8a', 18);
+      game.fx.text(bait.x, bait.y - 44, t('ESMAGADO!'), '#ff7a8a', 18);
       game.shake?.(4);
     } else if (bait) {
       // ao parar no pote: Mel Pegajoso (Dark Net) às vezes gruda; Ferrão às vezes tira 1 camada

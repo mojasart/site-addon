@@ -2,6 +2,7 @@ import { OUTLINE, GOLD } from '../config.js';
 import { rrect, circle, text } from './canvas.js';
 import { star } from './characters.js';
 import { Hazards } from '../systems/Hazards.js';
+import { t as tr } from '../i18n.js';
 
 /* ════════════════════════════════════════════════════════════
  *  ZONAS ELETRIFICADAS
@@ -192,7 +193,7 @@ export function drawStunned(ctx, t) {
 
 // Aviso ao arrastar uma defesa por cima de uma zona
 export function drawHazardWarning(ctx, x, y) {
-  text(ctx, '⚡ ZONA ELÉTRICA', x, y - 62, { size: 14, color: '#fff59a' });
+  text(ctx, `⚡ ${tr('ZONA ELÉTRICA')}`, x, y - 62, { size: 14, color: '#fff59a' });
 }
 
 function bolt(ctx, x, y, s, color) {

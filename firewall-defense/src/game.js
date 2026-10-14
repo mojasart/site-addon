@@ -41,6 +41,7 @@ import { pickCoinTiles, coinTileAt, COIN_SEASONS } from './core/coinTiles.js';
 import { drawCoinTiles, drawNoMine } from './render/coinTiles.js';
 import { rrect, fillOutline, circle, text, setFont } from './render/canvas.js';
 import { rand, chance, plural } from './util.js';
+import { t } from './i18n.js';
 
 const TOUCH_LIFT = 46; // ao arrastar com o dedo, a defesa aparece acima dele
 const BASE_HIT = 24; // raio da hitbox do servidor (ele ocupa 1 quadrado)
@@ -150,16 +151,16 @@ export class Game {
     this.lockedTowers = this.mapIndex === 0 && this.mode === 'normal' ? new Set(TUTORIAL_LOCKED) : null;
     this.tutorial = Tutorial.wanted(this) ? new Tutorial(this) : null;
     if (this.platinum) {
-      this.showBanner('MODO PLATINA', 3, '#bdeeff', 46, `${TOWERS[this.blocked].name} bloqueado · chefão depois da onda ${PLAT_WAVES}`);
+      this.showBanner(t('MODO PLATINA'), 3, '#bdeeff', 46, t('{tower} bloqueado · chefão depois da onda {n}', { tower: TOWERS[this.blocked].name, n: PLAT_WAVES }));
       return;
     }
     if (this.bounty) {
-      this.showBanner('BUG BOUNTY', 3, '#ffd23f', 50, `5 minutos com $${this.money}: vírus não dão dinheiro!`);
+      this.showBanner('BUG BOUNTY', 3, '#ffd23f', 50, t('5 minutos com ${money}: vírus não dão dinheiro!', { money: this.money }));
       return;
     }
     // mapa com novidade (várias entradas, loop, zonas...) avisa no começo
     const special = this.map.entries > 1 || this.map.loop || this.map.hazards?.length;
-    this.showBanner(this.map.name, 2.6, '#ffffff', 46, special ? this.map.desc : 'Arraste as defesas pro mapa!');
+    this.showBanner(this.map.name, 2.6, '#ffffff', 46, special ? this.map.desc : t('Arraste as defesas pro mapa!'));
   }
 
   // Estrelas que a partida daria se vencesse com a vida de agora: 3 com 90%
@@ -473,7 +474,7 @@ export class Game {
     if (this.bounty) {
       // Bug Bounty: ninguém perde vida, mas o combo zera
       this.escaped += layers(enemy.type);
-      if (this.combo >= BOUNTY.comboStep) this.fx.text(this.server.x, this.server.y - 40, 'COMBO PERDIDO', '#ff7a8a', 18);
+      if (this.combo >= BOUNTY.comboStep) this.fx.text(this.server.x, this.server.y - 40, t('COMBO PERDIDO'), '#ff7a8a', 18);
       this.combo = 0;
       return;
     }
@@ -550,7 +551,7 @@ export class Game {
     this.winIn = null;
     this.bossCalled = false;
     this.waveGap = WAVE_GAP;
-    this.showBanner('PLATINA INFINITA', 2.6, '#bdeeff', 46, 'Ondas sem fim: até onde você aguenta?');
+    this.showBanner(t('PLATINA INFINITA'), 2.6, '#bdeeff', 46, t('Ondas sem fim: até onde você aguenta?'));
     this.sound.play('round');
   }
 
@@ -578,7 +579,7 @@ export class Game {
     this.rounds.finishWith(platinumBoss(this.map), BOSS_HP * Math.sqrt(this.map.pressure) * platinumScale(this.mapIndex));
     this.rounds.start();
     this.shake(8);
-    this.showBanner('CHEFÃO!', 2, '#ff5a6a', 56, 'Derrote ele pra ganhar a platina');
+    this.showBanner(t('CHEFÃO!'), 2, '#ff5a6a', 56, t('Derrote ele pra ganhar a platina'));
     this.sound.play('round');
   }
 
@@ -608,11 +609,11 @@ export class Game {
     if (this.rounds.finished) {
       this.winIn = WIN_DELAY;
       // sobrou a Cicada: a vitória só vem com ela morta
-      if (this.anyAlive()) this.showBanner('ÚLTIMA RODADA!', 2.4, '#3dff9a', 36, 'Derrote a Cicada 3301 pra vencer');
+      if (this.anyAlive()) this.showBanner(t('ÚLTIMA RODADA!'), 2.4, '#3dff9a', 36, t('Derrote a Cicada 3301 pra vencer'));
       return;
     }
     this.sound.play('roundEnd');
-    this.showBanner(`RODADA ${n} COMPLETA!`, 1.6, '#3dff9a', 36, `+$${bonus}`);
+    this.showBanner(t('RODADA {n} COMPLETA!', { n }), 1.6, '#3dff9a', 36, `+$${bonus}`);
     // mapa limpo: com turno automático, a próxima começa na hora (no passo
     // seguinte, depois de os Mineradores entregarem o que faltou minerar)
     if (!this.rounds.active && this.autoRound) this.nextIn = 0;
@@ -708,7 +709,7 @@ export class Game {
     if (this.callCooldown > 0 || !this.rounds.canStart) return;
     if (this.platinum && this.rounds.started > 0) return;
     if (!this.canCall()) {
-      this.fx.text(this.mapW / 2 - this.offsetX, VIEW_H / 2, `Acabe com a rodada ${this.rounds.done + 1} primeiro!`, '#ff7a8a', 22);
+      this.fx.text(this.mapW / 2 - this.offsetX, VIEW_H / 2, t('Acabe com a rodada {n} primeiro!', { n: this.rounds.done + 1 }), '#ff7a8a', 22);
       this.sound.play('error');
       return;
     }
@@ -738,7 +739,7 @@ export class Game {
       if (e.remaining > DANGER_TILES * TILE || e.threat < this.lives) continue;
       e.dangerSeen = true;
       this.speed = 1;
-      this.toast = { text: 'PERIGO! Velocidade normal', time: 2.6, tone: 'alert' };
+      this.toast = { text: t('PERIGO! Velocidade normal'), time: 2.6, tone: 'alert' };
       this.sound.play('error');
       return;
     }
@@ -762,7 +763,7 @@ export class Game {
       this.money += interest;
       this.coinBump = 1;
     }
-    const juros = interest > 0 ? `Juros: +$${interest}` : null;
+    const juros = interest > 0 ? t('Juros: +${n}', { n: interest }) : null;
     if (this.platinum) {
       // a partir da 2ª onda, o bônus de rodada vem no começo de cada uma
       const wave = this.rounds.started;
@@ -771,9 +772,9 @@ export class Game {
         this.money += pay;
         this.coinBump = 1;
       }
-      this.showBanner(`ONDA ${wave}`, 0.9, '#bdeeff', 36, [pay ? `+$${pay}` : null, juros].filter(Boolean).join(' · ') || null);
+      this.showBanner(t('ONDA {n}', { n: wave }), 0.9, '#bdeeff', 36, [pay ? `+$${pay}` : null, juros].filter(Boolean).join(' · ') || null);
     }
-    else this.showBanner(`RODADA ${this.rounds.started}`, 1.1, '#ffffff', 46, [bonus > 0 ? `Chamou antes: +$${bonus}` : null, juros].filter(Boolean).join(' · ') || null);
+    else this.showBanner(t('RODADA {n}', { n: this.rounds.started }), 1.1, '#ffffff', 46, [bonus > 0 ? t('Chamou antes: +${n}', { n: bonus }) : null, juros].filter(Boolean).join(' · ') || null);
     this.sound.play('round');
   }
 
@@ -846,7 +847,7 @@ export class Game {
   spawnEnemy(enemy) {
     this.newEnemies.push(enemy);
     // ameaça nova entra no catálogo (e avisa no topo da tela)
-    if (this.app.discover?.(enemy.type)) this.toast = { text: `NOVA AMEAÇA NO CATÁLOGO: ${enemy.def.name.toUpperCase()}`, time: 5, total: 5, threat: enemy.type };
+    if (this.app.discover?.(enemy.type)) this.toast = { text: t('NOVA AMEAÇA NO CATÁLOGO: {name}', { name: enemy.def.name.toUpperCase() }), time: 5, total: 5, threat: enemy.type };
   }
 
   spawnProjectile(tower, angle, target = null) {
@@ -963,7 +964,7 @@ export class Game {
     const up = tower.nextUpgrade;
     if (!up) return;
     if (!this.canAfford(up.cost)) {
-      this.fx.text(tower.x, tower.y - 50, 'Sem dinheiro!', '#ff7a8a', 18);
+      this.fx.text(tower.x, tower.y - 50, t('Sem dinheiro!'), '#ff7a8a', 18);
       this.sound.play('error');
       return;
     }
@@ -1094,7 +1095,7 @@ export class Game {
     this.shake(6);
     this.sound.play('zap');
     this.fx.ring(e.x, e.y, rs.range * TILE, 'ransom');
-    this.fx.text(e.x, e.y - e.r - 24, 'CRIPTOGRAFADO!', '#3dff9a', 20);
+    this.fx.text(e.x, e.y - e.r - 24, t('CRIPTOGRAFADO!'), '#3dff9a', 20);
     for (const t of this.ransomTargets(e)) {
       t.ransom = rs.price;
       this.fx.burst(t.x, t.y - 20, '#3dff9a', 12, 140, 0.5, 3);
@@ -1105,7 +1106,7 @@ export class Game {
   payRansom(tower) {
     if (!tower.ransom) return false;
     if (!this.canAfford(tower.ransom)) {
-      this.fx.text(tower.x, tower.y - 50, 'Sem dinheiro!', '#ff7a8a', 16);
+      this.fx.text(tower.x, tower.y - 50, t('Sem dinheiro!'), '#ff7a8a', 16);
       this.sound.play('error');
       return false;
     }
@@ -1292,18 +1293,18 @@ export class Game {
       if (!inRect(tile, sx, sy)) continue;
       const def = TOWERS[tile.type];
       if (this.isLocked(tile.type)) {
-        this.fx.panelText(tile.x + tile.w / 2, tile.y + 30, 'Bloqueado!', '#ff7a8a', 16);
+        this.fx.panelText(tile.x + tile.w / 2, tile.y + 30, t('Bloqueado!'), '#ff7a8a', 16);
         this.sound.play('error');
         return;
       }
       if (this.commanderFull(tile.type)) {
-        this.fx.panelText(tile.x + tile.w / 2, tile.y + 30, `Máx. ${COMMANDER_MAX}!`, '#ff7a8a', 16);
+        this.fx.panelText(tile.x + tile.w / 2, tile.y + 30, t('Máx. {n}!', { n: COMMANDER_MAX }), '#ff7a8a', 16);
         this.sound.play('error');
         return;
       }
       const toggleOff = this.placing === tile.type;
       if (!toggleOff && !this.canAfford(this.costOf(tile.type))) {
-        this.fx.panelText(tile.x + tile.w / 2, tile.y + 30, 'Sem dinheiro!', '#ff7a8a', 16);
+        this.fx.panelText(tile.x + tile.w / 2, tile.y + 30, t('Sem dinheiro!'), '#ff7a8a', 16);
         this.sound.play('error');
         // mesmo sem dinheiro dá pra ver os atributos na aba de informações
         // (tocar de novo na mesma defesa fecha)
@@ -1324,25 +1325,25 @@ export class Game {
   itemTapped(tile) {
     const item = ITEM[tile.id];
     if (this.platinum) {
-      this.toast = { text: 'Na platina não dá pra usar itens', time: 2.2, tone: 'alert' };
+      this.toast = { text: t('Na platina não dá pra usar itens'), time: 2.2, tone: 'alert' };
       this.sound.play('error');
       return;
     }
     const lives = BACKUP_LIVES;
     if (!((this.app.inventory?.[tile.id] ?? 0) > 0)) {
-      this.toast = { text: `Sem ${item.name}! Compre na LOJA, na tela de mapas`, time: 2.6, tone: 'alert' };
+      this.toast = { text: t('Sem {item}! Compre na LOJA, na tela de mapas', { item: item.name }), time: 2.6, tone: 'alert' };
       this.sound.play('error');
       return;
     }
     if (useConsumable(this, tile.id)) {
       this.tutorial?.on('item', tile.id);
-      const done = { cash: `+$${CASH}`, free: 'a próxima defesa sai de graça', freeze: 'vírus congelados', lives: `+${lives} ${plural(lives, 'vida', 'vidas')}` };
-      this.toast = { text: `${item.name.toUpperCase()}: ${done[tile.id] ?? 'usado'}`, time: 2.2 };
+      const done = { cash: `+$${CASH}`, free: t('a próxima defesa sai de graça'), freeze: t('vírus congelados'), lives: `+${lives} ${plural(lives, t('vida'), t('vidas'))}` };
+      this.toast = { text: `${item.name.toUpperCase()}: ${done[tile.id] ?? t('usado')}`, time: 2.2 };
       if (tile.id === 'free') this.panelTab = 'towers'; // Defesa Grátis: já volta pras defesas pra escolher
     } else {
       // não deu pra usar agora (o item não foi gasto)
-      const why = { free: 'Já tem uma defesa grátis esperando', freeze: 'Nenhum vírus pra congelar', cash: 'No Bug Bounty é só o orçamento' };
-      this.toast = { text: why[tile.id] ?? 'Agora não dá pra usar', time: 2.2, tone: 'alert' };
+      const why = { free: t('Já tem uma defesa grátis esperando'), freeze: t('Nenhum vírus pra congelar'), cash: t('No Bug Bounty é só o orçamento') };
+      this.toast = { text: why[tile.id] ?? t('Agora não dá pra usar'), time: 2.2, tone: 'alert' };
     }
   }
 
@@ -1377,13 +1378,13 @@ export class Game {
     // tutorial: só no quadrado que a mãozinha mostra
     if (this.tutorial && !this.tutorial.allowPlace(type, x, y)) {
       this.tutorial.nudge = 1;
-      this.fx.text(x, y - 30, 'Coloque no quadrado indicado!', '#ff7a8a', 18);
+      this.fx.text(x, y - 30, t('Coloque no quadrado indicado!'), '#ff7a8a', 18);
       this.sound.play('error');
       return;
     }
     if (this.place(type, x, y)) return;
     const def = TOWERS[type];
-    const why = this.commanderFull(type) ? `Máx. ${COMMANDER_MAX} comandantes!` : def.onPath ? 'Só no caminho!' : 'Aqui não dá!';
+    const why = this.commanderFull(type) ? t('Máx. {n} comandantes!', { n: COMMANDER_MAX }) : def.onPath ? t('Só no caminho!') : t('Aqui não dá!');
     this.fx.text(x, y - 30, why, '#ff7a8a', 18);
     this.sound.play('error');
   }

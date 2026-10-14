@@ -4,6 +4,7 @@ import { inRect } from '../render/widgets.js';
 import { drawCharacter } from '../render/characters.js';
 import { drawDuck } from '../render/duck.js';
 import { easeOutBack } from '../util.js';
+import { t, lang } from '../i18n.js';
 
 /* ════════════════════════════════════════════════════════════
  *  NOME DO JOGADOR
@@ -15,6 +16,8 @@ import { easeOutBack } from '../util.js';
  *  o teclado no celular) posicionado em cima da caixa desenhada no canvas.
  *  Só letras (com acento) e espaço, até MAX_NAME caracteres; o resto é
  *  apagado enquanto digita. O Hacker usa o nome pra falar (app.playerName).
+ *  Na barra de título, [PT] [EN] escolhe o idioma do jogo (app.setLanguage):
+ *  troca na hora, a janela e a tela de trás já aparecem no idioma novo.
  * ════════════════════════════════════════════════════════════ */
 
 export const MAX_NAME = 30;
@@ -70,6 +73,10 @@ export class NameScene {
     return {
       card,
       close: { x: card.x + card.w - 34, y: card.y + 5, w: 26, h: 24 },
+      langs: [
+        { id: 'pt', label: 'PT', x: card.x + card.w - 150, y: card.y + 5, w: 46, h: 24 },
+        { id: 'en', label: 'EN', x: card.x + card.w - 98, y: card.y + 5, w: 46, h: 24 },
+      ],
       field: { x: cx - 150, y: card.y + 108, w: 300, h: 50 },
       ok: { x: cx - 120, y: card.y + 206, w: 240, h: 54 },
       cx,
@@ -130,12 +137,28 @@ export class NameScene {
     // barra de título com o "programa" e o [X]
     ctx.fillStyle = '#0c3a22';
     ctx.fillRect(c.x, c.y, c.w, BAR);
-    mono(ctx, 'C:\\FIREWALL\\NOVO_USUARIO.EXE', c.x + 14, c.y + BAR / 2 + 1, 15, GREEN);
+    mono(ctx, t('C:\\FIREWALL\\NOVO_USUARIO.EXE'), c.x + 14, c.y + BAR / 2 + 1, 15, GREEN);
     const x = L.close;
     ctx.strokeStyle = RED;
     ctx.lineWidth = 2;
     ctx.strokeRect(x.x + 1, x.y + 1, x.w - 2, x.h - 2);
     mono(ctx, 'X', x.x + x.w / 2, x.y + x.h / 2 + 1, 17, RED, 'center');
+    // idioma: o escolhido fica aceso
+    for (const b of L.langs) {
+      const on = lang() === b.id;
+      if (on) {
+        ctx.fillStyle = GREEN;
+        ctx.shadowColor = GREEN;
+        ctx.shadowBlur = 8;
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+        ctx.shadowBlur = 0;
+      } else {
+        ctx.strokeStyle = DIM;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(b.x + 1, b.y + 1, b.w - 2, b.h - 2);
+      }
+      mono(ctx, b.label, b.x + b.w / 2, b.y + b.h / 2 + 1, 15, on ? SCREEN : GREEN, 'center');
+    }
 
     // o Hacker criança à esquerda, num brilho verde, com o Pato de Borracha
     const glow = ctx.createRadialGradient(c.x + 105, c.y + 190, 10, c.x + 105, c.y + 190, 110);
@@ -155,8 +178,8 @@ export class NameScene {
 
     // a pergunta como saída de terminal
     const lx = L.field.x;
-    mono(ctx, '> novo usuário detectado...', lx, c.y + 58, 12, DIM, 'left', false);
-    mono(ctx, '> Olá, podemos te chamar de', lx, c.y + 82, 18, GREEN);
+    mono(ctx, t('> novo usuário detectado...'), lx, c.y + 58, 12, DIM, 'left', false);
+    mono(ctx, t('> Olá, podemos te chamar de'), lx, c.y + 82, 18, GREEN);
     // campo (o <input> fica em cima) + o "?" no fim; treme vermelho se vazio
     ctx.save();
     ctx.translate(Math.sin(this.shake * 40) * 6 * this.shake, 0);
@@ -191,7 +214,7 @@ export class NameScene {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = ready ? SCREEN : DIM;
-    ctx.fillText('[ CONFIRMAR ]', ok.x + ok.w / 2, ok.y + ok.h / 2 + 1);
+    ctx.fillText(`[ ${t('CONFIRMAR')} ]`, ok.x + ok.w / 2, ok.y + ok.h / 2 + 1);
 
     // efeito CRT: linhas de varredura, faixa passando e vinheta
     ctx.fillStyle = 'rgba(0,0,0,0.22)';
@@ -266,6 +289,15 @@ export class NameScene {
     const L = this.layout();
     if (inRect(L.ok, x, y)) return this.confirm();
     if (inRect(L.close, x, y)) return this.close();
+    const l = L.langs.find((b) => inRect(b, x, y));
+    if (l) {
+      if (l.id !== lang()) {
+        this.app.setLanguage(l.id);
+        this.input.setAttribute('aria-label', t('Seu nome'));
+        this.app.sound.play('click');
+      }
+      return this.input.focus();
+    }
     this.input.focus(); // tocou em qualquer lugar: volta pro campo (teclado)
   }
 
@@ -283,7 +315,7 @@ function makeInput(value) {
   el.autocomplete = 'off';
   el.spellcheck = false;
   el.setAttribute('autocapitalize', 'words');
-  el.setAttribute('aria-label', 'Seu nome');
+  el.setAttribute('aria-label', t('Seu nome'));
   Object.assign(el.style, {
     position: 'fixed',
     zIndex: 10,

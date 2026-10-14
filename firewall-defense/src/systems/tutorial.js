@@ -4,6 +4,7 @@ import { inRect } from '../render/widgets.js';
 import { TILE, COLS, ROWS, tileCenter, tileOf } from '../core/grid.js';
 import { writeSave } from '../save.js';
 import { Enemy } from '../entities/Enemy.js';
+import { t } from '../i18n.js';
 
 /* ════════════════════════════════════════════════════════════
  *  TUTORIAL (fase 1-1, modo normal, toda vez)
@@ -47,94 +48,94 @@ export class Tutorial {
     this.done = false;
     for (const grp of game.rounds.rounds[1] ?? []) grp.count = Math.max(1, Math.round(grp.count * WAVE2));
     this.steps = [
-      { kind: 'say', freeze: true, text: () => `Ei, ${this.name}! Eu sou o Fraguinha. Comprei um curso de hacker de 7 dias e agora sou o top 1 do mundo.` },
-      { kind: 'say', freeze: true, text: 'Uns vírus descobriram o nosso servidor e vão tentar invadir. A gente tem que defender a base!' },
-      { kind: 'say', freeze: true, text: 'Eles entram pelo portal e seguem o caminho até o servidor. Cada vírus que chega lá tira vidas da gente.' },
+      { kind: 'say', freeze: true, text: () => t('Ei, {name}! Eu sou o Fraguinha. Comprei um curso de hacker de 7 dias e agora sou o top 1 do mundo.', { name: this.name }) },
+      { kind: 'say', freeze: true, text: () => t('Uns vírus descobriram o nosso servidor e vão tentar invadir. A gente tem que defender a base!') },
+      { kind: 'say', freeze: true, text: () => t('Eles entram pelo portal e seguem o caminho até o servidor. Cada vírus que chega lá tira vidas da gente.') },
       {
         kind: 'do', event: ['place', 'hacker'],
-        text: () => (this.g.placing === 'hacker' ? 'Agora toque num quadrado perto do caminho pra me colocar lá.' : 'Toque em mim ali na loja de DEFESAS.'),
+        text: () => (this.g.placing === 'hacker' ? t('Agora toque num quadrado perto do caminho pra me colocar lá.') : t('Toque em mim ali na loja de DEFESAS.')),
         target: () => (this.g.placing === 'hacker' ? this.spotFor('hacker') : this.tile('hacker')),
         allow: (x, y, L) => inRect(this.tileRect(L, 'hacker'), x, y) || (this.g.placing === 'hacker' && x < L.panel.x),
       },
       {
-        kind: 'do', event: ['round'], text: 'Boa! Quando estiver pronto, toque em INICIAR pra soltar a primeira onda de vírus.',
+        kind: 'do', event: ['round'], text: () => t('Boa! Quando estiver pronto, toque em INICIAR pra soltar a primeira onda de vírus.'),
         target: () => this.rect('play'), allow: (x, y, L) => inRect(L.play, x, y),
       },
       { kind: 'wait', until: () => this.roundT > 5 },
       {
-        kind: 'do', freeze: true, event: ['speed'], text: 'Tá devagar? Toque aqui pra acelerar. Cada toque deixa o jogo mais rápido.',
+        kind: 'do', freeze: true, event: ['speed'], text: () => t('Tá devagar? Toque aqui pra acelerar. Cada toque deixa o jogo mais rápido.'),
         target: () => this.rect('speed'), allow: (x, y, L) => inRect(L.speed, x, y),
       },
       // upgrade: acabou a 1ª onda, o Hacker ensina a comprar o 1º upgrade dele
       { kind: 'wait', until: () => this.g.rounds.done >= 1 },
       {
         kind: 'do', freeze: true, event: ['select', 'hacker'], enter: () => this.fundUpgrade('hacker'),
-        text: () => `Mandou bem na primeira onda, ${this.name}! Dá pra deixar as defesas mais fortes. Toque em mim lá no mapa.`,
+        text: () => t('Mandou bem na primeira onda, {name}! Dá pra deixar as defesas mais fortes. Toque em mim lá no mapa.', { name: this.name }),
         target: () => this.towerSpot('hacker'), allow: (x, y, L) => x < L.panel.x,
       },
       {
         kind: 'do', freeze: true, event: ['upgrade', 'hacker'],
-        text: 'Esses são os meus upgrades. Toque no primeiro pra comprar: vou arremessar mais rápido!',
+        text: () => t('Esses são os meus upgrades. Toque no primeiro pra comprar: vou arremessar mais rápido!'),
         target: () => this.rect('upgrades', 0), allow: (x, y, L) => inRect(L.upgrades[0], x, y),
       },
       // (fecha o painel da defesa: a loja volta, com o Honeypot à vista)
-      { kind: 'say', freeze: true, enter: () => (this.g.selectedTower = null), text: 'Cada defesa tem 2 upgrades. Quanto mais forte, mais vírus ela segura!' },
+      { kind: 'say', freeze: true, enter: () => (this.g.selectedTower = null), text: () => t('Cada defesa tem 2 upgrades. Quanto mais forte, mais vírus ela segura!') },
       // Honeypot: na 2ª onda, uma enxurrada de vírus; o pote vai no caminho
       // perto do Hacker e o jogo só para quando os primeiros estão chegando lá
       { kind: 'wait', until: () => this.g.rounds.active },
       { kind: 'wait', enter: () => this.startSwarm(), until: () => this.swarmClose() },
-      { kind: 'say', freeze: true, enter: () => this.prepHoneypot(), text: 'Olha o tamanho dessa onda! O Honeypot é uma isca: ele vai EM CIMA do caminho, pertinho de mim. Os vírus param pra morder o pote e eu acerto todos eles!' },
+      { kind: 'say', freeze: true, enter: () => this.prepHoneypot(), text: () => t('Olha o tamanho dessa onda! O Honeypot é uma isca: ele vai EM CIMA do caminho, pertinho de mim. Os vírus param pra morder o pote e eu acerto todos eles!') },
       {
         kind: 'do', freeze: true, event: ['place', 'honeypot'],
-        text: () => (this.g.placing === 'honeypot' ? 'Coloque o pote no caminho, aqui do meu lado, bem na frente dos vírus!' : 'Toque no Honeypot na loja.'),
+        text: () => (this.g.placing === 'honeypot' ? t('Coloque o pote no caminho, aqui do meu lado, bem na frente dos vírus!') : t('Toque no Honeypot na loja.')),
         target: () => (this.g.placing === 'honeypot' ? this.honeySpot ?? this.spotFor('honeypot') : this.tile('honeypot')),
         allow: (x, y, L) => inRect(this.tileRect(L, 'honeypot'), x, y) || (this.g.placing === 'honeypot' && x < L.panel.x),
       },
-      { kind: 'say', freeze: true, enter: () => this.giftItem('cash'), text: 'Última dica: na aba ITENS ficam os consumíveis que você compra na LOJA. Toma um Bitcoin Extra de presente!' },
+      { kind: 'say', freeze: true, enter: () => this.giftItem('cash'), text: () => t('Última dica: na aba ITENS ficam os consumíveis que você compra na LOJA. Toma um Bitcoin Extra de presente!') },
       {
-        kind: 'do', freeze: true, event: ['tab', 'items'], text: 'Toque em ITENS.',
+        kind: 'do', freeze: true, event: ['tab', 'items'], text: () => t('Toque em ITENS.'),
         target: () => this.rect('tabs', 1), allow: (x, y, L) => inRect(L.tabs[1], x, y),
       },
       {
-        kind: 'do', freeze: true, event: ['item', 'cash'], text: 'Agora toque no Bitcoin Extra pra usar. Ele dá dinheiro na hora!',
+        kind: 'do', freeze: true, event: ['item', 'cash'], text: () => t('Agora toque no Bitcoin Extra pra usar. Ele dá dinheiro na hora!'),
         target: () => this.itemRect('cash'), allow: (x, y, L) => inRect(L.items.find((r) => r.id === 'cash'), x, y),
       },
       // Golem Firewall: volta pra loja de DEFESAS e coloca o golem (dano em área)
       {
         kind: 'do', freeze: true, event: ['tab', 'towers'], enter: () => this.fund(this.g.costOf('firewall')),
-        text: 'Mais uma! Volta em DEFESAS que eu quero te apresentar um amigo.',
+        text: () => t('Mais uma! Volta em DEFESAS que eu quero te apresentar um amigo.'),
         target: () => this.rect('tabs', 0), allow: (x, y, L) => inRect(L.tabs[0], x, y),
       },
       {
         kind: 'do', freeze: true, until: () => this.g.placing === 'firewall',
-        text: 'Esse é o Golem Firewall. Eu acerto um vírus por vez, ele acerta vários de uma vez só. Toque nele.',
+        text: () => t('Esse é o Golem Firewall. Eu acerto um vírus por vez, ele acerta vários de uma vez só. Toque nele.'),
         target: () => this.tile('firewall'), allow: (x, y, L) => inRect(this.tileRect(L, 'firewall'), x, y),
       },
-      { kind: 'say', freeze: true, who: 'firewall', text: 'grmmm grmm mim gostar de regra ALL ALL' },
+      { kind: 'say', freeze: true, who: 'firewall', text: () => t('grmmm grmm mim gostar de regra ALL ALL') },
       {
         kind: 'do', freeze: true, event: ['place', 'firewall'],
         text: () => (this.g.placing === 'firewall'
-          ? 'Coloque o Golem perto do caminho: ele bate no chão e queima todo vírus em volta. Dano em área!'
-          : 'Toque no Golem Firewall na loja.'),
+          ? t('Coloque o Golem perto do caminho: ele bate no chão e queima todo vírus em volta. Dano em área!')
+          : t('Toque no Golem Firewall na loja.')),
         target: () => (this.g.placing === 'firewall' ? this.spotFor('firewall') : this.tile('firewall')),
         allow: (x, y, L) => inRect(this.tileRect(L, 'firewall'), x, y) || (this.g.placing === 'firewall' && x < L.panel.x),
       },
       // Minerador: libera, ganha o dinheiro dele e vai EM CIMA de uma pilha de bitcoin
       {
         kind: 'say', freeze: true, enter: () => this.giftMiner(),
-        text: `Tá vendo essas pilhas de bitcoin no chão? Elas dão dinheiro! Toma ${MINER_GIFT} bitcoins pra comprar o Minerador.`,
+        text: () => t('Tá vendo essas pilhas de bitcoin no chão? Elas dão dinheiro! Toma {n} bitcoins pra comprar o Minerador.', { n: MINER_GIFT }),
       },
       {
         kind: 'do', freeze: true, event: ['place', 'minerador'],
         text: () => (this.g.placing === 'minerador'
-          ? 'Coloque o Minerador EM CIMA da pilha de bitcoin. Fora dela ele não minera!'
-          : 'Toque no Minerador na loja.'),
+          ? t('Coloque o Minerador EM CIMA da pilha de bitcoin. Fora dela ele não minera!')
+          : t('Toque no Minerador na loja.')),
         target: () => (this.g.placing === 'minerador' ? this.coinSpot() : this.tile('minerador')),
         allow: (x, y, L) => inRect(this.tileRect(L, 'minerador'), x, y) || (this.g.placing === 'minerador' && x < L.panel.x),
       },
-      { kind: 'say', freeze: true, text: 'Agora toda rodada ele minera bitcoins pra você comprar mais defesas. Cada pilha aguenta um Minerador!' },
-      { kind: 'say', freeze: true, text: 'E não é só a gente: mais pra frente aparecem outros personagens pra defender o servidor. Fica de olho!' },
-      { kind: 'say', freeze: true, text: () => `Mandou bem, ${this.name}! Agora é com você: segura os vírus até a última onda. Boa sorte!` },
+      { kind: 'say', freeze: true, text: () => t('Agora toda rodada ele minera bitcoins pra você comprar mais defesas. Cada pilha aguenta um Minerador!') },
+      { kind: 'say', freeze: true, text: () => t('E não é só a gente: mais pra frente aparecem outros personagens pra defender o servidor. Fica de olho!') },
+      { kind: 'say', freeze: true, text: () => t('Mandou bem, {name}! Agora é com você: segura os vírus até a última onda. Boa sorte!', { name: this.name }) },
     ];
   }
 

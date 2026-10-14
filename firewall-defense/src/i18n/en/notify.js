@@ -1,0 +1,17 @@
+// Inglês: textos das notificações do app (src/notify.js)
+export default {
+  '⚡ Energia de volta!': '⚡ Energy is back!',
+  'Seus defensores estão prontos. Bora segurar os vírus?': 'Your defenders are ready. Time to stop some viruses?',
+  '⚡ Energia cheia!': '⚡ Full energy!',
+  '{max} de {max}. Não deixa ela parada: os vírus não descansam.': '{max} out of {max}. Don\'t let it go to waste: viruses never rest.',
+  '🎁 Brinde grátis liberado!': '🎁 Free gift unlocked!',
+  'Seu brinde do dia já está na LOJA. Passa lá pra pegar.': 'Your daily gift is waiting in the SHOP. Come grab it!',
+  '🦠 Os vírus estão voltando...': '🦠 The viruses are coming back...',
+  'O servidor sentiu sua falta. Volte pra defender a rede!': 'The server misses you. Come back and defend the network!',
+  '🔥 O Golem Firewall está sozinho': '🔥 The Firewall Golem is all alone',
+  'Faz 3 dias que ninguém aparece. Os vírus já estão rondando o servidor.': 'Nobody has shown up in 3 days. Viruses are already circling the server.',
+  '🐧 Até o Pinguim está preocupado': '🐧 Even the Penguin is worried',
+  'Uma semana sem defesa! Volte e mostre quem manda na rede.': 'A whole week undefended! Come back and show them who runs this network.',
+  '💀 ALERTA: rede desprotegida': '💀 ALERT: network unprotected',
+  'Faz tempo que você não aparece. Seus defensores ainda esperam por você.': 'It\'s been a while. Your defenders are still waiting for you.',
+};

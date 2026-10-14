@@ -10,6 +10,7 @@ import { drawEnergyBadge } from '../render/energy.js';
 import { DarkNetUnlock } from '../render/darknetUnlock.js';
 import { PLAT_WAVES } from '../data/platinum.js';
 import { writeSave } from '../save.js';
+import { t as tr, lang } from '../i18n.js';
 
 const DIFF_COLOR = { 'FÁCIL': '#3fd16b', 'MÉDIO': '#ffd23f', 'DIFÍCIL': '#ff4d5e', 'EXTREMO': '#a259ff' };
 // Dificuldade pela % de partidas de bots que venceram o mapa (data/botStats.js):
@@ -80,9 +81,9 @@ export class LevelSelectScene {
         normal: { x: card.x + 40, y: card.y + 84, w: card.w - 80, h: 70 },
         platinum: { x: card.x + 40, y: card.y + 172, w: card.w - 80, h: 70 },
         locked: { x: card.x + 24, y: card.y + 162, w: card.w - 48, h: card.h - 176 }, // cobre a platina
-        // configurações: uma linha por opção (música, efeitos, turno automático)
-        rows: [0, 1, 2].map((k) => ({ x: card.x + 40, y: card.y + 74 + k * 82, w: card.w - 80, h: 70 })),
       },
+      // configurações: uma linha por opção (música, efeitos, turno automático, idioma)
+      setup: setupLayout(W),
       back: { x: 18, y: 16, w: 56, h: 56 },
       settings: { x: W - 74, y: 16, w: 56, h: 56 }, // no canto
       catalog: { x: W - 140, y: 16, w: 56, h: 56 },
@@ -161,7 +162,7 @@ export class LevelSelectScene {
     drawEnergyBadge(ctx, this.app, 88, 24);
 
     const L = this.layout();
-    ribbon(ctx, W / 2, 46, 340, 'ESCOLHA O MAPA', '#ff9a2e', 28);
+    ribbon(ctx, W / 2, 46, 340, tr('ESCOLHA O MAPA'), '#ff9a2e', 28);
     iconButton(ctx, L.back, '#5fb4ff', 'back');
     iconButton(ctx, L.settings, '#5fb4ff', 'settings');
     iconButton(ctx, L.catalog, '#3fd16b', 'catalog');
@@ -172,7 +173,7 @@ export class LevelSelectScene {
     L.tiles.forEach((tile, k) => this.drawTile(ctx, tile, this.season * MAPS_PER_SEASON + k));
     this.drawBounty(ctx, L.bounty, this.season);
     if (this.pick >= 0) this.drawModePicker(ctx, L.modal, this.pick);
-    if (this.settings) this.drawSettings(ctx, L.modal);
+    if (this.settings) this.drawSettings(ctx, L.setup);
     if (this.toast) this.drawToast(ctx, W / 2, 118);
     this.unlock?.draw(ctx, W);
   }
@@ -262,11 +263,11 @@ export class LevelSelectScene {
     ctx.fill();
     rrect(ctx, c.x, c.y, c.w, c.h, 28);
     fillOutline(ctx, '#34497f', 5);
-    ribbon(ctx, W / 2, c.y + 4, 240, `MAPA ${map.season + 1}-${map.number}`, '#ff9a2e', 24);
+    ribbon(ctx, W / 2, c.y + 4, 240, tr('MAPA {n}', { n: `${map.season + 1}-${map.number}` }), '#ff9a2e', 24);
     iconButton(ctx, M.close, '#ff5a5a', 'close');
 
-    bigButton(ctx, M.normal, '#3fd16b', 'NORMAL', { icon: 'play', size: 26 });
-    bigButton(ctx, M.platinum, '#5fb4e8', 'PLATINA', { size: 26 });
+    bigButton(ctx, M.normal, '#3fd16b', tr('NORMAL'), { icon: 'play', size: 26 });
+    bigButton(ctx, M.platinum, '#5fb4e8', tr('PLATINA'), { size: 26 });
     // platina já vencida nesse mapa: um ✔ no canto do botão
     const p = M.platinum;
     if (this.app.hasPlatinum(map.id)) text(ctx, '✔', p.x + 34, p.y + (p.h - 6) / 2 + 1, { size: 26, color: '#ffffff' });
@@ -277,11 +278,11 @@ export class LevelSelectScene {
       const tier = tierOf(rate);
       const cy = r.y + (r.h - 6) / 2;
       diffDot(ctx, r.x + r.w - 26, cy, tier.color, 9);
-      text(ctx, tier.name, r.x + r.w - 42, cy + 1, { size: 13, align: 'right' });
+      text(ctx, tr(tier.name), r.x + r.w - 42, cy + 1, { size: 13, align: 'right' });
     }
 
-    text(ctx, `${PLAT_WAVES} ondas sem parar, cada vez mais fortes; depois vem o chefão`, W / 2, c.y + 272, { size: 15, color: '#d8e6ff' });
-    text(ctx, 'Um aliado fica bloqueado', W / 2, c.y + 298, { size: 15, color: '#ff9aa5' });
+    text(ctx, tr('{n} ondas sem parar, cada vez mais fortes; depois vem o chefão', { n: PLAT_WAVES }), W / 2, c.y + 272, { size: 15, color: '#d8e6ff' });
+    text(ctx, tr('Um aliado fica bloqueado'), W / 2, c.y + 298, { size: 15, color: '#ff9aa5' });
 
     // sem as 3 estrelas: a parte da platina fica trancada
     if (!this.app.platinumOpen(i)) {
@@ -296,7 +297,7 @@ export class LevelSelectScene {
       ctx.translate(W / 2, lk.y + lk.h / 2 - 14);
       ICONS.lock(ctx, 20);
       ctx.restore();
-      text(ctx, 'Consiga 3 estrelas pra liberar', W / 2, lk.y + lk.h / 2 + 30, { size: 17, color: '#d8e6ff' });
+      text(ctx, tr('Consiga 3 estrelas pra liberar'), W / 2, lk.y + lk.h / 2 + 30, { size: 17, color: '#d8e6ff' });
     }
   }
 
@@ -307,9 +308,14 @@ export class LevelSelectScene {
     const app = this.app;
     const auto = app.save.autoRound !== false;
     return [
-      ['music', 'MÚSICA', app.save.musicVol, 'music'],
-      ['sfx', 'EFEITOS SONOROS', app.save.sfxVol, 'sfx'],
-      ['auto', 'TURNO AUTOMÁTICO', auto, () => app.toggleAuto()],
+      ['music', tr('MÚSICA'), app.save.musicVol, 'music'],
+      ['sfx', tr('EFEITOS SONOROS'), app.save.sfxVol, 'sfx'],
+      ['auto', tr('TURNO AUTOMÁTICO'), auto, () => app.toggleAuto()],
+      // idioma: toca e troca (português ⇄ inglês), na hora
+      ['lang', tr('IDIOMA'), true, () => {
+        app.setLanguage(lang() === 'pt' ? 'en' : 'pt');
+        app.sound.play('click');
+      }],
     ];
   }
 
@@ -324,7 +330,7 @@ export class LevelSelectScene {
     ctx.fill();
     rrect(ctx, c.x, c.y, c.w, c.h, 28);
     fillOutline(ctx, '#34497f', 5);
-    ribbon(ctx, W / 2, c.y + 4, 280, 'CONFIGURAÇÕES', '#5fb4ff', 24);
+    ribbon(ctx, W / 2, c.y + 4, 280, tr('CONFIGURAÇÕES'), '#5fb4ff', 24);
     iconButton(ctx, M.close, '#ff5a5a', 'close');
     this.options().forEach(([icon, name, on, act], k) => {
       const r = M.rows[k];
@@ -332,14 +338,19 @@ export class LevelSelectScene {
         volumeSlider(ctx, r, icon, on, name);
         return;
       }
-      button(ctx, r, on ? '#3fd16b' : '#7d8fa8', { radius: 16, depth: 6 });
+      const isLang = icon === 'lang';
+      button(ctx, r, isLang ? '#5fb4ff' : on ? '#3fd16b' : '#7d8fa8', { radius: 16, depth: 6 });
       const cy = r.y + (r.h - 6) / 2;
-      ctx.save();
-      ctx.translate(r.x + 40, cy);
-      ICONS[icon](ctx, 15, on);
-      ctx.restore();
+      if (isLang) text(ctx, lang().toUpperCase(), r.x + 40, cy + 1, { size: 20 });
+      else {
+        ctx.save();
+        ctx.translate(r.x + 40, cy);
+        ICONS[icon](ctx, 15, on);
+        ctx.restore();
+      }
       text(ctx, name, r.x + 76, cy + 1, { size: 21, align: 'left' });
-      text(ctx, on ? 'LIGADO' : 'DESLIGADO', r.x + r.w - 20, cy + 1, { size: 15, align: 'right', color: on ? '#eaffef' : '#e3e8f2' });
+      const value = isLang ? (lang() === 'en' ? 'ENGLISH' : 'PORTUGUÊS') : on ? tr('LIGADO') : tr('DESLIGADO');
+      text(ctx, value, r.x + r.w - 20, cy + 1, { size: 15, align: 'right', color: on ? '#eaffef' : '#e3e8f2' });
     });
   }
 
@@ -361,7 +372,7 @@ export class LevelSelectScene {
       ctx.translate(r.x + r.w / 2 - 34, cy + 12);
       ICONS.lock(ctx, 8);
       ctx.restore();
-      text(ctx, 'BLOQUEADA', r.x + r.w / 2 + 8, cy + 12, { size: 12, color: '#d8e6ff' });
+      text(ctx, tr('BLOQUEADA'), r.x + r.w / 2 + 8, cy + 12, { size: 12, color: '#d8e6ff' });
     }
     ctx.restore();
   }
@@ -458,13 +469,14 @@ export class LevelSelectScene {
     if (open) {
       stars(ctx, rx - 150, cy, got, 9, 22, null, starTier(got, false));
       const best = this.app.bountyBest(map.id);
-      if (best) text(ctx, `recorde ${best}`, rx, cy + 1, { size: 14, align: 'right', color: '#d8e6ff' });
+      if (best) text(ctx, tr('recorde {n}', { n: best }), rx, cy + 1, { size: 14, align: 'right', color: '#d8e6ff' });
     } else {
       const n = this.app.seasonPlatinumCount(s);
-      text(ctx, `Platine a season (${n}/${MAPS_PER_SEASON})`, rx, cy + 1, { size: 15, align: 'right', color: '#d8e6ff' });
+      const msg = tr('Platine a season ({n})', { n: `${n}/${MAPS_PER_SEASON}` });
+      text(ctx, msg, rx, cy + 1, { size: 15, align: 'right', color: '#d8e6ff' });
       ctx.save();
       setFont(ctx, 15);
-      ctx.translate(rx - ctx.measureText(`Platine a season (${n}/${MAPS_PER_SEASON})`).width - 16, cy);
+      ctx.translate(rx - ctx.measureText(msg).width - 16, cy);
       ICONS.lock(ctx, 9);
       ctx.restore();
     }
@@ -475,7 +487,7 @@ export class LevelSelectScene {
     if (this.unlock) return this.unlock.tap(); // a animação segura o toque
     const L = this.layout();
     if (this.settings) {
-      const M = L.modal;
+      const M = L.setup;
       const k = M.rows.findIndex((r) => inRect(r, x, y));
       const act = k >= 0 ? this.options()[k][3] : null;
       if (typeof act === 'string') {
@@ -530,7 +542,7 @@ export class LevelSelectScene {
       } else {
         this.app.sound.play('error');
         this.darkWiggle = 0.35;
-        this.toast = { text: `DARK NET: junte ${DARKNET_STARS} estrelas pra liberar (${this.app.totalStars}/${DARKNET_STARS})`, time: 2.6 };
+        this.toast = { text: tr('DARK NET: junte {n} estrelas pra liberar ({got})', { n: DARKNET_STARS, got: `${this.app.totalStars}/${DARKNET_STARS}` }), time: 2.6 };
       }
       return;
     }
@@ -544,7 +556,7 @@ export class LevelSelectScene {
       else {
         this.bountyWiggle = 0.35;
         this.app.sound.play('error');
-        this.toast = { text: 'BUG BOUNTY: platine todas as fases da season pra liberar', time: 2.6 };
+        this.toast = { text: tr('BUG BOUNTY: platine todas as fases da season pra liberar'), time: 2.6 };
       }
       return;
     }
@@ -615,4 +627,14 @@ function diffDot(ctx, x, y, color, r = 6) {
   ctx.arc(x - r * 0.3, y - r * 0.35, r * 0.3, 0, Math.PI * 2);
   ctx.fillStyle = 'rgba(255,255,255,0.55)';
   ctx.fill();
+}
+
+// Janela de configurações: mais alta que a do mapa (4 linhas)
+function setupLayout(W) {
+  const card = { x: W / 2 - 240, y: 64, w: 480, h: 420 };
+  return {
+    card,
+    close: { x: card.x + card.w - 54, y: card.y + 14, w: 42, h: 42 },
+    rows: [0, 1, 2, 3].map((k) => ({ x: card.x + 40, y: card.y + 74 + k * 82, w: card.w - 80, h: 70 })),
+  };
 }

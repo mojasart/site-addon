@@ -1,4 +1,6 @@
 import { MIN_VIEW_W, VIEW_H, DEBUG, ENERGY } from './config.js';
+import { setLang, deviceLang, lang, t } from './i18n.js';
+import { askNotifications } from './notify.js';
 import { MAPS, MAPS_PER_SEASON, BOUNTY_MAPS } from './data/maps.js';
 import { loadSave, writeSave, pauseSaving } from './save.js';
 import { Sound } from './audio/Sound.js';
@@ -44,6 +46,8 @@ export class App {
       this.save.musicVol = 0;
       this.save.sfxVol = 0;
     }
+    // idioma: o escolhido na tela do nome, ou o do aparelho na 1ª vez
+    setLang(this.save.lang ?? deviceLang());
     this.sound = new Sound(this.save);
     this.viewW = MIN_VIEW_W;
     this.pixelScale = 1;
@@ -65,29 +69,29 @@ export class App {
   // Voltou do pagamento (status) ou abriu o jogo: busca e entrega as compras
   async refreshPurchases(status = null) {
     if (status) history.replaceState(null, '', location.pathname + location.search.replace(/[?&]compra=[^&]*/, '').replace(/^&/, '?'));
-    if (status === 'pendente') this.notify('Pagamento em análise: os cafés chegam quando ele for aprovado', 4, '#ffd23f');
-    if (status === 'falhou') this.notify('O pagamento não foi concluído', 3, '#ff7a8a');
+    if (status === 'pendente') this.notify(t('Pagamento em análise: os cafés chegam quando ele for aprovado'), 4, '#ffd23f');
+    if (status === 'falhou') this.notify(t('O pagamento não foi concluído'), 3, '#ff7a8a');
     // o aviso do Mercado Pago pode chegar uns segundos depois da volta: tenta de novo
     for (let tries = status === 'ok' ? 4 : 1; tries > 0; tries--) {
       const got = await syncPurchases(this);
       if (got.length) {
-        this.notify(`COMPRA CONFIRMADA: ${got.join(' · ')}`, 4);
+        this.notify(t('COMPRA CONFIRMADA: {list}', { list: got.join(' · ') }), 4);
         this.sound.play('upgrade');
         return;
       }
       if (tries > 1) await new Promise((r) => setTimeout(r, 2500));
     }
-    if (status === 'ok') this.notify('Pagamento recebido! Se os cafés não aparecerem, abra o jogo de novo em alguns minutos', 5, '#ffd23f');
+    if (status === 'ok') this.notify(t('Pagamento recebido! Se os cafés não aparecerem, abra o jogo de novo em alguns minutos'), 5, '#ffd23f');
   }
 
   // Abre o pagamento de um pacote de café ou do VIP
   async buy(product) {
     if (this.buying) return;
     this.buying = true;
-    this.notify('Abrindo o pagamento...', 6, '#d8e6ff');
+    this.notify(t('Abrindo o pagamento...'), 6, '#d8e6ff');
     const ok = await payBuy(this, product);
     this.buying = false;
-    if (!ok) this.notify('Não deu pra abrir o pagamento. Confira a internet e tente de novo', 3.5, '#ff7a8a');
+    if (!ok) this.notify(t('Não deu pra abrir o pagamento. Confira a internet e tente de novo'), 3.5, '#ff7a8a');
   }
 
   // Saves de antes das salas do Bug Bounty: as fases 10, 20, 30 e 40 eram
@@ -142,6 +146,8 @@ export class App {
 
   goMaps() {
     this.go(() => new LevelSelectScene(this));
+    // app Android: na 1ª vez nos mapas pede a permissão das notificações
+    if (this.save.playerName) askNotifications(this);
   }
 
   // JOGAR na tela inicial: na primeira vez pergunta o nome (janelinha por
@@ -222,7 +228,7 @@ export class App {
         if (result === 'viewed') this.grantAd(ui);
         else if (result === 'dismissed') {
           // fechou antes do fim: não ganha (a janela de energia volta, com o aviso)
-          this.energyUI = reward ? null : { mode: 'empty', t: 1, pending, note: 'Assista até o fim pra ganhar' };
+          this.energyUI = reward ? null : { mode: 'empty', t: 1, pending, note: t('Assista até o fim pra ganhar') };
           this.sound.play('error');
         } else this.energyUI = { mode: 'ad', t: 0, reward, pending };
       },
@@ -527,6 +533,13 @@ export class App {
 
   // Volume da música ou dos efeitos (kind: 'music' | 'sfx'), de 0 (mudo) a 1,
   // em passos de 5%
+  // Idioma escolhido pelo jogador (tela do nome e configurações)
+  setLanguage(l) {
+    setLang(l);
+    this.save.lang = lang();
+    writeSave(this.save);
+  }
+
   setVolume(kind, v) {
     v = Math.round(Math.min(1, Math.max(0, v)) * 20) / 20;
     const key = kind === 'music' ? 'musicVol' : 'sfxVol';
