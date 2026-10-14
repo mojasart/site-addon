@@ -635,6 +635,23 @@ export class App {
     if (!this.next) this.scene.pinch?.(x, y, f, dx, dy);
   }
 
+  // Botão voltar do Android (main.js). Devolve false só na tela inicial
+  // (aí o app fecha). Partida: pausa (e despausa); fim de partida: mapas;
+  // menus: o mesmo que o Esc (fecha a janela aberta ou volta de tela)
+  back() {
+    if (this.energyUI) {
+      if (this.energyUI.mode === 'empty') this.energyUI = null; // anúncio rolando: espera
+      return true;
+    }
+    if (this.next) return true;
+    const s = this.scene;
+    if (s instanceof TitleScene) return false;
+    if (s instanceof Game && (s.state === 'won' || s.state === 'lost')) {
+      if (!(s.endDelay > 0)) this.goMaps(); // igual ao botão MAPAS da tela de fim
+    } else this.key('Escape');
+    return true;
+  }
+
   key(k) {
     this.sound.unlock();
     if (this.energyUI) {
