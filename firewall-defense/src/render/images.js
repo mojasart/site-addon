@@ -100,6 +100,7 @@ const ICON_NAMES = [
   'danger',
   'settings',
   'shop',
+  'daily', // diário (desafio e missões do dia)
   'infinity', // energia infinita do modo VIP (loja)
 ];
 

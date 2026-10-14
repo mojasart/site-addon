@@ -3,6 +3,7 @@ import { MAPS, BOUNTY_MAPS } from './data/maps.js';
 import { roundsFor } from './data/rounds.js';
 import { PLAT_WAVES, PLAT_LIVES, PLAT_WARMUP, PLAT_REWARD, WAVE_GAP, PLAT_GATE, BOSS_HP, ENDLESS, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
 import { withoutBosses } from './data/rounds.js';
+import { DAILY, MODS, modMul } from './data/daily.js';
 import { worth, ENEMIES } from './data/enemies.js';
 import { BOUNTY, bountyRound, layers, comboMul, bountyStars } from './data/bounty.js';
 import { TOWERS, TARGET_MODES, COMMANDER_MAX, BURNOUT } from './data/towers.js';
@@ -51,6 +52,7 @@ const WIN_DELAY = 0.5; // limpou a última rodada: espera o último vírus estou
 // A partida em si (uma fase). Criada pelo App ao escolher um mapa.
 // mode: 'normal', 'platinum' (ondas sem parar até o chefão; data/platinum.js)
 // ou 'bounty' (sala do Bug Bounty: mapIndex = season; data/bounty.js)
+// ou 'daily' (desafio do dia: a fase com os modificadores de app.challenge; data/daily.js)
 const COIN_MERGE = 40; // moedas de vírus mais perto que isso viram uma só (px)
 const COIN_MAX = 30; // máximo de moedas no chão (daí pra frente juntam na mais perto)
 const COIN_TAP = 14; // folga do toque em volta da moeda (px)
@@ -63,6 +65,9 @@ export class Game {
     this.mode = mode;
     this.platinum = mode === 'platinum';
     this.bounty = mode === 'bounty';
+    this.daily = mode === 'daily';
+    this.challenge = this.daily ? app.challenge : null;
+    this.mods = this.challenge?.mods ?? [];
     this.map = this.bounty ? BOUNTY_MAPS[mapIndex] : MAPS[mapIndex];
     this.anim = 0;
     this.pointer = { x: -1, y: -1, down: false, type: 'touch' };
@@ -76,7 +81,7 @@ export class Game {
   get server() { return this.view.server; }
   get spawnDist() { return this.view.spawnDist; }
   get offsetX() { return this.view.offsetX; }
-  get nextMap() { return this.bounty ? null : MAPS[this.mapIndex + 1] ?? null; }
+  get nextMap() { return this.bounty || this.daily ? null : MAPS[this.mapIndex + 1] ?? null; }
 
   resize(viewW) {
     const mapW = viewW - PANEL_W;
@@ -87,8 +92,11 @@ export class Game {
   reset() {
     // Acesso Root (Dark Net): dinheiro a mais no começo da fase
     // Bug Bounty: só o orçamento da partida (sem o Acesso Root)
-    this.money = this.bounty ? BOUNTY.budget[this.map.season] : this.map.money + (this.app.perks?.root ? ROOT_MONEY : 0);
-    this.lives = this.platinum ? PLAT_LIVES : this.bounty ? Infinity : this.map.lives;
+    // Desafio do dia: Orçamento curto e Servidor frágil mexem no dinheiro e nas vidas
+    const money = Math.round((this.map.money * modMul(this.mods, 'money')) / 5) * 5;
+    this.money = this.bounty ? BOUNTY.budget[this.map.season] : money + (this.app.perks?.root ? ROOT_MONEY : 0);
+    this.baseLives = Math.max(1, Math.round(this.map.lives * modMul(this.mods, 'lives'))); // (estrelas: starsNow)
+    this.lives = this.platinum ? PLAT_LIVES : this.bounty ? Infinity : this.baseLives;
     this.towers = [];
     this.coinTiles = pickCoinTiles(this); // pilhas de bitcoin (seasons 1 e 2)
     this.enemies = [];
@@ -96,8 +104,13 @@ export class Game {
     this.projectiles = [];
     this.packets = [];
     // platina: as ondas ganham a dificuldade calibrada do modo (k)
-    const k = this.platinum ? platinumScale(this.mapIndex) : 1;
-    const list = this.platinum ? platinumRounds(this.map) : this.bounty ? [bountyRound(this.map.d)] : roundsFor(this.map);
+    // desafio do dia: Horda enche as ondas (como a platina) e a fase encolhe pra DAILY.waves ondas
+    const k = this.platinum ? platinumScale(this.mapIndex) : modMul(this.mods, 'pressure');
+    const list = this.platinum
+      ? platinumRounds(this.map)
+      : this.bounty
+        ? [bountyRound(this.map.d)]
+        : roundsFor(this.daily ? { ...this.map, waves: Math.min(this.map.waves, DAILY.waves) } : this.map);
     this.rounds = new RoundManager(list, {
       count: this.bounty ? 1 : this.map.pressure * k, // Bug Bounty: a quantidade já vem pronta
       minCount: this.platinum ? 0 : 1,
@@ -105,7 +118,7 @@ export class Game {
       // platina: a dificuldade k enche as ondas sem esticar elas (intervalo ÷ k)
       gap: this.map.gapMul / (this.platinum ? Math.max(1, k) : 1),
       warmup: this.platinum ? { k, waves: PLAT_WARMUP } : null, // platina: as primeiras ondas pegam leve
-      speed: this.map.speedMul,
+      speed: this.map.speedMul * modMul(this.mods, 'speed'), // Vírus apressados (desafio do dia)
       hp: this.map.pressure * k, // chefões e worms acompanham a pressão
     });
     this.fx = new Effects();
@@ -124,6 +137,7 @@ export class Game {
     this.hurt = 0;
     this.duckHop = 0; // pulinho do Pato de Borracha quando acha café
     this.duckCoffee = 0; // café que ele achou nesta partida
+    this.tally = { upgrades: 0, coins: 0, taps: 0 }; // pras missões do dia (App.missionProgress)
     this.killsBy = {}; // abatidos por tipo de vírus nesta partida (catálogo)
     this.placedBy = {}; // defesas colocadas por tipo nesta partida (catálogo)
     this.coinBump = 0;
@@ -148,7 +162,8 @@ export class Game {
     this.waveGap = null;
     this.blocked = this.platinum ? blockedAlly(this.map) : null;
     // 1-1 (normal) é o tutorial: só Hacker, Golem e Honeypot; o Hacker ensina a jogar
-    this.lockedTowers = this.mapIndex === 0 && this.mode === 'normal' ? new Set(TUTORIAL_LOCKED) : null;
+    // (no desafio do dia, as do Bloqueio duplo)
+    this.lockedTowers = this.mapIndex === 0 && this.mode === 'normal' ? new Set(TUTORIAL_LOCKED) : this.challenge?.blocked.length ? new Set(this.challenge.blocked) : null;
     this.tutorial = Tutorial.wanted(this) ? new Tutorial(this) : null;
     if (this.platinum) {
       this.showBanner(t('MODO PLATINA'), 3, '#bdeeff', 46, t('{tower} bloqueado · chefão depois da onda {n}', { tower: TOWERS[this.blocked].name, n: PLAT_WAVES }));
@@ -156,6 +171,10 @@ export class Game {
     }
     if (this.bounty) {
       this.showBanner('BUG BOUNTY', 3, '#ffd23f', 50, t('5 minutos com ${money}: vírus não dão dinheiro!', { money: this.money }));
+      return;
+    }
+    if (this.daily) {
+      this.showBanner(t('DESAFIO DO DIA'), 3, '#ffd23f', 46, this.mods.map((id) => t(MODS[id].name)).join(' · '));
       return;
     }
     // mapa com novidade (várias entradas, loop, zonas...) avisa no começo
@@ -166,7 +185,7 @@ export class Game {
   // Estrelas que a partida daria se vencesse com a vida de agora: 3 com 90%
   // das vidas ou mais, 2 com pelo menos metade, 1 com menos (cor da vida no HUD)
   get starsNow() {
-    const L = this.map.lives;
+    const L = this.baseLives;
     return this.lives >= L * 0.9 ? 3 : this.lives >= L * 0.5 ? 2 : 1;
   }
 
@@ -203,7 +222,10 @@ export class Game {
         // fechou a platina da Placa-Mãe agora: libera o 5x (aviso na vitória)
         this.turboUnlocked = !hadTurbo && !!this.app.seasonPlatinum?.(0);
       }
-      this.app.recordStars(this.map.id, this.stars);
+      // desafio do dia: as estrelas são só da partida (a fase não muda); a 1ª vitória do dia dá café
+      if (this.daily) this.dailyReward = this.app.recordDaily?.() ?? null;
+      else this.app.recordStars(this.map.id, this.stars);
+      this.app.missionWin?.(this.mode, this.stars);
       this.fx.celebrate(this.viewW, VIEW_H);
       this.sound.play('win');
       for (let i = 0; i < this.stars; i++) setTimeout(() => this.sound.play('star'), 500 + i * 350);
@@ -222,6 +244,9 @@ export class Game {
   // Monstros abatidos viram cafés: soma no save os desta partida que ainda
   // não foram contados (no fim da partida e ao sair dela no meio)
   bankKills() {
+    // missões do dia: o que a partida fez desde a última vez
+    this.app.missionProgress?.({ pops: this.stats.pops - (this.killsBanked ?? 0), killsBy: this.killsBy, placedBy: this.placedBy, ...this.tally });
+    this.tally = { upgrades: 0, coins: 0, taps: 0 };
     // contagem do catálogo (abatidos por vírus e defesas usadas)
     if (Object.keys(this.killsBy).length || Object.keys(this.placedBy).length) {
       this.app.addTally?.(this.killsBy, this.placedBy);
@@ -645,13 +670,15 @@ export class Game {
   }
 
   // Dinheiro de um vírus estourado (Bug Bounty não dá; platina dá PLAT_REWARD
-  // vezes mais, guardando o quebrado pra próxima). Com a posição (x, y), cai
+  // vezes mais, e a Recompensa turbinada do desafio do dia também, guardando o quebrado pra próxima). Com a posição (x, y), cai
   // uma moeda no chão ali (dropCoin); sem ela, entra direto na carteira
   earnPop(reward, x, y) {
     if (this.bounty) return;
     let value = reward;
-    if (this.platinum) {
-      this.popCents = (this.popCents ?? 0) + reward * PLAT_REWARD;
+    // platina e Recompensa turbinada (desafio do dia): mais dinheiro por vírus
+    const k = (this.platinum ? PLAT_REWARD : 1) * modMul(this.mods, 'reward');
+    if (k !== 1) {
+      this.popCents = (this.popCents ?? 0) + reward * k;
       value = Math.floor(this.popCents);
       this.popCents -= value;
     }
@@ -687,6 +714,7 @@ export class Game {
       if (!p.drop || p.state === 'flying' || Math.hypot(p.x - x, p.y - y) > p.size + COIN_TAP) continue;
       p.collect();
       got = true;
+      this.tally.coins++;
     }
     if (got) this.sound.play('click');
     return got;
@@ -940,7 +968,10 @@ export class Game {
 
   costOf(type) {
     if (this.freeTower) return 0; // consumível Defesa Grátis: a próxima sai de graça
-    const cost = applyPerks({ ...TOWERS[type] }, type, this.app.perks).cost;
+    let cost = applyPerks({ ...TOWERS[type] }, type, this.app.perks).cost;
+    // Inflação (desafio do dia): mais caras, de 5 em 5
+    const k = modMul(this.mods, 'cost');
+    if (k !== 1) cost = Math.round((cost * k) / 5) * 5;
     // Atacadão (Dark Net, Minerador): todas as defesas mais baratas
     return this.app.perks?.minerador2d ? Math.round(cost * (1 - BULK_DISCOUNT)) : cost;
   }
@@ -984,6 +1015,7 @@ export class Game {
     }
     this.pay(up.cost);
     tower.upgrade();
+    this.tally.upgrades++;
     this.tutorial?.on('upgrade', tower.type);
     this.fx.burst(tower.x, tower.y - 10, '#ffd23f', 22, 190, 0.55, 5, true);
     this.sound.play('upgrade');
@@ -1231,6 +1263,7 @@ export class Game {
     }
     this.fx.spark(x, y, crit ? '#ffd23f' : '#ffffff', crit ? 14 : 10);
     this.sound.play('tap');
+    this.tally.taps++;
     return true;
   }
 
@@ -1239,7 +1272,7 @@ export class Game {
     if (this.state === 'paused') {
       if (inRect(L.resume, sx, sy)) this.resume();
       else if (inRect(L.restart, sx, sy)) this.app.startMap(this.mapIndex, this.mode);
-      else if (inRect(L.maps, sx, sy)) this.app.goMaps();
+      else if (inRect(L.maps, sx, sy)) this.leave();
       else if (inRect(L.catalog, sx, sy)) {
         // catálogo por cima da partida: o voltar dele traz esta partida, ainda pausada
         this.sound.play('click');
@@ -1252,14 +1285,20 @@ export class Game {
       return;
     }
     if (this.endDelay > 0) return;
-    if (inRect(L.maps, sx, sy)) this.app.goMaps();
+    if (inRect(L.maps, sx, sy)) this.leave();
     else if (L.cont && inRect(L.cont, sx, sy)) this.continueEndless(); // platina infinita
     else if (L.retry && inRect(L.retry, sx, sy)) this.app.startMap(this.mapIndex, 'normal'); // tentar as 3 estrelas
     else if (inRect(L.next, sx, sy)) {
       // venceu: vai pro próximo mapa (normal); perdeu: tenta de novo no mesmo modo
       if (this.state === 'won' && this.nextMap) this.app.startMap(this.mapIndex + 1);
-      else this.app.startMap(this.mapIndex, this.state === 'won' && !this.bounty ? 'normal' : this.mode);
+      else this.app.startMap(this.mapIndex, this.state === 'won' && !this.bounty && !this.daily ? 'normal' : this.mode);
     }
+  }
+
+  // Botão MAPAS (pausa e fim): o desafio do dia volta pra tela DIÁRIO
+  leave() {
+    if (this.daily) this.app.goDaily();
+    else this.app.goMaps();
   }
 
   panelTap(sx, sy, L) {
@@ -1340,6 +1379,11 @@ export class Game {
     const item = ITEM[tile.id];
     if (this.platinum) {
       this.toast = { text: t('Na platina não dá pra usar itens'), time: 2.2, tone: 'alert' };
+      this.sound.play('error');
+      return;
+    }
+    if (this.mods.includes('noitems')) {
+      this.toast = { text: t('Desafio de hoje: sem itens'), time: 2.2, tone: 'alert' };
       this.sound.play('error');
       return;
     }

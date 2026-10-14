@@ -6,6 +6,35 @@ import { star } from './characters.js';
 
 export const inRect = (r, x, y) => !!r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
 
+// Fundo dos menus (mapas, diário): degradê azul com listras diagonais andando
+export function menuBackground(ctx, W, H, t) {
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#4468b8');
+  grad.addColorStop(1, '#1f2b52');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+  ctx.save();
+  ctx.globalAlpha = 0.06;
+  ctx.fillStyle = '#ffffff';
+  const off = (t * 20) % 80;
+  for (let x = -H + off; x < W; x += 80) {
+    ctx.beginPath();
+    ctx.moveTo(x, H);
+    ctx.lineTo(x + 40, H);
+    ctx.lineTo(x + 40 + H, 0);
+    ctx.lineTo(x + H, 0);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// Bolinha vermelha de "tem novidade" (com número, ou "!")
+export function badge(ctx, x, y, label = '!', r = 11) {
+  circle(ctx, x, y, r);
+  fillOutline(ctx, '#ff4d5e', 2.5);
+  text(ctx, String(label), x, y + 1, { size: r * 1.25 });
+}
+
 // Barra de volume (música ou efeitos): ícone à esquerda, trilho com a parte
 // cheia e a bolinha, e a porcentagem à direita. label: nome em cima do trilho
 // (barras mais altas). Tocar/arrastar no trilho usa sliderValue

@@ -148,6 +148,26 @@ estrelas). Regras em `src/data/bounty.js`; as salas são `BOUNTY_MAPS` em `src/d
 (Antes, os mapas 10, 20, 30 e 40 eram Bug Bounty; hoje são fases normais. Saves antigos perdem as estrelas
 dessas fases, mas os cafés que elas deram ficam: `App.migrateBounty`.)
 
+## Diário: desafio do dia e missões do dia
+
+Botão **DIÁRIO** do lado do Bug Bounty, embaixo da grade de mapas (com bolinha vermelha quando tem algo pra
+fazer ou coletar). Tudo sai da data (dia local), sem servidor, e renova à meia-noite. Regras em
+`src/data/daily.js`, tela em `src/scenes/DailyScene.js`.
+
+- **Desafio do dia** (libera com 3 fases vencidas): uma das 10 fases vencidas mais avançadas, com **uma
+  restrição** (Bloqueio duplo, Vírus apressados, Horda, Orçamento curto, Inflação, Servidor frágil, Sem itens) e
+  **um bônus** (Caixa cheio, Recompensa turbinada, Servidor reforçado, Promoção, Rede congestionada), no máximo 25
+  ondas. A 1ª vitória do dia dá **2 cafés, +1 por dia seguido** vencendo (até +2). Os modificadores do dia são
+  iguais pra todo mundo; a fase depende do progresso e fica guardada no save no 1º acesso do dia.
+- **Missões do dia**: 3 tarefas sorteadas (estourar vírus, vencer partidas, 3 estrelas, chefões, upgrades,
+  moedas, toques, colocar uma defesa, vencer o desafio), que contam em qualquer modo. Cada uma vale **1 café**
+  no COLETAR.
+- **Notificações** (app): à meia-noite, desafio novo (se o de hoje foi vencido); às 19h, "sua sequência acaba
+  hoje" se tem sequência e o desafio de hoje ainda não foi vencido.
+
+Dificuldade conferida com bots (`node tools/sim/daily.js`): o desafio fica um pouco abaixo da taxa de vitória
+normal da mesma fase.
+
 ### Chefões
 
 Minichefão = **Locker** ou **Cicada 3301** (a Cicada é 35% deles). Os chefões não vêm da lista de rodadas:
@@ -191,6 +211,7 @@ node tools/sim/run.js                       # taxa de vitória dos bots em cada 
 node tools/sim/calibrate.js                 # recalibra a pressão de cada mapa (grava src/data/tuning.js)
 node tools/sim/run.js --platinum            # o mesmo, no modo platina
 node tools/sim/calibrate-platinum.js        # recalibra a platina (grava src/data/platinumTuning.js)
+node tools/sim/daily.js                     # bots nos desafios do dia dos próximos 30 dias
 ```
 
 O modo platina tem a própria curva: de ~60% no 1-1 a ~15% no 3-15.
@@ -225,6 +246,7 @@ firewall-defense/
     │   ├── enemies.js       vírus, camadas, chefões
     │   ├── rounds.js        as 25 rodadas
     │   ├── platinum.js      modo platina (ondas sem parar, chefão, aliado bloqueado)
+    │   ├── daily.js         desafio do dia (modificadores) e missões do dia
     │   ├── darknet.js       Dark Net: estrelas pra liberar, cafés de cada mapa e a árvore de upgrades
     │   ├── maps.js          seasons e os 45 mapas (dificuldade de cada um)
     │   ├── mapgen.js        gerador de caminhos (loop, Y, várias entradas)
@@ -235,7 +257,7 @@ firewall-defense/
     ├── core/                grade de quadrados (grid.js), caminho e terreno
     ├── entities/            Tower, Enemy, Projectile, Packet
     ├── systems/             RoundManager, Effects (POP, ondas, confete)
-    ├── scenes/              TitleScene, LevelSelectScene, CatalogScene, DarkNetScene
+    ├── scenes/              TitleScene, LevelSelectScene, CatalogScene, DarkNetScene, DailyScene
     └── render/
         ├── characters.js    os personagens (defesas)
         ├── viruses.js       os vírus

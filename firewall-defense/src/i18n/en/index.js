@@ -5,6 +5,7 @@ import game from './game.js';
 import render from './render.js';
 import ui from './ui-data.js';
 import notify from './notify.js';
+import daily from './daily.js';
 export { DATA } from './data.js';
 
-export const UI = { ...ui, ...render, ...game, ...scenes, ...notify };
+export const UI = { ...ui, ...render, ...game, ...scenes, ...notify, ...daily };
