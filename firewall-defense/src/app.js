@@ -1,4 +1,5 @@
 import { MIN_VIEW_W, VIEW_H, DEBUG, ENERGY } from './config.js';
+import { setLang, deviceLang, lang } from './i18n.js';
 import { MAPS, MAPS_PER_SEASON, BOUNTY_MAPS } from './data/maps.js';
 import { loadSave, writeSave, pauseSaving } from './save.js';
 import { Sound } from './audio/Sound.js';
@@ -44,6 +45,8 @@ export class App {
       this.save.musicVol = 0;
       this.save.sfxVol = 0;
     }
+    // idioma: o escolhido na tela do nome, ou o do aparelho na 1ª vez
+    setLang(this.save.lang ?? deviceLang());
     this.sound = new Sound(this.save);
     this.viewW = MIN_VIEW_W;
     this.pixelScale = 1;
@@ -527,6 +530,13 @@ export class App {
 
   // Volume da música ou dos efeitos (kind: 'music' | 'sfx'), de 0 (mudo) a 1,
   // em passos de 5%
+  // Idioma escolhido pelo jogador (tela do nome e configurações)
+  setLanguage(l) {
+    setLang(l);
+    this.save.lang = lang();
+    writeSave(this.save);
+  }
+
   setVolume(kind, v) {
     v = Math.round(Math.min(1, Math.max(0, v)) * 20) / 20;
     const key = kind === 'music' ? 'musicVol' : 'sfxVol';
