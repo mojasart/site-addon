@@ -557,13 +557,28 @@ export class Game {
 
   // Mais uma onda infinita: a base com ENDLESS a mais de vírus e de vida a cada uma
   endlessWave() {
-    const k = ++this.endlessK;
+    this.rounds.rounds.push(this.makeEndlessWave(++this.endlessK));
+    this.startRound();
+  }
+
+  // A k-ésima onda infinita (já com a dificuldade do mapa aplicada)
+  makeEndlessWave(k) {
     const r = this.rounds;
     const grow = 1 + ENDLESS.count * k;
     const hp = r.mod.hp * (1 + ENDLESS.hp * k);
     const base = this.endlessBase[(k - 1) % this.endlessBase.length];
-    r.rounds.push(r.scale(base.map((g) => ({ ...g, count: g.count * grow, gap: g.gap / grow, hp }))));
-    this.startRound();
+    return r.scale(base.map((g) => ({ ...g, count: g.count * grow, gap: g.gap / grow, hp })));
+  }
+
+  // Grupos da próxima onda que ainda não começou (prévia do painel): a da
+  // lista; na platina, depois da última, o chefão; na infinita, a próxima
+  // infinita. null = não tem próxima (ou o chefão já veio)
+  nextWaveGroups() {
+    const r = this.rounds;
+    if (r.canStart) return r.rounds[r.started];
+    if (!this.platinum || this.bossCalled) return null;
+    if (this.endless) return this.makeEndlessWave(this.endlessK + 1);
+    return platinumBoss(this.map);
   }
 
   // Vírus vivos no mapa agora (inclusive os que acabaram de nascer)
@@ -756,9 +771,8 @@ export class Game {
       this.money += bonus;
       this.coinBump = 1;
     }
-    // Juros (Dark Net): rende uma parte do dinheiro guardado (na platina e no
-    // Bug Bounty não: na platina são 50 ondas emendadas, renderia demais)
-    const interest = this.app.perks?.minerador4 && this.mode === 'normal' && this.money > 0 ? Math.min(INTEREST.max, Math.floor(this.money * INTEREST.rate)) : 0;
+    // Juros (Dark Net): rende uma parte do dinheiro guardado (no Bug Bounty não)
+    const interest = this.app.perks?.minerador4 && !this.bounty && this.money > 0 ? Math.min(INTEREST.max, Math.floor(this.money * INTEREST.rate)) : 0;
     if (interest > 0) {
       this.money += interest;
       this.coinBump = 1;
