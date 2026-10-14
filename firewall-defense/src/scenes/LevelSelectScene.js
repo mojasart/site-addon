@@ -1,14 +1,15 @@
 import { VIEW_H, OUTLINE, GOLD } from '../config.js';
 import { MAPS, SEASONS, MAPS_PER_SEASON, BOUNTY_MAPS } from '../data/maps.js';
 import { renderThumb } from '../render/maps/index.js';
-import { rrect, fillOutline, text, button, setFont } from '../render/canvas.js';
-import { iconButton, inRect, stars, ribbon, bigButton, starTier, volumeSlider, sliderValue, terminalToast } from '../render/widgets.js';
+import { rrect, fillOutline, text, button } from '../render/canvas.js';
+import { iconButton, inRect, stars, ribbon, bigButton, starTier, volumeSlider, sliderValue, terminalToast, menuBackground, badge } from '../render/widgets.js';
 import { ICONS } from '../render/sprites.js';
 import { BOT_WIN } from '../data/botStats.js';
 import { DARKNET_STARS } from '../data/darknet.js';
 import { drawEnergyBadge } from '../render/energy.js';
 import { DarkNetUnlock } from '../render/darknetUnlock.js';
 import { PLAT_WAVES } from '../data/platinum.js';
+import { DAILY } from '../data/daily.js';
 import { writeSave } from '../save.js';
 import { t as tr, lang } from '../i18n.js';
 
@@ -30,7 +31,9 @@ const tierOf = (rate) => TIERS.find((t) => rate >= t.min);
 // Tocar num mapa abre a escolha NORMAL / PLATINA; a platina só libera com
 // 3 estrelas (antes disso aparece trancada). Platina vencida: estrelas azul-gelo e o card de platina.
 // Embaixo da grade, a sala do Bug Bounty da season: abre com as 15 fases
-// platinadas (antes disso fica trancada, mostrando quantas faltam).
+// platinadas (antes disso fica trancada, mostrando quantas faltam). Do lado
+// dela, o DIÁRIO (desafio e missões do dia, scenes/DailyScene.js), com a
+// bolinha vermelha quando tem missão pra coletar ou o desafio por fazer.
 // (O aliado bloqueado só aparece dentro da partida.)
 // No canto de cima: o saldo de cafés, a Dark Net (libera com
 // DARKNET_STARS estrelas; antes disso fica trancada), o catálogo e as
@@ -96,8 +99,9 @@ export class LevelSelectScene {
         w: tw,
         h: th,
       })),
-      // sala do Bug Bounty da season, embaixo da grade
-      bounty: { x: W / 2 - Math.min(gw, 600) / 2, y: gy + 3 * (th + gap) + 2, w: Math.min(gw, 600), h: 56 },
+      // embaixo da grade, lado a lado: a sala do Bug Bounty da season e o DIÁRIO
+      bounty: { x: gx, y: gy + 3 * (th + gap) + 2, w: (gw - 12) / 2, h: 56 },
+      daily: { x: gx + (gw - 12) / 2 + 12, y: gy + 3 * (th + gap) + 2, w: (gw - 12) / 2, h: 56 },
     };
   }
 
@@ -138,26 +142,7 @@ export class LevelSelectScene {
 
   render(ctx) {
     const W = this.app.viewW;
-    const t = this.t;
-    const grad = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-    grad.addColorStop(0, '#4468b8');
-    grad.addColorStop(1, '#1f2b52');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, W, VIEW_H);
-    // listras diagonais andando
-    ctx.save();
-    ctx.globalAlpha = 0.06;
-    ctx.fillStyle = '#ffffff';
-    const off = (t * 20) % 80;
-    for (let x = -VIEW_H + off; x < W; x += 80) {
-      ctx.beginPath();
-      ctx.moveTo(x, VIEW_H);
-      ctx.lineTo(x + 40, VIEW_H);
-      ctx.lineTo(x + 40 + VIEW_H, 0);
-      ctx.lineTo(x + VIEW_H, 0);
-      ctx.fill();
-    }
-    ctx.restore();
+    menuBackground(ctx, W, VIEW_H, this.t);
     // energia no canto de cima (cada partida gasta 1)
     drawEnergyBadge(ctx, this.app, 88, 24);
 
@@ -172,6 +157,7 @@ export class LevelSelectScene {
     SEASONS.forEach((season, s) => this.drawTab(ctx, L.tabs[s], season, s));
     L.tiles.forEach((tile, k) => this.drawTile(ctx, tile, this.season * MAPS_PER_SEASON + k));
     this.drawBounty(ctx, L.bounty, this.season);
+    this.drawDaily(ctx, L.daily);
     if (this.pick >= 0) this.drawModePicker(ctx, L.modal, this.pick);
     if (this.settings) this.drawSettings(ctx, L.setup);
     if (this.toast) this.drawToast(ctx, W / 2, 118);
@@ -464,21 +450,56 @@ export class LevelSelectScene {
     ctx.lineWidth = 2;
     ctx.strokeStyle = OUTLINE;
     ctx.stroke();
-    text(ctx, 'BUG BOUNTY', r.x + tw + 18, cy + 1, { size: 22, align: 'left' });
-    const rx = r.x + r.w - 16; // coluna da direita
+    // nome em cima; embaixo o recorde (aberta) ou quantas faltam platinar
+    const lx = r.x + tw + 16;
+    text(ctx, 'BUG BOUNTY', lx, cy - 9, { size: 20, align: 'left' });
     if (open) {
-      stars(ctx, rx - 150, cy, got, 9, 22, null, starTier(got, false));
+      stars(ctx, r.x + r.w - 46, cy, got, 8, 20, null, starTier(got, false));
       const best = this.app.bountyBest(map.id);
-      if (best) text(ctx, tr('recorde {n}', { n: best }), rx, cy + 1, { size: 14, align: 'right', color: '#d8e6ff' });
+      text(ctx, best ? tr('recorde {n}', { n: best }) : tr('5 min de vírus sem parar'), lx, cy + 13, { size: 13, align: 'left', color: '#d8e6ff' });
     } else {
       const n = this.app.seasonPlatinumCount(s);
-      const msg = tr('Platine a season ({n})', { n: `${n}/${MAPS_PER_SEASON}` });
-      text(ctx, msg, rx, cy + 1, { size: 15, align: 'right', color: '#d8e6ff' });
       ctx.save();
-      setFont(ctx, 15);
-      ctx.translate(rx - ctx.measureText(msg).width - 16, cy);
-      ICONS.lock(ctx, 9);
+      ctx.translate(lx + 7, cy + 12);
+      ICONS.lock(ctx, 7);
       ctx.restore();
+      text(ctx, tr('Platine a season ({n})', { n: `${n}/${MAPS_PER_SEASON}` }), lx + 20, cy + 13, { size: 13, align: 'left', color: '#d8e6ff' });
+    }
+    ctx.restore();
+  }
+
+  // Botão do DIÁRIO (do lado do Bug Bounty): calendário, nome e o estado do
+  // desafio de hoje; bolinha vermelha com o que tem pra fazer/coletar
+  drawDaily(ctx, r) {
+    const app = this.app;
+    const open = app.dailyOpen();
+    ctx.save();
+    const k = this.pressed === 'daily' ? 0.97 : 1;
+    ctx.translate(r.x + r.w / 2, r.y + r.h / 2);
+    ctx.scale(k, k);
+    ctx.translate(-(r.x + r.w / 2), -(r.y + r.h / 2));
+    button(ctx, r, '#ff9a2e', { radius: 16, depth: 5 });
+    const cy = r.y + (r.h - 5) / 2;
+    ctx.save();
+    ctx.translate(r.x + 34, cy);
+    ICONS.daily(ctx, 13);
+    ctx.restore();
+    const lx = r.x + 66;
+    text(ctx, tr('DIÁRIO'), lx, cy - 9, { size: 20, align: 'left' });
+    const ch = open ? app.challenge : null;
+    const sub = !open
+      ? tr('Desafio: vença {n} fases ({got})', { n: DAILY.unlock, got: `${app.wonMaps().length}/${DAILY.unlock}` })
+      : ch.won
+        ? tr('Desafio vencido · missões')
+        : tr('Desafio do dia · missões');
+    text(ctx, sub, lx, cy + 13, { size: 13, align: 'left', color: '#fff2dc' });
+    // o que tem pra fazer: missões prontas pra coletar + o desafio de hoje
+    const todo = app.missionsReady + (open && !ch.won ? 1 : 0);
+    if (todo > 0) {
+      const p = 1 + Math.sin(this.t * 5) * 0.08;
+      ctx.translate(r.x + r.w - 8, r.y + 6);
+      ctx.scale(p, p);
+      badge(ctx, 0, 0, app.missionsReady > 0 ? app.missionsReady : '!');
     }
     ctx.restore();
   }
@@ -551,6 +572,10 @@ export class LevelSelectScene {
       this.season = s;
       this.app.sound.play('click');
     });
+    if (inRect(L.daily, x, y)) {
+      this.pressed = 'daily';
+      return;
+    }
     if (inRect(L.bounty, x, y)) {
       if (this.app.bountyOpen(this.season)) this.pressed = 'bounty';
       else {
@@ -583,6 +608,13 @@ export class LevelSelectScene {
     }
     const i = this.pressed;
     this.pressed = -1;
+    if (i === 'daily') {
+      if (inRect(this.layout().daily, x, y)) {
+        this.app.sound.play('click');
+        this.app.goDaily();
+      }
+      return;
+    }
     // sala do Bug Bounty: entra direto (mapIndex = season)
     if (i === 'bounty') {
       if (inRect(this.layout().bounty, x, y)) this.launch(this.season, 'bounty');

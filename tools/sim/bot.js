@@ -51,7 +51,8 @@ export const PROFILES = {
 
 const SPEED_LIMIT = 2400; // segundos de jogo (só pra não travar)
 
-export function playMap(mapIndex, profileName, seed, mode = 'normal', perks = null) {
+// challenge: o desafio do dia (data/daily.js makeChallenge), pro mode 'daily'
+export function playMap(mapIndex, profileName, seed, mode = 'normal', perks = null, challenge = null) {
   const profile = PROFILES[profileName];
   const rnd = seeded(seed * 9973 + mapIndex * 31 + 7);
   const app = {
@@ -61,6 +62,7 @@ export function playMap(mapIndex, profileName, seed, mode = 'normal', perks = nu
     pixelScale: 1,
     perks: perks ?? {},
     recordStars() {},
+    challenge,
   };
   const game = new Game(app, mapIndex, mode);
   const samples = pathSamples(game);
@@ -212,6 +214,7 @@ export function playMap(mapIndex, profileName, seed, mode = 'normal', perks = nu
     lives: game.lives,
     towers: game.towers.length,
     ratio: game.bounty ? game.bountyRatio : null, // Bug Bounty: % das camadas estouradas
+    pops: game.stats.pops, // camadas estouradas (missões do dia: data/daily.js)
     leaked,
   };
 }

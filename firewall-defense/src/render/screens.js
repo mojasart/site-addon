@@ -97,7 +97,7 @@ export function drawOverlay(ctx, game) {
     ribbon(ctx, cx, c.y + 46, 260, t('PAUSADO'), '#5fb4ff', 30);
     bigButton(ctx, L.resume, '#3fd16b', t('CONTINUAR'), { icon: 'play', size: 28 });
     bigButton(ctx, L.restart, '#5fb4ff', t('REINICIAR'), { icon: 'restart', size: 24 });
-    bigButton(ctx, L.maps, '#ff9a2e', t('MAPAS'), { icon: 'map', size: 20 });
+    bigButton(ctx, L.maps, '#ff9a2e', t(game.daily ? 'DIÁRIO' : 'MAPAS'), { icon: game.daily ? 'daily' : 'map', size: 20 });
     bigButton(ctx, L.catalog, '#8a7dff', t('CATÁLOGO'), { icon: 'catalog', size: 17 });
     volumeSlider(ctx, L.music, 'music', game.app.save.musicVol);
     volumeSlider(ctx, L.sfx, 'sfx', game.app.save.sfxVol);
@@ -105,8 +105,8 @@ export function drawOverlay(ctx, game) {
   } else {
     const won = game.state === 'won';
     const plat = won && game.platinum;
-    const title = t(game.bounty ? (won ? 'RECOMPENSA!' : 'FIM DO TEMPO') : plat ? 'PLATINA!' : won ? 'VITÓRIA!' : game.endless ? 'FIM DA PARTIDA' : 'SERVIDOR INVADIDO');
-    ribbon(ctx, cx, c.y + 46, won ? 280 : 360, title, plat ? '#5fb4e8' : won ? '#3fd16b' : '#ff5a6a', 30);
+    const title = t(game.bounty ? (won ? 'RECOMPENSA!' : 'FIM DO TEMPO') : plat ? 'PLATINA!' : game.daily && won ? 'DESAFIO VENCIDO!' : won ? 'VITÓRIA!' : game.endless ? 'FIM DA PARTIDA' : 'SERVIDOR INVADIDO');
+    ribbon(ctx, cx, c.y + 46, game.daily && won ? 380 : won ? 280 : 360, title, plat ? '#5fb4e8' : won ? '#3fd16b' : '#ff5a6a', 30);
     if (won) {
       const pop = (i) => easeOutBack(clamp((game.overlayTime - 0.4 - i * 0.35) * 3, 0, 1));
       stars(ctx, cx, 175, game.stars, 30, 78, pop, starTier(game.stars, plat));
@@ -128,7 +128,12 @@ export function drawOverlay(ctx, game) {
       // vidas que sobraram e cafés novos lado a lado; ameaças contidas embaixo
       drawResults(ctx, cx, 270, game.lives, game.coffeeGain, game.overlayTime);
       text(ctx, t('Ameaças contidas: {n}', { n: game.stats.pops }), cx, 318, { size: 19, color: GOLD });
-      if (game.turboUnlocked) text(ctx, t('ACELERAR 5x LIBERADO!'), cx, 348, { size: 17, color: '#bdeeff' });
+      if (game.daily) {
+        // desafio do dia: a sequência de dias (ou o aviso de que hoje já tinha vencido)
+        const r = game.dailyReward;
+        const msg = r ? t(r.streak === 1 ? 'Sequência: {n} dia' : 'Sequência: {n} dias', { n: r.streak }) : t('Hoje você já tinha vencido: sem café extra');
+        text(ctx, msg, cx, 348, { size: 17, color: r ? '#ffe0b0' : '#d8e6ff' });
+      } else if (game.turboUnlocked) text(ctx, t('ACELERAR 5x LIBERADO!'), cx, 348, { size: 17, color: '#bdeeff' });
       // platina: os pontos da partida (seguem no CONTINUAR)
       else if (plat) text(ctx, t('{n} pontos', { n: game.points }) + (game.newRecord ? ' · ' + t('NOVO RECORDE!') : ''), cx, 348, { size: 17, color: '#bdeeff' });
     } else if (game.endless) {
@@ -164,7 +169,7 @@ export function drawOverlay(ctx, game) {
     }
     if (game.endDelay <= 0) {
       const size = L.retry || L.cont ? 21 : 24; // com 3 botões, a letra encolhe um pouco
-      bigButton(ctx, L.maps, '#5fb4ff', t('MAPAS'), { icon: 'map', size });
+      bigButton(ctx, L.maps, '#5fb4ff', t(game.daily ? 'DIÁRIO' : 'MAPAS'), { icon: game.daily ? 'daily' : 'map', size });
       if (L.retry) bigButton(ctx, L.retry, '#ff9a2e', t('DE NOVO'), { icon: 'restart', size });
       if (L.cont) bigButton(ctx, L.cont, '#5fb4e8', t('CONTINUAR'), { icon: 'play', size: 19 });
       const label = t(won ? (game.nextMap ? 'PRÓXIMO' : 'DE NOVO') : 'DE NOVO');

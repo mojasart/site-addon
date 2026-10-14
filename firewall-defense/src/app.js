@@ -18,6 +18,9 @@ import { drawEnergyModal, energyLayout } from './render/energy.js';
 import { inRect } from './render/widgets.js';
 import { configAds, showRewarded } from './ads.js';
 import { DARKNET_STARS, COFFEE, mapCoffee, NODE, TREE } from './data/darknet.js';
+import { DAILY, makeChallenge, dailyCoffee, makeMissions, MISSION_COFFEE } from './data/daily.js';
+import { ENEMIES } from './data/enemies.js';
+import { DailyScene } from './scenes/DailyScene.js';
 
 // Controla as telas (título → mapas → jogo), a transição entre elas,
 // o progresso salvo e o som.
@@ -179,6 +182,124 @@ export class App {
     this.go(() => new ShopScene(this));
   }
 
+  goDaily() {
+    this.go(() => new DailyScene(this));
+  }
+
+  // ── Diário: desafio do dia e missões do dia (data/daily.js) ──
+  get day() {
+    return today();
+  }
+
+  // ms até virar o dia (novo desafio, novas missões e o brinde da loja)
+  dayNextMs() {
+    return this.freeOfferNextMs();
+  }
+
+  // Fases vencidas (índices em MAPS, em ordem)
+  wonMaps() {
+    return MAPS.map((m, i) => ((this.save.stars[m.id] ?? 0) > 0 ? i : -1)).filter((i) => i >= 0);
+  }
+
+  // Desafio do dia liberado? (DAILY.unlock fases vencidas; no debug, sempre)
+  dailyOpen() {
+    return this.debug || this.wonMaps().length >= DAILY.unlock;
+  }
+
+  // O desafio de hoje: { day, map, mods, blocked, won }. Fica no save no 1º
+  // acesso do dia (vencer mais fases depois não troca a fase dele). map null =
+  // ainda trancado (aí tenta de novo no próximo acesso)
+  get challenge() {
+    const day = today();
+    const cur = this.save.daily;
+    if (cur?.day === day && (cur.map != null || !this.dailyOpen())) return cur;
+    // debug: libera mesmo sem fase vencida (a sorteada entre as 10 primeiras)
+    const won = this.debug && this.wonMaps().length < DAILY.unlock ? MAPS.slice(0, DAILY.pool + 1).map((_, i) => i) : this.wonMaps();
+    this.save.daily = { ...makeChallenge(day, won), won: false };
+    writeSave(this.save);
+    return this.save.daily;
+  }
+
+  // Dias seguidos vencendo o desafio, contando hoje (0 se a sequência quebrou)
+  get dailyStreak() {
+    const st = this.save.dailyStreak;
+    return st && st.last >= today() - 1 ? st.n : 0;
+  }
+
+  // Venceu o desafio do dia: a 1ª vitória do dia soma a sequência e dá os
+  // cafés. Devolve { coffee, streak } (null se hoje já tinha vencido)
+  recordDaily() {
+    const c = this.challenge;
+    if (c.won) return null;
+    c.won = true;
+    const day = today();
+    const st = this.save.dailyStreak;
+    const n = st?.last === day - 1 ? st.n + 1 : 1;
+    this.save.dailyStreak = { last: day, n };
+    const coffee = dailyCoffee(n);
+    this.save.dailyCoffee = (this.save.dailyCoffee ?? 0) + coffee;
+    this.missionProgress({ daily: 1 });
+    writeSave(this.save);
+    return { coffee, streak: n };
+  }
+
+  // As missões de hoje: [{ id, goal, tower?, n, claimed }]
+  get missions() {
+    const day = today();
+    if (this.save.missions?.day !== day) {
+      this.save.missions = { day, list: makeMissions(day, this.dailyOpen()) };
+      writeSave(this.save);
+    }
+    return this.save.missions.list;
+  }
+
+  // Missões completas que ainda não foram coletadas (bolinha no botão DIÁRIO)
+  get missionsReady() {
+    return this.missions.filter((m) => !m.claimed && m.n >= m.goal).length;
+  }
+
+  // Progresso das missões (Game.bankKills, no fim e ao sair da partida):
+  // pops, upgrades, coins, taps, daily (números) e killsBy, placedBy (por tipo)
+  missionProgress(d) {
+    const kills = d.killsBy ?? {};
+    const got = {
+      pops: d.pops ?? 0,
+      upgrades: d.upgrades ?? 0,
+      coins: d.coins ?? 0,
+      taps: d.taps ?? 0,
+      daily: d.daily ?? 0,
+      bosses: Object.entries(kills).reduce((sum, [type, n]) => sum + (ENEMIES[type]?.boss ? n : 0), 0),
+    };
+    let changed = false;
+    for (const m of this.missions) {
+      if (m.claimed || m.n >= m.goal) continue;
+      const add = m.id === 'place' ? (d.placedBy?.[m.tower] ?? 0) : (got[m.id] ?? 0);
+      if (add <= 0) continue;
+      m.n = Math.min(m.goal, m.n + add);
+      changed = true;
+    }
+    if (changed) writeSave(this.save);
+  }
+
+  // Venceu uma partida (Game.end): mode e estrelas
+  missionWin(mode, stars) {
+    for (const m of this.missions) {
+      if (m.claimed || m.n >= m.goal) continue;
+      if (m.id === 'wins' || (m.id === 'three' && mode === 'normal' && stars >= 3)) m.n++;
+    }
+    writeSave(this.save);
+  }
+
+  // COLETAR: a missão completa vira café
+  claimMission(k) {
+    const m = this.missions[k];
+    if (!m || m.claimed || m.n < m.goal) return false;
+    m.claimed = true;
+    this.save.missionCoffee = (this.save.missionCoffee ?? 0) + MISSION_COFFEE;
+    writeSave(this.save);
+    return true;
+  }
+
   // Consumíveis no inventário (data/consumables.js): { id: quantidade }
   get inventory() {
     return (this.save.inventory ??= {});
@@ -277,7 +398,8 @@ export class App {
   get coffeeEarned() {
     const maps = MAPS.reduce((sum, m) => sum + mapCoffee(this.save.stars[m.id], this.hasPlatinum(m.id)), 0);
     const bounty = BOUNTY_MAPS.reduce((sum, m) => sum + mapCoffee(this.save.stars[m.id], false, true), 0) + (this.save.legacyBountyCoffee ?? 0);
-    return maps + bounty + (this.save.kills ?? 0) * COFFEE.perKill + (this.save.duckCoffee ?? 0) + (this.save.boughtCoffee ?? 0);
+    const daily = (this.save.dailyCoffee ?? 0) + (this.save.missionCoffee ?? 0); // diário (desafio e missões)
+    return maps + bounty + daily + (this.save.kills ?? 0) * COFFEE.perKill + (this.save.duckCoffee ?? 0) + (this.save.boughtCoffee ?? 0);
   }
 
   // Café que o Pato de Borracha achou numa partida (upgrade secreto)

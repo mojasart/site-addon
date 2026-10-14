@@ -6,7 +6,10 @@
 //  os que ainda não saíram (ninguém recebe aviso com o jogo aberto):
 //    - energia de volta: estava sem energia e voltou a 1ª
 //    - energia cheia
-//    - brinde grátis do dia liberado na LOJA (meia-noite)
+//    - brinde grátis do dia liberado na LOJA (meia-noite); com o desafio do
+//      dia já vencido, o aviso é do desafio novo (os dois viram juntos)
+//    - sequência do desafio do dia em risco: às 19h, se tem sequência e o
+//      desafio de hoje ainda não foi vencido
 //    - sumiu: 1, 3, 7 e 14 dias sem abrir o jogo
 //  Nada sai de madrugada: o que cairia entre 22h e 9h passa pras 9h.
 //  O pedido de permissão (Android 13+) é askNotifications(), na 1ª vez nos mapas.
@@ -16,7 +19,8 @@ import { ENERGY } from './config.js';
 import { t } from './i18n.js';
 import { writeSave } from './save.js';
 
-const ID = { energy: 1, full: 2, gift: 3, away: [11, 12, 13, 14] };
+const ID = { energy: 1, full: 2, gift: 3, streak: 4, away: [11, 12, 13, 14] };
+const STREAK_HOUR = 19; // aviso da sequência em risco
 const DAY = 86400000;
 const QUIET = { from: 22, to: 9 }; // sem aviso das 22h às 9h
 
@@ -54,7 +58,7 @@ export async function askNotifications(app) {
 }
 
 function cancelAll() {
-  const ids = [ID.energy, ID.full, ID.gift, ...ID.away].map((id) => ({ id }));
+  const ids = [ID.energy, ID.full, ID.gift, ID.streak, ...ID.away].map((id) => ({ id }));
   LN?.cancel({ notifications: ids }).catch(() => {});
 }
 
@@ -94,8 +98,19 @@ async function schedule(app) {
     const full = next + (ENERGY.max - app.energy - 1) * app.energyRegenMs;
     list.push(note(ID.full, full, t('⚡ Energia cheia!'), t('{max} de {max}. Não deixa ela parada: os vírus não descansam.', { max: ENERGY.max })));
   }
-  // brinde grátis do dia (se o de hoje já foi pego, avisa o de amanhã)
-  if (app.freeOffer.claimed) list.push(note(ID.gift, now + app.freeOfferNextMs() + 60000, t('🎁 Brinde grátis liberado!'), t('Seu brinde do dia já está na LOJA. Passa lá pra pegar.')));
+  // brinde grátis do dia (se o de hoje já foi pego, avisa o de amanhã) e o
+  // desafio do dia novo (se o de hoje já foi vencido)
+  const daily = app.dailyOpen() ? app.challenge : null;
+  const midnight = now + app.freeOfferNextMs() + 60000;
+  if (daily?.won) list.push(note(ID.gift, midnight, t('🗓️ Desafio do dia novo!'), t('Desafio novo e missões novas no DIÁRIO. Bora manter a sequência?')));
+  else if (app.freeOffer.claimed) list.push(note(ID.gift, midnight, t('🎁 Brinde grátis liberado!'), t('Seu brinde do dia já está na LOJA. Passa lá pra pegar.')));
+  // sequência em risco: tem sequência (venceu ontem) e ainda não venceu hoje
+  const streak = app.dailyStreak;
+  const evening = new Date();
+  evening.setHours(STREAK_HOUR, 0, 0, 0);
+  if (daily && !daily.won && streak > 0 && evening.getTime() > now) {
+    list.push(note(ID.streak, evening.getTime(), t('🔥 Sua sequência acaba hoje!'), t(streak === 1 ? '{n} dia vencendo o desafio. Vence o de hoje pra não quebrar!' : '{n} dias seguidos vencendo o desafio. Vence o de hoje pra não quebrar!', { n: streak })));
+  }
   // sumiu
   AWAY.forEach(([days, title, body], i) => list.push(note(ID.away[i], now + days * DAY, t(title), t(body))));
   LN.schedule({ notifications: list }).catch(() => {});
