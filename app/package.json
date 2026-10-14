@@ -1,0 +1,20 @@
+{
+  "name": "firewall-defense-app",
+  "private": true,
+  "description": "App Android do Firewall Defense (Capacitor): embrulha a pasta firewall-defense/",
+  "scripts": {
+    "sync": "node build.mjs && npx cap sync android",
+    "apk": "npm run sync && cd android && gradlew assembleDebug",
+    "aab": "npm run sync && cd android && gradlew bundleRelease"
+  },
+  "dependencies": {
+    "@capacitor-community/admob": "^8.2.1",
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.5.3"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.5.3"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "appId": "com.mojasart.firewalldefense",
+  "appName": "Firewall Defense",
+  "webDir": "www",
+  "backgroundColor": "#060a14",
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "hidden": true,
+      "initialViewportFitValueHint": "cover"
+    }
+  }
+}
