@@ -1,30 +1,54 @@
-"""Capturas de tablet pra Play Store (7" e 10"), a partir de store/sem-texto/.
+"""Capturas de tablet pra Play Store (7" e 10"), a partir das capturas sem frase.
 
 O jogo num tablet (16:10) fica com o mapa inteiro na largura e faixas azuis
 em cima e embaixo: a tela do tablet aqui mostra exatamente isso. A imagem
 final é 16:9 (o que a Play pede), com a frase em cima e o tablet desenhado.
 
-Rodar da raiz do repo:  python tools/tablet_shots.py
+Rodar da raiz do repo:
+  python tools/tablet_shots.py        português: store/sem-texto -> store/tablet/{7,10}-polegadas
+  python tools/tablet_shots.py en     inglês:    store/en/no-text -> store/en/tablet/{7,10}-inch
 Precisa da Lilita One em TTF: converte sozinho do woff2 (fontTools + brotli).
 """
 import os
+import sys
 import tempfile
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = os.path.join(os.path.dirname(__file__), '..')
-SRC = os.path.join(ROOT, 'store', 'sem-texto')
-OUT = os.path.join(ROOT, 'store', 'tablet')
 WOFF = os.path.join(ROOT, 'firewall-defense', 'assets', 'fonts', 'LilitaOne-latin.woff2')
 
-SHOTS = [
-    ('01-inicio', 'Defenda o servidor', 'contra os vírus!'),
-    ('02-partida', 'Monte sua defesa com', 'hackers, golens e pinguins'),
-    ('03-chefao', 'Enfrente chefões como', 'o Ransomware'),
-    ('04-oceano', '3 mundos e', '45 fases pra vencer'),
-    ('05-darknet', 'Evolua suas defesas na', 'Dark Net'),
-    ('06-mapas', 'Ganhe 3 estrelas e', 'platine cada fase'),
-    ('07-catalogo', 'Descubra cada ameaça no', 'catálogo'),
-]
+# Por idioma: de onde vêm as capturas sem frase, pra onde vão, o nome da
+# pasta de cada tamanho e as frases (arquivo, parte branca, parte amarela)
+LANGS = {
+    'pt': {
+        'src': os.path.join(ROOT, 'store', 'sem-texto'),
+        'out': os.path.join(ROOT, 'store', 'tablet'),
+        'dir': '{}-polegadas',
+        'shots': [
+            ('01-inicio', 'Defenda o servidor', 'contra os vírus!'),
+            ('02-partida', 'Monte sua defesa com', 'hackers, golens e pinguins'),
+            ('03-chefao', 'Enfrente chefões como', 'o Ransomware'),
+            ('04-oceano', '3 mundos e', '45 fases pra vencer'),
+            ('05-darknet', 'Evolua suas defesas na', 'Dark Net'),
+            ('06-mapas', 'Ganhe 3 estrelas e', 'platine cada fase'),
+            ('07-catalogo', 'Descubra cada ameaça no', 'catálogo'),
+        ],
+    },
+    'en': {
+        'src': os.path.join(ROOT, 'store', 'en', 'no-text'),
+        'out': os.path.join(ROOT, 'store', 'en', 'tablet'),
+        'dir': '{}-inch',
+        'shots': [
+            ('01-title', 'Defend the server', 'from the viruses!'),
+            ('02-match', 'Build your defense with', 'hackers, golems & penguins'),
+            ('03-boss', 'Take on bosses like', 'Ransomware'),
+            ('04-ocean', '3 worlds and', '45 levels to beat'),
+            ('05-darknet', 'Upgrade your defenses on the', 'Dark Net'),
+            ('06-maps', 'Earn 3 stars and', 'go Platinum'),
+            ('07-catalog', 'Discover every threat in the', 'catalog'),
+        ],
+    },
+}
 SIZES = {'7': (1920, 1080), '10': (2560, 1440)}
 OUTLINE = (27, 35, 64)
 GOLD = (255, 210, 63)
@@ -75,7 +99,7 @@ def caption(img, a, b, size, y):
         d.text((x0 + wa, y + dy), b, font=f, fill=c2, stroke_width=sw, stroke_fill=OUTLINE, anchor='lm')
 
 
-def tablet(shot, W, H):
+def tablet(src, shot, W, H):
     k = W / 1920
     img = background(W, H)
     caption(img, *shot[1:], round(70 * k), round(92 * k))
@@ -83,7 +107,7 @@ def tablet(shot, W, H):
     sw = round(1290 * k)
     sh = round(sw * 10 / 16)
     screen = Image.new('RGB', (sw, sh), GAME_BG)
-    game = Image.open(os.path.join(SRC, shot[0] + '.jpg')).convert('RGB')
+    game = Image.open(os.path.join(src, shot[0] + '.jpg')).convert('RGB')
     gh = round(sw * game.height / game.width)
     screen.paste(game.resize((sw, gh), Image.LANCZOS), (0, (sh - gh) // 2))
     bezel = round(30 * k)
@@ -103,14 +127,15 @@ def tablet(shot, W, H):
     return img
 
 
-def main():
+def main(lang='pt'):
+    cfg = LANGS[lang]
     for inch, (W, H) in SIZES.items():
-        out = os.path.join(OUT, f'{inch}-polegadas')
+        out = os.path.join(cfg['out'], cfg['dir'].format(inch))
         os.makedirs(out, exist_ok=True)
-        for shot in SHOTS:
-            tablet(shot, W, H).save(os.path.join(out, shot[0] + '.png'), optimize=True)
-        print(inch, len(SHOTS))
+        for shot in cfg['shots']:
+            tablet(cfg['src'], shot, W, H).save(os.path.join(out, shot[0] + '.png'), optimize=True)
+        print(lang, inch, len(cfg['shots']))
 
 
 if __name__ == '__main__':
-    main()
+    main(*sys.argv[1:2])
