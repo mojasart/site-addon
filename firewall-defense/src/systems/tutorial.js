@@ -5,6 +5,7 @@ import { TILE, COLS, ROWS, tileCenter, tileOf } from '../core/grid.js';
 import { writeSave } from '../save.js';
 import { Enemy } from '../entities/Enemy.js';
 import { t } from '../i18n.js';
+import { trackDesign } from '../analytics.js';
 
 /* ════════════════════════════════════════════════════════════
  *  TUTORIAL (fase 1-1, modo normal, toda vez)
@@ -165,12 +166,14 @@ export class Tutorial {
   next() {
     this.i++;
     this.t = 0;
+    trackDesign(`Tutorial:Step:${String(this.i).padStart(2, '0')}`); // funil do tutorial (onde o jogador para)
     if (this.i >= this.steps.length) return this.finish();
     this.step.enter?.();
   }
 
   finish() {
     this.done = true;
+    trackDesign('Tutorial:Done');
     this.g.app.save.tutorialDone = true;
     writeSave(this.g.app.save);
   }

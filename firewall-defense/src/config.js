@@ -69,6 +69,14 @@ export const PAY = { api: 'https://firewall-defense-pay.firewall-defense.workers
 // de teste do Google (anúncio de mentira, pode clicar à vontade). No seu
 // celular, cadastre ele em AdMob → Configurações → Dispositivos de teste
 // e NUNCA clique nos anúncios de verdade do próprio app
+// Anúncios com recompensa no fim da partida (src/game.js):
+//   doubleMin → o DOBRAR CAFÉ da vitória só aparece com pelo menos isso de café ganho
+//   revive    → REVIVER (só no modo normal, 1 vez por partida): volta com essa
+//               parte das vidas do começo e os vírus congelados (Congelar Tudo)
+export const AD_REWARDS = { doubleMin: 1, revive: 0.5 };
+// Analytics (src/analytics.js): chaves do jogo no GameAnalytics (gameanalytics.com →
+// o jogo → Settings → Game information: "Game key" e "Secret key"). Vazio = desligado
+export const ANALYTICS = { gameKey: '', secretKey: '' };
 export const ADMOB = {
   test: false,
   rewarded: 'ca-app-pub-8853291698252580/8982774348', // bloco "energia"

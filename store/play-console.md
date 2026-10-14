@@ -1,8 +1,8 @@
 # Respostas prontas pra Play Console
 
 Quando a conta for aprovada: criar o app e ir copiando daqui. Vale pro app
-Android como ele está hoje (AdMob + compras pelo Google Play Billing quando
-entrar). Se mudar algo no jogo (login, nuvem, analytics), revisar.
+Android como ele está hoje (AdMob, GameAnalytics + compras pelo Google Play
+Billing quando entrar). Se mudar algo no jogo (login, nuvem), revisar.
 
 ## Criar app
 - Nome: **Firewall Defense**
@@ -45,8 +45,9 @@ progresso fica no aparelho e some ao desinstalar).
 |---|---|---|---|---|
 | IDs do dispositivo ou outros (ID de publicidade) | Sim (SDK do AdMob) | Sim (Google) | Publicidade, Análise | Sim |
 | Localização aproximada (pelo IP) | Sim (SDK do AdMob) | Sim (Google) | Publicidade | Sim |
-| Interações com o app | Sim (SDK do AdMob) | Sim (Google) | Publicidade, Análise | Sim |
-| Diagnóstico (falhas, desempenho) | Sim (SDK do AdMob) | Não | Análise | Sim |
+| IDs do dispositivo ou outros (ID aleatório do GameAnalytics) | Sim (GameAnalytics) | Não | Análise | Sim |
+| Interações com o app | Sim (SDK do AdMob e GameAnalytics: fases, tutorial, anúncios, cafés) | Sim (Google) | Publicidade, Análise | Sim |
+| Diagnóstico (falhas, desempenho) | Sim (SDK do AdMob; versão e aparelho no GameAnalytics) | Não | Análise | Sim |
 | Histórico de compras | Sim (servidor de compras: código aleatório + produto) | Não | Funcionalidade do app | Só quem compra |
 
 Nome, e-mail, contatos, fotos, arquivos, localização precisa: **não coleta**.

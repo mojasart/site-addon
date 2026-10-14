@@ -32,6 +32,11 @@ export function overlayLayout(game) {
     L.maps = { x: cx - 255, y: 392, w: 160, h: 72 };
     L.cont = { x: cx - 80, y: 392, w: 160, h: 72 };
     L.next = { x: cx + 95, y: 392, w: 160, h: 72 };
+  } else if (game.canRevive) {
+    // perdeu no normal: MAPAS · REVIVER (anúncio) · DE NOVO
+    L.maps = { x: cx - 255, y: 392, w: 160, h: 72 };
+    L.revive = { x: cx - 80, y: 392, w: 160, h: 72 };
+    L.next = { x: cx + 95, y: 392, w: 160, h: 72 };
   } else if (retryOffered(game)) {
     // venceu com 2 estrelas ou menos: MAPAS · DE NOVO · PRÓXIMO
     L.maps = { x: cx - 255, y: 392, w: 160, h: 72 };
@@ -41,6 +46,8 @@ export function overlayLayout(game) {
     L.maps = { x: cx - 230, y: 392, w: 210, h: 72 };
     L.next = { x: cx + 20, y: 392, w: 210, h: 72 };
   }
+  // DOBRAR CAFÉ (anúncio): do lado do café ganho, na linha das vidas
+  if (game.state === 'won' && (game.canDouble || game.doubled)) L.double = { x: cx + 62, y: 242, w: 176, h: 56 };
   return L;
 }
 
@@ -126,7 +133,9 @@ export function drawOverlay(ctx, game) {
       else if (game.coffeeGain >= 0.01) text(ctx, t('+{n} café', { n: formatCoffee(game.coffeeGain) }), cx, 328, { size: 20, color: '#ffe0b0' });
     } else if (won) {
       // vidas que sobraram e cafés novos lado a lado; ameaças contidas embaixo
-      drawResults(ctx, cx, 270, game.lives, game.coffeeGain, game.overlayTime);
+      // com o DOBRAR CAFÉ do lado, o resultado vai pra esquerda
+      drawResults(ctx, L.double ? cx - 90 : cx, 270, game.lives, game.coffeeGain, game.overlayTime, game.doubledAt);
+      if (L.double) drawDouble(ctx, L.double, game);
       text(ctx, t('Ameaças contidas: {n}', { n: game.stats.pops }), cx, 318, { size: 19, color: GOLD });
       if (game.daily) {
         // desafio do dia: a sequência de dias (ou o aviso de que hoje já tinha vencido)
@@ -149,6 +158,7 @@ export function drawOverlay(ctx, game) {
       text(ctx, lines[0], cx, 262, { size: 24 });
       text(ctx, lines[1], cx, 296, { size: 18, color: '#d8e6ff' });
       text(ctx, t('Ameaças contidas: {n}', { n: game.stats.pops }), cx, 330, { size: 18, color: GOLD });
+      if (game.canRevive) text(ctx, t('Assista um anúncio e volte com {n} vidas', { n: game.reviveLives }), cx, 364, { size: 16, color: '#bdf5d0' });
     }
     if (won) {
       // a galera comemorando dos lados das estrelas
@@ -172,8 +182,10 @@ export function drawOverlay(ctx, game) {
       bigButton(ctx, L.maps, '#5fb4ff', t(game.daily ? 'DIÁRIO' : 'MAPAS'), { icon: game.daily ? 'daily' : 'map', size });
       if (L.retry) bigButton(ctx, L.retry, '#ff9a2e', t('DE NOVO'), { icon: 'restart', size });
       if (L.cont) bigButton(ctx, L.cont, '#5fb4e8', t('CONTINUAR'), { icon: 'play', size: 19 });
+      if (L.revive) bigButton(ctx, L.revive, '#3fd16b', t('REVIVER'), { icon: 'play', size: 21 });
       const label = t(won ? (game.nextMap ? 'PRÓXIMO' : 'DE NOVO') : 'DE NOVO');
-      bigButton(ctx, L.next, '#3fd16b', label, { icon: won && game.nextMap ? 'play' : 'restart', size });
+      // com o REVIVER (verde) no meio, o DE NOVO fica laranja
+      bigButton(ctx, L.next, L.revive ? '#ff9a2e' : '#3fd16b', label, { icon: won && game.nextMap ? 'play' : 'restart', size });
     }
   }
   ctx.restore();
@@ -183,7 +195,7 @@ export function drawOverlay(ctx, game) {
 // Vidas (coraçãozinho do HUD + número) e, se teve, os cafés novos (ícone do
 // café + "+N") na mesma linha, centralizados juntos. O café entra com um
 // pulinho logo depois das estrelas
-function drawResults(ctx, cx, y, lives, coffee, time) {
+function drawResults(ctx, cx, y, lives, coffee, time, doubledAt = null) {
   const SEP = 44;
   const SIZE = 30;
   const wl = groupWidth(`${lives}`, SIZE);
@@ -194,12 +206,35 @@ function drawResults(ctx, cx, y, lives, coffee, time) {
   iconAndNumber(ctx, (g) => drawHeart(g, 13), `${lives}`, SIZE, '#ffffff');
   ctx.restore();
   if (coffee < 0.01) return;
-  const k = easeOutBack(clamp((time - 1.5) * 3, 0, 1));
+  let k = easeOutBack(clamp((time - 1.5) * 3, 0, 1));
   if (k <= 0) return;
+  // acabou de dobrar: pulinho
+  if (doubledAt != null) k *= 1 + 0.35 * Math.max(0, 1 - (time - doubledAt) * 2.5) * Math.sin(Math.min(Math.PI, (time - doubledAt) * 8));
   ctx.save();
   ctx.translate(cx + total / 2 - wc / 2, y);
   ctx.scale(k, k);
   iconAndNumber(ctx, (g) => ICONS.coffee(g, 11), `+${formatCoffee(coffee)}`, SIZE, '#ffe0b0');
+  ctx.restore();
+}
+
+// Botão DOBRAR CAFÉ (assiste um anúncio e ganha o café da partida de novo);
+// depois de dobrar, vira o selo "✔ x2"
+function drawDouble(ctx, r, game) {
+  const k = easeOutBack(clamp((game.overlayTime - 1.7) * 3, 0, 1));
+  if (k <= 0) return;
+  ctx.save();
+  ctx.translate(r.x + r.w / 2, r.y + r.h / 2);
+  ctx.scale(k, k);
+  ctx.translate(-(r.x + r.w / 2), -(r.y + r.h / 2));
+  if (game.doubled) {
+    text(ctx, t('✔ CAFÉ x2'), r.x + r.w / 2, r.y + r.h / 2, { size: 22, color: '#3dff9a' });
+  } else {
+    const p = 1 + Math.sin(game.anim * 5) * 0.03;
+    ctx.translate(r.x + r.w / 2, r.y + r.h / 2);
+    ctx.scale(p, p);
+    ctx.translate(-(r.x + r.w / 2), -(r.y + r.h / 2));
+    bigButton(ctx, r, '#ffb020', t('DOBRAR'), { icon: 'play', size: 21, depth: 5 });
+  }
   ctx.restore();
 }
 

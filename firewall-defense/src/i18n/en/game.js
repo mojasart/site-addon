@@ -1,5 +1,13 @@
 // Inglês: textos da interface (chave = texto em português, igual ao do código)
 export default {
+  // ── Anúncios no fim da partida (dobrar café, reviver) ──
+  'DOBRAR': 'DOUBLE',
+  '✔ CAFÉ x2': '✔ COFFEE x2',
+  'REVIVER': 'REVIVE',
+  'REVIVEU!': 'REVIVED!',
+  '+{n} vidas · vírus congelados': '+{n} lives · viruses frozen',
+  'Assista um anúncio e volte com {n} vidas': 'Watch an ad to come back with {n} lives',
+
   // ── partida (game.js): faixas, avisos e textos flutuantes ──
   'MODO PLATINA': 'PLATINUM MODE',
   '{tower} bloqueado · chefão depois da onda {n}': '{tower} locked · boss after wave {n}',

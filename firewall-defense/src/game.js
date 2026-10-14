@@ -1,4 +1,5 @@
-import { VIEW_H, PANEL_W, SPEEDS, TURBO_SPEED, DANGER_TILES, TAP, EARLY_BONUS, EARLY_WAVES } from './config.js';
+import { VIEW_H, PANEL_W, SPEEDS, TURBO_SPEED, DANGER_TILES, TAP, EARLY_BONUS, EARLY_WAVES, AD_REWARDS } from './config.js';
+import { trackMatch, trackCoffee, trackDesign } from './analytics.js';
 import { MAPS, BOUNTY_MAPS } from './data/maps.js';
 import { roundsFor } from './data/rounds.js';
 import { PLAT_WAVES, PLAT_LIVES, PLAT_WARMUP, PLAT_REWARD, WAVE_GAP, PLAT_GATE, BOSS_HP, ENDLESS, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
@@ -74,6 +75,7 @@ export class Game {
     this.drag = null;
     this.resize(app.viewW);
     this.reset();
+    trackMatch('start', mode, this.map.id);
   }
 
   get viewW() { return this.app.viewW; }
@@ -239,6 +241,61 @@ export class Game {
     // abatidos (data/darknet.js)
     this.bankKills();
     this.coffeeGain = (this.app.coffeeEarned ?? 0) - coffeeBefore + this.duckCoffee; // (o do pato já entrou no save durante a partida)
+    // pontuação: estrelas (pontos na platina e no Bug Bounty)
+    trackMatch(won ? 'complete' : 'fail', this.mode, this.map.id, this.platinum || this.bounty ? this.points : won ? this.stars : null);
+    trackCoffee('source', this.coffeeGain, 'Match', this.mode);
+  }
+
+  // ── Anúncios com recompensa no fim da partida (AD_REWARDS em config.js) ──
+  // DOBRAR CAFÉ: na vitória com pelo menos AD_REWARDS.doubleMin de café
+  // ganho (fora o Bug Bounty, que não tem a linha do café), 1 vez
+  get canDouble() {
+    return this.state === 'won' && !this.bounty && !this.doubled && this.coffeeGain >= AD_REWARDS.doubleMin;
+  }
+
+  doubleCoffee() {
+    if (!this.canDouble) return;
+    this.sound.play('click');
+    this.app.watchAd('double', {
+      onReward: () => {
+        if (this.doubled) return;
+        this.doubled = true;
+        this.app.addAdCoffee(this.coffeeGain);
+        this.coffeeGain *= 2;
+        this.doubledAt = this.overlayTime; // o número do café dá um pulinho
+      },
+    });
+  }
+
+  // REVIVER: perdeu no modo normal, 1 vez por partida (não vale na enxurrada
+  // de anúncios do Adware: ela é o castigo por clicar no anúncio)
+  get canRevive() {
+    return this.state === 'lost' && this.mode === 'normal' && !this.revived && !this.adStorm;
+  }
+
+  get reviveLives() {
+    return Math.max(1, Math.ceil(this.baseLives * AD_REWARDS.revive));
+  }
+
+  reviveAd() {
+    if (!this.canRevive) return;
+    this.sound.play('click');
+    this.app.watchAd('revive', { onReward: () => this.revive() });
+  }
+
+  // Volta pra partida com AD_REWARDS.revive das vidas do começo e os vírus
+  // congelados (o Congelar Tudo), pra dar tempo de arrumar a defesa
+  revive() {
+    if (!this.canRevive) return;
+    this.revived = true;
+    this.lives = this.reviveLives;
+    this.state = 'playing';
+    this.endDelay = 0;
+    this.overlayTime = 0;
+    this.hurt = 0;
+    ITEM.freeze.use(this);
+    this.showBanner(t('REVIVEU!'), 2, '#3dff9a', 46, t('+{n} vidas · vírus congelados', { n: this.lives }));
+    trackDesign('Revive:Used');
   }
 
   // Monstros abatidos viram cafés: soma no save os desta partida que ainda
@@ -1285,6 +1342,8 @@ export class Game {
       return;
     }
     if (this.endDelay > 0) return;
+    if (L.double && inRect(L.double, sx, sy)) return this.doubleCoffee();
+    if (L.revive && inRect(L.revive, sx, sy)) return this.reviveAd();
     if (inRect(L.maps, sx, sy)) this.leave();
     else if (L.cont && inRect(L.cont, sx, sy)) this.continueEndless(); // platina infinita
     else if (L.retry && inRect(L.retry, sx, sy)) this.app.startMap(this.mapIndex, 'normal'); // tentar as 3 estrelas
@@ -1395,6 +1454,7 @@ export class Game {
     }
     if (useConsumable(this, tile.id)) {
       this.tutorial?.on('item', tile.id);
+      trackDesign(`Item:Use:${tile.id}`);
       const done = { cash: `+$${CASH}`, free: t('a próxima defesa sai de graça'), freeze: t('vírus congelados'), lives: `+${lives} ${plural(lives, t('vida'), t('vidas'))}` };
       this.toast = { text: `${item.name.toUpperCase()}: ${done[tile.id] ?? t('usado')}`, time: 2.2 };
       if (tile.id === 'free') this.panelTab = 'towers'; // Defesa Grátis: já volta pras defesas pra escolher

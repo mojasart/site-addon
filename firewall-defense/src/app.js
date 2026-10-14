@@ -16,7 +16,8 @@ import { NameScene } from './scenes/NameScene.js';
 import { ITEM, CONSUMABLES, VIP } from './data/consumables.js';
 import { drawEnergyModal, energyLayout } from './render/energy.js';
 import { inRect } from './render/widgets.js';
-import { configAds, showRewarded } from './ads.js';
+import { configAds, showRewarded, adSdk } from './ads.js';
+import { trackAd, trackCoffee, trackDesign, analyticsPause, analyticsResume, stopAnalytics } from './analytics.js';
 import { DARKNET_STARS, COFFEE, mapCoffee, NODE, TREE } from './data/darknet.js';
 import { DAILY, makeChallenge, dailyCoffee, makeMissions, MISSION_COFFEE } from './data/daily.js';
 import { ENEMIES } from './data/enemies.js';
@@ -29,6 +30,9 @@ function today() {
   const now = new Date();
   return Math.floor((now.getTime() - now.getTimezoneOffset() * 60000) / 86400000);
 }
+
+// Lugares dos anúncios com recompensa (nome mandado pro Google e pro analytics)
+const AD_PLACES = { energy: 'energia', gift: 'brinde_do_dia', double: 'dobrar_cafe', revive: 'reviver' };
 
 export class App {
   constructor({ debug = false, mute = false } = {}) {
@@ -121,6 +125,7 @@ export class App {
   enableDebug() {
     if (this.debug) return;
     this.debug = true;
+    stopAnalytics(); // save de mentira: não manda mais nada
     pauseSaving();
     this.save = structuredClone(this.save);
     this.save.inventory = Object.fromEntries(CONSUMABLES.map((c) => [c.id, DEBUG.items]));
@@ -240,6 +245,7 @@ export class App {
     this.save.dailyCoffee = (this.save.dailyCoffee ?? 0) + coffee;
     this.missionProgress({ daily: 1 });
     writeSave(this.save);
+    trackDesign('Daily:Streak', n);
     return { coffee, streak: n };
   }
 
@@ -297,6 +303,8 @@ export class App {
     m.claimed = true;
     this.save.missionCoffee = (this.save.missionCoffee ?? 0) + MISSION_COFFEE;
     writeSave(this.save);
+    trackDesign(`Mission:Claim:${m.id}`);
+    trackCoffee('source', MISSION_COFFEE, 'Mission', m.id);
     return true;
   }
 
@@ -312,6 +320,7 @@ export class App {
     this.save.coffeeSpent = (this.save.coffeeSpent ?? 0) + item.cost;
     this.inventory[id] = (this.inventory[id] ?? 0) + 1;
     writeSave(this.save);
+    trackCoffee('sink', item.cost, 'Item', id);
     return true;
   }
 
@@ -331,39 +340,58 @@ export class App {
   // Abre o anúncio; no fim dele o brinde vai pro inventário
   watchAdForFree() {
     if (this.energyUI || this.freeOffer.claimed) return false;
-    this.watchAd(this.freeOffer.id, null);
+    this.watchAd('gift', { reward: this.freeOffer.id });
     return true;
   }
 
   // Anúncio com recompensa: o do Google (ads.js); sem anúncio disponível,
-  // o simulado do jogo (energyUI 'ad'). reward = id do brinde da loja, ou
-  // null pras energias; pending = partida que ia começar
-  watchAd(reward, pending) {
-    this.energyUI = { mode: 'loading', t: 0, reward, pending };
-    showRewarded(reward ? 'brinde_do_dia' : 'energia', {
-      beforeAd: () => this.sound.suspend(),
+  // o simulado do jogo (energyUI 'ad'). kind: o que ele dá (AD_PLACES);
+  // reward = id do brinde da loja; pending = partida que ia começar (energia);
+  // onReward = o que fazer quando ganha (dobrar café, reviver)
+  watchAd(kind, { reward = null, pending = null, onReward = null } = {}) {
+    const place = AD_PLACES[kind];
+    const ui = { mode: 'loading', t: 0, kind, reward, pending, onReward };
+    this.energyUI = ui;
+    showRewarded(place, {
+      beforeAd: () => {
+        this.sound.suspend();
+        trackAd('show', place, adSdk());
+      },
       afterAd: () => this.sound.resume(),
       done: (result) => {
-        const ui = this.energyUI;
-        if (ui?.mode !== 'loading') return;
+        if (this.energyUI !== ui) return;
         if (result === 'viewed') this.grantAd(ui);
         else if (result === 'dismissed') {
           // fechou antes do fim: não ganha (a janela de energia volta, com o aviso)
-          this.energyUI = reward ? null : { mode: 'empty', t: 1, pending, note: t('Assista até o fim pra ganhar') };
+          this.energyUI = kind === 'energy' ? { mode: 'empty', t: 1, pending, note: t('Assista até o fim pra ganhar') } : null;
           this.sound.play('error');
-        } else this.energyUI = { mode: 'ad', t: 0, reward, pending };
+        } else {
+          trackAd('failed', place, adSdk());
+          trackAd('show', place, 'simulated');
+          this.energyUI = { ...ui, mode: 'ad', t: 0 };
+        }
       },
     });
   }
 
-  // Assistiu até o fim: energias (ou o brinde) e segue pra partida, se tinha
+  // Assistiu até o fim: a recompensa (energias, o brinde ou a da partida) e
+  // segue pra partida, se tinha
   grantAd(ui) {
-    if (ui.reward) this.claimFreeItem();
+    trackAd('reward', AD_PLACES[ui.kind], ui.mode === 'ad' ? 'simulated' : adSdk());
+    if (ui.onReward) ui.onReward();
+    else if (ui.reward) this.claimFreeItem();
     else this.addEnergy(ENERGY.ad);
     this.sound.play('upgrade');
     this.energyUI = null;
     if (ui.reward) this.scene.rewarded?.(ui.reward);
     if (ui.pending) this.startMap(ui.pending.i, ui.pending.mode);
+  }
+
+  // DOBRAR CAFÉ (vitória): o café da partida de novo
+  addAdCoffee(n) {
+    this.save.adCoffee = Math.round(((this.save.adCoffee ?? 0) + n) * 100) / 100;
+    writeSave(this.save);
+    trackCoffee('source', n, 'Ad', 'double');
   }
 
   claimFreeItem() {
@@ -399,7 +427,8 @@ export class App {
     const maps = MAPS.reduce((sum, m) => sum + mapCoffee(this.save.stars[m.id], this.hasPlatinum(m.id)), 0);
     const bounty = BOUNTY_MAPS.reduce((sum, m) => sum + mapCoffee(this.save.stars[m.id], false, true), 0) + (this.save.legacyBountyCoffee ?? 0);
     const daily = (this.save.dailyCoffee ?? 0) + (this.save.missionCoffee ?? 0); // diário (desafio e missões)
-    return maps + bounty + daily + (this.save.kills ?? 0) * COFFEE.perKill + (this.save.duckCoffee ?? 0) + (this.save.boughtCoffee ?? 0);
+    const ads = this.save.adCoffee ?? 0; // DOBRAR CAFÉ (anúncio na vitória)
+    return maps + bounty + daily + ads + (this.save.kills ?? 0) * COFFEE.perKill + (this.save.duckCoffee ?? 0) + (this.save.boughtCoffee ?? 0);
   }
 
   // Café que o Pato de Borracha achou numa partida (upgrade secreto)
@@ -461,6 +490,7 @@ export class App {
     this.save.darknet = { ...this.perks, [id]: true };
     this.save.coffeeSpent = (this.save.coffeeSpent ?? 0) + NODE[id].cost;
     writeSave(this.save);
+    trackCoffee('sink', NODE[id].cost, 'DarkNet', id);
     return true;
   }
 
@@ -491,6 +521,7 @@ export class App {
     this.save.darknet = darknet;
     this.save.coffeeSpent = Math.max(0, (this.save.coffeeSpent ?? 0) - back);
     writeSave(this.save);
+    trackCoffee('source', back, 'DarkNet', 'refund');
     return true;
   }
 
@@ -517,6 +548,7 @@ export class App {
     if (!this.debug && !this.vip && this.energy <= 0) {
       this.energyUI = { mode: 'empty', t: 0, pending: { i, mode } };
       this.sound.play('error');
+      trackDesign('Energy:Empty');
       return;
     }
     this.go(() => new Game(this, i, mode));
@@ -579,7 +611,7 @@ export class App {
     if (ui.mode === 'loading') return; // esperando o anúncio do Google
     if (inRect(L.watch, x, y)) {
       this.sound.play('click');
-      this.watchAd(null, ui.pending);
+      this.watchAd('energy', { pending: ui.pending });
     } else if (inRect(L.close, x, y) || !inRect(L.card, x, y)) {
       this.energyUI = null;
       this.sound.play('click');
@@ -698,10 +730,12 @@ export class App {
     this.game?.bankKills();
     this.game?.pause();
     this.sound.suspend();
+    analyticsPause();
   }
 
   shown() {
     this.sound.resume();
+    analyticsResume();
   }
 
   update(dt) {
@@ -712,6 +746,8 @@ export class App {
       if (this.fade >= 1) {
         this.scene = this.next();
         this.next = null;
+        // telas abertas (a partida já vai como progressão: Game)
+        if (!(this.scene instanceof Game)) trackDesign(`Screen:${this.scene.constructor.name.replace('Scene', '')}`);
         // na partida, a música de batalha da season do mapa; no catálogo, a "Matrix";
         // na loja, a bossa de compras; nos outros menus, a alegre
         this.sound.setTheme?.(

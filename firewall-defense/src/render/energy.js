@@ -3,7 +3,7 @@ import { rrect, fillOutline, text, setFont } from './canvas.js';
 import { drawImage, hasImage } from './images.js';
 import { drawItemIcon } from './consumables.js';
 import { bigButton, iconButton, ribbon } from './widgets.js';
-import { ICONS } from './sprites.js';
+import { ICONS, drawHeart } from './sprites.js';
 import { easeOutBack } from '../util.js';
 import { t } from '../i18n.js';
 
@@ -212,11 +212,15 @@ function drawAd(ctx, app, ui) {
   if (left > 0) {
     text(ctx, t('Recompensa em {n}…', { n: Math.ceil(left) }), W - 24, 28, { size: 16, align: 'right', color: '#d8e6ff' });
   } else {
-    // recompensa: energias ou o brinde do dia da loja (ui.reward = id do item)
-    bigButton(ctx, L.skip, '#3fd16b', ui.reward ? t('PEGAR') : t('PEGAR +{n}', { n: ENERGY.ad }), { size: 24 });
+    // recompensa (ui.kind): energias, o brinde do dia da loja (ui.reward = id
+    // do item), o café dobrado ou o reviver
+    const label = { energy: t('PEGAR +{n}', { n: ENERGY.ad }), revive: t('REVIVER') }[ui.kind] ?? t('PEGAR');
+    bigButton(ctx, L.skip, '#3fd16b', label, { size: 24 });
     ctx.save();
     ctx.translate(L.skip.x + L.skip.w - 40, L.skip.y + (L.skip.h - 6) / 2);
     if (ui.reward) drawItemIcon(ctx, ui.reward, 16, ui.t);
+    else if (ui.kind === 'double') ICONS.coffee(ctx, 12);
+    else if (ui.kind === 'revive') drawHeart(ctx, 13);
     else drawBolt(ctx, 14);
     ctx.restore();
   }

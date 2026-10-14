@@ -25,6 +25,9 @@ const WAIT = 6000; // ms esperando o Google responder antes de desistir
 
 const api = () => (typeof window.adBreak === 'function' ? window.adBreak : null);
 
+// Quem mostra o anúncio aqui (pro analytics)
+export const adSdk = () => (isNative ? 'admob' : 'h5');
+
 // Pré-carrega os anúncios e diz se o jogo tem som (chamar uma vez no começo)
 export function configAds(sound = true) {
   if (isNative) return admobInit();
