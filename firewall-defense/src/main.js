@@ -5,6 +5,7 @@ import { clamp } from './util.js';
 import { loadImages } from './render/images.js';
 import { isNative, plugin } from './native.js';
 import { initNotifications } from './notify.js';
+import { initAnalytics } from './analytics.js';
 
 const stage = document.getElementById('stage'); // área útil da tela (fora do notch)
 const canvas = document.getElementById('game');
@@ -12,7 +13,9 @@ const ctx = canvas.getContext('2d');
 
 // Abra com ?debug na URL: cafés infinitos e todos os mapas liberados.
 // ?mute: começa com música e efeitos desligados (servidores de teste)
+// ?analytics: mostra no console cada evento de analytics (src/analytics.js)
 const params = new URLSearchParams(location.search);
+initAnalytics({ debug: params.has('debug'), verbose: params.has('analytics') });
 const app = new App({ debug: params.has('debug'), mute: params.has('mute') });
 window.app = app; // acesso pelo console do navegador pra testar coisas
 initNotifications(app); // app Android: avisos de energia, brinde e saudade (notify.js)

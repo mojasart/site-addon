@@ -168,6 +168,23 @@ fazer ou coletar). Tudo sai da data (dia local), sem servidor, e renova à meia-
 Dificuldade conferida com bots (`node tools/sim/daily.js`): o desafio fica um pouco abaixo da taxa de vitória
 normal da mesma fase.
 
+## Anúncios com recompensa no fim da partida
+
+- **DOBRAR** (vitória, fora o Bug Bounty): com pelo menos 1 café ganho na partida, assistir um anúncio dá
+  o mesmo café de novo (`save.adCoffee`). Uma vez por partida.
+- **REVIVER** (derrota no modo normal, 1 vez por partida): volta com 50% das vidas do começo e os vírus
+  congelados (o Congelar Tudo). Não vale na enxurrada do Adware. Vitória depois de reviver dá no máximo 2 estrelas.
+- Números em `AD_REWARDS` (`src/config.js`). Os anúncios passam por `App.watchAd(tipo)`: do Google (AdMob no
+  app, H5 Games Ads no navegador) e, sem anúncio, o simulado do jogo.
+
+## Analytics (GameAnalytics)
+
+`src/analytics.js` manda pro [GameAnalytics](https://gameanalytics.com) (grátis): retenção D1/D7/D30, funil das
+fases (início, vitória e derrota por modo e fase), funil do tutorial, telas abertas, missões, reviver, anúncios
+vistos por lugar, café ganho e gasto e compras (BRL). O SDK fica em `vendor/gameanalytics` (MIT) e **só carrega
+com as chaves** em `ANALYTICS` (`src/config.js`): sem chave não sai nada. O modo debug nunca envia.
+`?analytics` na URL mostra cada evento no console, com ou sem chave.
+
 ### Chefões
 
 Minichefão = **Locker** ou **Cicada 3301** (a Cicada é 35% deles). Os chefões não vêm da lista de rodadas:
@@ -241,6 +258,7 @@ firewall-defense/
     ├── game.js              a partida: regras, toque, desenho geral
     ├── save.js              estrelas, platinas, cafés gastos, upgrades da Dark Net e configurações no localStorage
     ├── config.js            tela, regras globais, fonte, cores base
+    ├── analytics.js         eventos pro GameAnalytics (vendor/gameanalytics)
     ├── data/                ← BALANCEAMENTO E CONTEÚDO FICAM AQUI
     │   ├── towers.js        defesas, custos, upgrades
     │   ├── enemies.js       vírus, camadas, chefões

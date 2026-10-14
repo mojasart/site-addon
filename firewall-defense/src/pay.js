@@ -1,5 +1,6 @@
 import { PAY } from './config.js';
-import { COFFEE_PACKS } from './data/consumables.js';
+import { COFFEE_PACKS, VIP } from './data/consumables.js';
+import { trackPurchase, trackCoffee, priceCents } from './analytics.js';
 import { writeSave } from './save.js';
 import { isNative } from './native.js';
 import { t } from './i18n.js';
@@ -68,8 +69,13 @@ export async function syncPurchases(app) {
     if (pack) {
       save.boughtCoffee = (save.boughtCoffee ?? 0) + pack.coffee;
       got.push(t('+{n} cafés', { n: pack.coffee }));
+      trackPurchase(priceCents(pack.price), 'coffee_pack', pack.id);
+      trackCoffee('source', pack.coffee, 'Purchase', pack.id);
     } else if (p.product === 'vip') {
-      app.grantVip();
+      if (app.grantVip()) {
+        trackPurchase(priceCents(VIP.price), 'vip', 'vip');
+        trackCoffee('source', VIP.coffee, 'Purchase', 'vip');
+      }
       got.push(t('MODO VIP ativado'));
     } else continue;
     done.add(p.id);
