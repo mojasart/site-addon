@@ -12,6 +12,8 @@
 //  monstro. O total de abatidos fica no save (kills).
 //  Os cafés gastos ficam no save (coffeeSpent); o saldo é ganho - gasto.
 // ─────────────────────────────────────────────────────────────
+import { isEn } from '../lang.js';
+
 export const DARKNET_STARS = 35;
 
 export const COFFEE = { star: 1, three: 2, platinum: 2, perKill: 0.25 / 1000, bounty: [0, 1, 2, 3] };
@@ -26,7 +28,8 @@ export function mapCoffee(stars = 0, platinum = false, bounty = false) {
 
 // Cafés pra mostrar: no máximo 2 casas, com vírgula (12 · 12,5 · 0,1)
 export function formatCoffee(v) {
-  return String(Math.round(v * 100) / 100).replace('.', ',');
+  const s = String(Math.round(v * 100) / 100);
+  return isEn() ? s : s.replace('.', ','); // inglês: ponto
 }
 
 // ── Árvore de upgrades ────────────────────────────────────────

@@ -3,6 +3,7 @@ import { rrect, fillOutline, text } from './canvas.js';
 import { drawCoin, drawHeart } from './sprites.js';
 import { drawCharacter } from './characters.js';
 import { drawImage } from './images.js';
+import { t as tr } from '../i18n.js';
 
 /* ════════════════════════════════════════════════════════════
  *  DESENHO DOS CONSUMÍVEIS (data/consumables.js)
@@ -38,7 +39,7 @@ export function drawItemIcon(ctx, id, s, t = 0) {
       ctx.rotate(-0.25);
       rrect(ctx, -s * 0.6, -s * 0.22, s * 1.2, s * 0.44, s * 0.12);
       fillOutline(ctx, '#3fd16b', 2);
-      text(ctx, 'GRÁTIS', 0, 1, { size: Math.max(8, s * 0.3), strokeWidth: 3 });
+      text(ctx, tr('GRÁTIS'), 0, 1, { size: Math.max(8, s * 0.3), strokeWidth: 3 });
       ctx.restore();
       break;
     }

@@ -13,7 +13,7 @@
 // ─────────────────────────────────────────────────────────────
 import { lang, isEn, locale, setCurrentLang } from './lang.js';
 import { UI, DATA } from './i18n/en/index.js';
-import { TOWERS } from './data/towers.js';
+import { TOWERS, TARGET_MODES } from './data/towers.js';
 import { ENEMIES } from './data/enemies.js';
 import { NODE } from './data/darknet.js';
 import { ITEM } from './data/consumables.js';
@@ -52,6 +52,7 @@ const TABLES = {
   terrains: Object.fromEntries(TERRAINS.map((x) => [x.id, x])),
   seasons: Object.fromEntries(SEASONS.map((x) => [x.id, x])),
   maps: Object.fromEntries([...MAPS, ...BOUNTY_MAPS].map((x) => [x.id, x])),
+  targetModes: Object.fromEntries(TARGET_MODES.map((x) => [x.id, x])), // botão ALVO (label)
 };
 
 const originals = []; // [objeto, campo, valor em português]

@@ -3,6 +3,7 @@ import { VIEW_H, OUTLINE, GOLD } from '../config.js';
 import { rrect, fillOutline, text } from './canvas.js';
 import { drawCharacter } from './characters.js';
 import { wrapText } from './ui.js';
+import { t } from '../i18n.js';
 
 /* ════════════════════════════════════════════════════════════
  *  DESENHO DO TUTORIAL (systems/tutorial.js)
@@ -22,7 +23,7 @@ export function drawTutorial(ctx, game) {
   if (!tut || tut.done || game.state !== 'playing') return;
   const s = tut.step;
   if (s.kind === 'wait') return;
-  const t = game.anim;
+  const anim = game.anim;
   tut.nudge = Math.max(0, (tut.nudge ?? 0) - 0.05);
   const target = s.kind === 'do' ? s.target() : null;
 
@@ -32,7 +33,7 @@ export function drawTutorial(ctx, game) {
     ctx.fillRect(0, 0, game.viewW, VIEW_H);
   }
 
-  if (target) drawTarget(ctx, target, t, tut.nudge, game.viewW);
+  if (target) drawTarget(ctx, target, anim, tut.nudge, game.viewW);
 
   // caixa de fala: do lado contrário do alvo
   const w = Math.min(game.mapW - 24, 600);
@@ -58,17 +59,17 @@ export function drawTutorial(ctx, game) {
   ctx.fillStyle = '#0d1530';
   ctx.fill();
   ctx.clip();
-  ctx.translate(x + 59, y + 112 + (sp.dy ?? 0) + Math.sin(t * 6) * 1.5);
+  ctx.translate(x + 59, y + 112 + (sp.dy ?? 0) + Math.sin(anim * 6) * 1.5);
   ctx.scale(sp.scale, sp.scale);
-  drawCharacter(ctx, s.who ?? 'hacker', { t, face: 1, level: 0, attack: s.kind === 'say' && Math.sin(t * 9) > 0.6 ? 1 : 0 });
+  drawCharacter(ctx, s.who ?? 'hacker', { t: anim, face: 1, level: 0, attack: s.kind === 'say' && Math.sin(anim * 9) > 0.6 ? 1 : 0 });
   ctx.restore();
 
-  text(ctx, sp.name, x + 120, y + 22, { size: 15, align: 'left', color: sp.color });
+  text(ctx, t(sp.name), x + 120, y + 22, { size: 15, align: 'left', color: sp.color });
   const msg = typeof s.text === 'function' ? s.text() : s.text;
   const tw = w - 136;
   wrapText(ctx, msg, x + 120 + tw / 2, y + 50, tw, 15, '#ffffff', 3, OUTLINE);
-  if (s.kind === 'say' && tut.t > 0.35 && Math.sin(t * 5) > -0.3) {
-    text(ctx, 'toque pra continuar ›', x + w - 16, y + h - 14, { size: 11, align: 'right', color: GOLD, stroke: null });
+  if (s.kind === 'say' && tut.t > 0.35 && Math.sin(anim * 5) > -0.3) {
+    text(ctx, t('toque pra continuar ›'), x + w - 16, y + h - 14, { size: 11, align: 'right', color: GOLD, stroke: null });
   }
 }
 

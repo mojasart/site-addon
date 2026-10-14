@@ -2,6 +2,7 @@ import { PAY } from './config.js';
 import { COFFEE_PACKS } from './data/consumables.js';
 import { writeSave } from './save.js';
 import { isNative } from './native.js';
+import { t } from './i18n.js';
 
 /* ════════════════════════════════════════════════════════════
  *  COMPRAS COM DINHEIRO DE VERDADE (pacotes de café e modo VIP)
@@ -66,10 +67,10 @@ export async function syncPurchases(app) {
     const pack = COFFEE_PACKS.find((k) => k.id === p.product);
     if (pack) {
       save.boughtCoffee = (save.boughtCoffee ?? 0) + pack.coffee;
-      got.push(`+${pack.coffee} cafés`);
+      got.push(t('+{n} cafés', { n: pack.coffee }));
     } else if (p.product === 'vip') {
       app.grantVip();
-      got.push('MODO VIP ativado');
+      got.push(t('MODO VIP ativado'));
     } else continue;
     done.add(p.id);
   }

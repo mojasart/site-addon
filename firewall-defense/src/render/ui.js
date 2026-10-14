@@ -12,6 +12,7 @@ import { fmt, TAU } from '../util.js';
 import { CONSUMABLES } from '../data/consumables.js';
 import { drawItemIcon } from './consumables.js';
 import { drawImage } from './images.js';
+import { t, isEn, lang } from '../i18n.js';
 
 // Posições da interface do jogo (pra desenhar E pra detectar toques).
 // Coordenadas de tela; o painel fica colado na direita.
@@ -58,7 +59,7 @@ const STAR_COLOR = { 3: GOLD, 2: '#dfe7f2', 1: '#e39a5f' };
 // ── HUD em cima do mapa ─────────────────────────────────────
 export function drawHud(ctx, game) {
   const L = layout(game);
-  const t = game.anim;
+  const anim = game.anim;
 
   if (game.bounty) {
     // Bug Bounty: pontos e combo no lugar das vidas. Os pontos ficam na cor
@@ -67,11 +68,11 @@ export function drawHud(ctx, game) {
     const got = bountyStars(game.bountyRatio);
     text(ctx, `${game.points} pts`, 16, 32, { size: 28, align: 'left', color: STAR_COLOR[got] ?? '#9fb2d8' });
     const mul = comboMul(game.combo);
-    if (mul > 1) text(ctx, `COMBO x${String(mul).replace('.', ',')}`, 18 + measureText(ctx, `${game.points} pts`, 28) + 10, 34, { size: 16, align: 'left', color: '#ff9a2e' });
+    if (mul > 1) text(ctx, `COMBO x${isEn() ? mul : String(mul).replace('.', ',')}`, 18 + measureText(ctx, `${game.points} pts`, 28) + 10, 34, { size: 16, align: 'left', color: '#ff9a2e' });
   } else {
     ctx.save();
     ctx.translate(30, 30);
-    const beat = game.hurt > 0 ? 1 + Math.sin(t * 40) * 0.12 : 1;
+    const beat = game.hurt > 0 ? 1 + Math.sin(anim * 40) * 0.12 : 1;
     ctx.scale(beat, beat);
     drawHeart(ctx, 15);
     ctx.restore();
@@ -96,17 +97,17 @@ export function drawHud(ctx, game) {
     // Bug Bounty: relógio dos 5 minutos (pisca vermelho nos últimos 10)
     const left = Math.ceil(game.bountyLeft);
     const clock = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
-    const hurry = game.rounds.started > 0 && left <= 10 && Math.sin(t * 10) > 0;
+    const hurry = game.rounds.started > 0 && left <= 10 && Math.sin(anim * 10) > 0;
     text(ctx, 'BUG BOUNTY', L.pause.x - 14, 20, { size: 14, align: 'right', color: '#ffe07a' });
     text(ctx, clock, L.pause.x - 14, 45, { size: 28, align: 'right', color: hurry ? '#ff7a8a' : '#ffffff' });
   } else if (game.platinum) {
     // platina: onda atual / PLAT_WAVES (pisca vermelho nas últimas 3)
-    const hurry = !game.bossCalled && game.platLeft < 3 && Math.sin(t * 10) > 0;
-    text(ctx, 'PLATINA', L.pause.x - 14, 20, { size: 14, align: 'right', color: '#bdeeff' });
-    if (game.endless) text(ctx, `INFINITO ${game.endlessK}`, L.pause.x - 14, 45, { size: 24, align: 'right', color: '#bdeeff' });
-    else text(ctx, game.bossCalled ? 'CHEFÃO' : `${r.current}/${PLAT_WAVES}`, L.pause.x - 14, 45, { size: 28, align: 'right', color: game.bossCalled || hurry ? '#ff7a8a' : '#ffffff' });
+    const hurry = !game.bossCalled && game.platLeft < 3 && Math.sin(anim * 10) > 0;
+    text(ctx, t('PLATINA'), L.pause.x - 14, 20, { size: 14, align: 'right', color: '#bdeeff' });
+    if (game.endless) text(ctx, t('INFINITO {n}', { n: game.endlessK }), L.pause.x - 14, 45, { size: 24, align: 'right', color: '#bdeeff' });
+    else text(ctx, game.bossCalled ? t('CHEFÃO') : `${r.current}/${PLAT_WAVES}`, L.pause.x - 14, 45, { size: 28, align: 'right', color: game.bossCalled || hurry ? '#ff7a8a' : '#ffffff' });
   } else {
-    text(ctx, 'RODADA', L.pause.x - 14, 20, { size: 14, align: 'right', color: '#e3f6ff' });
+    text(ctx, t('RODADA'), L.pause.x - 14, 20, { size: 14, align: 'right', color: '#e3f6ff' });
     text(ctx, `${r.current}/${r.total}`, L.pause.x - 14, 45, { size: 28, align: 'right' });
   }
   iconButton(ctx, L.pause, '#5fb4ff', 'pause');
@@ -336,7 +337,7 @@ function drawShop(ctx, game, L) {
       ctx.translate(tile.x + tile.w / 2, tile.y + 44);
       ICONS.lock(ctx, 14);
       ctx.restore();
-      text(ctx, 'BLOQUEADO', tile.x + tile.w / 2, tile.y + tile.h - 16, { size: 13, color: '#ff7a8a' });
+      text(ctx, t('BLOQUEADO'), tile.x + tile.w / 2, tile.y + tile.h - 16, { size: 13, color: '#ff7a8a' });
       continue;
     }
     if (game.commanderFull?.(tile.type)) {
@@ -368,7 +369,7 @@ function drawTabs(ctx, game, L) {
     }
     const badge = tab.id === 'items' && total > 0;
     const cx = tab.x + tab.w / 2 - (badge ? 8 : 0);
-    text(ctx, tab.label, cx, tab.y + tab.h / 2 + 1, { size: 15, color: on ? '#ffffff' : '#9fb2d8' });
+    text(ctx, t(tab.label), cx, tab.y + tab.h / 2 + 1, { size: 15, color: on ? '#ffffff' : '#9fb2d8' });
     if (badge) {
       // bolinha com o total de itens no inventário
       const bx = tab.x + tab.w - 13;
@@ -408,16 +409,17 @@ function drawItems(ctx, game, L) {
       ctx.translate(tile.x + tile.w / 2, tile.y + tile.h - 18);
       ICONS.lock(ctx, 9);
       ctx.restore();
-    } else if (active) text(ctx, 'ATIVA', tile.x + tile.w / 2, tile.y + tile.h - 16, { size: 15, color: GOLD });
+    } else if (active) text(ctx, t('ATIVA'), tile.x + tile.w / 2, tile.y + tile.h - 16, { size: 15, color: GOLD });
     else text(ctx, String(n), tile.x + tile.w / 2, tile.y + tile.h - 16, { size: 18, color: n > 0 ? '#ffffff' : '#ff7a8a' });
   });
   // onde compra mais
   const y = L.items[L.items.length - 1].y + 108 + 16;
-  const note = game.platinum ? 'Na platina não dá pra usar itens' : 'Compre mais na LOJA, na tela de mapas';
+  const note = t(game.platinum ? 'Na platina não dá pra usar itens' : 'Compre mais na LOJA, na tela de mapas');
   wrapText(ctx, note, P.x + P.w / 2 + 2, y, P.w - 30, 12, game.platinum ? '#ff9aa5' : '#bcd0f5', 2);
 }
 
 // Função (classe) de cada defesa: aparece na aba de informações (infoPanel.js)
+// (rótulos em português: traduzidos com t() na hora de desenhar)
 export const ROLE = {
   hacker: { label: 'DANO', color: '#ff7a5c' },
   firewall: { label: 'ÁREA', color: '#ff9a2e' },
@@ -443,7 +445,7 @@ const TAG = { pad: 10, top: 6, line: 10, maxPx: 10, minPx: 7 };
 let tagCache = null;
 
 function roleTags(ctx, room) {
-  if (tagCache?.room === room) return tagCache;
+  if (tagCache?.room === room && tagCache.lang === lang()) return tagCache;
   const halves = (name) => {
     const w = name.split(' ');
     const half = Math.ceil(w.length / 2);
@@ -464,7 +466,7 @@ function roleTags(ctx, room) {
     if (TOWER_ORDER.every((type) => lines[type])) break;
   }
   ctx.restore();
-  tagCache = { room, px, lines };
+  tagCache = { room, lang: lang(), px, lines };
   return tagCache;
 }
 
@@ -509,7 +511,7 @@ function drawPreview(ctx, game, r) {
   const counts = new Map();
   for (const g of rounds.rounds[rounds.started]) if (g.count > 0) counts.set(g.type, (counts.get(g.type) ?? 0) + g.count);
   if (!counts.size) return;
-  text(ctx, 'PRÓXIMA RODADA', r.x + r.w / 2, r.y + 8, { size: 11, color: '#bcd0f5' });
+  text(ctx, t('PRÓXIMA RODADA'), r.x + r.w / 2, r.y + 8, { size: 11, color: '#bcd0f5' });
   const list = [...counts].slice(0, 4);
   const step = r.w / list.length;
   list.forEach(([type, n], i) => {
@@ -571,7 +573,7 @@ function drawTowerInfo(ctx, game, L) {
   const tw = game.selectedTower;
   const def = tw.def;
   text(ctx, def.name, P.x + 14, 24, { size: def.name.length > 11 ? 17 : 21, align: 'left' });
-  if (def.attack !== 'farm' && def.damage !== 0) text(ctx, `Conteve ${tw.pops} ${tw.pops === 1 ? 'ameaça' : 'ameaças'}`, P.x + 14, 50, { size: 13, align: 'left', color: '#bcd0f5' });
+  if (def.attack !== 'farm' && def.damage !== 0) text(ctx, t(tw.pops === 1 ? 'Conteve {n} ameaça' : 'Conteve {n} ameaças', { n: tw.pops }), P.x + 14, 50, { size: 13, align: 'left', color: '#bcd0f5' });
   iconButton(ctx, L.close, '#ff5a5a', 'close');
 
   if (tw.ransom) drawRansom(ctx, game, tw, L.ransom);
@@ -580,14 +582,14 @@ function drawTowerInfo(ctx, game, L) {
   if (def.targeting && !tw.ransom) {
     button(ctx, L.target, '#8a7dff', { radius: 12, depth: 5 });
     const mode = TARGET_MODES.find((m) => m.id === tw.targetMode);
-    text(ctx, 'ALVO', L.target.x + L.target.w / 2, L.target.y + 12, { size: 11, color: '#ece9ff' });
-    text(ctx, mode.label, L.target.x + L.target.w / 2, L.target.y + 29, { size: 17 });
+    text(ctx, t('ALVO'), L.target.x + L.target.w / 2, L.target.y + 12, { size: 11, color: '#ece9ff' });
+    text(ctx, t(mode.label), L.target.x + L.target.w / 2, L.target.y + 29, { size: 17 });
   }
 
   // (o Honeypot não vende)
   if (!def.noSell) {
     button(ctx, L.sell, '#ff5a5a', { radius: 12, depth: 5 });
-    text(ctx, `VENDER $${tw.sellValue}`, L.sell.x + L.sell.w / 2, L.sell.y + 22, { size: 19 });
+    text(ctx, t('VENDER ${n}', { n: tw.sellValue }), L.sell.x + L.sell.w / 2, L.sell.y + 22, { size: 19 });
   }
 
 }
@@ -601,9 +603,9 @@ function drawRansom(ctx, game, tw, r) {
   ctx.translate(cx, r.y + 38);
   ICONS.lock(ctx, 16);
   ctx.restore();
-  text(ctx, 'CRIPTOGRAFADO', cx, r.y + 76, { size: 17, color: '#d6ffe9' });
-  wrapText(ctx, 'Pague o resgate pra ele voltar a funcionar', cx, r.y + 104, r.w - 20, 12, '#ffffff', 2, OUTLINE);
-  text(ctx, `PAGAR $${tw.ransom}`, cx, r.y + r.h - 28, { size: 20, color: can ? GOLD : '#ff7a8a' });
+  text(ctx, t('CRIPTOGRAFADO'), cx, r.y + 76, { size: 17, color: '#d6ffe9' });
+  wrapText(ctx, t('Pague o resgate pra ele voltar a funcionar'), cx, r.y + 104, r.w - 20, 12, '#ffffff', 2, OUTLINE);
+  text(ctx, t('PAGAR ${n}', { n: tw.ransom }), cx, r.y + r.h - 28, { size: 20, color: can ? GOLD : '#ff7a8a' });
 }
 
 function drawUpgrade(ctx, game, tw, up, i, r) {
@@ -614,9 +616,9 @@ function drawUpgrade(ctx, game, tw, up, i, r) {
   button(ctx, r, face, { radius: 14, depth: 5 });
   text(ctx, up.name, r.x + r.w / 2, r.y + 17, { size: up.name.length > 16 ? 14 : 16 });
   wrapText(ctx, up.desc, r.x + r.w / 2, r.y + 38, r.w - 16, 12, '#ffffff', 2, OUTLINE);
-  if (bought) text(ctx, 'COMPRADO', r.x + r.w / 2, r.y + r.h - 20, { size: 16 });
+  if (bought) text(ctx, t('COMPRADO'), r.x + r.w / 2, r.y + r.h - 20, { size: 16 });
   else if (next) text(ctx, `$${up.cost}`, r.x + r.w / 2, r.y + r.h - 20, { size: 20, color: affordable ? GOLD : '#ff7a8a' });
-  else text(ctx, 'BLOQUEADO', r.x + r.w / 2, r.y + r.h - 20, { size: 14, color: '#d8e6ff' });
+  else text(ctx, t('BLOQUEADO'), r.x + r.w / 2, r.y + r.h - 20, { size: 14, color: '#d8e6ff' });
 }
 
 // Botão da próxima rodada: INICIAR (primeira) ou
@@ -642,7 +644,7 @@ function drawPlayButton(ctx, game, r) {
   else if (!game.rounds.canStart) label = 'ÚLTIMA';
   else if (!can) label = 'ESPERE';
   else if (bonus > 0) label = `+$${bonus}`;
-  text(ctx, label, cx, r.y + 44, { size: 18, color: bonus > 0 && can ? GOLD : '#ffffff' });
+  text(ctx, t(label), cx, r.y + 44, { size: 18, color: bonus > 0 && can ? GOLD : '#ffffff' });
   ctx.restore();
 }
 

@@ -4,6 +4,7 @@ import { bumpFontEpoch } from './render/maps/index.js';
 import { clamp } from './util.js';
 import { loadImages } from './render/images.js';
 import { isNative, plugin } from './native.js';
+import { initNotifications } from './notify.js';
 
 const stage = document.getElementById('stage'); // área útil da tela (fora do notch)
 const canvas = document.getElementById('game');
@@ -14,6 +15,7 @@ const ctx = canvas.getContext('2d');
 const params = new URLSearchParams(location.search);
 const app = new App({ debug: params.has('debug'), mute: params.has('mute') });
 window.app = app; // acesso pelo console do navegador pra testar coisas
+initNotifications(app); // app Android: avisos de energia, brinde e saudade (notify.js)
 
 // O canvas só baixa a fonte se alguém pedir; quando chega, os mapas são redesenhados
 document.fonts?.load('20px "Lilita One"').then(bumpFontEpoch).catch(() => {});

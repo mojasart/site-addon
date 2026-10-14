@@ -3,6 +3,7 @@ import { drawImage } from '../render/images.js';
 import { rrect, fillOutline, text, setFont } from '../render/canvas.js';
 import { bigButton, iconButton, inRect } from '../render/widgets.js';
 import { easeOutBack, clamp } from '../util.js';
+import { t as tr } from '../i18n.js';
 
 // Tela de título "VERSUS": a tela dividida na diagonal, os defensores no
 // azul contra as ameaças no vermelho, um VS pulsando no meio e o "JOGAR".
@@ -66,7 +67,7 @@ export class TitleScene {
     ctx.translate(-slide, 0);
     this.drawGolem(ctx, t);
     sprite(ctx, 'hacker', HACKER.x, HACKER.y + Math.sin(t * 2.2) * 4, HACKER.size, 1, this.app.pixelScale);
-    badge(ctx, 46, 132, 'DEFENSORES', '#5fb4ff', -0.07);
+    badge(ctx, 46, 132, tr('DEFENSORES'), '#5fb4ff', -0.07);
     ctx.restore();
 
     ctx.save();
@@ -81,7 +82,7 @@ export class TitleScene {
     sprite(ctx, 'worm', R(WORM.x), WORM.y + hop(1.3) - Math.sin((this.wormJump ?? 0) * Math.PI) * 60, WORM.size, -1, this.app.pixelScale);
     // versão do jogo, pequenininha embaixo do worm
     text(ctx, versionLabel(), R(WORM.x), VIEW_H - 16, { size: 12, color: 'rgba(255,255,255,0.75)', strokeWidth: 3 });
-    badge(ctx, R(914), 132, 'AMEAÇAS', '#ff5a6a', 0.07, 'right');
+    badge(ctx, R(914), 132, tr('AMEAÇAS'), '#ff5a6a', 0.07, 'right');
     ctx.restore();
 
     this.drawVs(ctx, W / 2, 280, t);
@@ -89,7 +90,7 @@ export class TitleScene {
     if (this.debugNote > 0) {
       ctx.save();
       ctx.globalAlpha = Math.min(1, this.debugNote * 2);
-      text(ctx, 'MODO DEBUG ATIVADO', W / 2, 118, { size: 22, color: '#3dff9a' });
+      text(ctx, tr('MODO DEBUG ATIVADO'), W / 2, 118, { size: 22, color: '#3dff9a' });
       ctx.restore();
     }
 
@@ -99,7 +100,7 @@ export class TitleScene {
     ctx.translate(L.play.x + L.play.w / 2, L.play.y + L.play.h / 2);
     ctx.scale(p, p);
     ctx.translate(-(L.play.x + L.play.w / 2), -(L.play.y + L.play.h / 2));
-    bigButton(ctx, L.play, '#3fd16b', 'JOGAR', { icon: 'play', size: 40, depth: 8 });
+    bigButton(ctx, L.play, '#3fd16b', tr('JOGAR'), { icon: 'play', size: 40, depth: 8 });
     ctx.restore();
     const s = this.app.save;
     // volume em degraus (roxo = com som, cinza = mudo)

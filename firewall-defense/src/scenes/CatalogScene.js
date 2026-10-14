@@ -11,6 +11,7 @@ import { AGES, statsAt, statRows } from '../data/towerInfo.js';
 import { TERRAINS } from '../data/terrains.js';
 import { drawTerrain } from '../render/terrains.js';
 import { ThreatPreview } from '../render/threatPreview.js';
+import { t, isEn } from '../i18n.js';
 
 /* ════════════════════════════════════════════════════════════
  *  CATÁLOGO (ameaças, defesas e terrenos)
@@ -191,14 +192,14 @@ export class CatalogScene {
     // barra de título da "janela"
     ctx.fillStyle = '#0c3a22';
     ctx.fillRect(scr.x, scr.y, scr.w, 32);
-    mono(ctx, `C:\\SEGURANCA\\${TABS[this.tab].file}`, scr.x + 14, scr.y + 17, 15, GREEN, 'left', true);
+    mono(ctx, t('C:\\SEGURANCA\\{file}', { file: TABS[this.tab].file }), scr.x + 14, scr.y + 17, 15, GREEN, 'left', true);
     if (this.tab === 0) {
       const seen = ORDER.filter((k) => this.app.hasSeen(k)).length;
-      mono(ctx, `AMEAÇAS CATALOGADAS: ${seen}/${ORDER.length}`, scr.x + scr.w - 14, scr.y + 17, 13, GREEN, 'right', true);
+      mono(ctx, t('AMEAÇAS CATALOGADAS: {n}', { n: `${seen}/${ORDER.length}` }), scr.x + scr.w - 14, scr.y + 17, 13, GREEN, 'right', true);
     } else if (this.tab === 1) {
-      mono(ctx, `DEFESAS DISPONÍVEIS: ${TOWER_ORDER.length}`, scr.x + scr.w - 14, scr.y + 17, 13, GREEN, 'right', true);
+      mono(ctx, t('DEFESAS DISPONÍVEIS: {n}', { n: TOWER_ORDER.length }), scr.x + scr.w - 14, scr.y + 17, 13, GREEN, 'right', true);
     } else {
-      mono(ctx, `TERRENOS MAPEADOS: ${TERRAINS.length}`, scr.x + scr.w - 14, scr.y + 17, 13, GREEN, 'right', true);
+      mono(ctx, t('TERRENOS MAPEADOS: {n}', { n: TERRAINS.length }), scr.x + scr.w - 14, scr.y + 17, 13, GREEN, 'right', true);
     }
 
     this.drawTabs(ctx, L);
@@ -237,7 +238,7 @@ export class CatalogScene {
         ctx.lineWidth = 1.5;
         ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
       }
-      mono(ctx, `[ ${TABS[i].label} ]`, r.x + r.w / 2, r.y + r.h / 2, 15, active ? BG : GREEN, 'center', true);
+      mono(ctx, `[ ${t(TABS[i].label)} ]`, r.x + r.w / 2, r.y + r.h / 2, 15, active ? BG : GREEN, 'center', true);
     });
     const r = L.tabs.at(-1);
     ctx.fillStyle = DIM;
@@ -357,30 +358,31 @@ export class CatalogScene {
     const fx = pr.x + pr.s + 18;
     const fw = d.x + d.w - 16 - fx;
     if (!seen) {
-      mono(ctx, 'ACESSO NEGADO', fx, pr.y + 22, 22, RED, 'left', true);
-      wrapMono(ctx, 'Ameaça ainda não encontrada. Avance nas fases pra registrar o arquivo dela.', fx, pr.y + 56, fw, 14, DIM);
+      mono(ctx, t('ACESSO NEGADO'), fx, pr.y + 22, 22, RED, 'left', true);
+      wrapMono(ctx, t('Ameaça ainda não encontrada. Avance nas fases pra registrar o arquivo dela.'), fx, pr.y + 56, fw, 14, DIM);
       return;
     }
     const cursor = Math.sin(this.t * 8) > 0 ? '_' : ' ';
     mono(ctx, `${def.name.toUpperCase()}${cursor}`, fx, pr.y + 18, 22, GREEN, 'left', true);
-    const kind = [def.boss ? 'CHEFÃO' : null, def.armored ? 'BLINDADO' : null, def.spawn ? 'SE ESPALHA' : null, def.stealth ? 'INVISÍVEL' : null, def.flying ? 'VOA' : null, def.aura ? 'AURA DE CRIPTOGRAFIA' : null, def.ransom ? 'CRIPTOGRAFA' : null, def.ads ? 'ANÚNCIOS' : null].filter(Boolean);
-    mono(ctx, kind.length ? `[ ${kind.join(' · ')} ]` : '[ COMUM ]', fx, pr.y + 44, 13, def.boss ? RED : DIM, 'left', true);
+    const kind = [def.boss ? 'CHEFÃO' : null, def.armored ? 'BLINDADO' : null, def.spawn ? 'SE ESPALHA' : null, def.stealth ? 'INVISÍVEL' : null, def.flying ? 'VOA' : null, def.aura ? 'AURA DE CRIPTOGRAFIA' : null, def.ransom ? 'CRIPTOGRAFA' : null, def.ads ? 'ANÚNCIOS' : null].filter(Boolean).map((k) => t(k));
+    mono(ctx, kind.length ? `[ ${kind.join(' · ')} ]` : `[ ${t('COMUM')} ]`, fx, pr.y + 44, 13, def.boss ? RED : DIM, 'left', true);
 
     const reward = def.reward ?? 1;
     this.drawRows(ctx, [
-      ['VIDA', hpText(type)],
-      ['DANO', `${threat(type)}`],
-      ['VELOCIDADE', `${def.speed}`],
-      ['DINHEIRO', reward === worth(type) ? `$${reward}` : `$${reward} - $${worth(type)}`],
+      [t('VIDA'), hpText(type)],
+      [t('DANO'), `${threat(type)}`],
+      [t('VELOCIDADE'), `${def.speed}`],
+      [t('DINHEIRO'), reward === worth(type) ? `$${reward}` : `$${reward} - $${worth(type)}`],
     ], fx, pr.y + 76);
 
     // o que ele solta
     const kids = def.children.map(([c, n]) => `${n} ${plural(n, ENEMIES[c].name, namePlural(ENEMIES[c].name))}`).join(', ');
-    const drops = def.spawn ? `Solta ${ENEMIES[def.spawn.type].name} a cada ${String(def.spawn.every).replace('.', ',')}s` : kids ? `Ao estourar solta: ${kids}` : 'Não solta nada ao estourar';
+    const every = isEn() ? String(def.spawn?.every) : String(def.spawn?.every).replace('.', ',');
+    const drops = def.spawn ? t('Solta {name} a cada {n}s', { name: ENEMIES[def.spawn.type].name, n: every }) : kids ? t('Ao estourar solta: {kids}', { kids }) : t('Não solta nada ao estourar');
     const ly = pr.y + pr.s + 22;
-    mono(ctx, '> ARQUIVO', d.x + 16, ly, 14, DIM, 'left', true);
+    mono(ctx, t('> ARQUIVO'), d.x + 16, ly, 14, DIM, 'left', true);
     const kills = this.app.save.killsBy?.[type] ?? 0;
-    mono(ctx, `${fmt(kills)} ${plural(kills, 'ABATIDO', 'ABATIDOS')}`, d.x + d.w - 16, ly, 14, GREEN, 'right', true);
+    mono(ctx, `${fmt(kills)} ${plural(kills, t('ABATIDO'), t('ABATIDOS'))}`, d.x + d.w - 16, ly, 14, GREEN, 'right', true);
     mono(ctx, drops, d.x + 16, ly + 24, 14, GREEN, 'left', true);
     this.drawLore(ctx, def.lore ?? def.desc ?? '', d.x + 16, ly + 52, d.w - 32);
     if (this.preview) this.drawPreview(ctx, L, def);
@@ -437,15 +439,15 @@ export class CatalogScene {
     const fx = pr.x + pr.s + 18;
     const cursor = Math.sin(this.t * 8) > 0 ? '_' : ' ';
     mono(ctx, `${def.name.toUpperCase()}${cursor}`, fx, pr.y + 18, 22, GREEN, 'left', true);
-    const kind = [ATTACK_KIND[def.attack], def.canHitArmored ? 'FURA BLINDAGEM' : null, def.onPath ? 'NO CAMINHO' : null].filter(Boolean);
+    const kind = [ATTACK_KIND[def.attack], def.canHitArmored ? 'FURA BLINDAGEM' : null, def.onPath ? 'NO CAMINHO' : null].filter(Boolean).map((k) => t(k));
     mono(ctx, `[ ${kind.join(' · ')} ]`, fx, pr.y + 44, 13, DIM, 'left', true);
     const rows = towerRows(type, s, lv);
     this.drawRows(ctx, rows, fx, pr.y + 72, rows.length > 4 ? 21 : 24);
 
     // evolução: um nível por linha (tocar fixa a idade no retrato)
-    mono(ctx, '> EVOLUÇÃO', d.x + 16, L.evoY, 14, DIM, 'left', true);
+    mono(ctx, t('> EVOLUÇÃO'), d.x + 16, L.evoY, 14, DIM, 'left', true);
     const used = this.app.save.placedBy?.[type] ?? 0;
-    mono(ctx, `USADO ${fmt(used)} ${plural(used, 'VEZ', 'VEZES')}`, d.x + d.w - 16, L.evoY, 14, GREEN, 'right', true);
+    mono(ctx, t('USADO {n}', { n: `${fmt(used)} ${plural(used, t('VEZ'), t('VEZES'))}` }), d.x + d.w - 16, L.evoY, 14, GREEN, 'right', true);
     const levels = def.upgrades.length + 1;
     for (let i = 0; i < levels; i++) {
       const r = L.evo[i];
@@ -455,9 +457,9 @@ export class CatalogScene {
         ctx.fillRect(r.x, r.y, r.w, r.h);
       }
       const up = def.upgrades[i - 1];
-      const age = levels > 1 ? AGES[i] : 'ÚNICO';
-      const what = up ? `${up.name} (+$${up.cost})` : levels > 1 ? 'versão inicial' : 'sem upgrades';
-      mono(ctx, `${active ? '▶' : ' '} NV${i + 1} · ${age.padEnd(11, ' ')} ${what}`, r.x + 4, r.y + r.h / 2, 13, active ? GREEN : DIM, 'left', true);
+      const age = t(levels > 1 ? AGES[i] : 'ÚNICO');
+      const what = up ? `${up.name} (+$${up.cost})` : levels > 1 ? t('versão inicial') : t('sem upgrades');
+      mono(ctx, `${active ? '▶' : ' '} ${t('NV')}${i + 1} · ${age.padEnd(11, ' ')} ${what}`, r.x + 4, r.y + r.h / 2, 13, active ? GREEN : DIM, 'left', true);
     }
     const last = L.evo[levels - 1];
     this.drawLore(ctx, def.lore ?? def.desc, d.x + 16, last.y + last.h + 15, d.w - 32, 13);
@@ -476,7 +478,7 @@ export class CatalogScene {
     mono(ctx, `[ ${ter.where} ]`, fx, pr.y + 44, 13, DIM, 'left', true);
     this.drawRows(ctx, ter.rows, fx, pr.y + 76);
     const ly = pr.y + pr.s + 22;
-    mono(ctx, '> COMO FUNCIONA', d.x + 16, ly, 14, DIM, 'left', true);
+    mono(ctx, t('> COMO FUNCIONA'), d.x + 16, ly, 14, DIM, 'left', true);
     const shown = ter.desc.slice(0, Math.floor(this.typed));
     wrapMono(ctx, `${shown}${shown.length < ter.desc.length ? '█' : ''}`, d.x + 16, ly + 26, d.w - 32, 14, '#b9ffd8');
   }
@@ -563,8 +565,10 @@ function layers(type) {
   return 1 + (inner ? layers(inner[0]) : 0);
 }
 
-// Plural do nome da ameaça: s na última palavra (Trojans, Vírus Amarelos; Vírus fica igual)
+// Plural do nome da ameaça: s na última palavra (Trojans, Vírus Amarelos; Vírus fica igual).
+// Em inglês: Virus → Viruses, o resto ganha s (Worms, Trojans)
 function namePlural(name) {
+  if (isEn()) return /(s|x|sh|ch)$/i.test(name) ? `${name}es` : `${name}s`;
   return name.endsWith('s') ? name : `${name}s`;
 }
 
@@ -572,7 +576,7 @@ function hpText(type) {
   const def = ENEMIES[type];
   if (def.hp <= LAYER_HP) {
     const n = layers(type);
-    return n > 1 ? `${n} camadas de ${fmt(LAYER_HP)}` : fmt(LAYER_HP);
+    return n > 1 ? t('{n} camadas de {hp}', { n, hp: fmt(LAYER_HP) }) : fmt(LAYER_HP);
   }
   // como no jogo (Enemy.scaleHp): arredonda pra camadas inteiras
   const ps = MAPS.map((m) => m.pressure);
@@ -596,5 +600,5 @@ function drawTowerIcon(ctx, type, size, level, t, attack) {
 function towerRows(type, s, level) {
   const def = TOWERS[type];
   const spent = def.cost + def.upgrades.slice(0, level).reduce((sum, u) => sum + u.cost, 0);
-  return [['CUSTO', level ? `$${spent} (total)` : `$${spent}`], ...statRows(s)].slice(0, 5);
+  return [[t('CUSTO'), level ? `$${spent} (total)` : `$${spent}`], ...statRows(s)].slice(0, 5);
 }

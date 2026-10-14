@@ -6,6 +6,7 @@ import { drawVirusIcon } from './viruses.js';
 import { ENEMIES } from '../data/enemies.js';
 import { wrapText } from './ui.js';
 import { easeOutBack } from '../util.js';
+import { t as tr, lang } from '../i18n.js';
 
 /* ════════════════════════════════════════════════════════════
  *  ANÚNCIOS DO ADWARE
@@ -40,6 +41,7 @@ export const adSize = (s) => ({ w: W * s, h: H * s });
 
 // Tipos de anúncio: cor da barra, título, chamada, texto, botão e desenho.
 // crypt: o criptografado (aparece com a chance `crypt` do Adware, não no sorteio comum)
+// (textos em português: o tr() traduz na hora de desenhar)
 export const ADS = [
   { bar: '#8a5530', title: 'PROMOÇÃO', head: 'CAFÉ EXPRESSO: LEVE 2, PAGUE 3!', sub: 'Só hoje no Cafezinho do Hacker', cta: 'QUERO!', icon: 'coffee' },
   { bar: '#ff9a2e', title: 'PARABÉNS!!!', head: 'VOCÊ É O VISITANTE 1.000.000', sub: 'Resgate seu iPhone 19 agora', cta: 'RESGATAR', icon: 'star' },
@@ -81,7 +83,7 @@ export function drawAds(ctx, game) {
 const snaps = new Map();
 function snapshot(ad, ps) {
   const s0 = ad.s0 ?? ad.s;
-  const key = `${ad.type}:${s0.toFixed(2)}:${ps}`;
+  const key = `${ad.type}:${s0.toFixed(2)}:${ps}:${lang()}`; // (com o idioma: a foto tem texto)
   let c = snaps.get(key);
   if (!c) {
     c = document.createElement('canvas');
@@ -140,7 +142,7 @@ function drawBody(ctx, def, ad, t) {
   rrect(ctx, 0, 0, W, H, 16);
   ctx.lineWidth = 4;
   ctx.stroke();
-  const title = def.crypt && Math.sin(t * 3 + ad.seed) > 0.3 ? cipher(ad.seed, 13, t) : def.title;
+  const title = def.crypt && Math.sin(t * 3 + ad.seed) > 0.3 ? cipher(ad.seed, 13, t) : tr(def.title);
   text(ctx, title, 14, BAR / 2 + 2, { size: 15, align: 'left' });
   if (ad.vx) text(ctx, 'AD', W - CLOSE - 24, BAR / 2 + 2, { size: 11, color: GOLD }); // os que andam
 
@@ -153,10 +155,10 @@ function drawBody(ctx, def, ad, t) {
     // chamada embaralhada, trocando os caracteres o tempo todo
     text(ctx, cipher(ad.seed, 12, t), 160, BAR + 26, { size: 14, color: '#3dff9a', strokeWidth: 3 });
     text(ctx, cipher(ad.seed + 7, 12, t), 160, BAR + 44, { size: 14, color: '#3dff9a', strokeWidth: 3 });
-    wrapText(ctx, def.sub, 160, BAR + 62, W - 96, 11, '#b77cff', 2);
+    wrapText(ctx, tr(def.sub), 160, BAR + 62, W - 96, 11, '#b77cff', 2);
   } else {
-    wrapText(ctx, def.head, 160, BAR + 20, W - 96, 14, '#2a1840', 2);
-    wrapText(ctx, def.sub, 160, BAR + 56, W - 96, 11, '#5d6680', 2);
+    wrapText(ctx, tr(def.head), 160, BAR + 20, W - 96, 14, '#2a1840', 2);
+    wrapText(ctx, tr(def.sub), 160, BAR + 56, W - 96, 11, '#5d6680', 2);
   }
   // botão chamativo piscando (não faz nada: é só propaganda)
   const blink = Math.sin(t * 8 + ad.seed) > 0;
@@ -164,7 +166,8 @@ function drawBody(ctx, def, ad, t) {
   const on = def.crypt ? '#a35cf0' : '#3fd16b';
   const off = def.crypt ? '#7a3cc4' : '#2fbf6a';
   button(ctx, b, blink ? on : off, { radius: 10, depth: 3 });
-  text(ctx, def.cta, b.x + b.w / 2, b.y + 12, { size: def.cta.length > 12 ? 11 : 13 });
+  const cta = tr(def.cta);
+  text(ctx, cta, b.x + b.w / 2, b.y + 12, { size: cta.length > 12 ? 11 : 13 });
   // X por último (no criptografado ele pode estar em cima do botão)
   const [xx, xy] = CLOSE_SPOTS[ad.closeAt ?? 0];
   button(ctx, { x: xx, y: xy, w: CLOSE, h: CLOSE }, '#ff5a5a', { radius: 8, depth: CLOSE_DEPTH });

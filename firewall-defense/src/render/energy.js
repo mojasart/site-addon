@@ -5,6 +5,7 @@ import { drawItemIcon } from './consumables.js';
 import { bigButton, iconButton, ribbon } from './widgets.js';
 import { ICONS } from './sprites.js';
 import { easeOutBack } from '../util.js';
+import { t } from '../i18n.js';
 
 /* ════════════════════════════════════════════════════════════
  *  ENERGIA
@@ -139,7 +140,7 @@ export function drawEnergyModal(ctx, app) {
   ctx.fill();
   rrect(ctx, c.x, c.y, c.w, c.h, 28);
   fillOutline(ctx, '#34497f', 5);
-  ribbon(ctx, W / 2, c.y + 4, 280, 'SEM ENERGIA', '#ff9a2e', 26);
+  ribbon(ctx, W / 2, c.y + 4, 280, t('SEM ENERGIA'), '#ff9a2e', 26);
   iconButton(ctx, L.close, '#ff5a5a', 'close');
   // raio apagado pulsando
   ctx.save();
@@ -148,11 +149,11 @@ export function drawEnergyModal(ctx, app) {
   ctx.scale(p, p);
   drawBolt(ctx, 34, true);
   ctx.restore();
-  text(ctx, `0/${ENERGY.max} energias`, W / 2, c.y + 158, { size: 22 });
+  text(ctx, t('0/{max} energias', { max: ENERGY.max }), W / 2, c.y + 158, { size: 22 });
   // fechou o anúncio antes do fim: avisa no lugar do relógio
   if (ui.note) text(ctx, ui.note, W / 2, c.y + 190, { size: 16, color: '#ffb35c' });
-  else text(ctx, `A próxima volta em ${clock(app.energyNextMs())}`, W / 2, c.y + 190, { size: 16, color: '#d8e6ff' });
-  bigButton(ctx, L.watch, '#3fd16b', `ASSISTIR ANÚNCIO  +${ENERGY.ad}`, { icon: 'play', size: 21 });
+  else text(ctx, t('A próxima volta em {time}', { time: clock(app.energyNextMs()) }), W / 2, c.y + 190, { size: 16, color: '#d8e6ff' });
+  bigButton(ctx, L.watch, '#3fd16b', t('ASSISTIR ANÚNCIO  +{n}', { n: ENERGY.ad }), { icon: 'play', size: 21 });
   ctx.restore();
 }
 
@@ -172,7 +173,7 @@ function drawLoading(ctx, app, ui) {
     ctx.fill();
   }
   ctx.restore();
-  text(ctx, 'Carregando anúncio...', W / 2, VIEW_H / 2 + 34, { size: 18, color: '#d8e6ff' });
+  text(ctx, t('Carregando anúncio...'), W / 2, VIEW_H / 2 + 34, { size: 18, color: '#d8e6ff' });
 }
 
 // Anúncio simulado: tela cheia com uma propaganda e a contagem; no fim,
@@ -183,22 +184,22 @@ function drawAd(ctx, app, ui) {
   const left = Math.max(0, ENERGY.adTime - ui.t);
   ctx.fillStyle = '#05070f';
   ctx.fillRect(0, 0, W, VIEW_H);
-  text(ctx, 'ANÚNCIO', 24, 28, { size: 14, align: 'left', color: '#7d8fa8' });
+  text(ctx, t('ANÚNCIO'), 24, 28, { size: 14, align: 'left', color: '#7d8fa8' });
   // "vídeo": propaganda do Cafezinho do Hacker
   const cx = W / 2;
   const cy = VIEW_H / 2 - 40;
   rrect(ctx, cx - 260, cy - 120, 520, 240, 24);
   fillOutline(ctx, '#2a1840', 4);
   const bob = Math.sin(ui.t * 4) * 6;
-  text(ctx, 'CAFEZINHO DO HACKER', cx, cy - 70 + bob * 0.3, { size: 32, color: GOLD });
-  text(ctx, 'O expresso que compila mais rápido', cx, cy - 24, { size: 18, color: '#ffffff' });
+  text(ctx, t('CAFEZINHO DO HACKER'), cx, cy - 70 + bob * 0.3, { size: 32, color: GOLD });
+  text(ctx, t('O expresso que compila mais rápido'), cx, cy - 24, { size: 18, color: '#ffffff' });
   for (const dx of [-70, 0, 70]) {
     ctx.save();
     ctx.translate(cx + dx, cy + 30 + (dx === 0 ? bob : -bob));
     ICONS.coffee(ctx, 20);
     ctx.restore();
   }
-  text(ctx, 'Peça já no seu terminal', cx, cy + 86, { size: 15, color: '#bcd0f5' });
+  text(ctx, t('Peça já no seu terminal'), cx, cy + 86, { size: 15, color: '#bcd0f5' });
   // barra de progresso do "vídeo"
   const pw = 520;
   const prog = Math.min(1, ui.t / ENERGY.adTime);
@@ -209,10 +210,10 @@ function drawAd(ctx, app, ui) {
   ctx.fillStyle = GOLD;
   ctx.fill();
   if (left > 0) {
-    text(ctx, `Recompensa em ${Math.ceil(left)}…`, W - 24, 28, { size: 16, align: 'right', color: '#d8e6ff' });
+    text(ctx, t('Recompensa em {n}…', { n: Math.ceil(left) }), W - 24, 28, { size: 16, align: 'right', color: '#d8e6ff' });
   } else {
     // recompensa: energias ou o brinde do dia da loja (ui.reward = id do item)
-    bigButton(ctx, L.skip, '#3fd16b', ui.reward ? 'PEGAR' : `PEGAR +${ENERGY.ad}`, { size: 24 });
+    bigButton(ctx, L.skip, '#3fd16b', ui.reward ? t('PEGAR') : t('PEGAR +{n}', { n: ENERGY.ad }), { size: 24 });
     ctx.save();
     ctx.translate(L.skip.x + L.skip.w - 40, L.skip.y + (L.skip.h - 6) / 2);
     if (ui.reward) drawItemIcon(ctx, ui.reward, 16, ui.t);

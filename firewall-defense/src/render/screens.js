@@ -10,6 +10,7 @@ import { ICONS, drawHeart } from './sprites.js';
 import { formatCoffee } from '../data/darknet.js';
 import { BOUNTY } from '../data/bounty.js';
 import { drawDuck } from './duck.js';
+import { t } from '../i18n.js';
 
 // Posições dos botões das telas de pausa/vitória/derrota (desenho e toque)
 export function overlayLayout(game) {
@@ -68,7 +69,7 @@ export function drawOverlay(ctx, game) {
   if (game.state === 'playing') return;
   const W = game.viewW;
   const cx = W / 2;
-  const t = game.anim;
+  const anim = game.anim;
   const k = clamp(game.overlayTime * 4, 0, 1);
   const L = overlayLayout(game);
 
@@ -93,18 +94,18 @@ export function drawOverlay(ctx, game) {
   ctx.stroke();
 
   if (game.state === 'paused') {
-    ribbon(ctx, cx, c.y + 46, 260, 'PAUSADO', '#5fb4ff', 30);
-    bigButton(ctx, L.resume, '#3fd16b', 'CONTINUAR', { icon: 'play', size: 28 });
-    bigButton(ctx, L.restart, '#5fb4ff', 'REINICIAR', { icon: 'restart', size: 24 });
-    bigButton(ctx, L.maps, '#ff9a2e', 'MAPAS', { icon: 'map', size: 20 });
-    bigButton(ctx, L.catalog, '#8a7dff', 'CATÁLOGO', { icon: 'catalog', size: 17 });
+    ribbon(ctx, cx, c.y + 46, 260, t('PAUSADO'), '#5fb4ff', 30);
+    bigButton(ctx, L.resume, '#3fd16b', t('CONTINUAR'), { icon: 'play', size: 28 });
+    bigButton(ctx, L.restart, '#5fb4ff', t('REINICIAR'), { icon: 'restart', size: 24 });
+    bigButton(ctx, L.maps, '#ff9a2e', t('MAPAS'), { icon: 'map', size: 20 });
+    bigButton(ctx, L.catalog, '#8a7dff', t('CATÁLOGO'), { icon: 'catalog', size: 17 });
     volumeSlider(ctx, L.music, 'music', game.app.save.musicVol);
     volumeSlider(ctx, L.sfx, 'sfx', game.app.save.sfxVol);
     iconButton(ctx, L.auto, game.autoRound ? '#3fd16b' : '#7d8fa8', 'auto', game.autoRound);
   } else {
     const won = game.state === 'won';
     const plat = won && game.platinum;
-    const title = game.bounty ? (won ? 'RECOMPENSA!' : 'FIM DO TEMPO') : plat ? 'PLATINA!' : won ? 'VITÓRIA!' : game.endless ? 'FIM DA PARTIDA' : 'SERVIDOR INVADIDO';
+    const title = t(game.bounty ? (won ? 'RECOMPENSA!' : 'FIM DO TEMPO') : plat ? 'PLATINA!' : won ? 'VITÓRIA!' : game.endless ? 'FIM DA PARTIDA' : 'SERVIDOR INVADIDO');
     ribbon(ctx, cx, c.y + 46, won ? 280 : 360, title, plat ? '#5fb4e8' : won ? '#3fd16b' : '#ff5a6a', 30);
     if (won) {
       const pop = (i) => easeOutBack(clamp((game.overlayTime - 0.4 - i * 0.35) * 3, 0, 1));
@@ -113,60 +114,60 @@ export function drawOverlay(ctx, game) {
       ctx.save();
       ctx.translate(cx, 180);
       ctx.scale(2.6, 2.6);
-      drawEnemy(ctx, { type: 'v1', def: ENEMIES.v1, r: 15, phase: t, face: 1, slowTimer: 0, flash: 0 });
+      drawEnemy(ctx, { type: 'v1', def: ENEMIES.v1, r: 15, phase: anim, face: 1, slowTimer: 0, flash: 0 });
       ctx.restore();
     }
     if (game.bounty) {
       // Bug Bounty: pontos, % estourada, recorde e café
       const pct = Math.round(game.bountyRatio * 100);
-      text(ctx, `${game.points} PONTOS`, cx, 262, { size: 30, color: GOLD });
-      text(ctx, `Conteve ${pct}% das ameaças${game.newRecord ? ' · NOVO RECORDE!' : ''}`, cx, 298, { size: 18, color: '#d8e6ff' });
-      if (!won) text(ctx, `Bronze com ${Math.round(BOUNTY.tiers[0] * 100)}%: tente de novo!`, cx, 326, { size: 16, color: '#ffb3c0' });
-      else if (game.coffeeGain >= 0.01) text(ctx, `+${formatCoffee(game.coffeeGain)} café`, cx, 328, { size: 20, color: '#ffe0b0' });
+      text(ctx, t('{n} PONTOS', { n: game.points }), cx, 262, { size: 30, color: GOLD });
+      text(ctx, t('Conteve {pct}% das ameaças', { pct }) + (game.newRecord ? ' · ' + t('NOVO RECORDE!') : ''), cx, 298, { size: 18, color: '#d8e6ff' });
+      if (!won) text(ctx, t('Bronze com {pct}%: tente de novo!', { pct: Math.round(BOUNTY.tiers[0] * 100) }), cx, 326, { size: 16, color: '#ffb3c0' });
+      else if (game.coffeeGain >= 0.01) text(ctx, t('+{n} café', { n: formatCoffee(game.coffeeGain) }), cx, 328, { size: 20, color: '#ffe0b0' });
     } else if (won) {
       // vidas que sobraram e cafés novos lado a lado; ameaças contidas embaixo
       drawResults(ctx, cx, 270, game.lives, game.coffeeGain, game.overlayTime);
-      text(ctx, `Ameaças contidas: ${game.stats.pops}`, cx, 318, { size: 19, color: GOLD });
-      if (game.turboUnlocked) text(ctx, 'ACELERAR 5x LIBERADO!', cx, 348, { size: 17, color: '#bdeeff' });
+      text(ctx, t('Ameaças contidas: {n}', { n: game.stats.pops }), cx, 318, { size: 19, color: GOLD });
+      if (game.turboUnlocked) text(ctx, t('ACELERAR 5x LIBERADO!'), cx, 348, { size: 17, color: '#bdeeff' });
       // platina: os pontos da partida (seguem no CONTINUAR)
-      else if (plat) text(ctx, `${game.points} pontos${game.newRecord ? ' · NOVO RECORDE!' : ''}`, cx, 348, { size: 17, color: '#bdeeff' });
+      else if (plat) text(ctx, t('{n} pontos', { n: game.points }) + (game.newRecord ? ' · ' + t('NOVO RECORDE!') : ''), cx, 348, { size: 17, color: '#bdeeff' });
     } else if (game.endless) {
       // fim da platina infinita: pontos, até onde chegou e o recorde da fase
       const best = game.app.endlessBest?.(game.map.id) ?? game.points;
-      text(ctx, `${game.points} PONTOS`, cx, 262, { size: 30, color: GOLD });
-      text(ctx, `Aguentou ${game.endlessK} ${game.endlessK === 1 ? 'onda' : 'ondas'} a mais${game.newRecord ? ' · NOVO RECORDE!' : ''}`, cx, 298, { size: 18, color: '#d8e6ff' });
-      text(ctx, `Recorde da fase: ${best} pontos`, cx, 330, { size: 17, color: '#bdeeff' });
+      text(ctx, t('{n} PONTOS', { n: game.points }), cx, 262, { size: 30, color: GOLD });
+      text(ctx, t(game.endlessK === 1 ? 'Aguentou {n} onda a mais' : 'Aguentou {n} ondas a mais', { n: game.endlessK }) + (game.newRecord ? ' · ' + t('NOVO RECORDE!') : ''), cx, 298, { size: 18, color: '#d8e6ff' });
+      text(ctx, t('Recorde da fase: {n} pontos', { n: best }), cx, 330, { size: 17, color: '#bdeeff' });
     } else {
       const lines = game.platinum
-        ? [game.bossCalled ? 'O chefão invadiu o servidor.' : `Os vírus venceram na onda ${game.rounds.current}/${PLAT_WAVES}.`, 'Tente outras defesas ou upgrades!']
-        : [`Os vírus venceram na rodada ${game.rounds.current}.`, 'Tente outras defesas ou upgrades!'];
+        ? [game.bossCalled ? t('O chefão invadiu o servidor.') : t('Os vírus venceram na onda {n}/{max}.', { n: game.rounds.current, max: PLAT_WAVES }), t('Tente outras defesas ou upgrades!')]
+        : [t('Os vírus venceram na rodada {n}.', { n: game.rounds.current }), t('Tente outras defesas ou upgrades!')];
       text(ctx, lines[0], cx, 262, { size: 24 });
       text(ctx, lines[1], cx, 296, { size: 18, color: '#d8e6ff' });
-      text(ctx, `Ameaças contidas: ${game.stats.pops}`, cx, 330, { size: 18, color: GOLD });
+      text(ctx, t('Ameaças contidas: {n}', { n: game.stats.pops }), cx, 330, { size: 18, color: GOLD });
     }
     if (won) {
       // a galera comemorando dos lados das estrelas
       for (const [type, x, face] of [['hacker', c.x + 72, 1], ['pinguim', c.x + c.w - 72, -1]]) {
         ctx.save();
-        ctx.translate(x, 200 - Math.abs(Math.sin(t * 5 + x)) * 10);
+        ctx.translate(x, 200 - Math.abs(Math.sin(anim * 5 + x)) * 10);
         ctx.scale(1.5, 1.5);
-        drawCharacter(ctx, type, { t, face, attack: Math.sin(t * 5 + x) > 0 ? 1 : 0 });
+        drawCharacter(ctx, type, { t: anim, face, attack: Math.sin(anim * 5 + x) > 0 ? 1 : 0 });
         ctx.restore();
       }
       // Pato de Borracha (upgrade secreto) comemora junto, pulando embaixo do Hacker
       if (game.app.perks?.duck) {
         ctx.save();
         ctx.translate(c.x + 72, 296);
-        drawDuck(ctx, 15, { t, hop: Math.abs(Math.sin(t * 4)) * 0.5 });
+        drawDuck(ctx, 15, { t: anim, hop: Math.abs(Math.sin(anim * 4)) * 0.5 });
         ctx.restore();
       }
     }
     if (game.endDelay <= 0) {
       const size = L.retry || L.cont ? 21 : 24; // com 3 botões, a letra encolhe um pouco
-      bigButton(ctx, L.maps, '#5fb4ff', 'MAPAS', { icon: 'map', size });
-      if (L.retry) bigButton(ctx, L.retry, '#ff9a2e', 'DE NOVO', { icon: 'restart', size });
-      if (L.cont) bigButton(ctx, L.cont, '#5fb4e8', 'CONTINUAR', { icon: 'play', size: 19 });
-      const label = won ? (game.nextMap ? 'PRÓXIMO' : 'DE NOVO') : 'DE NOVO';
+      bigButton(ctx, L.maps, '#5fb4ff', t('MAPAS'), { icon: 'map', size });
+      if (L.retry) bigButton(ctx, L.retry, '#ff9a2e', t('DE NOVO'), { icon: 'restart', size });
+      if (L.cont) bigButton(ctx, L.cont, '#5fb4e8', t('CONTINUAR'), { icon: 'play', size: 19 });
+      const label = t(won ? (game.nextMap ? 'PRÓXIMO' : 'DE NOVO') : 'DE NOVO');
       bigButton(ctx, L.next, '#3fd16b', label, { icon: won && game.nextMap ? 'play' : 'restart', size });
     }
   }

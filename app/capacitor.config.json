@@ -13,6 +13,10 @@
       "insetsHandling": "css",
       "hidden": true,
       "initialViewportFitValueHint": "cover"
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_firewall",
+      "iconColor": "#3fd16b"
     }
   }
 }

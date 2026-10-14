@@ -4,6 +4,7 @@ import scenes from './scenes.js';
 import game from './game.js';
 import render from './render.js';
 import ui from './ui-data.js';
+import notify from './notify.js';
 export { DATA } from './data.js';
 
-export const UI = { ...ui, ...render, ...game, ...scenes };
+export const UI = { ...ui, ...render, ...game, ...scenes, ...notify };

@@ -7,6 +7,7 @@ import { drawDuck } from '../render/duck.js';
 import { drawImage } from '../render/images.js';
 import { TREE, NODE, COFFEE, formatCoffee } from '../data/darknet.js';
 import { seeded, plural } from '../util.js';
+import { t as tr } from '../i18n.js';
 
 /* ════════════════════════════════════════════════════════════
  *  DARK NET: a árvore de upgrades paga com cafés
@@ -286,7 +287,7 @@ export class DarkNetScene {
     text(ctx, 'DARK NET', W / 2, 46, { size: 46, color: PURPLE, strokeWidth: 10 });
     this.drawCoffee(ctx, W / 2, 92);
     // de onde vem o café (quem chega aqui pela primeira vez não sabe)
-    text(ctx, 'ganhe café vencendo mapas e estourando vírus', W / 2, 116, { size: 13, color: '#bfa8e6', stroke: null });
+    text(ctx, tr('ganhe café vencendo mapas e estourando vírus'), W / 2, 116, { size: 13, color: '#bfa8e6', stroke: null });
     this.drawPanel(ctx, L);
     iconButton(ctx, L.back, '#5fb4ff', 'back');
     for (const b of [L.zoomIn, L.zoomOut, L.center]) this.drawZoomButton(ctx, b);
@@ -469,20 +470,20 @@ export class DarkNetScene {
       ctx.fillStyle = '#b77bff';
       ctx.fillText(cipher(n.id + '#', 12, this.t), P.x + 18, P.y + 60);
     } else text(ctx, n.name.toUpperCase(), P.x + 18, P.y + 60, { size: 24, color: '#ffffff', align: 'left' });
-    wrap(ctx, hidden ? 'Upgrade criptografado. Compre o anterior no ramo pra descriptografar o que ele faz.' : n.desc, P.x + 18, P.y + 98, P.w - 36, 17, hidden ? '#9a8bb5' : '#e6d0ff');
+    wrap(ctx, hidden ? tr('Upgrade criptografado. Compre o anterior no ramo pra descriptografar o que ele faz.') : n.desc, P.x + 18, P.y + 98, P.w - 36, 17, hidden ? '#9a8bb5' : '#e6d0ff');
 
     // estado (trancado não diz nada: a árvore já mostra o caminho)
     ctx.font = `bold 13px ${MONO}`;
     ctx.textAlign = 'left';
     let status = null;
     const extra = st === 'owned' ? this.app.perkRollbackSet(n.id).length - 1 : 0;
-    if (extra > 0) status = [`> vender leva junto ${extra} ${plural(extra, 'upgrade', 'upgrades')}`, '#ffc62e'];
-    else if (st === 'owned') status = ['> instalado', GREEN];
+    if (extra > 0) status = [tr(plural(extra, '> vender leva junto {n} upgrade', '> vender leva junto {n} upgrades'), { n: extra }), '#ffc62e'];
+    else if (st === 'owned') status = [tr('> instalado'), GREEN];
     else if (st === 'open' && !can) {
       const miss = n.cost - this.app.coffee;
-      status = [`> ${plural(miss, 'falta', 'faltam')} ${formatCoffee(miss)} ${plural(miss, 'café', 'cafés')}`, '#ffc62e'];
+      status = [tr(plural(miss, '> falta {n} café', '> faltam {n} cafés'), { n: formatCoffee(miss) }), '#ffc62e'];
     }
-    else if (st === 'open') status = ['> pronto pra instalar', PURPLE];
+    else if (st === 'open') status = [tr('> pronto pra instalar'), PURPLE];
     if (status) {
       ctx.fillStyle = status[1];
       ctx.fillText(status[0], P.x + 18, P.y + 196);
@@ -492,9 +493,9 @@ export class DarkNetScene {
       ctx.font = `11px ${MONO}`;
       ctx.fillStyle = '#bfa8e6';
       const lines = [
-        `> vencer mapa: +${COFFEE.star} (3 estrelas: +${COFFEE.three})`,
-        `> platina: +${COFFEE.platinum}`,
-        `> cada 1000 vírus: +${formatCoffee(COFFEE.perKill * 1000)}`,
+        tr('> vencer mapa: +{a} (3 estrelas: +{b})', { a: COFFEE.star, b: COFFEE.three }),
+        tr('> platina: +{n}', { n: COFFEE.platinum }),
+        tr('> cada 1000 vírus: +{n}', { n: formatCoffee(COFFEE.perKill * 1000) }),
       ];
       lines.forEach((l, i) => ctx.fillText(l, P.x + 18, P.y + 212 + i * 13));
     }
@@ -504,7 +505,7 @@ export class DarkNetScene {
     const B = L.buy;
     const cy = B.y + (B.h - 5) / 2 + 1;
     button(ctx, B, st === 'owned' ? '#e0703a' : can ? '#3fd16b' : '#5d5675', { radius: 14, depth: 5 });
-    if (st === 'owned') coffeeLabel(ctx, `+${this.app.perkRefund(n.id)}`, B.x + B.w / 2, cy, 22, '#ffffff', 'VENDER');
+    if (st === 'owned') coffeeLabel(ctx, `+${this.app.perkRefund(n.id)}`, B.x + B.w / 2, cy, 22, '#ffffff', tr('VENDER'));
     else coffeeLabel(ctx, `${n.cost}`, B.x + B.w / 2, cy, 22, '#ffffff');
     ctx.restore();
   }

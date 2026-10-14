@@ -1,6 +1,7 @@
 import { VIEW_H } from '../config.js';
 import { text } from './canvas.js';
 import { ICONS } from './sprites.js';
+import { t as tr } from '../i18n.js';
 
 /* ════════════════════════════════════════════════════════════
  *  ANIMAÇÃO "DARK NET LIBERADA" (tela de mapas, uma vez só)
@@ -20,7 +21,7 @@ const BREAK = 1.6; // quando o cadeado quebra
 const TAP_FROM = 1.9; // antes disso o toque não pula
 const AUTO = 6; // sozinho, voa pro botão aqui
 const FLY = 0.6; // duração do voo até o botão
-const TITLE = 'DARK NET LIBERADA!';
+const TITLE = 'DARK NET LIBERADA!'; // (traduzido na hora de desenhar)
 
 const ease = (x) => 1 - (1 - x) ** 3;
 const easeBack = (x) => 1 + 2.7 * (x - 1) ** 3 + 1.7 * (x - 1) ** 2;
@@ -165,17 +166,18 @@ export class DarkNetUnlock {
     // título se decifrando letra por letra, depois as legendas
     if (t > BREAK + 0.1 && k < 1) {
       ctx.globalAlpha = 1 - k;
-      const n = Math.floor(clamp01((t - BREAK - 0.1) / 0.8) * TITLE.length);
-      let title = TITLE.slice(0, n);
-      for (let i = n; i < TITLE.length; i++) title += TITLE[i] === ' ' ? ' ' : GLYPHS[(Math.floor(t * 20) + i * 7) % GLYPHS.length];
+      const full = tr(TITLE);
+      const n = Math.floor(clamp01((t - BREAK - 0.1) / 0.8) * full.length);
+      let title = full.slice(0, n);
+      for (let i = n; i < full.length; i++) title += full[i] === ' ' ? ' ' : GLYPHS[(Math.floor(t * 20) + i * 7) % GLYPHS.length];
       text(ctx, title, cx, cy + 110, { size: 44, color: PURPLE, strokeWidth: 10 });
       if (t > BREAK + 1) {
         ctx.globalAlpha = (1 - k) * clamp01((t - BREAK - 1) / 0.4);
-        text(ctx, 'Troque seus cafés por upgrades permanentes', cx, cy + 160, { size: 20, color: '#e3c9ff' });
+        text(ctx, tr('Troque seus cafés por upgrades permanentes'), cx, cy + 160, { size: 20, color: '#e3c9ff' });
       }
       if (t > TAP_FROM + 0.4 && this.fly == null && Math.sin(t * 5) > -0.3) {
         ctx.globalAlpha = 1;
-        text(ctx, 'toque pra continuar', cx, cy + 200, { size: 15, color: '#c9a8ff', stroke: null });
+        text(ctx, tr('toque pra continuar'), cx, cy + 200, { size: 15, color: '#c9a8ff', stroke: null });
       }
       ctx.globalAlpha = 1;
     }
