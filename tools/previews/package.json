@@ -1,0 +1,13 @@
+{
+  "name": "firewall-defense-previews",
+  "private": true,
+  "description": "Grava os vídeos dos previews do catálogo (record.js)",
+  "type": "module",
+  "scripts": {
+    "record": "node record.js",
+    "check": "node check.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.1"
+  }
+}

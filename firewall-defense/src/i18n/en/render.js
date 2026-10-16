@@ -117,13 +117,9 @@ export default {
   'Pague 0,5 BTC pra fechar': 'Pay 0.5 BTC to close',
   DESCRIPTOGRAFAR: 'DECRYPT',
 
-  // ── render/threatPreview.js: cena do catálogo ──
+  // ── partida e catálogo ──
   'CRIPTOGRAFADO!': 'ENCRYPTED!',
-  '-VIDA': '-LIFE',
   BLINDADO: 'ARMORED',
-  IMUNE: 'IMMUNE',
-  'GANHE JÁ!': 'WIN NOW!',
-  'clique aqui!': 'click here!',
 
   // ── render/tutorial.js e darknetUnlock.js ──
   'GOLEM FIREWALL': 'FIREWALL GOLEM',

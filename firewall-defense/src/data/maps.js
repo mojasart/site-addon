@@ -179,3 +179,35 @@ export const MAPS = buildMaps();
 const BOUNTY_LAYOUT = { e: 2, loop: true };
 const BOUNTY_K = 7; // posição da season de onde vem a dificuldade
 export const BOUNTY_MAPS = SEASONS.map((season, s) => makeMap(season, s, BOUNTY_K, true));
+
+// Mapa de testes dos previews do catálogo (scenes/PreviewScene.js): uma
+// estrada reta na linha PREVIEW_ROW, do portal (fora da tela, à esquerda) até
+// o servidor no último quadrado. Fora da lista de fases
+export const PREVIEW_ROW = 5;
+const PREVIEW_Y = PREVIEW_ROW * TILE + TILE / 2;
+export const PREVIEW_MAP = {
+  id: 'preview',
+  season: 0,
+  number: 0,
+  bounty: false,
+  name: 'Preview',
+  difficulty: 'FÁCIL',
+  d: 0,
+  desc: '',
+  theme: 'motherboard',
+  rounds: 1,
+  waves: 1,
+  money: 0,
+  lives: 1,
+  pressure: 1,
+  gapMul: 1,
+  speedMul: 1,
+  seed: 4242,
+  pathWidth: TILE,
+  terrain: 'land',
+  zones: [],
+  hazards: [],
+  routes: [[[-420, PREVIEW_Y], [13 * TILE + TILE / 2, PREVIEW_Y]]],
+  entries: 1,
+  loop: false,
+};
