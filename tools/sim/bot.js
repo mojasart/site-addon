@@ -52,7 +52,9 @@ export const PROFILES = {
 const SPEED_LIMIT = 2400; // segundos de jogo (só pra não travar)
 
 // challenge: o desafio do dia (data/daily.js makeChallenge), pro mode 'daily'
-export function playMap(mapIndex, profileName, seed, mode = 'normal', perks = null, challenge = null) {
+// endless: na platina, depois de vencer, continua na platina infinita até
+// perder ou até essa quantidade de ondas infinitas (0 = não continua)
+export function playMap(mapIndex, profileName, seed, mode = 'normal', perks = null, challenge = null, endless = 0) {
   const profile = PROFILES[profileName];
   const rnd = seeded(seed * 9973 + mapIndex * 31 + 7);
   const app = {
@@ -204,7 +206,19 @@ export function playMap(mapIndex, profileName, seed, mode = 'normal', perks = nu
     game.step(dt);
     time += dt;
   }
+  const wonPlatinum = game.state === 'won';
+  if (endless && wonPlatinum && game.canContinue) {
+    game.continueEndless();
+    let t2 = 0;
+    while (game.state === 'playing' && game.endlessK <= endless && t2 < SPEED_LIMIT * 3) {
+      if (tick++ % 30 === 0) think();
+      game.step(dt);
+      t2 += dt;
+    }
+  }
   return {
+    wonPlatinum,
+    endlessWaves: game.endless ? Math.max(0, game.endlessK - (game.state === 'playing' ? 0 : 1)) : 0,
     won: game.state === 'won',
     round: game.rounds.done,
     total: game.rounds.total,

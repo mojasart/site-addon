@@ -3,7 +3,7 @@ import { trackMatch, trackCoffee, trackDesign } from './analytics.js';
 import { MAPS, BOUNTY_MAPS } from './data/maps.js';
 import { roundsFor } from './data/rounds.js';
 import { PLAT_WAVES, PLAT_LIVES, PLAT_WARMUP, PLAT_REWARD, WAVE_GAP, PLAT_GATE, BOSS_HP, ENDLESS, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
-import { withoutBosses } from './data/rounds.js';
+import { withoutBosses, AGENDA_HP, CICADA_SHARE } from './data/rounds.js';
 import { DAILY, MODS, modMul } from './data/daily.js';
 import { worth, ENEMIES } from './data/enemies.js';
 import { BOUNTY, bountyRound, layers, comboMul, bountyStars } from './data/bounty.js';
@@ -637,19 +637,50 @@ export class Game {
     this.sound.play('round');
   }
 
-  // Mais uma onda infinita: a base com ENDLESS a mais de vírus e de vida a cada uma
+  // Mais uma onda infinita (a cada ENDLESS.bossEvery, com chefão)
   endlessWave() {
-    this.rounds.rounds.push(this.makeEndlessWave(++this.endlessK));
+    const k = ++this.endlessK;
+    this.rounds.rounds.push(this.makeEndlessWave(k));
     this.startRound();
+    if (k % ENDLESS.bossEvery === 0) {
+      this.shake(8);
+      this.showBanner(t('CHEFÃO!'), 2, '#ff5a6a', 56, t('Onda infinita {n}', { n: k }));
+    }
   }
 
-  // A k-ésima onda infinita (já com a dificuldade do mapa aplicada)
+  // A k-ésima onda infinita (já com a dificuldade do mapa aplicada): a base
+  // crescendo exponencial (ENDLESS em data/platinum.js), minichefões que vão
+  // aumentando e, a cada ENDLESS.bossEvery ondas, chefões
   makeEndlessWave(k) {
     const r = this.rounds;
-    const grow = 1 + ENDLESS.count * k;
-    const hp = r.mod.hp * (1 + ENDLESS.hp * k);
+    const E = ENDLESS;
+    const grow = Math.min(E.countMax, E.count ** k);
+    const hp = r.mod.hp * E.hp ** k;
     const base = this.endlessBase[(k - 1) % this.endlessBase.length];
-    return r.scale(base.map((g) => ({ ...g, count: g.count * grow, gap: g.gap / grow, hp })));
+    const wave = r.scale(base.map((g) => ({ ...g, count: g.count * grow, gap: g.gap / grow, hp })));
+    // minichefões no meio da onda (Locker e Cicada intercalados, a Cicada é CICADA_SHARE deles)
+    const minis = k >= E.miniFrom ? 1 + Math.floor((k - E.miniFrom) / E.miniEvery) : 0;
+    for (let i = 0; i < minis; i++) {
+      const cicada = Math.floor((i + 1) * CICADA_SHARE) > Math.floor(i * CICADA_SHARE);
+      wave.push({ type: cicada ? 'cicada' : 'locker', count: 1, gap: 0, at: 3 + i * 2.5, hp: hp * AGENDA_HP });
+    }
+    // chefão a cada bossEvery ondas: o do fim da platina, cada vez mais forte
+    // e com mais companhia; entram depois de todo mundo (finale)
+    if (k % E.bossEvery === 0) {
+      const n = k / E.bossEvery;
+      // o 1º vem 20% mais fraco que o do fim da platina (agora tem companhia)
+      const bossHp = BOSS_HP * Math.sqrt(this.map.pressure) * platinumScale(this.mapIndex) * 0.8 * E.bossHp ** (n - 1);
+      // o 1º do grupo é o chefão; os outros (Lockers de escolta) têm vida de minichefão
+      platinumBoss(this.map).forEach((g, j) => {
+        for (let i = 0; i < g.count; i++) wave.push({ type: g.type, count: 1, gap: 0, finale: true, hp: j === 0 ? bossHp : hp * AGENDA_HP });
+      });
+      const ransom = Math.floor((n - 1) / 2);
+      const adware = Math.floor((n - 1) / 3);
+      // (cada chefão do fim é um grupo: o RoundManager solta 1 por grupo finale)
+      for (let i = 0; i < ransom; i++) wave.push({ type: 'ransomware', count: 1, gap: 0, finale: true, hp: bossHp * 0.6 });
+      for (let i = 0; i < adware; i++) wave.push({ type: 'adware', count: 1, gap: 0, finale: true, hp: bossHp * 0.5 });
+    }
+    return wave;
   }
 
   // Grupos da próxima onda que ainda não começou (prévia do painel): a da

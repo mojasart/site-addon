@@ -18,9 +18,15 @@ import { PLAT_TUNE } from './platinumTuning.js';
 export const PLAT_WAVES = 50; // ondas até o chefão (em todo mapa)
 export const PLAT_LIVES = 1; // vidas no modo platina
 export const WAVE_GAP = 2.5; // pausa entre uma onda terminar de entrar e a próxima
-// Platina infinita (CONTINUAR depois de vencer): cada onda a mais vem com
-// count a mais de vírus e hp a mais de vida que a anterior (somando)
-export const ENDLESS = { count: 0.08, hp: 0.06 };
+// Platina infinita (CONTINUAR depois de vencer): cresce exponencial, então
+// toda run acaba uma hora. Na onda infinita k:
+//   vírus  × count^k (até countMax, pra não pesar no celular)
+//   vida   × hp^k (o grosso da dificuldade vem daqui)
+//   minichefões (Locker/Cicada): 1 a partir da onda miniFrom, +1 a cada miniEvery
+//   a cada bossEvery ondas, o chefão da platina com bossHp^(n−1) da vida
+//   (n = qual chefão é), +1 Ransomware a cada 2 chefões (a partir do 3º) e +1
+//   Adware a cada 3 (a partir do 4º)
+export const ENDLESS = { count: 1.06, countMax: 3.5, hp: 1.11, miniFrom: 3, miniEvery: 4, bossEvery: 5, bossHp: 1.25 };
 export const PLAT_GATE = 5; // a próxima onda só vem com no máximo isso de vírus vivos no mapa
 export const BOSS_HP = 5.4; // vida do chefão: BOSS_HP × √pressão do mapa × dificuldade da platina (9× a original; era 3,6)
 const RAMP = 0.06; // cada onda repetida vem 6% mais cheia que a anterior
