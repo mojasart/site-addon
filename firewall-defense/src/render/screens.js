@@ -44,6 +44,9 @@ export function overlayLayout(game) {
     L.maps = { x: cx - 255, y: 392, w: 160, h: 72 };
     L.retry = { x: cx - 80, y: 392, w: 160, h: 72 };
     L.next = { x: cx + 95, y: 392, w: 160, h: 72 };
+  } else if (game.daily && (game.state === 'won' || game.state === 'lost')) {
+    // desafio do dia: 1 tentativa só, então só volta pro DIÁRIO
+    L.maps = { x: cx - 105, y: 392, w: 210, h: 72 };
   } else if (game.state === 'won' || game.state === 'lost') {
     L.maps = { x: cx - 230, y: 392, w: 210, h: 72 };
     L.next = { x: cx + 20, y: 392, w: 210, h: 72 };
@@ -105,7 +108,9 @@ export function drawOverlay(ctx, game) {
   if (game.state === 'paused') {
     ribbon(ctx, cx, c.y + 46, 260, t('PAUSADO'), '#5fb4ff', 30);
     bigButton(ctx, L.resume, '#3fd16b', t('CONTINUAR'), { icon: 'play', size: 28 });
-    bigButton(ctx, L.restart, '#5fb4ff', t('REINICIAR'), { icon: 'restart', size: 24 });
+    // desafio do dia: não dá pra reiniciar (1 tentativa); no lugar, DESISTIR
+    if (game.daily) bigButton(ctx, L.restart, '#ff5a5a', t('DESISTIR'), { icon: 'close', size: 24 });
+    else bigButton(ctx, L.restart, '#5fb4ff', t('REINICIAR'), { icon: 'restart', size: 24 });
     bigButton(ctx, L.maps, '#ff9a2e', t(game.daily ? 'DIÁRIO' : 'MAPAS'), { icon: game.daily ? 'daily' : 'map', size: 20 });
     bigButton(ctx, L.catalog, '#8a7dff', t('CATÁLOGO'), { icon: 'catalog', size: 17 });
     volumeSlider(ctx, L.music, 'music', game.app.save.musicVol);
@@ -188,7 +193,7 @@ export function drawOverlay(ctx, game) {
       if (L.revive) bigButton(ctx, L.revive, '#3fd16b', t('REVIVER'), { icon: 'play', size: 21 });
       const label = t(won ? (game.nextMap ? 'PRÓXIMO' : 'DE NOVO') : 'DE NOVO');
       // com o REVIVER (verde) no meio, o DE NOVO fica laranja
-      bigButton(ctx, L.next, L.revive ? '#ff9a2e' : '#3fd16b', label, { icon: won && game.nextMap ? 'play' : 'restart', size });
+      if (L.next) bigButton(ctx, L.next, L.revive ? '#ff9a2e' : '#3fd16b', label, { icon: won && game.nextMap ? 'play' : 'restart', size });
     }
   }
   ctx.restore();

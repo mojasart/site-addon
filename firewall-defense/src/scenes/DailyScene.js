@@ -21,10 +21,14 @@ const clock = (ms) => {
 // Tela DIÁRIO (botão na tela de mapas): à esquerda o desafio do dia (a fase,
 // os 2 modificadores, a recompensa e a sequência de dias), à direita as 3
 // missões do dia com a barra de progresso e o COLETAR. Tudo renova à
-// meia-noite (data/daily.js)
+// meia-noite (data/daily.js). O desafio é 1 tentativa por dia: depois de
+// jogar, o botão vira VOLTE AMANHÃ. Aberta pelo menu de pausa do desafio
+// (returnTo = a partida pausada), a tela só mostra: o botão e o voltar
+// levam de volta pra partida
 export class DailyScene {
-  constructor(app) {
+  constructor(app, { returnTo = null } = {}) {
     this.app = app;
+    this.returnTo = returnTo;
     this.t = 0;
     this.pressed = null;
     this.thumbImg = null;
@@ -172,6 +176,9 @@ export class DailyScene {
     if (ch.won) {
       text(ctx, tr('✔ VENCIDO HOJE'), c.x + c.w / 2, ry, { size: 20, color: '#3dff9a' });
       text(ctx, tr(streak === 1 ? 'Sequência: {n} dia' : 'Sequência: {n} dias', { n: streak }), c.x + c.w / 2, ry + 24, { size: 15, color: '#ffe0b0' });
+    } else if (ch.played && !this.returnTo) {
+      // usou a tentativa e não venceu
+      text(ctx, tr('Tentativa de hoje usada'), c.x + c.w / 2, ry + 10, { size: 20, color: '#ff9aa8' });
     } else {
       const coffee = dailyCoffee(streak + 1);
       const str = tr('Recompensa: +{n}', { n: coffee });
@@ -187,7 +194,10 @@ export class DailyScene {
         : tr('Vença dias seguidos pra ganhar mais café');
       text(ctx, sub, c.x + c.w / 2, ry + 24, { size: 14, color: '#d8e6ff' });
     }
-    bigButton(ctx, L.play, ch.won ? '#5fb4ff' : '#3fd16b', tr(ch.won ? 'JOGAR DE NOVO' : 'JOGAR'), { icon: 'play', size: ch.won ? 22 : 28, pressed: this.pressed === 'play' });
+    // da pausa: volta pra partida; já jogou hoje: trancado até amanhã
+    if (this.returnTo) bigButton(ctx, L.play, '#5fb4ff', tr('VOLTAR À PARTIDA'), { icon: 'play', size: 22, pressed: this.pressed === 'play' });
+    else if (ch.played) bigButton(ctx, L.play, '#7d8fa8', tr('VOLTE AMANHÃ'), { icon: 'lock', size: 24 });
+    else bigButton(ctx, L.play, '#3fd16b', tr('JOGAR'), { icon: 'play', size: 28, pressed: this.pressed === 'play' });
   }
 
   // ── Missões do dia ──
@@ -243,10 +253,14 @@ export class DailyScene {
     const L = this.layout();
     if (inRect(L.back, x, y)) {
       this.app.sound.play('click');
-      this.app.goMaps();
+      this.leave();
       return;
     }
     if (this.app.dailyOpen() && inRect(L.play, x, y)) {
+      if (!this.returnTo && this.app.dailyPlayed()) {
+        this.app.sound.play('error');
+        return;
+      }
       this.pressed = 'play';
       return;
     }
@@ -263,7 +277,8 @@ export class DailyScene {
     if (p === 'play') {
       if (!inRect(L.play, x, y)) return;
       this.app.sound.play('click');
-      this.app.startMap(this.app.challenge.map, 'daily');
+      if (this.returnTo) this.leave();
+      else this.app.startMap(this.app.challenge.map, 'daily');
       return;
     }
     const b = L.rows[p].claim;
@@ -276,8 +291,15 @@ export class DailyScene {
     this.pressed = null;
   }
 
+  // Voltar: pra partida pausada (se veio do menu de pausa) ou pros mapas
+  leave() {
+    const game = this.returnTo;
+    if (game) this.app.go(() => game);
+    else this.app.goMaps();
+  }
+
   key(k) {
-    if (k === 'Escape') this.app.goMaps();
-    if (k === 'Enter' && this.app.dailyOpen()) this.app.startMap(this.app.challenge.map, 'daily');
+    if (k === 'Escape') this.leave();
+    if (k === 'Enter' && this.app.dailyOpen() && !this.returnTo && !this.app.dailyPlayed()) this.app.startMap(this.app.challenge.map, 'daily');
   }
 }
