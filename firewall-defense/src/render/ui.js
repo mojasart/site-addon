@@ -120,12 +120,13 @@ export function drawHud(ctx, game) {
 // Tamanho do botão de poder (BURNOUT)
 export const POWER_BTN = 64;
 
-// BURNOUT: laranja e pulsando quando dá pra usar; ligado mostra os segundos
-// que faltam; recarregando fica apagado, com os segundos pra usar de novo
+// BURNOUT: laranja e pulsando quando algum Executivo está pronto; ligado mostra
+// os segundos que faltam; recarregando fica apagado, com os segundos até o
+// próximo Executivo ficar pronto (cada um recarrega no tempo dele)
 function drawBurnout(ctx, game, r) {
   const on = game.burnoutLeft > 0;
   const ready = game.burnoutCd <= 0;
-  const label = on ? `${Math.ceil(game.burnoutLeft)}s` : ready ? 'BURNOUT' : `${Math.ceil(game.burnoutCd)}s`;
+  const label = ready ? 'BURNOUT' : on ? `${Math.ceil(game.burnoutLeft)}s` : `${Math.ceil(game.burnoutCd)}s`;
   drawPowerButton(ctx, game, r, {
     color: on ? '#ff5a1a' : '#ff8a2a',
     glow: '#ff7a1a',

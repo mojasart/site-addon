@@ -153,7 +153,7 @@ export const TOWERS = {
     upgrades: [
       { name: 'Reunião de Alinhamento', desc: 'Mais alcance e as defesas no raio atacam 25% mais rápido', cost: 300,
         apply: (s) => { s.range += 20; s.haste = 0.25; } },
-      // BURNOUT mais longo e recarga mais curta (Game.burnout usa o melhor Executivo)
+      // BURNOUT mais longo e recarga mais curta (só o deste Executivo: Game.burnout)
       { name: 'Meta Agressiva', desc: 'BURNOUT dura 3s a mais e recarrega 5s mais rápido', cost: 450,
         apply: (s) => { s.burnoutExtra = 3; s.burnoutFaster = 5; } },
     ],
@@ -169,8 +169,8 @@ export const LEVEL_RANGE = 0.025;
 // Comandantes por fase (Executivo)
 export const COMMANDER_MAX = 3;
 // Poder do Executivo: as defesas que atacam no raio de um Executivo ficam
-// `haste` mais rápidas por `time` s (+ burnoutExtra do melhor Executivo);
-// dá pra usar de novo `cooldown` s (− burnoutFaster) depois de ativar
+// `haste` mais rápidas por `time` s (+ burnoutExtra dele); cada Executivo
+// recarrega o dele em `cooldown` s (− burnoutFaster dele) depois de ativar
 export const BURNOUT = { haste: 0.6, time: 5, cooldown: 20 };
 
 // Modos de mira (botão ALVO no painel da defesa). Empate: o mais perto da base.
