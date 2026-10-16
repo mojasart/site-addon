@@ -425,8 +425,8 @@ export class Game {
   updateHaste(dt) {
     this.burnoutLeft = Math.max(0, this.burnoutLeft - dt);
     this.burnoutCd = Math.max(0, this.burnoutCd - dt);
+    for (const c of this.commanders) c.burnLeft = Math.max(0, (c.burnLeft ?? 0) - dt);
     const bosses = this.activeCommanders;
-    const burning = this.burnoutLeft > 0;
     for (const t of this.towers) {
       // só quem ataca com recarga acelera (não o Executivo, o Minerador nem a isca)
       if (!hastes(t)) {
@@ -435,17 +435,18 @@ export class Game {
         continue;
       }
       let aura = 0;
-      let near = false;
+      let burning = false; // no raio de um Executivo com o BURNOUT dele ainda ligado
       let recharge = 0; // Hora Extra (Dark Net): o melhor Executivo que alcança
       for (const c of bosses) {
         if (Math.hypot(c.x - t.x, c.y - t.y) > c.stats.range) continue;
-        near = true;
         aura = Math.max(aura, c.stats.haste);
         recharge = Math.max(recharge, c.stats.teamRecharge ?? 0);
+        if (c.burnLeft > 0) burning = true;
       }
       t.teamRecharge = recharge;
-      // BURNOUT: só no raio de um Executivo
-      t.haste = (1 + aura) * (burning && near ? 1 + BURNOUT.haste : 1);
+      t.burning = burning;
+      // BURNOUT: só no raio de um Executivo, pelo tempo do BURNOUT DELE
+      t.haste = (1 + aura) * (burning ? 1 + BURNOUT.haste : 1);
     }
   }
 
@@ -464,9 +465,11 @@ export class Game {
       if (this.commanders.length) this.sound.play('error');
       return;
     }
-    // o melhor Executivo manda (Meta Agressiva: dura mais e recarrega antes)
+    // cada Executivo tem o BURNOUT dele: o tempo (Meta Agressiva: +3 s) vale
+    // só pras defesas no raio dele. A recarga do botão é do melhor
     const best = (key) => Math.max(0, ...this.commanders.map((c) => c.stats[key] ?? 0));
-    this.burnoutLeft = BURNOUT.time + best('burnoutExtra');
+    for (const c of this.commanders) c.burnLeft = BURNOUT.time + (c.stats.burnoutExtra ?? 0);
+    this.burnoutLeft = BURNOUT.time + best('burnoutExtra'); // (o mais longo: o botão mostra ele)
     this.burnoutCd = this.burnoutMax = BURNOUT.cooldown - best('burnoutFaster');
     // Virada de Noite (Dark Net): às vezes o BURNOUT fica pronto de novo assim que este acaba
     if (chance(best('burnoutFree'))) this.burnoutCd = this.burnoutLeft;
@@ -1609,7 +1612,7 @@ export class Game {
 
     // raio do Executivo: laranja meio transparente (onde ele acelera; mais
     // forte no BURNOUT). Criptografado ou atordoado não acelera: some
-    for (const tw of this.towers) if (tw.def.commander && !tw.ransom && !(tw.stunned > 0)) drawCommandZone(ctx, tw, t, this.burnoutLeft > 0);
+    for (const tw of this.towers) if (tw.def.commander && !tw.ransom && !(tw.stunned > 0)) drawCommandZone(ctx, tw, t, tw.burnLeft > 0);
 
     // armadilhas ficam no chão, embaixo dos vírus
     for (const tw of this.towers) if (tw.def.onPath) this.drawTowerAt(ctx, tw);
@@ -1722,12 +1725,12 @@ export class Game {
     const idle = tw.def.attack === 'farm' && !this.canMine(tw); // Minerador fora da pilha
     // criptografada: "verde de terminal", apagada e parada (desenho guardado)
     if (tw.ransom) drawEncryptedBody(ctx, tw.type, tw.level, tw.face);
-    else drawCharacter(ctx, tw.type, { t: tw.anim, face: tw.face, attack: tw.def.commander && this.burnoutLeft > 0 ? 1 : tw.attack, pulse: tw.pulse, spawn: tw.spawnAnim, level: tw.level, idle });
+    else drawCharacter(ctx, tw.type, { t: tw.anim, face: tw.face, attack: tw.def.commander && tw.burnLeft > 0 ? 1 : tw.attack, pulse: tw.pulse, spawn: tw.spawnAnim, level: tw.level, idle });
     if (tw.ransom) drawEncrypted(ctx, this.anim, tw.ransom);
     if (idle) drawNoMine(ctx, 0, 0, this.anim);
     if (tw.def.attack === 'decoy' && tw.hp < tw.maxHp) drawBaitBar(ctx, tw);
     if (tw.stunned > 0) drawStunned(ctx, this.anim);
-    if (tw.haste > 1) drawHasted(ctx, this.anim, tw.haste, this.burnoutLeft > 0, tw.type);
+    if (tw.haste > 1) drawHasted(ctx, this.anim, tw.haste, !!tw.burning, tw.type);
     ctx.restore();
   }
 }
