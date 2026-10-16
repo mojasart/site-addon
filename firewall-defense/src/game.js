@@ -1,6 +1,6 @@
 import { VIEW_H, PANEL_W, SPEEDS, TURBO_SPEED, DANGER_TILES, TAP, EARLY_BONUS, EARLY_WAVES, AD_REWARDS } from './config.js';
 import { trackMatch, trackCoffee, trackDesign } from './analytics.js';
-import { MAPS, BOUNTY_MAPS, PREVIEW_MAP } from './data/maps.js';
+import { MAPS, BOUNTY_MAPS } from './data/maps.js';
 import { roundsFor } from './data/rounds.js';
 import { PLAT_WAVES, PLAT_LIVES, PLAT_WARMUP, PLAT_REWARD, WAVE_GAP, PLAT_GATE, BOSS_HP, ENDLESS, platinumScale, platinumPressure, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
 import { withoutBosses, AGENDA_HP, CICADA_SHARE, bossHpMul } from './data/rounds.js';
@@ -17,7 +17,7 @@ import { RoundManager } from './systems/RoundManager.js';
 import { Effects } from './systems/Effects.js';
 import { Hazards } from './systems/Hazards.js';
 import { MapView } from './render/maps/index.js';
-import { TILE, tileOf, tileKey, inGrid, snapToTile, tileCenter } from './core/grid.js';
+import { TILE, tileOf, tileKey, inGrid, snapToTile } from './core/grid.js';
 import { layout, drawHud, drawPanel, drawRange, bossBarsBottom, drawHasted, drawCommandZone, POWER_BTN } from './render/ui.js';
 import { inRect, sliderValue, terminalToast } from './render/widgets.js';
 import { drawBanner, drawOverlay, overlayLayout } from './render/screens.js';
@@ -54,34 +54,29 @@ const WIN_DELAY = 0.5; // limpou a última rodada: espera o último vírus estou
 // mode: 'normal', 'platinum' (ondas sem parar até o chefão; data/platinum.js)
 // ou 'bounty' (sala do Bug Bounty: mapIndex = season; data/bounty.js)
 // ou 'daily' (desafio do dia: a fase com os modificadores de app.challenge; data/daily.js)
-// ou 'preview' (vídeo do catálogo: o mapa de testes com as ondas do roteiro,
-// sem vida pra perder, sem faixas no meio da tela e sem fim; scenes/PreviewScene.js)
 const COIN_MERGE = 40; // moedas de vírus mais perto que isso viram uma só (px)
 const COIN_MAX = 30; // máximo de moedas no chão (daí pra frente juntam na mais perto)
 const COIN_TAP = 14; // folga do toque em volta da moeda (px)
 
 export class Game {
-  // script: só no modo 'preview' ({ rounds, coin } do roteiro, data/previews.js)
-  constructor(app, mapIndex, mode = 'normal', script = null) {
+  constructor(app, mapIndex, mode = 'normal') {
     this.app = app;
-    this.script = script;
     this.sound = app.sound;
     this.mapIndex = mapIndex;
     this.mode = mode;
     this.platinum = mode === 'platinum';
     this.bounty = mode === 'bounty';
     this.daily = mode === 'daily';
-    this.preview = mode === 'preview';
     this.challenge = this.daily ? app.challenge : null;
     if (this.daily) app.markDailyPlayed?.(); // a tentativa do dia começa aqui
     this.mods = this.challenge?.mods ?? [];
-    this.map = this.preview ? PREVIEW_MAP : this.bounty ? BOUNTY_MAPS[mapIndex] : MAPS[mapIndex];
+    this.map = this.bounty ? BOUNTY_MAPS[mapIndex] : MAPS[mapIndex];
     this.anim = 0;
     this.pointer = { x: -1, y: -1, down: false, type: 'touch' };
     this.drag = null;
     this.resize(app.viewW);
     this.reset();
-    if (!this.preview) trackMatch('start', mode, this.map.id);
+    trackMatch('start', mode, this.map.id);
   }
 
   get viewW() { return this.app.viewW; }
@@ -104,11 +99,9 @@ export class Game {
     const money = Math.round((this.map.money * modMul(this.mods, 'money')) / 5) * 5;
     this.money = this.bounty ? BOUNTY.budget[this.map.season] : money + (this.app.perks?.root ? ROOT_MONEY : 0);
     this.baseLives = Math.max(1, Math.round(this.map.lives * modMul(this.mods, 'lives'))); // (estrelas: starsNow)
-    this.lives = this.platinum ? PLAT_LIVES : this.bounty || this.preview ? Infinity : this.baseLives;
-    if (this.preview) this.money = 1e6; // o roteiro coloca as defesas que quiser
+    this.lives = this.platinum ? PLAT_LIVES : this.bounty ? Infinity : this.baseLives;
     this.towers = [];
-    // pilhas de bitcoin (seasons 1 e 2); no preview, só a do roteiro (Minerador)
-    this.coinTiles = this.preview ? (this.script.coin ? [{ c: this.script.coin[0], r: this.script.coin[1], ...tileCenter(...this.script.coin) }] : []) : pickCoinTiles(this);
+    this.coinTiles = pickCoinTiles(this); // pilhas de bitcoin (seasons 1 e 2)
     this.enemies = [];
     this.newEnemies = [];
     this.projectiles = [];
@@ -118,9 +111,7 @@ export class Game {
     const k = this.platinum ? platinumScale(this.mapIndex) : modMul(this.mods, 'pressure');
     // a platina tem a pressão dela (data/platinum.js PLAT_PRESSURE): não segue a calibração do normal
     this.pressure = this.platinum ? platinumPressure(this.mapIndex, this.map) : this.map.pressure;
-    const list = this.preview
-      ? this.script.rounds
-      : this.platinum
+    const list = this.platinum
       ? platinumRounds(this.map)
       : this.bounty
         ? [bountyRound(this.map.d)]
@@ -331,7 +322,6 @@ export class Game {
   }
 
   showBanner(text, duration = 1.2, color = '#ffffff', size = 46, sub = null) {
-    if (this.preview) return; // o vídeo do catálogo não tem faixa no meio
     this.banner = { text, sub, color, size, time: duration, total: duration };
   }
 
@@ -425,8 +415,8 @@ export class Game {
   updateHaste(dt) {
     this.burnoutLeft = Math.max(0, this.burnoutLeft - dt);
     this.burnoutCd = Math.max(0, this.burnoutCd - dt);
-    for (const c of this.commanders) c.burnLeft = Math.max(0, (c.burnLeft ?? 0) - dt);
     const bosses = this.activeCommanders;
+    const burning = this.burnoutLeft > 0;
     for (const t of this.towers) {
       // só quem ataca com recarga acelera (não o Executivo, o Minerador nem a isca)
       if (!hastes(t)) {
@@ -435,18 +425,17 @@ export class Game {
         continue;
       }
       let aura = 0;
-      let burning = false; // no raio de um Executivo com o BURNOUT dele ainda ligado
+      let near = false;
       let recharge = 0; // Hora Extra (Dark Net): o melhor Executivo que alcança
       for (const c of bosses) {
         if (Math.hypot(c.x - t.x, c.y - t.y) > c.stats.range) continue;
+        near = true;
         aura = Math.max(aura, c.stats.haste);
         recharge = Math.max(recharge, c.stats.teamRecharge ?? 0);
-        if (c.burnLeft > 0) burning = true;
       }
       t.teamRecharge = recharge;
-      t.burning = burning;
-      // BURNOUT: só no raio de um Executivo, pelo tempo do BURNOUT DELE
-      t.haste = (1 + aura) * (burning ? 1 + BURNOUT.haste : 1);
+      // BURNOUT: só no raio de um Executivo
+      t.haste = (1 + aura) * (burning && near ? 1 + BURNOUT.haste : 1);
     }
   }
 
@@ -465,11 +454,9 @@ export class Game {
       if (this.commanders.length) this.sound.play('error');
       return;
     }
-    // cada Executivo tem o BURNOUT dele: o tempo (Meta Agressiva: +3 s) vale
-    // só pras defesas no raio dele. A recarga do botão é do melhor
+    // o melhor Executivo manda (Meta Agressiva: dura mais e recarrega antes)
     const best = (key) => Math.max(0, ...this.commanders.map((c) => c.stats[key] ?? 0));
-    for (const c of this.commanders) c.burnLeft = BURNOUT.time + (c.stats.burnoutExtra ?? 0);
-    this.burnoutLeft = BURNOUT.time + best('burnoutExtra'); // (o mais longo: o botão mostra ele)
+    this.burnoutLeft = BURNOUT.time + best('burnoutExtra');
     this.burnoutCd = this.burnoutMax = BURNOUT.cooldown - best('burnoutFaster');
     // Virada de Noite (Dark Net): às vezes o BURNOUT fica pronto de novo assim que este acaba
     if (chance(best('burnoutFree'))) this.burnoutCd = this.burnoutLeft;
@@ -704,7 +691,6 @@ export class Game {
   }
 
   onRoundEnd(n) {
-    if (this.preview) return; // o vídeo do catálogo não acaba (nem gasta energia)
     // passou da 1ª onda: agora a partida gasta a energia (sair, reiniciar ou
     // perder antes disso não gasta nada)
     this.payEnergy();
@@ -1612,7 +1598,7 @@ export class Game {
 
     // raio do Executivo: laranja meio transparente (onde ele acelera; mais
     // forte no BURNOUT). Criptografado ou atordoado não acelera: some
-    for (const tw of this.towers) if (tw.def.commander && !tw.ransom && !(tw.stunned > 0)) drawCommandZone(ctx, tw, t, tw.burnLeft > 0);
+    for (const tw of this.towers) if (tw.def.commander && !tw.ransom && !(tw.stunned > 0)) drawCommandZone(ctx, tw, t, this.burnoutLeft > 0);
 
     // armadilhas ficam no chão, embaixo dos vírus
     for (const tw of this.towers) if (tw.def.onPath) this.drawTowerAt(ctx, tw);
@@ -1725,12 +1711,12 @@ export class Game {
     const idle = tw.def.attack === 'farm' && !this.canMine(tw); // Minerador fora da pilha
     // criptografada: "verde de terminal", apagada e parada (desenho guardado)
     if (tw.ransom) drawEncryptedBody(ctx, tw.type, tw.level, tw.face);
-    else drawCharacter(ctx, tw.type, { t: tw.anim, face: tw.face, attack: tw.def.commander && tw.burnLeft > 0 ? 1 : tw.attack, pulse: tw.pulse, spawn: tw.spawnAnim, level: tw.level, idle });
+    else drawCharacter(ctx, tw.type, { t: tw.anim, face: tw.face, attack: tw.def.commander && this.burnoutLeft > 0 ? 1 : tw.attack, pulse: tw.pulse, spawn: tw.spawnAnim, level: tw.level, idle });
     if (tw.ransom) drawEncrypted(ctx, this.anim, tw.ransom);
     if (idle) drawNoMine(ctx, 0, 0, this.anim);
     if (tw.def.attack === 'decoy' && tw.hp < tw.maxHp) drawBaitBar(ctx, tw);
     if (tw.stunned > 0) drawStunned(ctx, this.anim);
-    if (tw.haste > 1) drawHasted(ctx, this.anim, tw.haste, !!tw.burning, tw.type);
+    if (tw.haste > 1) drawHasted(ctx, this.anim, tw.haste, this.burnoutLeft > 0, tw.type);
     ctx.restore();
   }
 }
