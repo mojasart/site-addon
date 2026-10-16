@@ -120,4 +120,12 @@ export default {
   'Tentativa de hoje usada': "Today's attempt is used",
   'VOLTAR À PARTIDA': 'BACK TO MATCH',
   'VOLTE AMANHÃ': 'COME BACK TOMORROW',
+  'SECRETO': 'SECRET',
+  'MASCOTE': 'MASCOT',
+  'CAFÉS DADOS': 'COFFEE FOUND',
+  'ACHADO': 'FIND',
+  '{p} por vírus estourado': '{p} per popped virus',
+  '{n} café': '{n} coffee',
+  'Um upgrade escondido da Dark Net. Procure bem...': 'A hidden upgrade somewhere in the Dark Net. Look closely...',
+  'CHANCE': 'CHANCE',
 };
