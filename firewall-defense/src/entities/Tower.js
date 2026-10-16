@@ -3,6 +3,7 @@ import { SELL_RATE, LAYER_HP } from '../config.js';
 import { rand, chance } from '../util.js';
 import { laserOrigin } from '../render/characters.js';
 import { applyPerks } from '../data/darknet.js';
+import { VAULT } from '../data/darknet.js';
 
 const SWARM_R = 70; // alcance das abelhas da Colmeia
 const RECHARGE = 0.3; // recarga instantânea (Avalanche, Varredura Dupla): dispara de novo nesse tempo
@@ -42,8 +43,11 @@ export class Tower {
     return this.def.upgrades[this.level] ?? null;
   }
 
+  // Revenda (Dark Net): preço cheio. Carteira Fria: 90% do preço e todos os
+  // bitcoins guardados nele
   get sellValue() {
-    return this.fresh ? this.spent : Math.floor(this.spent * (this.stats.sellRate ?? SELL_RATE)); // Revenda (Dark Net): preço cheio
+    const rate = Math.max(this.stats.sellRate ?? 0, this.stats.vault ? VAULT.sell : SELL_RATE);
+    return (this.fresh ? this.spent : Math.floor(this.spent * rate)) + Math.floor(this.vault ?? 0);
   }
 
   get hitsArmored() {
@@ -96,7 +100,14 @@ export class Tower {
       mul *= s.gamble.win;
       big = true;
     }
-    game.spawnPacket(this.x, this.y - 10, Math.round(s.packetValue * mul), big);
+    const value = Math.round(s.packetValue * mul);
+    if (s.vault) {
+      // Carteira Fria: fica guardado no Minerador (sai quando ele for vendido)
+      this.vault = (this.vault ?? 0) + value;
+      game.fx.text(this.x, this.y - 40, `+$${value}`, '#ffd23f', big ? 18 : 14);
+      return;
+    }
+    game.spawnPacket(this.x, this.y - 10, value, big);
     if (mul > 1) game.fx.spark(this.x, this.y - 34);
   }
 

@@ -8,7 +8,7 @@ import { DAILY, MODS, modMul } from './data/daily.js';
 import { worth, ENEMIES } from './data/enemies.js';
 import { BOUNTY, bountyRound, layers, comboMul, bountyStars } from './data/bounty.js';
 import { TOWERS, TARGET_MODES, COMMANDER_MAX, BURNOUT } from './data/towers.js';
-import { applyPerks, SPONSOR_MONEY, DUCK, INTEREST, LOAN, LOAN_EXTRA, BULK_DISCOUNT } from './data/darknet.js';
+import { applyPerks, SPONSOR_MONEY, VAULT, DUCK, INTEREST, LOAN, LOAN_EXTRA, BULK_DISCOUNT } from './data/darknet.js';
 import { fitsTerrain } from './core/terrain.js';
 import { Tower } from './entities/Tower.js';
 import { Projectile } from './entities/Projectile.js';
@@ -42,7 +42,7 @@ const STORM = { time: 4, max: 45, gap: 0.35, accel: 0.88, minGap: 0.05 };
 import { pickCoinTiles, coinTileAt, COIN_SEASONS } from './core/coinTiles.js';
 import { drawCoinTiles, drawNoMine } from './render/coinTiles.js';
 import { rrect, fillOutline, circle, text, setFont } from './render/canvas.js';
-import { rand, chance, plural } from './util.js';
+import { rand, chance, plural, fmt } from './util.js';
 import { t, lang } from './i18n.js';
 
 const TOUCH_LIFT = 46; // ao arrastar com o dedo, a defesa aparece acima dele
@@ -737,6 +737,8 @@ export class Game {
     // passou da 1ª onda: agora a partida gasta a energia (sair, reiniciar ou
     // perder antes disso não gasta nada)
     this.payEnergy();
+    // Carteira Fria: o que cada Minerador guardou rende juros a cada rodada
+    for (const t of this.towers) if (t.vault) t.vault *= 1 + VAULT.rate;
     if (this.bounty) {
       this.endBounty(); // estourou tudo antes do tempo
       return;
@@ -1660,6 +1662,8 @@ export class Game {
     for (const th of things) {
       if (th.tw) {
         this.drawTowerAt(ctx, th.tw);
+        // Carteira Fria: quanto o Minerador tem guardado, em cima dele
+        if (th.tw.vault >= 1) text(ctx, `$${fmt(Math.floor(th.tw.vault))}`, th.tw.x, th.tw.y - 58, { size: 15, color: '#ffd23f', strokeWidth: 4 });
         // patrocinada por um Minerador: moedinha girando em cima
         if (this.sponsorBonus(th.tw)) {
           ctx.save();
