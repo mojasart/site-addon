@@ -552,7 +552,7 @@ export class Game {
   // (soma dos Mineradores que patrocinam ela)
   sponsorBonus(tower) {
     let v = 0;
-    for (const m of this.towers) if (m.sponsorOf === tower && !m.ransom) v += m.stats.sponsor ?? 0;
+    for (const m of this.towers) if (m.sponsorOf === tower && !m.dead && !m.ransom) v += m.stats.sponsor ?? 0;
     return v;
   }
 
@@ -1291,6 +1291,10 @@ export class Game {
     this.money += tower.sellValue;
     tower.dead = true;
     this.towers = this.towers.filter((t) => t !== tower);
+    // Patrocínio é do Minerador: vendeu ele, a defesa perde o bônus na hora;
+    // vendeu a defesa patrocinada, o Minerador escolhe outra (updateSponsor)
+    tower.sponsorOf = null;
+    for (const t of this.towers) if (t.sponsorOf === tower) t.sponsorOf = null;
     this.selectedTower = null;
     this.fx.burst(tower.x, tower.y, '#ffd23f', 16, 160, 0.4, 5, true);
     this.fx.text(tower.x, tower.y - 40, `+$${tower.sellValue}`, '#ffd23f', 20);
