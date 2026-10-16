@@ -82,13 +82,21 @@ export class Tower {
     this.attack = 1;
   }
 
-  // Solta um bitcoin. Sorte da Dark Net: Bloco Raro (5×, moeda grande)
-  // e Overclock (2×)
+  // Solta um bitcoin. Sorte da Dark Net: Overclock (200%) e a Aposta (cara
+  // ou coroa: não vale nada ou vale GAMBLE.win, moeda grande)
   mine(game) {
     const s = this.stats;
-    const gold = chance(s.goldChance);
-    const mul = gold ? 5 : chance(s.doubleChance) ? 2 : 1;
-    game.spawnPacket(this.x, this.y - 10, s.packetValue * mul, gold);
+    let mul = chance(s.doubleChance) ? 2 : 1;
+    let big = false;
+    if (s.gamble) {
+      if (chance(s.gamble.lose)) {
+        game.fx.text(this.x, this.y - 40, '$0', '#9aa8c8', 16); // perdeu a aposta
+        return;
+      }
+      mul *= s.gamble.win;
+      big = true;
+    }
+    game.spawnPacket(this.x, this.y - 10, Math.round(s.packetValue * mul), big);
     if (mul > 1) game.fx.spark(this.x, this.y - 34);
   }
 

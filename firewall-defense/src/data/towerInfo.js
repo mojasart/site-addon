@@ -81,7 +81,7 @@ function luckRows(s) {
   if (s.shatterChance) rows.push([t('ESTILHAÇO'), chance(s.shatterChance)]);
   if (s.tripleChance) rows.push([t('TIRO FORTE'), t('{p} · {m} de dano', { p: pct(s.tripleChance), m: pct(s.tripleMul ?? 3) })]);
   if (s.rechargeChance) rows.push([t('RECARGA'), t('{p} instantânea', { p: pct(s.rechargeChance) })]);
-  if (s.goldChance) rows.push([t('BLOCO RARO'), t('{p} · vale 500%', { p: pct(s.goldChance) })]);
+  if (s.gamble) rows.push([t('APOSTA'), t('{p} · vale {m}', { p: pct(1 - s.gamble.lose), m: pct(s.gamble.win) })]);
   if (s.stickyChance) rows.push([t('GRUDAR'), t('{p} de sair lento', { p: pct(s.stickyChance) })]);
   if (s.swarmChance) rows.push([t('COLMEIA'), t('{p} ao quebrar', { p: pct(s.swarmChance) })]);
   if (s.stingChance) rows.push([t('FERRÃO'), t('{p} de -1 camada', { p: pct(s.stingChance) })]);
