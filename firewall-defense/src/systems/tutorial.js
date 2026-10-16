@@ -2,6 +2,7 @@ import { TOWERS } from '../data/towers.js';
 import { layout } from '../render/ui.js';
 import { inRect } from '../render/widgets.js';
 import { TILE, COLS, ROWS, tileCenter, tileOf } from '../core/grid.js';
+import { MAP_W } from '../config.js';
 import { writeSave } from '../save.js';
 import { Enemy } from '../entities/Enemy.js';
 import { t } from '../i18n.js';
@@ -257,7 +258,7 @@ export class Tutorial {
       } else {
         const range = TOWERS[type].range ?? 100;
         const samples = [];
-        for (let d = g.view.spawnDists[0]; d < route.length; d += 18) samples.push(route.pointAt(d));
+        for (let d = this.refStart(); d < route.length; d += 18) samples.push(route.pointAt(d));
         let top = -1;
         for (let r = 0; r < ROWS; r++) {
           for (let c = 0; c < COLS; c++) {
@@ -268,7 +269,7 @@ export class Tutorial {
           }
         }
       }
-      this.spots[type] = best ?? { x: g.mapW / 2, y: 270 };
+      this.spots[type] = best ?? { x: MAP_W / 2, y: 270 };
     }
     const s = this.spots[type];
     return { x: s.x + this.g.offsetX, y: s.y, r: TILE * 0.62, tile: true };
@@ -280,8 +281,25 @@ export class Tutorial {
     return !this.underInfo(p) && p.y <= 400;
   }
 
+  // Os quadrados que o tutorial escolhe são os mesmos em qualquer celular:
+  // as contas usam a tela mais estreita (o mapa sem sobra dos lados). Antes
+  // usavam a tela de cada um, e em celular mais largo (aparece mais caminho
+  // na entrada, a janela de info fica em outro lugar) o Fraguinha pedia
+  // outro quadrado. A área da janela de info aqui cobre a dela em qualquer tela
   underInfo(p) {
-    return p.x + this.g.offsetX > this.g.mapW - 250 && p.y < 330;
+    return p.x > MAP_W - 250 && p.y < 330;
+  }
+
+  // Onde o caminho entra na tela mais estreita (render/maps spawnDistOf com o mapa sem sobra)
+  refStart() {
+    const route = this.g.path.routes[0];
+    let d = 0;
+    while (d < route.length) {
+      const p = route.pointAt(d);
+      if (p.x >= -30 && p.y >= -30 && p.y <= 570) break;
+      d += 2;
+    }
+    return d;
   }
 
   // Garante dinheiro (o tutorial não pode travar sem ele)
@@ -347,7 +365,7 @@ export class Tutorial {
     const route = g.path.routes[0];
     const reach = hk.stats.range - TILE * 0.3;
     let best = null;
-    for (let d = g.view.spawnDists[0] + TILE * 4; d < route.length - TILE; d += TILE / 2) {
+    for (let d = this.refStart() + TILE * 4; d < route.length - TILE; d += TILE / 2) {
       const p = route.pointAt(d);
       const c = tileCenter(Math.floor(p.x / TILE), Math.floor(p.y / TILE));
       const far = Math.hypot(c.x - hk.x, c.y - hk.y);
