@@ -15,11 +15,11 @@ import { Worker, isMainThread, parentPort, workerData } from 'node:worker_thread
 import { availableParallelism } from 'node:os';
 import { writeFileSync } from 'node:fs';
 import { playMap, PROFILES } from './bot.js';
-import { MAPS } from '../../firewall-defense/src/data/maps.js';
+import { MAPS, DIFF } from '../../firewall-defense/src/data/maps.js';
 
 export const TARGET = [0.95, 0.25];
 const ITERATIONS = 8;
-const LO = 0.2;
+const LO = 0.1; // era 0,2: com os chefões na curva própria (data/rounds.js BOSS_CURVE), dá pra tirar mais vírus comuns
 const PRESSURE_CAP = 2.2; // daqui pra cima, endurece pela velocidade
 const SPEED_HI = 1.8;
 const HI = 3.5;
@@ -37,7 +37,9 @@ if (!isMainThread) {
   const picked = mi >= 0 ? new Set(process.argv[mi + 1].split(',').map((x) => Number(x) - 1)) : null;
   const only = new Set(MAPS.map((m, i) => i).filter((i) => !picked || picked.has(i)));
   const n = MAPS.length;
-  const BASE_SPEED = MAPS.map((m) => m.speedMul);
+  // velocidade natural de cada mapa (sem a calibração): quando o mapa fica
+  // difícil demais, a velocidade extra de calibrações antigas sai antes da pressão
+  const BASE_SPEED = MAPS.map((m) => +(DIFF.speedMul[0] + (DIFF.speedMul[1] - DIFF.speedMul[0]) * m.d).toFixed(3));
   const target = (m) => TARGET[0] + (TARGET[1] - TARGET[0]) * (m / (n - 1));
   const lo = Array(n).fill(LO);
   const hi = Array(n).fill(HI);

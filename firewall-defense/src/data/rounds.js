@@ -44,6 +44,15 @@ export const FINALE_HP = 1.5;
 // chefões no meio da partida derrubavam os bots (63% → 15% de vitória nas
 // fases 1-13 a 2-7) e nem a calibração compensava
 export const AGENDA_HP = 0.35;
+// Vida dos chefões no modo normal: uma curva própria pelas 45 fases (do 1º
+// ao último mapa), que NÃO segue a pressão do mapa. Antes seguia, e como a
+// calibração baixou a pressão pra 0,2 na maioria das fases, o Ransomware
+// final ficava com ~60 mil de vida (6 tiros do Robô NMAP). Multiplica a vida
+// do chefão (junto com AGENDA_HP / FINALE_HP)
+export const BOSS_CURVE = [0.25, 0.55];
+export function bossHpMul(mapIndex, total = 45) {
+  return BOSS_CURVE[0] + (BOSS_CURVE[1] - BOSS_CURVE[0]) * Math.min(1, Math.max(0, mapIndex / (total - 1)));
+}
 const SPREAD_FROM = 0.35; // o 1º chefão vem nessa fração da partida; o último, na última onda
 
 const lerpRound = (a, b, t) => Math.round(a + (b - a) * Math.min(1, Math.max(0, t)));

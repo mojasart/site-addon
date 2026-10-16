@@ -2,8 +2,8 @@ import { VIEW_H, PANEL_W, SPEEDS, TURBO_SPEED, DANGER_TILES, TAP, EARLY_BONUS, E
 import { trackMatch, trackCoffee, trackDesign } from './analytics.js';
 import { MAPS, BOUNTY_MAPS } from './data/maps.js';
 import { roundsFor } from './data/rounds.js';
-import { PLAT_WAVES, PLAT_LIVES, PLAT_WARMUP, PLAT_REWARD, WAVE_GAP, PLAT_GATE, BOSS_HP, ENDLESS, platinumScale, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
-import { withoutBosses, AGENDA_HP, CICADA_SHARE } from './data/rounds.js';
+import { PLAT_WAVES, PLAT_LIVES, PLAT_WARMUP, PLAT_REWARD, WAVE_GAP, PLAT_GATE, BOSS_HP, ENDLESS, platinumScale, platinumPressure, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
+import { withoutBosses, AGENDA_HP, CICADA_SHARE, bossHpMul } from './data/rounds.js';
 import { DAILY, MODS, modMul } from './data/daily.js';
 import { worth, ENEMIES } from './data/enemies.js';
 import { BOUNTY, bountyRound, layers, comboMul, bountyStars } from './data/bounty.js';
@@ -109,20 +109,24 @@ export class Game {
     // platina: as ondas ganham a dificuldade calibrada do modo (k)
     // desafio do dia: Horda enche as ondas (como a platina) e a fase encolhe pra DAILY.waves ondas
     const k = this.platinum ? platinumScale(this.mapIndex) : modMul(this.mods, 'pressure');
+    // a platina tem a pressão dela (data/platinum.js PLAT_PRESSURE): não segue a calibração do normal
+    this.pressure = this.platinum ? platinumPressure(this.mapIndex, this.map) : this.map.pressure;
     const list = this.platinum
       ? platinumRounds(this.map)
       : this.bounty
         ? [bountyRound(this.map.d)]
         : roundsFor(this.daily ? { ...this.map, waves: Math.min(this.map.waves, DAILY.waves) } : this.map);
     this.rounds = new RoundManager(list, {
-      count: this.bounty ? 1 : this.map.pressure * k, // Bug Bounty: a quantidade já vem pronta
+      count: this.bounty ? 1 : this.pressure * k, // Bug Bounty: a quantidade já vem pronta
       minCount: this.platinum ? 0 : 1,
       early: this.platinum || this.bounty ? null : EARLY_WAVES, // modo normal: primeiras ondas mais cheias
       // platina: a dificuldade k enche as ondas sem esticar elas (intervalo ÷ k)
       gap: this.map.gapMul / (this.platinum ? Math.max(1, k) : 1),
       warmup: this.platinum ? { k, waves: PLAT_WARMUP } : null, // platina: as primeiras ondas pegam leve
       speed: this.map.speedMul * modMul(this.mods, 'speed'), // Vírus apressados (desafio do dia)
-      hp: this.map.pressure * k, // chefões e worms acompanham a pressão
+      hp: this.pressure * k, // worms acompanham a pressão
+      // chefões: curva própria pelas fases (data/rounds.js); na platina, a pressão como antes
+      bossHp: this.platinum || this.bounty ? null : bossHpMul(this.mapIndex) * k,
     });
     this.fx = new Effects();
     this.hazards = new Hazards(this.map.hazards);
@@ -670,7 +674,7 @@ export class Game {
     if (k % E.bossEvery === 0) {
       const n = k / E.bossEvery;
       // o 1º vem 20% mais fraco que o do fim da platina (agora tem companhia)
-      const bossHp = BOSS_HP * Math.sqrt(this.map.pressure) * platinumScale(this.mapIndex) * 0.8 * E.bossHp ** (n - 1);
+      const bossHp = BOSS_HP * Math.sqrt(this.pressure) * platinumScale(this.mapIndex) * 0.8 * E.bossHp ** (n - 1);
       // o 1º do grupo é o chefão; os outros (Lockers de escolta) têm vida de minichefão
       platinumBoss(this.map).forEach((g, j) => {
         for (let i = 0; i < g.count; i++) wave.push({ type: g.type, count: 1, gap: 0, finale: true, hp: j === 0 ? bossHp : hp * AGENDA_HP });
@@ -705,7 +709,7 @@ export class Game {
 
   callBoss() {
     this.bossCalled = true;
-    this.rounds.finishWith(platinumBoss(this.map), BOSS_HP * Math.sqrt(this.map.pressure) * platinumScale(this.mapIndex));
+    this.rounds.finishWith(platinumBoss(this.map), BOSS_HP * Math.sqrt(this.pressure) * platinumScale(this.mapIndex));
     this.rounds.start();
     this.shake(8);
     this.showBanner(t('CHEFÃO!'), 2, '#ff5a6a', 56, t('Derrote ele pra ganhar a platina'));
