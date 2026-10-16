@@ -12,6 +12,7 @@ export default {
   'Na platina não dá pra usar itens': "Items can't be used in Platinum",
   'Compre mais na LOJA, na tela de mapas': 'Buy more in the SHOP, on the maps screen',
   'PRÓXIMA RODADA': 'NEXT ROUND',
+  'crédito ${n}': 'credit ${n}',
   'Conteve {n} ameaça': 'Stopped {n} threat',
   'Conteve {n} ameaças': 'Stopped {n} threats',
   ALVO: 'TARGET',

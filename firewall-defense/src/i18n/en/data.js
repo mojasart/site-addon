@@ -1,7 +1,7 @@
 // Inglês dos dados, por id (ver TABLES em src/i18n.js)
 // Textos que usam constantes viram função (item, id) => campos: assim as
 // constantes só são lidas na hora de aplicar (sem problema de ordem de import)
-import { ROOT_MONEY, INTEREST, LOAN, BULK_DISCOUNT, DUCK } from '../../data/darknet.js';
+import { ROOT_MONEY, INTEREST, LOAN, LOAN_EXTRA, BULK_DISCOUNT, DUCK } from '../../data/darknet.js';
 import { CASH, FREEZE_TIME, BACKUP_LIVES } from '../../data/consumables.js';
 import { HAZARD_PERIOD } from '../../data/terrains.js';
 import { STUN_TIME, WARN_TIME } from '../../systems/Hazards.js';
@@ -182,7 +182,8 @@ export const DATA = {
       name: 'Interest',
       desc: `At the start of each round, earn ${INTEREST.rate * 100}% of your saved money (max $${INTEREST.max})`,
     }),
-    minerador4b: () => ({ name: 'Loan', desc: `Once per match, you can keep buying down to $${LOAN} in debt` }),
+    minerador4b: () => ({ name: 'Loan', desc: `$${LOAN} of credit per match to buy in debt, across as many purchases as you want` }),
+    minerador4d: () => ({ name: 'Extra Credit', desc: `+$${LOAN_EXTRA} of Loan credit` }),
     minerador4c: { name: 'Midas Touch', desc: '5% of viruses come golden and drop $100 when destroyed' },
 
     honeypot2: { name: 'Reinforced Pot', desc: '+20% life' },
