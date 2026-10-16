@@ -1,6 +1,6 @@
 import { VIEW_H, GOLD } from '../config.js';
 import { PLAT_WAVES } from '../data/platinum.js';
-import { rrect, fillOutline, text, setFont } from './canvas.js';
+import { rrect, fillOutline, text, setFont, button } from './canvas.js';
 import { bigButton, iconButton, stars, ribbon, starTier, volumeSlider } from './widgets.js';
 import { drawEnemy } from './viruses.js';
 import { drawCharacter } from './characters.js';
@@ -10,7 +10,7 @@ import { ICONS, drawHeart } from './sprites.js';
 import { formatCoffee } from '../data/darknet.js';
 import { BOUNTY } from '../data/bounty.js';
 import { drawDuck } from './duck.js';
-import { t } from '../i18n.js';
+import { t, lang } from '../i18n.js';
 
 // Posições dos botões das telas de pausa/vitória/derrota (desenho e toque)
 export function overlayLayout(game) {
@@ -27,6 +27,8 @@ export function overlayLayout(game) {
     L.music = { x: cx - 235, y: 392, w: 340, h: 40 };
     L.sfx = { x: cx - 235, y: 440, w: 340, h: 40 };
     L.auto = { x: cx + 135, y: (L.music.y + L.sfx.y + L.sfx.h) / 2 - 30, w: 60, h: 60 };
+    // idioma (PT ⇄ EN), no canto de cima da janela
+    L.lang = { x: cx + 168, y: 62, w: 86, h: 50 };
   } else if (game.state === 'won' && game.canContinue) {
     // platina vencida: MAPAS · CONTINUAR (platina infinita) · PRÓXIMO
     L.maps = { x: cx - 255, y: 392, w: 160, h: 72 };
@@ -109,6 +111,7 @@ export function drawOverlay(ctx, game) {
     volumeSlider(ctx, L.music, 'music', game.app.save.musicVol);
     volumeSlider(ctx, L.sfx, 'sfx', game.app.save.sfxVol);
     iconButton(ctx, L.auto, game.autoRound ? '#3fd16b' : '#7d8fa8', 'auto', game.autoRound);
+    langButton(ctx, L.lang);
   } else {
     const won = game.state === 'won';
     const plat = won && game.platinum;
@@ -259,4 +262,25 @@ function iconAndNumber(ctx, icon, str, size, color) {
   icon(ctx);
   ctx.restore();
   text(ctx, str, -w / 2 + ICON_W + ICON_GAP, 2, { size, color, align: 'left' });
+}
+
+// Botão do idioma: globo + o idioma atual (toca e troca PT ⇄ EN)
+function langButton(ctx, r) {
+  button(ctx, r, '#5fb4ff', { radius: 14, depth: 5 });
+  const cy = r.y + (r.h - 5) / 2;
+  const gx = r.x + 24;
+  const R = 11;
+  ctx.save();
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.arc(gx, cy, R, 0, Math.PI * 2);
+  ctx.moveTo(gx - R, cy);
+  ctx.lineTo(gx + R, cy);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(gx, cy, R * 0.45, R, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+  text(ctx, lang().toUpperCase(), r.x + r.w - 28, cy + 1, { size: 22 });
 }

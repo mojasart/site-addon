@@ -43,7 +43,7 @@ import { pickCoinTiles, coinTileAt, COIN_SEASONS } from './core/coinTiles.js';
 import { drawCoinTiles, drawNoMine } from './render/coinTiles.js';
 import { rrect, fillOutline, circle, text, setFont } from './render/canvas.js';
 import { rand, chance, plural } from './util.js';
-import { t } from './i18n.js';
+import { t, lang } from './i18n.js';
 
 const TOUCH_LIFT = 46; // ao arrastar com o dedo, a defesa aparece acima dele
 const BASE_HIT = 24; // raio da hitbox do servidor (ele ocupa 1 quadrado)
@@ -1370,6 +1370,11 @@ export class Game {
         this.volDrag = inRect(L.music, sx, sy) ? 'music' : 'sfx';
         this.app.setVolume(this.volDrag, sliderValue(L[this.volDrag], sx));
       } else if (inRect(L.auto, sx, sy)) this.app.toggleAuto();
+      else if (inRect(L.lang, sx, sy)) {
+        // idioma: troca na hora (a partida pausada já aparece no idioma novo)
+        this.app.setLanguage(lang() === 'pt' ? 'en' : 'pt');
+        this.sound.play('click');
+      }
       return;
     }
     if (this.endDelay > 0) return;
