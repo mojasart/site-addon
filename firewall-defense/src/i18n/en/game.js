@@ -110,4 +110,5 @@ export default {
     "And it's not just us: later on, other characters show up to defend the server. Stay tuned!",
   'Mandou bem, {name}! Agora é com você: segura os vírus até a última onda. Boa sorte!':
     "Well done, {name}! Now it's up to you: hold off the viruses until the last wave. Good luck!",
+  'Onda infinita {n}': 'Endless wave {n}',
 };
