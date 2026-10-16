@@ -40,6 +40,10 @@ export class App {
     this.debug = false;
     this.save = loadSave();
     this.migrateBounty();
+    // café por vírus caiu 20% (COFFEE.perKill): os abatidos até aqui seguem no valor antigo
+    if (this.save.killsOldRate == null) this.save.killsOldRate = this.save.kills ?? 0;
+    // o Acesso Root custava 3 cafés (agora 5): quem comprou antes recebe 3 de volta num reembolso
+    if (this.perks.root && this.save.darknetPaid?.root == null) this.save.darknetPaid = { ...this.save.darknetPaid, root: 3 };
     // quem já usava a Dark Net (antes da animação de desbloqueio existir) não vê ela
     if (Object.keys(this.save.darknet ?? {}).length || this.save.coffeeSpent) this.save.darknetUnlockSeen = true;
     if (debug) this.enableDebug();
@@ -442,7 +446,10 @@ export class App {
     const bounty = BOUNTY_MAPS.reduce((sum, m) => sum + mapCoffee(this.save.stars[m.id], false, true), 0) + (this.save.legacyBountyCoffee ?? 0);
     const daily = (this.save.dailyCoffee ?? 0) + (this.save.missionCoffee ?? 0); // diário (desafio e missões)
     const ads = this.save.adCoffee ?? 0; // DOBRAR CAFÉ (anúncio na vitória)
-    return maps + bounty + daily + ads + (this.save.kills ?? 0) * COFFEE.perKill + (this.save.duckCoffee ?? 0) + (this.save.boughtCoffee ?? 0);
+    const kills = this.save.kills ?? 0;
+    const old = Math.min(kills, this.save.killsOldRate ?? 0); // abatidos antes do nerf (valor antigo)
+    const killCoffee = old * COFFEE.perKillOld + (kills - old) * COFFEE.perKill;
+    return maps + bounty + daily + ads + killCoffee + (this.save.duckCoffee ?? 0) + (this.save.boughtCoffee ?? 0);
   }
 
   // Café que o Pato de Borracha achou numa partida (upgrade secreto)
@@ -502,6 +509,8 @@ export class App {
   buyPerk(id) {
     if (!this.canBuyPerk(id)) return false;
     this.save.darknet = { ...this.perks, [id]: true };
+    // quanto pagou (o reembolso devolve isso, mesmo se o preço mudar depois)
+    this.save.darknetPaid = { ...this.save.darknetPaid, [id]: NODE[id].cost };
     this.save.coffeeSpent = (this.save.coffeeSpent ?? 0) + NODE[id].cost;
     writeSave(this.save);
     trackCoffee('sink', NODE[id].cost, 'DarkNet', id);
@@ -522,7 +531,7 @@ export class App {
 
   // Cafés que voltam ao desfazer esse nó (com os que dependem dele)
   perkRefund(id) {
-    return this.perkRollbackSet(id).reduce((sum, k) => sum + NODE[k].cost, 0);
+    return this.perkRollbackSet(id).reduce((sum, k) => sum + (this.save.darknetPaid?.[k] ?? NODE[k].cost), 0);
   }
 
   // Rollback: desfaz o nó (e os que dependem dele) e devolve os cafés
@@ -531,8 +540,13 @@ export class App {
     if (!ids.length) return false;
     const back = this.perkRefund(id);
     const darknet = { ...this.perks };
-    for (const k of ids) delete darknet[k];
+    const paid = { ...this.save.darknetPaid };
+    for (const k of ids) {
+      delete darknet[k];
+      delete paid[k];
+    }
     this.save.darknet = darknet;
+    this.save.darknetPaid = paid;
     this.save.coffeeSpent = Math.max(0, (this.save.coffeeSpent ?? 0) - back);
     writeSave(this.save);
     trackCoffee('source', back, 'DarkNet', 'refund');

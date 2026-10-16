@@ -8,15 +8,17 @@
 //    3 estrelas           → 2 cafés (quem já tinha 1 ganha só mais 1)
 //    platina              → +2 cafés
 //  E cada monstro abatido (camada estourada), em qualquer partida, vale
-//  COFFEE.perKill: 0,25 café a cada 1000, então 0,25 / 1000 = 0,00025 por
-//  monstro. O total de abatidos fica no save (kills).
+//  COFFEE.perKill: 0,2 café a cada 1000, então 0,2 / 1000 = 0,0002 por
+//  monstro. O total de abatidos fica no save (kills). Era 0,25 (perKillOld):
+//  os abatidos antes da mudança (save.killsOldRate) seguem valendo o antigo,
+//  pra ninguém perder café que já tinha ganhado (app.coffeeEarned).
 //  Os cafés gastos ficam no save (coffeeSpent); o saldo é ganho - gasto.
 // ─────────────────────────────────────────────────────────────
 import { isEn } from '../lang.js';
 
 export const DARKNET_STARS = 35;
 
-export const COFFEE = { star: 1, three: 2, platinum: 2, perKill: 0.25 / 1000, bounty: [0, 1, 2, 3] };
+export const COFFEE = { star: 1, three: 2, platinum: 2, perKill: 0.2 / 1000, perKillOld: 0.25 / 1000, bounty: [0, 1, 2, 3] };
 
 // Cafés que um mapa já deu, pelo recorde de estrelas e a platina
 // (sala do Bug Bounty: +1 café por estrela, pelo recorde de estrelas)
@@ -43,14 +45,14 @@ export function formatCoffee(v) {
 // (critChance, knockChance...) são lidos em entities/Tower.js, Projectile.js
 // e Enemy.js. Os bônus valem POR CIMA dos upgrades da fase (Tower.refresh),
 // então upgrade que troca um valor (s.slow = 0.3) não apaga o bônus.
-export const ROOT_MONEY = 75; // Acesso Root: dinheiro a mais no começo de cada fase
 export const INTEREST = { rate: 0.05, max: 150 }; // Juros: % do dinheiro guardado no começo de cada rodada
 export const LOAN = 250; // Empréstimo: crédito da partida (dá pra gastar em várias compras, somando no máximo isso)
 export const LOAN_EXTRA = 150; // Crédito Extra: crédito a mais no Empréstimo
 export const BULK_DISCOUNT = 0.05; // Atacadão: todas as defesas custam isso a menos
 
 export const TREE = [
-  { id: 'root', name: 'Acesso Root', desc: `Toda fase começa com +$${ROOT_MONEY}`, cost: 3, parent: null },
+  // Acesso Root: não faz nada sozinho, só abre o resto da árvore
+  { id: 'root', name: 'Acesso Root', desc: 'Libera o acesso aos outros upgrades da Dark Net', cost: 5, parent: null },
   { id: 'hacker', tower: 'hacker', name: 'Tecla Crítica', desc: 'Cada teclado tem 5% de chance de dar 200% de dano', cost: 5, parent: 'root',
     apply: (s) => { s.critChance = (s.critChance ?? 0) + 0.05; } },
   { id: 'firewall', tower: 'firewall', name: 'Tremor de Terra', desc: 'Cada vírus atingido pela onda tem 4% de chance de ser empurrado pra trás', cost: 5, parent: 'root',
