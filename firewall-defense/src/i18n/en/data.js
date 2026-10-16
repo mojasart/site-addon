@@ -1,7 +1,7 @@
 // Inglês dos dados, por id (ver TABLES em src/i18n.js)
 // Textos que usam constantes viram função (item, id) => campos: assim as
 // constantes só são lidas na hora de aplicar (sem problema de ordem de import)
-import { ROOT_MONEY, INTEREST, LOAN, LOAN_EXTRA, BULK_DISCOUNT, DUCK } from '../../data/darknet.js';
+import { INTEREST, LOAN, LOAN_EXTRA, BULK_DISCOUNT, DUCK } from '../../data/darknet.js';
 import { CASH, FREEZE_TIME, BACKUP_LIVES } from '../../data/consumables.js';
 import { HAZARD_PERIOD } from '../../data/terrains.js';
 import { STUN_TIME, WARN_TIME } from '../../systems/Hazards.js';
@@ -132,7 +132,7 @@ export const DATA = {
   },
 
   darknet: {
-    root: () => ({ name: 'Root Access', desc: `Every level starts with +$${ROOT_MONEY}` }),
+    root: { name: 'Root Access', desc: 'Unlocks the other Dark Net upgrades' },
     hacker: { name: 'Critical Key', desc: 'Each keyboard has a 5% chance to deal 200% damage' },
     firewall: { name: 'Earthquake', desc: 'Each virus hit by the wave has a 4% chance to be knocked back' },
     pinguim: { name: 'Frozen Kernel', desc: 'Each virus hit by the wave has a 3% chance to freeze for 1s' },
