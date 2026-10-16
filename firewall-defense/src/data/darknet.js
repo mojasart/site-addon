@@ -45,7 +45,8 @@ export function formatCoffee(v) {
 // então upgrade que troca um valor (s.slow = 0.3) não apaga o bônus.
 export const ROOT_MONEY = 75; // Acesso Root: dinheiro a mais no começo de cada fase
 export const INTEREST = { rate: 0.05, max: 150 }; // Juros: % do dinheiro guardado no começo de cada rodada
-export const LOAN = 250; // Empréstimo: até quanto o dinheiro pode ficar negativo (1 vez por partida)
+export const LOAN = 250; // Empréstimo: crédito da partida (dá pra gastar em várias compras, somando no máximo isso)
+export const LOAN_EXTRA = 150; // Crédito Extra: crédito a mais no Empréstimo
 export const BULK_DISCOUNT = 0.05; // Atacadão: todas as defesas custam isso a menos
 
 export const TREE = [
@@ -145,7 +146,9 @@ export const TREE = [
   // C: dinheiro (Juros e Empréstimo valem pra partida toda, não só pro Minerador; ver game.js)
   { id: 'minerador4', tower: 'minerador', name: 'Juros', desc: `No começo de cada rodada rende ${INTEREST.rate * 100}% do dinheiro guardado (máximo $${INTEREST.max})`, cost: 10, parent: 'minerador',
     apply: () => {} },
-  { id: 'minerador4b', tower: 'minerador', name: 'Empréstimo', desc: `Uma vez por partida dá pra comprar ficando até $${LOAN} no negativo`, cost: 12, parent: 'minerador4',
+  { id: 'minerador4b', tower: 'minerador', name: 'Empréstimo', desc: `$${LOAN} de crédito por partida pra comprar no negativo, em quantas compras quiser`, cost: 12, parent: 'minerador4',
+    apply: () => {} },
+  { id: 'minerador4d', tower: 'minerador', name: 'Crédito Extra', desc: `+$${LOAN_EXTRA} de crédito no Empréstimo`, cost: 14, parent: 'minerador4b',
     apply: () => {} },
   // cada vírus que entra numa rodada tem goldenChance de vir dourado: destruído, solta goldenValue (game.rollGolden)
   { id: 'minerador4c', tower: 'minerador', name: 'Toque de Midas', desc: '5% dos vírus vêm dourados e, destruídos, soltam $100', cost: 15, parent: 'minerador4b',

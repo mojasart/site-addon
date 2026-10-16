@@ -91,6 +91,8 @@ export function drawHud(ctx, game) {
   ctx.restore();
   // negativo (Empréstimo da Dark Net) fica vermelho: -$120
   text(ctx, game.money < 0 ? `-$${-game.money}` : `$${game.money}`, 54, 73, { size: 28 + game.coinBump * 4, color: game.money < 0 ? '#ff7a8a' : GOLD, align: 'left' });
+  // crédito do Empréstimo que ainda dá pra usar
+  if (game.creditMax > 0) text(ctx, t('crédito ${n}', { n: game.creditLeft }), 56, 96, { size: 13, align: 'left', color: game.creditLeft > 0 ? '#ffb27a' : '#7d8fa8' });
 
   const r = game.rounds;
   if (game.bounty) {
