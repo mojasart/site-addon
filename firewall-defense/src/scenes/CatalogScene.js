@@ -10,7 +10,7 @@ import { drawCharacter } from '../render/characters.js';
 import { AGES, statsAt, statRows } from '../data/towerInfo.js';
 import { TERRAINS } from '../data/terrains.js';
 import { drawTerrain } from '../render/terrains.js';
-import { ThreatPreview } from '../render/threatPreview.js';
+import { VideoPreview } from '../render/videoPreview.js';
 import { t, isEn } from '../i18n.js';
 import { drawDuck } from '../render/duck.js';
 import { NODE, DUCK, formatCoffee } from '../data/darknet.js';
@@ -21,9 +21,11 @@ import { NODE, DUCK, formatCoffee } from '../data/darknet.js';
  *  - AMEAÇAS (THREAT_DB.EXE): ameaça que ainda não apareceu em nenhuma
  *    fase vira silhueta, com cadeado, e a ficha mostra ACESSO NEGADO.
  *    Olhando a mesma ameaça por PREVIEW_DELAY s, abre por cima da ficha
- *    um "vídeo" do que ela faz (render/threatPreview.js); tocar fecha.
+ *    o vídeo do que ela faz (render/videoPreview.js: o jogo de verdade no
+ *    mapa de testes, data/previews.js); tocar fecha.
  *  - DEFESAS (AGENTS_DB.EXE): os personagens, com os status de cada
- *    nível e a evolução criança → adolescente → adulto.
+ *    nível e a evolução criança → adolescente → adulto, e o vídeo deles em
+ *    ação (igual ao das ameaças).
  *  - TERRENOS (TERRAIN_DB.EXE): o que cada chão faz (estrada, pilha de
  *    bitcoin, zona eletrificada, água): data/terrains.js.
  *  Lista à esquerda e a ficha da escolhida à direita.
@@ -38,7 +40,7 @@ const TABS = [
 ];
 const ATTACK_KIND = { projectile: 'PROJÉTIL', pulse: 'ONDA', beam: 'LASER', farm: 'ECONOMIA', decoy: 'ISCA', aura: 'COMANDANTE' };
 const LEVEL_TIME = 2.2; // segundos de cada idade no retrato (quando nenhuma foi escolhida)
-const PREVIEW_DELAY = 2; // segundos olhando a mesma ameaça até abrir o preview
+const PREVIEW_DELAY = 2; // segundos olhando a mesma ameaça (ou defesa) até abrir o vídeo
 const MONO = '"Courier New", ui-monospace, Menlo, Consolas, monospace';
 const GREEN = '#3dff9a';
 const DIM = '#1f8a52';
@@ -60,15 +62,28 @@ export class CatalogScene {
     this.resetPreview();
   }
 
-  // Preview da ameaça: conta de novo a cada troca de ameaça ou de aba
+  // Vídeo da ameaça ou da defesa: conta de novo a cada troca de item ou de
+  // aba. O vídeo já começa a carregar (e tocar) na hora, escondido até o
+  // PREVIEW_DELAY (criado no toque, que alguns celulares exigem pra tocar)
   resetPreview() {
-    this.dwell = 0; // tempo olhando a ameaça atual
+    this.dwell = 0; // tempo olhando o item atual
+    this.preview?.stop();
     this.preview = null;
-    this.previewOff = false; // fechado com um toque (só volta trocando de ameaça)
+    this.previewOff = false; // fechado com um toque (só volta trocando de item)
+    const id = this.previewId;
+    if (id) this.preview = new VideoPreview(id);
   }
 
+  // id do vídeo do item escolhido (ameaça já vista ou defesa; o pato e os terrenos não têm)
+  get previewId() {
+    if (this.tab === 0) return this.app.hasSeen(ORDER[this.sel[0]]) ? ORDER[this.sel[0]] : null;
+    if (this.tab === 1) return TABS[1].items[this.sel[1]] === 'duck' ? null : TABS[1].items[this.sel[1]];
+    return null;
+  }
+
+  // Vídeo aparecendo (0 a 1): depois do PREVIEW_DELAY e com quadro pra mostrar
   get previewK() {
-    return this.preview ? Math.min(1, (this.dwell - PREVIEW_DELAY) * 4) : 0;
+    return this.preview?.ready ? Math.min(1, (this.dwell - PREVIEW_DELAY) * 4) : 0;
   }
 
   // Janela do preview: por cima do retrato e dos números da ficha
@@ -107,13 +122,11 @@ export class CatalogScene {
   update(dt) {
     this.t += dt;
     this.typed += dt * 45;
-    const type = ORDER[this.sel[0]];
-    if (this.tab !== 0 || this.previewOff || !this.app.hasSeen(type)) return;
+    if (!this.preview) return;
+    const before = this.dwell;
     this.dwell += dt;
-    if (this.dwell >= PREVIEW_DELAY) {
-      this.preview ??= new ThreatPreview(type);
-      this.preview.update(Math.min(dt, 0.05));
-    }
+    // vai aparecer agora: começa do começo (com os vírus entrando)
+    if (before < PREVIEW_DELAY && this.dwell >= PREVIEW_DELAY) this.preview.restart();
   }
 
   select(i) {
@@ -420,10 +433,10 @@ export class CatalogScene {
     mono(ctx, `${fmt(kills)} ${plural(kills, t('ABATIDO'), t('ABATIDOS'))}`, d.x + d.w - 16, ly, 14, GREEN, 'right', true);
     mono(ctx, drops, d.x + 16, ly + 24, 14, GREEN, 'left', true);
     this.drawLore(ctx, def.lore ?? def.desc ?? '', d.x + 16, ly + 52, d.w - 32);
-    if (this.preview) this.drawPreview(ctx, L, def);
+    if (this.previewK > 0) this.drawPreview(ctx, L, def);
   }
 
-  // "Vídeo" da ameaça numa janela de player por cima da ficha
+  // Vídeo da ameaça (ou da defesa) numa janela de player por cima da ficha
   drawPreview(ctx, L, def) {
     const b = this.previewBox(L);
     const k = this.previewK;
@@ -449,6 +462,8 @@ export class CatalogScene {
     }
     mono(ctx, '[X]', b.x + b.w - 6, b.y + bar / 2 + 1, 12, GREEN, 'right', true);
     const scr = { x: b.x + 4, y: b.y + bar + 3, w: b.w - 8, h: b.h - bar - 7 };
+    ctx.fillStyle = '#000';
+    ctx.fillRect(scr.x, scr.y, scr.w, scr.h);
     this.preview.draw(ctx, scr);
     ctx.restore();
   }
@@ -506,6 +521,7 @@ export class CatalogScene {
     }
     const last = L.evo[levels - 1];
     this.drawLore(ctx, def.lore ?? def.desc, d.x + 16, last.y + last.h + 15, d.w - 32, 13);
+    if (this.previewK > 0) this.drawPreview(ctx, L, def);
   }
 
   // Ficha do terreno: a amostra do chão no retrato, onde aparece, os
@@ -528,6 +544,7 @@ export class CatalogScene {
 
   pointerDown(x, y) {
     const L = this.layout();
+    this.preview?.play(); // celular que só deixa o vídeo tocar depois de um toque
     if (inRect(L.back, x, y)) {
       this.app.sound.play('click');
       this.leave();
@@ -536,8 +553,9 @@ export class CatalogScene {
     L.tabs.forEach((r, i) => {
       if (inRect(r, x, y)) this.setTab(i);
     });
-    // preview aberto: tocar nele fecha (volta a ficha com os números)
-    if (this.preview && inRect(this.previewBox(L), x, y)) {
+    // vídeo aberto: tocar nele fecha (volta a ficha com os números)
+    if (this.previewK > 0 && !this.previewOff && inRect(this.previewBox(L), x, y)) {
+      this.preview.stop();
       this.preview = null;
       this.previewOff = true;
       this.app.sound.play('click');
@@ -559,6 +577,7 @@ export class CatalogScene {
   // Voltar: pra partida pausada (se veio do menu de pausa) ou pra tela dos
   // mapas (de onde o catálogo é aberto)
   leave() {
+    this.preview?.stop();
     const game = this.returnTo;
     if (game) this.app.go(() => game);
     else this.app.goMaps();

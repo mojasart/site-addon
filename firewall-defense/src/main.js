@@ -7,6 +7,7 @@ import { isNative, plugin } from './native.js';
 import { initNotifications } from './notify.js';
 import { initAnalytics, trackError, trackDesign } from './analytics.js';
 import { clearSpriteCache } from './render/canvas.js';
+import { PreviewScene } from './scenes/PreviewScene.js';
 
 const stage = document.getElementById('stage'); // área útil da tela (fora do notch)
 const canvas = document.getElementById('game');
@@ -183,6 +184,11 @@ function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min((now - last) / 1000, 0.05); // evita "teleporte" depois de travadas
   last = now;
+  step(dt);
+}
+
+// Um quadro: atualiza dt segundos e desenha
+function step(dt) {
   try {
     app.update(dt);
   } catch (err) {
@@ -206,8 +212,26 @@ function frame(now) {
   }
 }
 
+// Vídeos do catálogo (tools/previews/record.js): ?preview=<id> abre direto o
+// roteiro dele (data/previews.js) no mapa de testes. Com &record o jogo não
+// anda sozinho: quem grava chama window.previewFrame(dt) a cada quadro
+const previewId = params.get('preview');
+const recording = !!previewId && params.has('record');
+if (previewId) {
+  app.scene = new PreviewScene(app, previewId);
+  app.fade = 0;
+}
+
 // Espera as sprites (no máximo 3s; o que faltar usa o desenho antigo)
 Promise.race([loadImages(), new Promise((r) => setTimeout(r, 3000))]).then(() => {
+  if (recording) {
+    window.previewFrame = (dt) => {
+      step(dt);
+      return app.scene.done;
+    };
+    window.previewReady = true;
+    return;
+  }
   last = performance.now();
   requestAnimationFrame(frame);
 });

@@ -95,6 +95,22 @@ Os vírus funcionam como os balões do Bloons: cada camada estourada revela a de
 
 Na escolha de mapa, o ícone do monitor (canto de cima) abre o `THREAT_DB.EXE`: um computador com terminal verde listando os vírus. Cada ameaça entra no catálogo na primeira vez que aparece numa fase (avisa no topo: *NOVA AMEAÇA NO CATÁLOGO*). As que ainda não apareceram ficam como silhueta com cadeado. A ficha mostra vida, dano (vidas que tira se chegar no servidor), velocidade, faixa de dinheiro (da 1ª camada até destruir tudo o que ele solta), o que ele solta e uma frase (`lore` em `src/data/enemies.js`).
 
+### Vídeos dos previews (ameaças e defesas)
+
+Olhando uma ameaça ou uma defesa por 2 s, abre por cima da ficha um **vídeo do jogo de verdade**
+(`assets/previews/<id>.mp4`, em loop e sem som). Os vídeos saem do **mapa de testes** (`PREVIEW_MAP` em
+`src/data/maps.js`: uma estrada reta do portal até o servidor) com um roteiro por personagem e por vírus
+(`src/data/previews.js`: quais defesas, em que quadrado e nível, e quais ondas). Mudou o jogo ou um roteiro?
+Grave de novo (Chrome instalado + ffmpeg no PATH):
+
+```bash
+cd tools/previews && npm install      # uma vez (Playwright)
+node check.js                         # roda os roteiros sem gravar (defesas, vírus, vazamentos)
+node record.js                        # grava todos (ou: node record.js hacker v1)
+```
+
+Pra assistir um roteiro no navegador: `index.html?preview=hacker&debug&mute`.
+
 ## Dark Net e cafés
 
 Na escolha de mapa, a cebola roxa (ao lado do catálogo) é a **Dark Net**: uma árvore de upgrades paga com **cafés**. Ela libera com **35 estrelas** somadas em todos os mapas; antes disso o botão fica trancado e avisa quantas faltam. O saldo de cafés aparece lá dentro.

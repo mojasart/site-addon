@@ -1,6 +1,6 @@
 import { VIEW_H, PANEL_W, SPEEDS, TURBO_SPEED, DANGER_TILES, TAP, EARLY_BONUS, EARLY_WAVES, AD_REWARDS } from './config.js';
 import { trackMatch, trackCoffee, trackDesign } from './analytics.js';
-import { MAPS, BOUNTY_MAPS } from './data/maps.js';
+import { MAPS, BOUNTY_MAPS, PREVIEW_MAP } from './data/maps.js';
 import { roundsFor } from './data/rounds.js';
 import { PLAT_WAVES, PLAT_LIVES, PLAT_WARMUP, PLAT_REWARD, WAVE_GAP, PLAT_GATE, BOSS_HP, ENDLESS, platinumScale, platinumPressure, blockedAlly, platinumRounds, platinumBoss } from './data/platinum.js';
 import { withoutBosses, AGENDA_HP, CICADA_SHARE, bossHpMul } from './data/rounds.js';
@@ -17,7 +17,7 @@ import { RoundManager } from './systems/RoundManager.js';
 import { Effects } from './systems/Effects.js';
 import { Hazards } from './systems/Hazards.js';
 import { MapView } from './render/maps/index.js';
-import { TILE, tileOf, tileKey, inGrid, snapToTile } from './core/grid.js';
+import { TILE, tileOf, tileKey, inGrid, snapToTile, tileCenter } from './core/grid.js';
 import { layout, drawHud, drawPanel, drawRange, bossBarsBottom, drawHasted, drawCommandZone, POWER_BTN } from './render/ui.js';
 import { inRect, sliderValue, terminalToast } from './render/widgets.js';
 import { drawBanner, drawOverlay, overlayLayout } from './render/screens.js';
@@ -54,29 +54,34 @@ const WIN_DELAY = 0.5; // limpou a última rodada: espera o último vírus estou
 // mode: 'normal', 'platinum' (ondas sem parar até o chefão; data/platinum.js)
 // ou 'bounty' (sala do Bug Bounty: mapIndex = season; data/bounty.js)
 // ou 'daily' (desafio do dia: a fase com os modificadores de app.challenge; data/daily.js)
+// ou 'preview' (vídeo do catálogo: o mapa de testes com as ondas do roteiro,
+// sem vida pra perder, sem faixas no meio da tela e sem fim; scenes/PreviewScene.js)
 const COIN_MERGE = 40; // moedas de vírus mais perto que isso viram uma só (px)
 const COIN_MAX = 30; // máximo de moedas no chão (daí pra frente juntam na mais perto)
 const COIN_TAP = 14; // folga do toque em volta da moeda (px)
 
 export class Game {
-  constructor(app, mapIndex, mode = 'normal') {
+  // script: só no modo 'preview' ({ rounds, coin } do roteiro, data/previews.js)
+  constructor(app, mapIndex, mode = 'normal', script = null) {
     this.app = app;
+    this.script = script;
     this.sound = app.sound;
     this.mapIndex = mapIndex;
     this.mode = mode;
     this.platinum = mode === 'platinum';
     this.bounty = mode === 'bounty';
     this.daily = mode === 'daily';
+    this.preview = mode === 'preview';
     this.challenge = this.daily ? app.challenge : null;
     if (this.daily) app.markDailyPlayed?.(); // a tentativa do dia começa aqui
     this.mods = this.challenge?.mods ?? [];
-    this.map = this.bounty ? BOUNTY_MAPS[mapIndex] : MAPS[mapIndex];
+    this.map = this.preview ? PREVIEW_MAP : this.bounty ? BOUNTY_MAPS[mapIndex] : MAPS[mapIndex];
     this.anim = 0;
     this.pointer = { x: -1, y: -1, down: false, type: 'touch' };
     this.drag = null;
     this.resize(app.viewW);
     this.reset();
-    trackMatch('start', mode, this.map.id);
+    if (!this.preview) trackMatch('start', mode, this.map.id);
   }
 
   get viewW() { return this.app.viewW; }
@@ -99,9 +104,11 @@ export class Game {
     const money = Math.round((this.map.money * modMul(this.mods, 'money')) / 5) * 5;
     this.money = this.bounty ? BOUNTY.budget[this.map.season] : money + (this.app.perks?.root ? ROOT_MONEY : 0);
     this.baseLives = Math.max(1, Math.round(this.map.lives * modMul(this.mods, 'lives'))); // (estrelas: starsNow)
-    this.lives = this.platinum ? PLAT_LIVES : this.bounty ? Infinity : this.baseLives;
+    this.lives = this.platinum ? PLAT_LIVES : this.bounty || this.preview ? Infinity : this.baseLives;
+    if (this.preview) this.money = 1e6; // o roteiro coloca as defesas que quiser
     this.towers = [];
-    this.coinTiles = pickCoinTiles(this); // pilhas de bitcoin (seasons 1 e 2)
+    // pilhas de bitcoin (seasons 1 e 2); no preview, só a do roteiro (Minerador)
+    this.coinTiles = this.preview ? (this.script.coin ? [{ c: this.script.coin[0], r: this.script.coin[1], ...tileCenter(...this.script.coin) }] : []) : pickCoinTiles(this);
     this.enemies = [];
     this.newEnemies = [];
     this.projectiles = [];
@@ -111,7 +118,9 @@ export class Game {
     const k = this.platinum ? platinumScale(this.mapIndex) : modMul(this.mods, 'pressure');
     // a platina tem a pressão dela (data/platinum.js PLAT_PRESSURE): não segue a calibração do normal
     this.pressure = this.platinum ? platinumPressure(this.mapIndex, this.map) : this.map.pressure;
-    const list = this.platinum
+    const list = this.preview
+      ? this.script.rounds
+      : this.platinum
       ? platinumRounds(this.map)
       : this.bounty
         ? [bountyRound(this.map.d)]
@@ -320,6 +329,7 @@ export class Game {
   }
 
   showBanner(text, duration = 1.2, color = '#ffffff', size = 46, sub = null) {
+    if (this.preview) return; // o vídeo do catálogo não tem faixa no meio
     this.banner = { text, sub, color, size, time: duration, total: duration };
   }
 
@@ -722,6 +732,7 @@ export class Game {
   }
 
   onRoundEnd(n) {
+    if (this.preview) return; // o vídeo do catálogo não acaba (nem gasta energia)
     // passou da 1ª onda: agora a partida gasta a energia (sair, reiniciar ou
     // perder antes disso não gasta nada)
     this.payEnergy();
