@@ -12,6 +12,8 @@ import { TERRAINS } from '../data/terrains.js';
 import { drawTerrain } from '../render/terrains.js';
 import { ThreatPreview } from '../render/threatPreview.js';
 import { t, isEn } from '../i18n.js';
+import { drawDuck } from '../render/duck.js';
+import { NODE, DUCK, formatCoffee } from '../data/darknet.js';
 
 /* ════════════════════════════════════════════════════════════
  *  CATÁLOGO (ameaças, defesas e terrenos)
@@ -30,7 +32,8 @@ import { t, isEn } from '../i18n.js';
 const ORDER = ['v1', 'v2', 'v3', 'v4', 'v5', 'worm', 'worm2', 'worm3', 'worm4', 'spyware', 'cicada', 'trojan', 'locker', 'adware', 'ransomware'];
 const TABS = [
   { id: 'threats', label: 'AMEAÇAS', file: 'THREAT_DB.EXE', items: ORDER },
-  { id: 'towers', label: 'DEFESAS', file: 'AGENTS_DB.EXE', items: TOWER_ORDER },
+  // o Pato de Borracha (upgrade secreto da Dark Net) fecha a lista das defesas
+  { id: 'towers', label: 'DEFESAS', file: 'AGENTS_DB.EXE', items: [...TOWER_ORDER, 'duck'] },
   { id: 'terrains', label: 'TERRENOS', file: 'TERRAIN_DB.EXE', items: TERRAINS.map((t) => t.id) },
 ];
 const ATTACK_KIND = { projectile: 'PROJÉTIL', pulse: 'ONDA', beam: 'LASER', farm: 'ECONOMIA', decoy: 'ISCA', aura: 'COMANDANTE' };
@@ -249,8 +252,9 @@ export class CatalogScene {
     const sel = this.sel[this.tab];
     L.rows.forEach((r, i) => {
       const type = this.items[i];
-      const seen = this.tab > 0 || this.app.hasSeen(type);
-      const name = this.tab === 1 ? TOWERS[type].name : this.tab === 2 ? TERRAINS[i].name : ENEMIES[type].name;
+      const duck = this.tab === 1 && type === 'duck';
+      const seen = duck ? this.duckOwned : this.tab > 0 || this.app.hasSeen(type);
+      const name = duck ? NODE.duck.name : this.tab === 1 ? TOWERS[type].name : this.tab === 2 ? TERRAINS[i].name : ENEMIES[type].name;
       const active = i === sel;
       if (active) {
         ctx.fillStyle = seen ? GREEN : RED;
@@ -264,7 +268,8 @@ export class CatalogScene {
       const icon = Math.min(r.h - 2, 40);
       ctx.save();
       ctx.translate(r.x + 22, r.y + r.h / 2);
-      if (this.tab === 1) drawTowerIcon(ctx, type, icon, 2, this.t + i, 0);
+      if (duck) drawDuck(ctx, icon * 0.32, { t: this.t + i, gray: !seen });
+      else if (this.tab === 1) drawTowerIcon(ctx, type, icon, 2, this.t + i, 0);
       else if (this.tab === 2) drawTerrain(ctx, type, 26, this.t + i);
       else this.drawIcon(ctx, type, 30, seen);
       ctx.restore();
@@ -323,12 +328,42 @@ export class CatalogScene {
   }
 
   // Bloco de status "NOME....... valor" ao lado do retrato
-  drawRows(ctx, rows, fx, y0, step = 24) {
+  // right: até onde o valor pode ir (texto longo encolhe e, se precisar, ganha "…")
+  drawRows(ctx, rows, fx, y0, step = 24, right = Infinity) {
     rows.forEach(([k, v], i) => {
       const y = y0 + i * step;
       mono(ctx, `${k}`.padEnd(11, '.'), fx, y, 14, DIM, 'left', true);
-      mono(ctx, v, fx + 118, y, 14, GREEN, 'left', true);
+      const fit = fitMono(ctx, String(v), right - (fx + 118), 14);
+      mono(ctx, fit.str, fx + 118, y, fit.size, GREEN, 'left', true);
     });
+  }
+
+  // Ficha do Pato de Borracha (upgrade secreto): quantos cafés ele já achou
+  drawDuckInfo(ctx, L) {
+    const { detail: d, pr } = L;
+    this.drawFrame(ctx, d);
+    const owned = this.duckOwned;
+    // pulinho de vez em quando, como na partida quando acha um café
+    const hop = Math.max(0, Math.sin(this.t * 2.2)) ** 8;
+    this.drawPortrait(ctx, L, (size) => drawDuck(ctx, size * 0.22, { t: this.t, gray: !owned, hop }));
+    const fx = pr.x + pr.s + 18;
+    const cursor = Math.sin(this.t * 8) > 0 ? '_' : ' ';
+    if (!owned) {
+      mono(ctx, `?????????${cursor}`, fx, pr.y + 18, 22, RED, 'left', true);
+      mono(ctx, `[ ${t('SECRETO')} ]`, fx, pr.y + 44, 13, DIM, 'left', true);
+      wrapMono(ctx, t('Um upgrade escondido da Dark Net. Procure bem...'), fx, pr.y + 80, d.x + d.w - 16 - fx, 14, '#ff9aa8');
+      return;
+    }
+    mono(ctx, `${NODE.duck.name.toUpperCase()}${cursor}`, fx, pr.y + 18, 22, GREEN, 'left', true);
+    mono(ctx, `[ ${t('MASCOTE')} · ${t('SECRETO')} ]`, fx, pr.y + 44, 13, DIM, 'left', true);
+    const coffee = this.app.save.duckCoffee ?? 0;
+    const pct = `${String(DUCK.chance * 100).replace('.', isEn() ? '.' : ',')}%`;
+    this.drawRows(ctx, [
+      [t('CAFÉS DADOS'), formatCoffee(coffee)],
+      [t('CHANCE'), t('{p} por vírus estourado', { p: pct })],
+      [t('ACHADO'), t('{n} café', { n: formatCoffee(DUCK.coffee) })],
+    ], fx, pr.y + 72, 24, d.x + d.w - 16);
+    this.drawLore(ctx, 'QUACK', d.x + 16, L.evoY + 6, d.w - 32, 18);
   }
 
   // Frase do personagem, digitada aos poucos
@@ -425,9 +460,15 @@ export class CatalogScene {
     return max ? Math.floor(this.t / LEVEL_TIME) % (max + 1) : 0;
   }
 
+  // O pato aparece na lista só depois de comprado na Dark Net (é segredo)
+  get duckOwned() {
+    return !!this.app.perks?.duck;
+  }
+
   drawTower(ctx, L) {
     const { detail: d, pr } = L;
-    const type = TOWER_ORDER[this.sel[1]];
+    const type = TABS[1].items[this.sel[1]];
+    if (type === 'duck') return this.drawDuckInfo(ctx, L);
     const def = TOWERS[type];
     const lv = this.shownLevel(def);
     const s = statsAt(type, lv);
@@ -442,7 +483,9 @@ export class CatalogScene {
     const kind = [ATTACK_KIND[def.attack], def.canHitArmored ? 'FURA BLINDAGEM' : null, def.onPath ? 'NO CAMINHO' : null].filter(Boolean).map((k) => t(k));
     mono(ctx, `[ ${kind.join(' · ')} ]`, fx, pr.y + 44, 13, DIM, 'left', true);
     const rows = towerRows(type, s, lv);
-    this.drawRows(ctx, rows, fx, pr.y + 72, rows.length > 4 ? 21 : 24);
+    // as linhas se espremem pra caber antes da EVOLUÇÃO (o Executivo tem 5)
+    const y0 = pr.y + 72;
+    this.drawRows(ctx, rows, fx, y0, Math.min(24, (L.evoY - 18 - y0) / Math.max(1, rows.length - 1)), d.x + d.w - 16);
 
     // evolução: um nível por linha (tocar fixa a idade no retrato)
     mono(ctx, t('> EVOLUÇÃO'), d.x + 16, L.evoY, 14, DIM, 'left', true);
@@ -503,7 +546,7 @@ export class CatalogScene {
     L.rows.forEach((r, i) => {
       if (inRect(r, x, y)) this.select(i);
     });
-    if (this.tab === 1) {
+    if (this.tab === 1 && TABS[1].items[this.sel[1]] !== 'duck') {
       const def = TOWERS[TOWER_ORDER[this.sel[1]]];
       L.evo.forEach((r, i) => {
         if (i > def.upgrades.length || !inRect(r, x, y)) return;
@@ -539,6 +582,20 @@ function mono(ctx, str, x, y, size, color, align = 'left', bold = false) {
   ctx.shadowBlur = 6; // brilho de fósforo
   ctx.fillText(str, x, y);
   ctx.shadowBlur = 0;
+}
+
+// Texto de terminal que cabe em maxW: encolhe até 10 px e, se ainda não
+// couber, corta com "…"
+function fitMono(ctx, str, maxW, size) {
+  let sz = size;
+  const width = (s, z) => {
+    ctx.font = `bold ${z}px ${MONO}`;
+    return ctx.measureText(s).width;
+  };
+  while (sz > 10 && width(str, sz) > maxW) sz--;
+  let out = str;
+  while (out.length > 1 && width(out, sz) > maxW) out = `${out.slice(0, -2)}…`;
+  return { str: out, size: sz };
 }
 
 function wrapMono(ctx, str, x, y, maxW, size, color) {
