@@ -475,42 +475,11 @@ export class Game {
     buzz(30);
   }
 
-  // Canto do botão do BURNOUT, em coordenadas de tela: embaixo à direita, a
-  // não ser que o caminho, uma entrada de vírus ou a base passem ali; aí vai
-  // pro canto que menos cobre o caminho
+  // Botão do BURNOUT, em coordenadas de tela: sempre no canto de baixo à
+  // direita do mapa (antes mudava de canto pra fugir do caminho, e o jogador
+  // não achava ele)
   get abilitySpot() {
-    if (this.abilityFor === this.view) return this.ability;
-    const W = POWER_BTN;
-    const H = POWER_BTN;
-    const left = this.app.perks?.duck ? 62 : 12;
-    const right = this.mapW - 12 - W;
-    const spots = [
-      { x: right, y: VIEW_H - 12 - H },
-      { x: left, y: VIEW_H - 12 - H },
-      { x: right, y: VIEW_H - 24 - 2 * H },
-      { x: left, y: 100 },
-    ];
-    const v = this.view;
-    const covers = (s) => {
-      let n = 0;
-      for (let x = s.x - 10; x <= s.x + W + 10; x += TILE / 4) {
-        for (let y = s.y - 10; y <= s.y + H + 10; y += TILE / 4) {
-          const k = tileKey(...tileOf(x - this.offsetX, y));
-          if (v.pathTiles.has(k) || v.serverTiles.has(k)) n++;
-        }
-      }
-      return n;
-    };
-    let best = spots[0];
-    let least = Infinity;
-    for (const s of spots) {
-      const n = covers(s);
-      if (n < least) [best, least] = [s, n];
-      if (n === 0) break;
-    }
-    this.ability = best;
-    this.abilityFor = this.view;
-    return this.ability;
+    return { x: this.mapW - 12 - POWER_BTN, y: VIEW_H - 12 - POWER_BTN };
   }
 
   // Filhos de vírus estourados entram na lista só entre etapas

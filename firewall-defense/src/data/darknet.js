@@ -207,7 +207,7 @@ export const TREE = [
 export const DUCK = { chance: 0.0025, coffee: 0.1 };
 export const SECRET = {
   id: 'duck',
-  name: 'Pato de Borracha',
+  name: 'Patinho Gabriel',
   desc: 'Um patinho acompanha suas partidas. Cada vírus estourado tem 0,25% de chance de render 0,1 café',
   cost: 20,
   parent: null,

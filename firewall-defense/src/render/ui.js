@@ -32,7 +32,7 @@ export function layout(game) {
       const alone = i === TOWER_ORDER.length - 1 && i % 2 === 0;
       return { type, x: px + 10 + (alone ? 45 : (i % 2) * 90), y: 44 + Math.floor(i / 2) * pitch, w: 80, h: pitch - 8 };
     }),
-    // BURNOUT do Executivo: no canto que não cobre o caminho (Game.abilitySpot)
+    // BURNOUT do Executivo: no canto de baixo à direita do mapa (Game.abilitySpot)
     burnout: { ...(game.abilitySpot ?? { x: 12, y: VIEW_H - 12 - POWER_BTN }), w: POWER_BTN, h: POWER_BTN },
     // abas no topo do painel: DEFESAS e ITENS (game.panelTab)
     tabs: [
