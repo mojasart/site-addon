@@ -8,7 +8,7 @@
 //    mais avançadas) com 2 modificadores (MODS): uma restrição e um bônus
 //    (que não mexe na mesma coisa), e no máximo DAILY.waves ondas. Libera com DAILY.unlock fases vencidas. Vencer dá DAILY.coffee
 //    cafés, +1 por dia seguido vencendo (sequência), até +DAILY.streakMax.
-//    Só a 1ª vitória do dia vale café; dá pra jogar de novo à vontade.
+//    1 tentativa por dia: começou, gastou (sem reiniciar nem jogar de novo).
 //    A fase é sorteada por último: os modificadores do dia não dependem do
 //    progresso. Ela fica guardada no save no 1º acesso do dia (vencer mais
 //    fases no meio do dia não troca o desafio).

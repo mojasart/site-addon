@@ -117,4 +117,7 @@ export default {
   'CONFIRMAR': 'CONFIRM',
   'Seu nome': 'Your name',
   IDIOMA: 'LANGUAGE',
+  'Tentativa de hoje usada': "Today's attempt is used",
+  'VOLTAR À PARTIDA': 'BACK TO MATCH',
+  'VOLTE AMANHÃ': 'COME BACK TOMORROW',
 };

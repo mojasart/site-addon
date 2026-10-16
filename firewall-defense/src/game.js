@@ -68,6 +68,7 @@ export class Game {
     this.bounty = mode === 'bounty';
     this.daily = mode === 'daily';
     this.challenge = this.daily ? app.challenge : null;
+    if (this.daily) app.markDailyPlayed?.(); // a tentativa do dia começa aqui
     this.mods = this.challenge?.mods ?? [];
     this.map = this.bounty ? BOUNTY_MAPS[mapIndex] : MAPS[mapIndex];
     this.anim = 0;
@@ -1359,8 +1360,17 @@ export class Game {
     const L = overlayLayout(this);
     if (this.state === 'paused') {
       if (inRect(L.resume, sx, sy)) this.resume();
-      else if (inRect(L.restart, sx, sy)) this.app.startMap(this.mapIndex, this.mode);
-      else if (inRect(L.maps, sx, sy)) this.leave();
+      else if (inRect(L.restart, sx, sy)) {
+        // desafio do dia: não reinicia, DESISTIR sai (a tentativa já foi)
+        if (this.daily) this.leave();
+        else this.app.startMap(this.mapIndex, this.mode);
+      } else if (inRect(L.maps, sx, sy)) {
+        // desafio do dia: o DIÁRIO só mostra a tela e volta pra esta partida
+        if (this.daily) {
+          this.sound.play('click');
+          this.app.goDaily(this);
+        } else this.leave();
+      }
       else if (inRect(L.catalog, sx, sy)) {
         // catálogo por cima da partida: o voltar dele traz esta partida, ainda pausada
         this.sound.play('click');
@@ -1383,7 +1393,7 @@ export class Game {
     if (inRect(L.maps, sx, sy)) this.leave();
     else if (L.cont && inRect(L.cont, sx, sy)) this.continueEndless(); // platina infinita
     else if (L.retry && inRect(L.retry, sx, sy)) this.app.startMap(this.mapIndex, 'normal'); // tentar as 3 estrelas
-    else if (inRect(L.next, sx, sy)) {
+    else if (L.next && inRect(L.next, sx, sy)) {
       // venceu: vai pro próximo mapa (normal); perdeu: tenta de novo no mesmo modo
       if (this.state === 'won' && this.nextMap) this.app.startMap(this.mapIndex + 1);
       else this.app.startMap(this.mapIndex, this.state === 'won' && !this.bounty && !this.daily ? 'normal' : this.mode);

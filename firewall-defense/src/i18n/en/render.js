@@ -134,4 +134,5 @@ export default {
   // ── render/consumables.js e hazards.js ──
   'GRÁTIS': 'FREE',
   'ZONA ELÉTRICA': 'ELECTRIC ZONE',
+  'DESISTIR': 'GIVE UP',
 };

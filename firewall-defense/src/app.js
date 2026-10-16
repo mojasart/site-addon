@@ -187,8 +187,9 @@ export class App {
     this.go(() => new ShopScene(this));
   }
 
-  goDaily() {
-    this.go(() => new DailyScene(this));
+  // returnTo: partida pausada (o DIÁRIO do menu de pausa só mostra a tela e volta)
+  goDaily(returnTo = null) {
+    this.go(() => new DailyScene(this, { returnTo }));
   }
 
   // ── Diário: desafio do dia e missões do dia (data/daily.js) ──
@@ -223,6 +224,19 @@ export class App {
     this.save.daily = { ...makeChallenge(day, won), won: false };
     writeSave(this.save);
     return this.save.daily;
+  }
+
+  // O desafio do dia é 1 tentativa só: começou a partida, gastou (sem
+  // reiniciar, sem jogar de novo; vencendo ou perdendo, só amanhã)
+  dailyPlayed() {
+    return !!this.challenge?.played;
+  }
+
+  markDailyPlayed() {
+    const c = this.challenge;
+    if (!c || c.played) return;
+    c.played = true;
+    writeSave(this.save);
   }
 
   // Dias seguidos vencendo o desafio, contando hoje (0 se a sequência quebrou)
@@ -545,6 +559,11 @@ export class App {
   // janela "SEM ENERGIA" (com o anúncio); depois do anúncio a partida começa
   startMap(i, mode = 'normal') {
     if (this.next || this.energyUI) return;
+    // desafio do dia: 1 tentativa só (dailyPlayed)
+    if (mode === 'daily' && this.dailyPlayed()) {
+      this.sound.play('error');
+      return;
+    }
     if (!this.debug && !this.vip && this.energy <= 0) {
       this.energyUI = { mode: 'empty', t: 0, pending: { i, mode } };
       this.sound.play('error');
