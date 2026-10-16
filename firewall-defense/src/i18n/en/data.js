@@ -208,7 +208,7 @@ export const DATA = {
 
     // secreto (SECRET)
     duck: () => ({
-      name: 'Rubber Duck',
+      name: 'Gabriel the Duckling',
       desc: `A little duck follows your matches. Each popped virus has a ${+(DUCK.chance * 100).toFixed(4)}% chance to give ${DUCK.coffee} coffee`,
     }),
   },
