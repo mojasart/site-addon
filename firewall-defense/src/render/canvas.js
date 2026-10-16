@@ -97,8 +97,18 @@ export function limb(ctx, x1, y1, x2, y2, w, color) {
 
 // Sprite pré-desenhado num canvas pequeno (cache), pra coisas que aparecem
 // às dezenas na tela (vírus). Refeito quando a escala da tela muda.
+// Tem limite (SPRITE_CACHE_MAX): passou, apaga os mais antigos. Sem limite,
+// um desenho com tamanho animado criava 1 canvas por quadro e, em minutos,
+// a memória de vídeo acabava (no Mac com tela Retina o navegador descartava
+// o canvas: tudo sumia e travava)
 let pixelScale = 1;
 const spriteCache = new Map();
+const SPRITE_CACHE_MAX = 600;
+
+// Apaga o cache (o navegador devolveu o canvas depois de perder: main.js)
+export function clearSpriteCache() {
+  spriteCache.clear();
+}
 
 export function setPixelScale(ps) {
   if (Math.abs(ps - pixelScale) < 0.01) return;
@@ -115,6 +125,14 @@ export function cachedSprite(key, size, draw) {
     g.scale(pixelScale, pixelScale);
     g.translate(size / 2, size / 2);
     draw(g);
+    if (spriteCache.size >= SPRITE_CACHE_MAX) {
+      // o Map guarda a ordem de entrada: os primeiros são os mais antigos
+      let n = SPRITE_CACHE_MAX / 4;
+      for (const k of spriteCache.keys()) {
+        spriteCache.delete(k);
+        if (--n <= 0) break;
+      }
+    }
     spriteCache.set(key, c);
   }
   return c;
