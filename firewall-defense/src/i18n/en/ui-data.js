@@ -31,6 +31,8 @@ export default {
   'ESTILHAÇO': 'SHATTER',
   'TIRO FORTE': 'POWER SHOT',
   'APOSTA': 'GAMBLE',
+  'CARTEIRA': 'WALLET',
+  '+{p} por rodada · vende {v}': '+{p} per round · sells for {v}',
   '{p} · vale {m}': '{p} · worth {m}',
   'GRUDAR': 'STICKY',
   'COLMEIA': 'BEEHIVE',

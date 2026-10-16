@@ -48,6 +48,9 @@ export function formatCoffee(v) {
 export const INTEREST = { rate: 0.05, max: 150 }; // Juros: % do dinheiro guardado no começo de cada rodada
 export const LOAN = 250; // Empréstimo: crédito da partida (dá pra gastar em várias compras, somando no máximo isso)
 export const LOAN_EXTRA = 150; // Crédito Extra: crédito a mais no Empréstimo
+// Carteira Fria: o Minerador guarda os bitcoins nele (rate por rodada) e,
+// vendido, devolve tudo e sell do que custou
+export const VAULT = { rate: 0.02, sell: 0.9 };
 export const SPONSOR_MONEY = 150; // Patrocinador: dinheiro a mais no começo de cada partida
 export const GAMBLE = { lose: 0.55, win: 2.05 }; // Aposta: chance de o bitcoin não valer nada e quanto vale quando ganha
 export const BULK_DISCOUNT = 0.05; // Atacadão: todas as defesas custam isso a menos
@@ -206,6 +209,11 @@ export const TREE = [
   // Paralela → Revenda). Fica no fim da lista pra não mexer na posição dos
   // outros nós no grafo (DarkNetScene sorteia na ordem da lista). O desconto
   // vale no preço de colocar qualquer defesa (Game.costOf)
+  // Carteira Fria: fim do ramo dos Juros. No fim da lista pra não mexer no
+  // desenho dos outros nós. O Minerador guarda o que minera (Tower.vault),
+  // rende juros a cada rodada (game.onRoundEnd) e devolve tudo ao vender
+  { id: 'minerador4e', tower: 'minerador', name: 'Carteira Fria', desc: `O Minerador guarda os bitcoins nele e rende ${VAULT.rate * 100}% por rodada; vendido, devolve tudo e ${VAULT.sell * 100}% do preço`, cost: 15, parent: 'minerador4d',
+    apply: (s) => { s.vault = true; } },
   { id: 'minerador2d', tower: 'minerador', name: 'Atacadão', desc: `Todas as defesas custam ${BULK_DISCOUNT * 100}% menos`, cost: 15, parent: 'minerador2c',
     apply: () => {} },
 ];

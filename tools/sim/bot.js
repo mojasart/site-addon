@@ -16,7 +16,10 @@ import { seeded } from '../../firewall-defense/src/util.js';
 import { TREE } from '../../firewall-defense/src/data/darknet.js';
 
 // Árvore inteira da Dark Net (o Pato só dá café, não muda a partida)
-export const ALL_PERKS = Object.fromEntries(TREE.map((n) => [n.id, true]));
+// Upgrades que os bots não sabem usar: com a Carteira Fria o Minerador só
+// rende quando é vendido, e o bot nunca vende
+const BOT_SKIP = new Set(['minerador4e']);
+export const ALL_PERKS = Object.fromEntries(TREE.filter((n) => !BOT_SKIP.has(n.id)).map((n) => [n.id, true]));
 
 // Upgrades da Dark Net que um jogador com `coffee` cafés compraria jogando
 // com esse perfil: o Acesso Root e depois o galho da defesa que o perfil
@@ -26,6 +29,7 @@ export function perksFor(profileName, coffee, skip = []) {
   const owned = {};
   let left = coffee;
   const buy = (n) => {
+    if (BOT_SKIP.has(n.id)) return;
     if (owned[n.id] || n.cost > left || (n.parent && !owned[n.parent])) return;
     owned[n.id] = true;
     left -= n.cost;
