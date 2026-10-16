@@ -62,7 +62,7 @@ export const DATA = {
       lore: 'From pickaxe to computer: mines the bitcoins that pay for every defense.',
       upgrades: [
         { name: 'Extra GPU', desc: '6 bitcoins per round' },
-        { name: 'Sponsorship', desc: 'A random defense gives more bitcoin per kill' },
+        { name: 'Sponsorship', desc: 'A random damage defense gives more bitcoin per kill' },
       ],
     },
     honeypot: {

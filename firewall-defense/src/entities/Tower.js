@@ -286,13 +286,15 @@ export class Tower {
     }
   }
 
-  // Patrocínio (2º upgrade do Minerador): escolhe uma defesa que ataca, de
+  // Patrocínio (2º upgrade do Minerador): escolhe uma defesa que dá dano
+  // (nunca outro Minerador, o Executivo, o Honeypot nem o Pinguim Linux), de
   // preferência uma que ainda não tem patrocinador; se ela for vendida ou
   // quebrar, escolhe outra
   updateSponsor(game) {
+    const deals = (o) => o !== this && !o.dead && (o.stats.damage ?? 0) > 0;
     const t = this.sponsorOf;
-    if (t && !t.dead && game.towers.includes(t)) return;
-    const fighters = game.towers.filter((o) => o !== this && !o.dead && o.def.attack !== 'farm' && o.def.attack !== 'decoy');
+    if (t && deals(t) && game.towers.includes(t)) return;
+    const fighters = game.towers.filter(deals);
     if (!fighters.length) {
       this.sponsorOf = null;
       return;
