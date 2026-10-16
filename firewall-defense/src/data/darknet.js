@@ -151,8 +151,8 @@ export const TREE = [
   { id: 'minerador4d', tower: 'minerador', name: 'Crédito Extra', desc: `+$${LOAN_EXTRA} de crédito no Empréstimo`, cost: 14, parent: 'minerador4b',
     apply: () => {} },
   // cada vírus que entra numa rodada tem goldenChance de vir dourado: destruído, solta goldenValue (game.rollGolden)
-  { id: 'minerador4c', tower: 'minerador', name: 'Toque de Midas', desc: '5% dos vírus vêm dourados e, destruídos, soltam $100', cost: 15, parent: 'minerador4b',
-    apply: (s) => { s.goldenChance = (s.goldenChance ?? 0) + 0.05; s.goldenValue = 100; } },
+  { id: 'minerador4c', tower: 'minerador', name: 'Toque de Midas', desc: '5% dos vírus vêm dourados e, destruídos, soltam $10', cost: 15, parent: 'minerador4b',
+    apply: (s) => { s.goldenChance = (s.goldenChance ?? 0) + 0.05; s.goldenValue = 10; } },
 
   // Honeypot — A: resistência · B: armadilha
   { id: 'honeypot2', tower: 'honeypot', name: 'Pote Reforçado', desc: '+20% de vida', cost: 8, parent: 'honeypot',

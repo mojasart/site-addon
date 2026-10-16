@@ -184,7 +184,7 @@ export const DATA = {
     }),
     minerador4b: () => ({ name: 'Loan', desc: `$${LOAN} of credit per match to buy in debt, across as many purchases as you want` }),
     minerador4d: () => ({ name: 'Extra Credit', desc: `+$${LOAN_EXTRA} of Loan credit` }),
-    minerador4c: { name: 'Midas Touch', desc: '5% of viruses come golden and drop $100 when destroyed' },
+    minerador4c: { name: 'Midas Touch', desc: '5% of viruses come golden and drop $10 when destroyed' },
 
     honeypot2: { name: 'Reinforced Pot', desc: '+20% life' },
     honeypot2b: { name: 'Crystallized Honey', desc: '+3s duration' },
