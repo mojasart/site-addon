@@ -8,7 +8,7 @@ import { DAILY, MODS, modMul } from './data/daily.js';
 import { worth, ENEMIES } from './data/enemies.js';
 import { BOUNTY, bountyRound, layers, comboMul, bountyStars } from './data/bounty.js';
 import { TOWERS, TARGET_MODES, COMMANDER_MAX, BURNOUT } from './data/towers.js';
-import { applyPerks, DUCK, INTEREST, LOAN, LOAN_EXTRA, BULK_DISCOUNT } from './data/darknet.js';
+import { applyPerks, SPONSOR_MONEY, DUCK, INTEREST, LOAN, LOAN_EXTRA, BULK_DISCOUNT } from './data/darknet.js';
 import { fitsTerrain } from './core/terrain.js';
 import { Tower } from './entities/Tower.js';
 import { Projectile } from './entities/Projectile.js';
@@ -102,7 +102,8 @@ export class Game {
     // Bug Bounty: só o orçamento da partida (sem o Acesso Root)
     // Desafio do dia: Orçamento curto e Servidor frágil mexem no dinheiro e nas vidas
     const money = Math.round((this.map.money * modMul(this.mods, 'money')) / 5) * 5;
-    this.money = this.bounty ? BOUNTY.budget[this.map.season] : money;
+    // Patrocinador (Dark Net, Minerador): +SPONSOR_MONEY no começo (Bug Bounty: só o orçamento)
+    this.money = this.bounty ? BOUNTY.budget[this.map.season] : money + (this.app.perks?.minerador3 ? SPONSOR_MONEY : 0);
     this.baseLives = Math.max(1, Math.round(this.map.lives * modMul(this.mods, 'lives'))); // (estrelas: starsNow)
     this.lives = this.platinum ? PLAT_LIVES : this.bounty || this.preview ? Infinity : this.baseLives;
     if (this.preview) this.money = 1e6; // o roteiro coloca as defesas que quiser

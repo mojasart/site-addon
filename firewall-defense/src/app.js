@@ -44,6 +44,7 @@ export class App {
     if (this.save.killsOldRate == null) this.save.killsOldRate = this.save.kills ?? 0;
     // o Acesso Root custava 3 cafés (agora 5): quem comprou antes recebe 3 de volta num reembolso
     if (this.perks.root && this.save.darknetPaid?.root == null) this.save.darknetPaid = { ...this.save.darknetPaid, root: 3 };
+    this.migrateMinerBranch();
     // quem já usava a Dark Net (antes da animação de desbloqueio existir) não vê ela
     if (Object.keys(this.save.darknet ?? {}).length || this.save.coffeeSpent) this.save.darknetUnlockSeen = true;
     if (debug) this.enableDebug();
@@ -265,6 +266,29 @@ export class App {
     writeSave(this.save);
     trackDesign('Daily:Streak', n);
     return { coffee, streak: n };
+  }
+
+  // O ramo do Bloco Raro do Minerador (Bloco Raro, Veio de Ouro, Hash da
+  // Sorte) virou Patrocinador e Aposta, nos mesmos ids. Quem tinha comprado
+  // os antigos recebe os cafés de volta (1 vez) e escolhe de novo se quiser
+  migrateMinerBranch() {
+    if (this.save.minerBranchV2) return;
+    this.save.minerBranchV2 = true;
+    const OLD = { minerador3: 8, minerador3b: 10, minerador3c: 12 };
+    const darknet = { ...this.perks };
+    const paid = { ...this.save.darknetPaid };
+    let back = 0;
+    for (const [id, cost] of Object.entries(OLD)) {
+      if (!darknet[id]) continue;
+      back += paid[id] ?? cost;
+      delete darknet[id];
+      delete paid[id];
+    }
+    if (back) {
+      this.save.darknet = darknet;
+      this.save.darknetPaid = paid;
+      this.save.coffeeSpent = Math.max(0, (this.save.coffeeSpent ?? 0) - back);
+    }
   }
 
   // As missões de hoje: [{ id, goal, tower?, n, claimed }]

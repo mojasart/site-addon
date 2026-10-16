@@ -48,6 +48,8 @@ export function formatCoffee(v) {
 export const INTEREST = { rate: 0.05, max: 150 }; // Juros: % do dinheiro guardado no começo de cada rodada
 export const LOAN = 250; // Empréstimo: crédito da partida (dá pra gastar em várias compras, somando no máximo isso)
 export const LOAN_EXTRA = 150; // Crédito Extra: crédito a mais no Empréstimo
+export const SPONSOR_MONEY = 150; // Patrocinador: dinheiro a mais no começo de cada partida
+export const GAMBLE = { lose: 0.55, win: 2.05 }; // Aposta: chance de o bitcoin não valer nada e quanto vale quando ganha
 export const BULK_DISCOUNT = 0.05; // Atacadão: todas as defesas custam isso a menos
 
 export const TREE = [
@@ -139,12 +141,14 @@ export const TREE = [
     apply: (s) => { s.packetsPerRound += 1; } },
   { id: 'minerador2c', tower: 'minerador', name: 'Revenda', desc: 'O Minerador vende pelo preço cheio', cost: 12, parent: 'minerador2b',
     apply: (s) => { s.sellRate = 1; } },
-  { id: 'minerador3', tower: 'minerador', name: 'Bloco Raro', desc: 'Cada bitcoin tem 2% de chance de virar um bloco que vale 500%', cost: 8, parent: 'minerador',
-    apply: (s) => { s.goldChance = (s.goldChance ?? 0) + 0.02; } },
-  { id: 'minerador3b', tower: 'minerador', name: 'Veio de Ouro', desc: '+4% de chance de bitcoin valer 200%', cost: 10, parent: 'minerador3',
-    apply: (s) => { s.doubleChance = (s.doubleChance ?? 0) + 0.04; } },
-  { id: 'minerador3c', tower: 'minerador', name: 'Hash da Sorte', desc: '+2% de chance de bloco raro', cost: 12, parent: 'minerador3b',
-    apply: (s) => { s.goldChance = (s.goldChance ?? 0) + 0.02; } },
+  // (os ids minerador3/3b eram o ramo do Bloco Raro; o Hash da Sorte, minerador3c, saiu.
+  // Quem tinha os antigos recebeu os cafés de volta: app.js migrateMinerBranch)
+  // Patrocinador: dinheiro a mais no começo de toda partida (vale pra partida toda; game.js reset)
+  { id: 'minerador3', tower: 'minerador', name: 'Patrocinador', desc: `Toda partida começa com +$${SPONSOR_MONEY}`, cost: 8, parent: 'minerador',
+    apply: () => {} },
+  // Aposta: cada bitcoin minerado vira cara ou coroa (Tower.mine)
+  { id: 'minerador3b', tower: 'minerador', name: 'Aposta', desc: `Cada bitcoin tem ${Math.round(GAMBLE.lose * 100)}% de chance de não valer nada e ${Math.round((1 - GAMBLE.lose) * 100)}% de valer ${Math.round(GAMBLE.win * 100)}%`, cost: 10, parent: 'minerador3',
+    apply: (s) => { s.gamble = GAMBLE; } },
   // C: dinheiro (Juros e Empréstimo valem pra partida toda, não só pro Minerador; ver game.js)
   { id: 'minerador4', tower: 'minerador', name: 'Juros', desc: `No começo de cada rodada rende ${INTEREST.rate * 100}% do dinheiro guardado (máximo $${INTEREST.max})`, cost: 10, parent: 'minerador',
     apply: () => {} },

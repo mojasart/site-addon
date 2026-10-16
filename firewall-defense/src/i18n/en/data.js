@@ -1,7 +1,7 @@
 // Inglês dos dados, por id (ver TABLES em src/i18n.js)
 // Textos que usam constantes viram função (item, id) => campos: assim as
 // constantes só são lidas na hora de aplicar (sem problema de ordem de import)
-import { INTEREST, LOAN, LOAN_EXTRA, BULK_DISCOUNT, DUCK } from '../../data/darknet.js';
+import { SPONSOR_MONEY, GAMBLE, INTEREST, LOAN, LOAN_EXTRA, BULK_DISCOUNT, DUCK } from '../../data/darknet.js';
 import { CASH, FREEZE_TIME, BACKUP_LIVES } from '../../data/consumables.js';
 import { HAZARD_PERIOD } from '../../data/terrains.js';
 import { STUN_TIME, WARN_TIME } from '../../systems/Hazards.js';
@@ -175,9 +175,8 @@ export const DATA = {
     minerador2b: { name: 'Parallel Mining', desc: 'Mines 1 more bitcoin per round' },
     minerador2c: { name: 'Resale', desc: 'The Miner sells for full price' },
     minerador2d: () => ({ name: 'Wholesale', desc: `All defenses cost ${BULK_DISCOUNT * 100}% less` }),
-    minerador3: { name: 'Rare Block', desc: 'Each bitcoin has a 2% chance to become a block worth 500%' },
-    minerador3b: { name: 'Gold Vein', desc: '+4% chance for a bitcoin to be worth 200%' },
-    minerador3c: { name: 'Lucky Hash', desc: '+2% rare block chance' },
+    minerador3: () => ({ name: 'Sponsor', desc: `Every match starts with +$${SPONSOR_MONEY}` }),
+    minerador3b: () => ({ name: 'Gamble', desc: `Each bitcoin has a ${Math.round(GAMBLE.lose * 100)}% chance to be worth nothing and ${Math.round((1 - GAMBLE.lose) * 100)}% to be worth ${Math.round(GAMBLE.win * 100)}%` }),
     minerador4: () => ({
       name: 'Interest',
       desc: `At the start of each round, earn ${INTEREST.rate * 100}% of your saved money (max $${INTEREST.max})`,
