@@ -5,7 +5,8 @@ import { clamp } from './util.js';
 import { loadImages } from './render/images.js';
 import { isNative, plugin } from './native.js';
 import { initNotifications } from './notify.js';
-import { initAnalytics } from './analytics.js';
+import { initAnalytics, trackError, trackDesign } from './analytics.js';
+import { clearSpriteCache } from './render/canvas.js';
 
 const stage = document.getElementById('stage'); // área útil da tela (fora do notch)
 const canvas = document.getElementById('game');
@@ -155,12 +156,38 @@ function requestFullscreenOnMobile() {
 // ── Loop principal ────────────────────────────────────────────
 let last = performance.now();
 
+// ── Diagnóstico de travamentos ──
+// Sem memória de vídeo (aconteceu no Mac), o navegador descarta o canvas:
+// tudo some. Avisa o analytics e, quando ele volta, refaz as imagens em cache
+canvas.addEventListener('contextlost', (e) => {
+  e.preventDefault(); // pede pro navegador devolver o canvas
+  trackDesign('Tech:CanvasLost');
+  trackError(`canvas perdido (dpr ${window.devicePixelRatio}, ${canvas.width}x${canvas.height}, ${navigator.userAgent})`);
+});
+canvas.addEventListener('contextrestored', () => {
+  trackDesign('Tech:CanvasRestored');
+  clearSpriteCache();
+  bumpFontEpoch(); // redesenha os mapas em cache
+  resize();
+});
+// erro de JavaScript em qualquer lugar (com a cena e a onda, pra reproduzir)
+const where = () => {
+  const s = app.scene;
+  return `${s?.constructor?.name ?? '?'}${s?.map ? ` ${s.map.id} onda ${s.rounds?.started}` : ''}`;
+};
+window.addEventListener('error', (e) => trackError(`${e.message} @ ${e.filename?.split('/').pop()}:${e.lineno} [${where()}]`));
+window.addEventListener('unhandledrejection', (e) => trackError(`promise: ${e.reason?.message ?? e.reason} [${where()}]`));
+
 function frame(now) {
   // pede o próximo antes: se um quadro der erro, o jogo não congela
   requestAnimationFrame(frame);
   const dt = Math.min((now - last) / 1000, 0.05); // evita "teleporte" depois de travadas
   last = now;
-  app.update(dt);
+  try {
+    app.update(dt);
+  } catch (err) {
+    trackError(`update: ${err?.message} ${err?.stack?.split('\n')[1]?.trim() ?? ''} [${where()}]`);
+  }
 
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = '#1f2b52';

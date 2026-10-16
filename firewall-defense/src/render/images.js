@@ -138,10 +138,13 @@ export function hasImage(name) {
 export function drawImage(ctx, name, size, dx = 0, dy = 0, tint = null) {
   const img = images.get(name);
   if (!img) return false;
-  const c = cachedSprite(`img:${name}:${size}:${tint ?? ''}`, size, (g) => {
+  // o cache guarda no tamanho arredondado (um tamanho quebrado ou animado não
+  // vira uma imagem nova a cada quadro) e desenha no tamanho pedido
+  const s = Math.max(1, Math.round(size));
+  const c = cachedSprite(`img:${name}:${s}:${tint ?? ''}`, s, (g) => {
     g.imageSmoothingQuality = 'high';
     if (tint) g.filter = tint;
-    g.drawImage(img, -size / 2, -size / 2, size, size);
+    g.drawImage(img, -s / 2, -s / 2, s, s);
   });
   ctx.drawImage(c, dx - size / 2, dy - size / 2, size, size);
   return true;

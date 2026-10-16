@@ -115,6 +115,17 @@ export function trackPurchase(cents, itemType, itemId) {
   emit(`purchase ${itemType}:${itemId} BRL ${cents}`, () => GA.addBusinessEvent('BRL', cents, part(itemType), part(itemId), 'shop'));
 }
 
+// ── Erros (pra achar travamentos que só acontecem em alguns aparelhos) ──
+// Cada mensagem vai 1 vez só por sessão, no máximo ERROR_MAX mensagens
+const ERROR_MAX = 8;
+const errorsSent = new Set();
+export function trackError(message) {
+  const msg = String(message).slice(0, 300);
+  if (errorsSent.has(msg) || errorsSent.size >= ERROR_MAX) return;
+  errorsSent.add(msg);
+  emit(`error ${msg}`, () => GA.addErrorEvent(E.EGAErrorSeverity.Error, msg));
+}
+
 // Modo debug ligado no meio do jogo (toque no worm): para de mandar
 export function stopAnalytics() {
   if (GA) GA.setEnabledEventSubmission(false);

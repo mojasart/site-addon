@@ -210,7 +210,15 @@ export function drawHasted(ctx, t, haste, burning, type) {
   // símbolo de raiva (💢) no canto de cima da cabeça, pulsando (mais forte no BURNOUT)
   const beat = Math.abs(Math.sin(t * (burning ? 9 : 5)));
   const [hx, hy] = HEAD_CORNER[type] ?? [14, -36];
-  if (drawImage(ctx, 'anger', (burning ? 22 : 18) * (1 + beat * 0.15), hx, hy)) return;
+  // o pulso é escala do desenho: o tamanho da sprite fica fixo (cada tamanho
+  // novo virava uma imagem nova no cache, 30 por segundo, e travava o Mac)
+  const k = 1 + beat * 0.15;
+  ctx.save();
+  ctx.translate(hx, hy);
+  ctx.scale(k, k);
+  const drawn = drawImage(ctx, 'anger', burning ? 22 : 18);
+  ctx.restore();
+  if (drawn) return;
   // sem a imagem: as setinhas
   ctx.save();
   ctx.translate(-22, -34 + Math.sin(t * 6) * 2);
