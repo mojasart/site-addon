@@ -33,6 +33,14 @@ const RAMP = 0.06; // cada onda repetida vem 6% mais cheia que a anterior
 export const PLAT_WARMUP = 5; // as primeiras ondas sobem da força do modo normal até a da platina (RoundManager)
 export const PLAT_REWARD = 1.5; // cada vírus estourado na platina dá 50% a mais de dinheiro
 
+// Pressão de cada mapa usada na platina: a do modo normal na época em que a
+// platina foi calibrada (data/platinumTuning.js). Fica separada pra que
+// recalibrar o modo normal (data/tuning.js) não mude a platina
+export const PLAT_PRESSURE = [0.286,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.204,0.2,0.2,0.2,0.2,0.2,0.2,0.2,0.208,0.2,0.2,0.2,0.238,0.2,0.2,0.224,0.331,0.504,0.223,0.253,0.224,0.277,0.2,0.366,0.266,0.386,0.365,0.546,0.251,0.301,0.233,0.372,0.454,0.2,0.326,0.2,0.2];
+export function platinumPressure(mapIndex, map) {
+  return PLAT_PRESSURE[mapIndex] ?? map.pressure;
+}
+
 // Dificuldade da platina no mapa (data/platinumTuning.js, calibrada com os bots)
 export function platinumScale(mapIndex) {
   return PLAT_TUNE[mapIndex] ?? 1;

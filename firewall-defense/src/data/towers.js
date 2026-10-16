@@ -96,7 +96,7 @@ export const TOWERS = {
     attack: 'beam',
     reveals: true, // deixa o Spyware visível no alcance dele
     fireRate: 2.8,
-    damage: 12000, // sniper: tiro lento e pesado (o que mais tira vida de chefão)
+    damage: 10000, // sniper: tiro lento e pesado (o que mais tira vida de chefão; era 12000)
     canHitArmored: true,
     targeting: true,
     defaultTarget: 'strong',

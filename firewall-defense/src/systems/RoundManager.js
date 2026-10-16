@@ -1,4 +1,5 @@
 import { Enemy } from '../entities/Enemy.js';
+import { BOSSES } from '../data/rounds.js';
 
 const FINALE_DELAY = 2.5; // segundos entre o fim da última onda e o miniboss (e entre dois minibosses)
 
@@ -14,7 +15,8 @@ export class RoundManager {
   // gap) entra aos poucos: a 1ª onda vem como no modo normal e a força cheia
   // só chega na onda waves + 1
   constructor(rounds, mod = {}) {
-    this.mod = { count: mod.count ?? 1, gap: mod.gap ?? 1, speed: mod.speed ?? 1, hp: mod.hp ?? 1, minCount: mod.minCount ?? 1, early: mod.early, warmup: mod.warmup };
+    // bossHp: vida dos chefões (no lugar de hp, que segue a pressão); null = hp
+    this.mod = { count: mod.count ?? 1, gap: mod.gap ?? 1, speed: mod.speed ?? 1, hp: mod.hp ?? 1, bossHp: mod.bossHp ?? null, minCount: mod.minCount ?? 1, early: mod.early, warmup: mod.warmup };
     this.rounds = rounds.map((r, i) => {
       const w = this.warm(i);
       return this.scale(r, { mul: this.countMul(i) * w, gapMul: this.mod.gap / w });
@@ -97,18 +99,23 @@ export class RoundManager {
       for (let i = 0; i < g.count; i++, n++) {
         const t = this.time + (g.at ?? 0) + i * g.gap;
         end = Math.max(end, t);
-        this.queue.push({ type: g.type, t, round, hp: g.hpMul ? (g.hp ?? this.mod.hp) * g.hpMul : g.hp });
+        this.queue.push({ type: g.type, t, round, hp: g.hpMul ? (g.hp ?? this.hpFor(g.type)) * g.hpMul : g.hp });
       }
     }
     // miniboss do fim da fase (data/rounds.js finaleFor): 1 só, depois de
     // todo mundo, com a vida multiplicada
     this.rounds[round].filter((g) => g.finale).forEach((g, j) => {
       n++;
-      this.queue.push({ type: g.type, t: end + FINALE_DELAY + j * FINALE_DELAY, round, hp: (g.hp ?? this.mod.hp) * (g.hpMul ?? 1) });
+      this.queue.push({ type: g.type, t: end + FINALE_DELAY + j * FINALE_DELAY, round, hp: (g.hp ?? this.hpFor(g.type)) * (g.hpMul ?? 1) });
     });
     this.pending[round] = n;
     this.queue.sort((a, b) => a.t - b.t);
     return true;
+  }
+
+  // Multiplicador de vida do tipo: chefões usam mod.bossHp (se tiver)
+  hpFor(type) {
+    return this.mod.bossHp != null && BOSSES.has(type) ? this.mod.bossHp : this.mod.hp;
   }
 
   update(dt, game) {
@@ -122,7 +129,7 @@ export class RoundManager {
       if (game.spawnFlash) game.spawnFlash[k] = 1;
       enemy.round = q.round;
       enemy.speedMul = this.mod.speed;
-      enemy.scaleHp(q.hp ?? this.mod.hp);
+      enemy.scaleHp(q.hp ?? this.hpFor(q.type));
       enemy.place();
       game.rollGolden?.(enemy); // Toque de Midas: pode vir dourado
       game.spawnEnemy(enemy);
