@@ -6,6 +6,7 @@ import { t } from '../i18n.js';
 
 const SHATTER_R = 45; // alcance do Estilhaço
 const STICKY = { mul: 0.5, time: 2 }; // Mel Pegajoso: 50% mais lento por 2 s
+const CRUSH_STOP = 0.2; // chefão para esse tempo (s) ao esmagar o Honeypot
 
 export class Enemy {
   constructor(type, dist, route = null) {
@@ -98,13 +99,20 @@ export class Enemy {
       this.takeDamage(this.burnDps * dt, game, { armored: true, source: this.burnSource, dot: true });
       if (this.dead) return;
     }
+    // esmagou um Honeypot agora há pouco: fica parado um instante
+    if (this.crushStop > 0) {
+      this.crushStop -= dt;
+      return;
+    }
     // Honeypot no caminho: para e fica mordendo a isca até ela quebrar.
-    // Chefão não para: esmaga a isca na hora e segue
+    // Chefão não morde: esmaga a isca na hora, para CRUSH_STOP s e segue
     const bait = game.baitAt?.(this);
     if (bait && this.def.boss) {
       bait.wear(Infinity, game, true);
       game.fx.text(bait.x, bait.y - 44, t('ESMAGADO!'), '#ff7a8a', 18);
       game.shake?.(4);
+      this.crushStop = CRUSH_STOP;
+      return;
     } else if (bait) {
       // ao parar no pote: Mel Pegajoso (Dark Net) às vezes gruda; Ferrão às vezes tira 1 camada
       if (this.biting !== bait) {
